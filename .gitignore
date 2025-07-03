@@ -1,22 +1,27 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.sqlite3
-
-# Env
+# Environment variables
 .env
+
+# Python virtual environments
 .venv/
 venv/
 
-# VSCode / IDE
+# VSCode / IDE configs
 .vscode/
 .idea/
 
-# Docker
+# Docker-related
 *.log
 *.pid
 *.seed
 *.db
 docker-data/
+
+# __pycache__ and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# System files
+.DS_Store
+Thumbs.db
