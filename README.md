@@ -20,23 +20,29 @@ Personalify adalah dashboard analitik Spotify personal yang dibangun untuk menam
 Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitektur berbasis layanan (service-based), dengan backend FastAPI sebagai pusat orkestrasi data dari berbagai sumber (Spotify API, PostgreSQL, Redis, MongoDB, dan FDW).
 
 ```text
-+-------------+        +------------------+        +---------------+
-|   Frontend  | <----> |     FastAPI      | <----> |   PostgreSQL  |
-| (Vite/Vue)  |        |   (Backend API)  |        | (Main DB)     |
-+-------------+        +--------+---------+        +------+--------+
-                                  |                       |
-                                  v                       v
-                             +---------+           +-------------+
-                             | Redis   |           |   MongoDB   |
-                             | (Cache) |           | (Sync DB)   |
-                             +---------+           +-------------+
-                                        \         
-                                         \
-                                          v
-                                +------------------------+
-                                | PostgreSQL + FDW       |
-                                | (foreign remote table) |
-                                +------------------------+
+                            +------------------+
+                            |     FastAPI      | <-----------------------------+
+                            |  (Backend API)   |                              |
+                            +--------+---------+                              |
+                                     |                                        |
+                                     v                                        |
+        +------------------+   +-----------+         +------------------+     |
+        |  PostgreSQL      |<--|  Redis     |<--------|     MongoDB     |     |
+        |  (Main DB)       |   | (Cache)    |         |  (Sync History) |     |
+        +------------------+   +-----------+         +------------------+     |
+                 |                                                             |
+                 v                                                             |
+       +------------------------+                                              |
+       | PostgreSQL + FDW       |                                              |
+       | (foreign remote table) |                                              |
+       +------------------------+                                              |
+                                                                               |
+                     [🛠️ Future Work]                                          |
++-----------------------------+                                                |
+|         Frontend            | <----------------------------------------------+
+|    (Vite + Vue — planned)   |
++-----------------------------+
+
 ```
 
 **Penjelasan Komponen:**
