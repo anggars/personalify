@@ -19,6 +19,7 @@ Personalify adalah dashboard analitik Spotify personal yang dibangun untuk menam
 
 Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitektur berbasis layanan (service-based), dengan backend FastAPI sebagai pusat orkestrasi data dari berbagai sumber (Spotify API, PostgreSQL, Redis, MongoDB, dan FDW).
 
+```text
 +-------------+        +------------------+        +---------------+
 |   Frontend  | <----> |     FastAPI      | <----> |   PostgreSQL  |
 | (Vite/Vue)  |        |   (Backend API)  |        | (Main DB)     |
@@ -27,7 +28,7 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
                                   v                       v
                              +---------+           +-------------+
                              | Redis   |           |   MongoDB   |
-                             | (Cache) |           | (Sync DB)|
+                             | (Cache) |           | (Sync DB)   |
                              +---------+           +-------------+
                                         \         
                                          \
@@ -36,7 +37,7 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
                                 | PostgreSQL + FDW       |
                                 | (foreign remote table) |
                                 +------------------------+
-
+```
 
 **Penjelasan Komponen:**
 
@@ -115,6 +116,7 @@ CREATE TABLE IF NOT EXISTS user_artists (
   FOREIGN KEY (spotify_id) REFERENCES users(spotify_id) ON DELETE CASCADE,
   FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
 );
+```
 
 ### 📄 MongoDB (Sync History DB)
 
