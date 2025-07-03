@@ -2,7 +2,10 @@ import os
 import requests
 from urllib.parse import urlencode
 from fastapi import APIRouter, Request, Query
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from typing import Optional
 
 from app.db_handler import (
     save_user, save_artist, save_track,
@@ -12,10 +15,14 @@ from app.cache_handler import cache_top_data, get_cached_top_data
 from app.mongo_handler import save_user_sync, get_user_history
 
 router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/", tags=["Root"])
 def root():
+    """
+    Endpoint Root (Health Check)
+    """
     return {"message": "Personalify root"}
 
 
@@ -44,7 +51,7 @@ def login():
 @router.get("/callback", tags=["Auth"])
 def callback(code: str = Query(..., description="Spotify Authorization Code")):
     """
-    Menukar kode otorisasi dengan access_token dan refresh_token
+    Callback untuk menukar Authorization Code dengan Access Token
     """
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
@@ -66,10 +73,10 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
 @router.get("/sync/top-data", tags=["Sync"])
 def sync_top_data(
     access_token: str = Query(..., description="Spotify Access Token"),
-    time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"], description="Time range: short, medium, long")
+    time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"], description="Time range")
 ):
     """
-    Sinkronisasi data top artists dan top tracks dari Spotify (token langsung dari query)
+    Sinkronisasi data top artists dan top tracks dari Spotify
     """
     headers = {"Authorization": f"Bearer {access_token}"}
     user_profile = requests.get("https://api.spotify.com/v1/me", headers=headers).json()
@@ -80,13 +87,13 @@ def sync_top_data(
     display_name = user_profile.get("display_name", "Unknown")
     save_user(spotify_id, display_name)
 
-    # Artists
+    # Get top artists
     artists = requests.get(
         f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=10",
         headers=headers
     ).json().get("items", [])
 
-    # Tracks
+    # Get top tracks
     tracks = requests.get(
         f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=10",
         headers=headers
@@ -124,13 +131,13 @@ def sync_top_data(
 
 @router.get("/top-data", tags=["Query"])
 def get_top_data(
-    spotify_id: str = Query(...),
+    spotify_id: str = Query(..., description="Spotify ID"),
     time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"]),
     limit: int = Query(10, ge=1),
     sort: str = Query("popularity")
 ):
     """
-    Ambil data top tracks dan artists dari Redis berdasarkan ID dan rentang waktu
+    Ambil data top artists dan top tracks dari Redis
     """
     data = get_cached_top_data("top", spotify_id, time_range)
     if not data:
@@ -146,7 +153,7 @@ def get_top_data(
 
 @router.get("/top-genres", tags=["Query"])
 def top_genres(
-    spotify_id: str = Query(...),
+    spotify_id: str = Query(..., description="Spotify ID"),
     time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"])
 ):
     """
@@ -166,8 +173,32 @@ def top_genres(
 
 
 @router.get("/history", tags=["Query"])
-def get_sync_history(spotify_id: str = Query(...)):
+def get_sync_history(spotify_id: str = Query(..., description="Spotify ID")):
     """
-    Ambil riwayat sync user dari MongoDB berdasarkan spotify_id
+    Ambil riwayat sync user dari MongoDB
     """
     return get_user_history(spotify_id)
+
+
+@router.get("/dashboard/{spotify_id}", response_class=HTMLResponse, tags=["Dashboard"])
+def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request = None):
+    data = get_cached_top_data("top", spotify_id, time_range)
+    if not data:
+        return HTMLResponse(content="No data found", status_code=404)
+
+    # Hitung top genres manual dari data['artists']
+    genre_count = {}
+    for artist in data.get("artists", []):
+        for genre in artist.get("genres", []):
+            genre_count[genre] = genre_count.get(genre, 0) + 1
+    sorted_genres = sorted(genre_count.items(), key=lambda x: x[1], reverse=True)
+    genre_list = [{"name": name, "count": count} for name, count in sorted_genres]
+
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "user": data["user"],
+        "artists": data["artists"],
+        "tracks": data["tracks"],
+        "genres": genre_list,
+        "time_range": time_range
+    })

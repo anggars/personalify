@@ -15,7 +15,7 @@ services:
 
   mangofy:
     image: mongo:7
-    container_name: mangofy
+    container_name: mongofy
     ports:
       - "27017:27017"
     volumes:
@@ -57,5 +57,4 @@ volumes:
 
 networks:
   personalify:
-    name: personalify
-    driver: bridge
+    external: true
