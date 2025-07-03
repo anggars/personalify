@@ -201,21 +201,24 @@ Untuk melihat struktur tabel lokal seperti users, artists, dan tracks:
 \d+ tracks
 
 Gunakan query berikut untuk melihat isi tabel utama:
+```sql
 SELECT * FROM users;
 SELECT * FROM artists;
 SELECT * FROM tracks;
 SELECT * FROM user_tracks;
 SELECT * FROM user_artists;
+```
 
 Jika sudah mengatur postgres_fdw dan mengimpor foreign table seperti dummy_data, maka bisa menjalankan:
 1. Lihat struktur tabel foreign:
-\d+ dummy_data
+```sql \d+ dummy_data ```
 2. Tampilkan isi tabel foreign:
-SELECT * FROM dummy_data;
+```sql SELECT * FROM dummy_data; ```
 3. Join tabel lokal (users) dengan tabel foreign (dummy_data):
-SELECT u.display_name, d.name AS remote_note
+```sql SELECT u.display_name, d.name AS remote_note
 FROM users u
 JOIN dummy_data d ON u.id = d.id;
+```
 4. Lihat execution plan dan remote SQL:
 EXPLAIN VERBOSE SELECT * FROM dummy_data;
 
@@ -223,21 +226,21 @@ EXPLAIN VERBOSE SELECT * FROM dummy_data;
 MongoDB digunakan untuk menyimpan data sinkronisasi Spotify berdasarkan spotify_id dan time_range. Data disimpan sebagai dokumen JSON fleksibel di koleksi user_syncs.
 
 1. Masuk ke MongoDB container:
-sudo docker exec -it maogofy mongosh
+```bash sudo docker exec -it maogofy mongosh ```
 2. Gunakan database dan cek koleksi:
-use personalify_db
-db.user_syncs.find().pretty()
+```bash use personalify_db ```
+db.user_syncs.find().pretty() ```
 3. Contoh query history user berdasarkan spotify_id:
-db.user_syncs.find({ spotify_id: "31xon7qetimdnbmhkupbaszl52nu" }).pretty()
+```bash db.user_syncs.find({ spotify_id: "31xon7qetimdnbmhkupbaszl52nu" }).pretty() ```
 
 ### 🔴 C. Akses Cache Redis untuk Top Data
 Redis digunakan untuk menyimpan data top artists/tracks/genres hasil sinkronisasi agar akses cepat dan tidak selalu memanggil API Spotify.
 1. Masuk ke Redis container:
-sudo docker exec -it redisfy redis-cli
+``` bash sudo docker exec -it redisfy redis-cli ```
 2. Tampilkan isi cache berdasarkan key:
-GET top:31xon7qetimdnbmhkupbaszl52nu:short_term
+``` bash GET top:31xon7qetimdnbmhkupbaszl52nu:short_term ```
 3. (Opsional) Format JSON menggunakan jq:
-sudo docker exec -it redisfy redis-cli GET top:31xon7qetimdnbmhkupbaszl52nu:short_term | jq
+```bash sudo docker exec -it redisfy redis-cli GET top:31xon7qetimdnbmhkupbaszl52nu:short_term | jq ```
 
 Dengan tiga lapis distribusi ini (PostgreSQL-FDW, MongoDB, Redis), sistem dapat menggabungkan kekuatan relational query, document storage, dan high-speed caching dalam satu aplikasi yang ringan dan scalable.
 
@@ -303,4 +306,3 @@ Lebih jauh lagi, proyek ini mengimplementasikan PostgreSQL Foreign Data Wrapper 
 Selama pengembangan, sejumlah tantangan teknis berhasil diatasi, mulai dari sinkronisasi data yang tidak homogen antara API Spotify dan struktur tabel relasional, hingga konfigurasi hostname antar-container Docker agar dapat saling terhubung. Tantangan-tantangan ini menghasilkan pembelajaran praktis seputar pemilihan teknologi, pengelolaan cache, dan penggabungan data dari sumber berbeda secara efisien.
 
 Secara keseluruhan, Personalify telah berhasil menjadi bukti konsep dari sistem terdistribusi yang memadukan otentikasi modern, sinkronisasi API eksternal, penyimpanan multi-database, serta cache dan federasi data dalam satu ekosistem yang kohesif. Proyek ini bukan hanya memenuhi aspek fungsional dan teknis dari tugas Pemrosesan Data Terdistribusi, tetapi juga memberikan pengalaman praktik nyata dalam membangun dan mengelola sistem data yang kompleks dan dapat diskalakan.
-
