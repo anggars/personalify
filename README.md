@@ -37,11 +37,11 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
        | (foreign remote table) |                                              |
        +------------------------+                                              |
                                                                                |
-         [🛠️ Future Work]                                                      | 
-+-----------------------------+                                                |
-|         Frontend            | <----------------------------------------------+
-|    (Vite + Vue — planned)   |
-+-----------------------------+
+                                                                               |
+                          +-----------------------------+                      |
+                          |         Frontend            | <--------------------+
+                          |    (Vite + Vue — planned)   |
+                          +-----------------------------+
 
 ```
 
@@ -240,7 +240,7 @@ MongoDB digunakan untuk menyimpan data sinkronisasi Spotify berdasarkan spotify_
 
 1. Masuk ke MongoDB container:
 ```bash 
-sudo docker exec -it maogofy mongosh 
+sudo docker exec -it mongofy mongosh 
 ```
 2. Gunakan database dan cek koleksi:
 ```bash 
