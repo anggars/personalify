@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Personalify Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #121212;
+            color: #fff;
+        }
+
+        h1 {
+            color: #1DB954;
+            margin-bottom: 10px;
+        }
+
+        .filters {
+            margin-bottom: 20px;
+        }
+
+        .filters select {
+            padding: 8px 12px;
+            margin-right: 10px;
+            font-size: 1em;
+            border-radius: 5px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .section {
+            flex: 1 1 30%;
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.3);
+        }
+
+        .section h2 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            color: #1DB954;
+        }
+
+        .artist, .track, .genre {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .artist img {
+            height: 64px;
+            width: 64px;
+            object-fit: cover;
+            border-radius: 5px;
+            vertical-align: middle;
+        }
+
+        .info {
+            display: inline-block;
+            vertical-align: top;
+            margin-left: 15px;
+        }
+
+        .info .name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #fff;
+        }
+
+        .info .meta {
+            color: #ccc;
+            font-size: 0.9em;
+        }
+
+        .genre-label {
+            display: inline-block;
+            background-color: #1DB954;
+            color: #fff;
+            padding: 2px 8px;
+            margin: 2px 4px 0 0;
+            border-radius: 10px;
+            font-size: 0.65em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .section {
+                display: none;
+            }
+
+            .section.active {
+                display: block;
+            }
+
+            .filters select#category-filter {
+                display: inline-block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome, {{ user }}!</h1>
+
+    <div class="filters">
+        <label for="time-filter">Time Range:</label>
+        <select id="time-filter">
+            <option value="short_term" {% if time_range == 'short_term' %}selected{% endif %}>Last Month</option>
+            <option value="medium_term" {% if time_range == 'medium_term' %}selected{% endif %}>Mid-Term</option>
+            <option value="long_term" {% if time_range == 'long_term' %}selected{% endif %}>All Time</option>
+        </select>
+
+        <select id="category-filter" style="display:none;">
+            <option value="artists">Top Artists</option>
+            <option value="tracks">Top Tracks</option>
+            <option value="genres">Top Genres</option>
+        </select>
+    </div>
+
+    <div class="container">
+        <div class="section" id="artists-section">
+            <h2>Top Artists</h2>
+            {% for artist in artists %}
+            <div class="artist">
+                <img src="{{ artist.image }}" alt="{{ artist.name }}">
+                <div class="info">
+                    <div class="name">{{ artist.name }}</div>
+                    <div class="meta">
+                        {% for genre in artist.genres %}
+                            <span class="genre-label">{{ genre }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="meta">Popularity: {{ artist.popularity }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="section" id="tracks-section">
+            <h2>Top Tracks</h2>
+            {% for track in tracks %}
+            <div class="track">
+                <div class="info">
+                    <div class="name">{{ track.name }}</div>
+                    <div class="meta">Artist(s): {{ track.artists | join(', ') }}</div>
+                    <div class="meta">Album: {{ track.album }}</div>
+                    <div class="meta">Popularity: {{ track.popularity }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="section" id="genres-section">
+            <h2>Top Genres</h2>
+            {% for genre in genres %}
+            <div class="genre">
+                <div class="info">
+                    <div class="name">{{ genre.name }}</div>
+                    <div class="meta">Count: {{ genre.count }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        const categoryFilter = document.getElementById("category-filter");
+        const sections = {
+            artists: document.getElementById("artists-section"),
+            tracks: document.getElementById("tracks-section"),
+            genres: document.getElementById("genres-section")
+        };
+
+        function updateCategoryDisplay() {
+            const value = categoryFilter.value;
+            for (const key in sections) {
+                sections[key].classList.remove("active");
+            }
+            if (sections[value]) {
+                sections[value].classList.add("active");
+            }
+        }
+
+        categoryFilter.addEventListener("change", updateCategoryDisplay);
+
+        function checkScreenSize() {
+            if (window.innerWidth <= 768) {
+                categoryFilter.style.display = "inline-block";
+                updateCategoryDisplay();
+            } else {
+                for (const key in sections) {
+                    sections[key].style.display = "block";
+                }
+                categoryFilter.style.display = "none";
+            }
+        }
+
+        window.addEventListener("resize", checkScreenSize);
+        window.addEventListener("load", checkScreenSize);
+
+        document.getElementById("time-filter").addEventListener("change", function() {
+            const selected = this.value;
+            const currentURL = window.location.href.split('?')[0].split('#')[0];
+            const userId = currentURL.split('/').pop();
+            window.location.href = `/dashboard/${userId}?time_range=${selected}`;
+        });
+    </script>
+</body>
+</html>
