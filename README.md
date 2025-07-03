@@ -144,8 +144,6 @@ Redis digunakan sebagai in-memory cache yang secara tidak langsung membentuk pol
 
 Redis juga memungkinkan scale-out horizontal dengan teknik clustering jika kapasitas bertambah besar.
 
----
-
 ### 🗂️ MongoDB (Document-Based Distribution)
 
 MongoDB menyimpan histori sinkronisasi Spotify user dalam format dokumen, dan sangat cocok untuk model penyimpanan data semi-terstruktur yang terus berkembang. Walaupun deployment saat ini menggunakan instance tunggal, MongoDB mendukung replikasi otomatis (replica set) dan sharding native berdasarkan key seperti `spotify_id`.
@@ -194,12 +192,15 @@ Langkah pertama: masuk ke container postgresfy untuk mengakses database utama (s
 sudo docker exec -it postgresfy psql -U admin -d streamdb
 
 Untuk menampilkan daftar tabel beserta detailnya:
+```bash 
 \dt+
+```
 Untuk melihat struktur tabel lokal seperti users, artists, dan tracks:
+```bash 
 \d+ users
 \d+ artists
 \d+ tracks
-
+```
 Gunakan query berikut untuk melihat isi tabel utama:
 ```sql
 SELECT * FROM users;
@@ -211,14 +212,20 @@ SELECT * FROM user_artists;
 
 Jika sudah mengatur postgres_fdw dan mengimpor foreign table seperti dummy_data, maka bisa menjalankan:
 1. Lihat struktur tabel foreign:
-```sql \d+ dummy_data ```
+```bash 
+\d+ dummy_data 
+```
 2. Tampilkan isi tabel foreign:
-```sql SELECT * FROM dummy_data; ```
+```sql 
+SELECT * FROM dummy_data; 
+```
 3. Join tabel lokal (users) dengan tabel foreign (dummy_data):
-```sql SELECT u.display_name, d.name AS remote_note
+```sql 
+SELECT u.display_name, d.name AS remote_note
 FROM users u
 JOIN dummy_data d ON u.id = d.id;
 ```
+
 4. Lihat execution plan dan remote SQL:
 EXPLAIN VERBOSE SELECT * FROM dummy_data;
 
@@ -226,21 +233,33 @@ EXPLAIN VERBOSE SELECT * FROM dummy_data;
 MongoDB digunakan untuk menyimpan data sinkronisasi Spotify berdasarkan spotify_id dan time_range. Data disimpan sebagai dokumen JSON fleksibel di koleksi user_syncs.
 
 1. Masuk ke MongoDB container:
-```bash sudo docker exec -it maogofy mongosh ```
+```bash 
+sudo docker exec -it maogofy mongosh 
+```
 2. Gunakan database dan cek koleksi:
-```bash use personalify_db ```
-db.user_syncs.find().pretty() ```
+```bash 
+use personalify_db 
+db.user_syncs.find().pretty() 
+```
 3. Contoh query history user berdasarkan spotify_id:
-```bash db.user_syncs.find({ spotify_id: "31xon7qetimdnbmhkupbaszl52nu" }).pretty() ```
+```bash 
+db.user_syncs.find({ spotify_id: "31xon7qetimdnbmhkupbaszl52nu" }).pretty() 
+```
 
 ### 🔴 C. Akses Cache Redis untuk Top Data
 Redis digunakan untuk menyimpan data top artists/tracks/genres hasil sinkronisasi agar akses cepat dan tidak selalu memanggil API Spotify.
 1. Masuk ke Redis container:
-``` bash sudo docker exec -it redisfy redis-cli ```
+```bash 
+sudo docker exec -it redisfy redis-cli 
+```
 2. Tampilkan isi cache berdasarkan key:
-``` bash GET top:31xon7qetimdnbmhkupbaszl52nu:short_term ```
+```bash
+GET top:31xon7qetimdnbmhkupbaszl52nu:short_term
+```
 3. (Opsional) Format JSON menggunakan jq:
-```bash sudo docker exec -it redisfy redis-cli GET top:31xon7qetimdnbmhkupbaszl52nu:short_term | jq ```
+```bash
+sudo docker exec -it redisfy redis-cli GET top:31xon7qetimdnbmhkupbaszl52nu:short_term | jq
+```
 
 Dengan tiga lapis distribusi ini (PostgreSQL-FDW, MongoDB, Redis), sistem dapat menggabungkan kekuatan relational query, document storage, dan high-speed caching dalam satu aplikasi yang ringan dan scalable.
 
