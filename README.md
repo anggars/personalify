@@ -26,10 +26,10 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
                             +--------+---------+                               |
                                      |                                         |
                                      v                                         |
-        +------------------+   +-----------+         +------------------+      |
-        |  PostgreSQL      |<->|  Redis     |<------->|     MongoDB     |      |
-        |  (Main DB)       |   | (Cache)    |         |  (Sync History) |      |
-        +------------------+   +-----------+         +------------------+      |
+        +---------------+       +----------+         +------------------+      |
+        |  PostgreSQL    |<---->|  Redis   |<------->|      MongoDB     |      |
+        |  (Main DB)     |      | (Cache)  |         |  (Sync History)  |      |
+        +---------------+       +----------+         +------------------+      |
                  |                                                             |
                  v                                                             |
        +------------------------+                                              |
