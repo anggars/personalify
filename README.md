@@ -22,14 +22,14 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
 ```text
                             +------------------+
                             |     FastAPI      | <-----------------------------+
-                            |  (Backend API)   |                              |
-                            +--------+---------+                              |
-                                     |                                        |
-                                     v                                        |
-        +------------------+   +-----------+         +------------------+     |
-        |  PostgreSQL      |<--|  Redis     |<--------|     MongoDB     |     |
-        |  (Main DB)       |   | (Cache)    |         |  (Sync History) |     |
-        +------------------+   +-----------+         +------------------+     |
+                            |  (Backend API)   |                               |
+                            +--------+---------+                               |
+                                     |                                         |
+                                     v                                         |
+        +------------------+   +-----------+         +------------------+      |
+        |  PostgreSQL      |<->|  Redis     |<------->|     MongoDB     |      |
+        |  (Main DB)       |   | (Cache)    |         |  (Sync History) |      |
+        +------------------+   +-----------+         +------------------+      |
                  |                                                             |
                  v                                                             |
        +------------------------+                                              |
@@ -37,7 +37,7 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
        | (foreign remote table) |                                              |
        +------------------------+                                              |
                                                                                |
-                     [🛠️ Future Work]                                          |
+         [🛠️ Future Work]                                                      | 
 +-----------------------------+                                                |
 |         Frontend            | <----------------------------------------------+
 |    (Vite + Vue — planned)   |
