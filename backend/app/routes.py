@@ -1,10 +1,9 @@
 import os
 import requests
 from urllib.parse import urlencode
-from fastapi import APIRouter, Request, Query
+from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
 from typing import Optional
 
 from app.db_handler import (
@@ -20,23 +19,17 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/", tags=["Root"])
 def root():
-    """
-    Endpoint Root (Health Check)
-    """
     return {"message": "Personalify root"}
 
 
 @router.get("/login", tags=["Auth"])
 def login():
-    """
-    Redirect ke halaman Spotify Login untuk otorisasi user
-    """
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
     scope = "user-top-read"
 
     if not client_id or not redirect_uri:
-        return {"error": "Spotify client_id or redirect_uri not configured."}
+        raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
 
     query_params = urlencode({
         "response_type": "code",
@@ -50,9 +43,6 @@ def login():
 
 @router.get("/callback", tags=["Auth"])
 def callback(code: str = Query(..., description="Spotify Authorization Code")):
-    """
-    Callback untuk menukar Authorization Code dengan Access Token
-    """
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
     redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
@@ -75,50 +65,73 @@ def sync_top_data(
     access_token: str = Query(..., description="Spotify Access Token"),
     time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"], description="Time range")
 ):
-    """
-    Sinkronisasi data top artists dan top tracks dari Spotify
-    """
     headers = {"Authorization": f"Bearer {access_token}"}
-    user_profile = requests.get("https://api.spotify.com/v1/me", headers=headers).json()
-    if "error" in user_profile:
-        return {"error": user_profile["error"]["message"]}
+    res = requests.get("https://api.spotify.com/v1/me", headers=headers)
+
+    try:
+        user_profile = res.json()
+    except Exception:
+        raise HTTPException(status_code=500, detail=f"Spotify API returned invalid response: {res.text}")
+
+    if res.status_code != 200:
+        raise HTTPException(status_code=res.status_code, detail=user_profile.get("error", {}).get("message", "Unknown error"))
 
     spotify_id = user_profile["id"]
     display_name = user_profile.get("display_name", "Unknown")
     save_user(spotify_id, display_name)
 
     # Get top artists
-    artists = requests.get(
+    artist_resp = requests.get(
         f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=10",
         headers=headers
-    ).json().get("items", [])
+    )
+    try:
+        artist_data = artist_resp.json()
+        artists = artist_data.get("items", [])
+    except Exception:
+        raise HTTPException(status_code=500, detail=f"Spotify artist API returned invalid response: {artist_resp.text}")
 
     # Get top tracks
-    tracks = requests.get(
+    track_resp = requests.get(
         f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=10",
         headers=headers
-    ).json().get("items", [])
+    )
+    try:
+        track_data = track_resp.json()
+        tracks = track_data.get("items", [])
+    except Exception:
+        raise HTTPException(status_code=500, detail=f"Spotify track API returned invalid response: {track_resp.text}")
 
     result = {"user": display_name, "artists": [], "tracks": []}
 
     for artist in artists:
-        save_artist(artist["id"], artist["name"], artist["popularity"], artist["images"][0]["url"] if artist["images"] else None)
+        save_artist(
+            artist["id"],
+            artist["name"],
+            artist["popularity"],
+            artist["images"][0]["url"] if artist.get("images") else None
+        )
         save_user_artist(spotify_id, artist["id"])
         result["artists"].append({
             "id": artist["id"],
             "name": artist["name"],
             "genres": artist.get("genres", []),
             "popularity": artist["popularity"],
-            "image": artist["images"][0]["url"] if artist["images"] else ""
+            "image": artist["images"][0]["url"] if artist.get("images") else ""
         })
 
     for track in tracks:
-        save_track(track["id"], track["name"], track["popularity"], track.get("preview_url"))
+        save_track(
+            track["id"],
+            track["name"],
+            track["popularity"],
+            track.get("preview_url")
+        )
         save_user_track(spotify_id, track["id"])
         result["tracks"].append({
             "id": track["id"],
             "name": track["name"],
-            "artists": [a["name"] for a in track["artists"]],
+            "artists": [a["name"] for a in track.get("artists", [])],
             "album": track["album"]["name"],
             "popularity": track["popularity"],
             "preview_url": track.get("preview_url")
@@ -136,9 +149,6 @@ def get_top_data(
     limit: int = Query(10, ge=1),
     sort: str = Query("popularity")
 ):
-    """
-    Ambil data top artists dan top tracks dari Redis
-    """
     data = get_cached_top_data("top", spotify_id, time_range)
     if not data:
         return {"message": "No cached data found."}
@@ -156,9 +166,6 @@ def top_genres(
     spotify_id: str = Query(..., description="Spotify ID"),
     time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"])
 ):
-    """
-    Ambil genre paling dominan dari daftar top artists
-    """
     data = get_cached_top_data("top", spotify_id, time_range)
     if not data:
         return {"error": "No cached data found for this user/time_range"}
@@ -174,9 +181,6 @@ def top_genres(
 
 @router.get("/history", tags=["Query"])
 def get_sync_history(spotify_id: str = Query(..., description="Spotify ID")):
-    """
-    Ambil riwayat sync user dari MongoDB
-    """
     return get_user_history(spotify_id)
 
 
@@ -186,7 +190,6 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
     if not data:
         return HTMLResponse(content="No data found", status_code=404)
 
-    # Hitung top genres manual dari data['artists']
     genre_count = {}
     for artist in data.get("artists", []):
         for genre in artist.get("genres", []):
