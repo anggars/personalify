@@ -1,14 +1,22 @@
 body {
-  background-color: black;
-  color: limegreen;
-  font-family: sans-serif;
+    font-family: Arial, sans-serif;
+    background-color: #121212;
+    color: #ffffff;
+    text-align: center;
+    padding: 2rem;
 }
 
-.tag {
-  background-color: #222;
-  color: lime;
-  padding: 2px 6px;
-  margin-left: 5px;
-  border-radius: 5px;
-  font-size: 12px;
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.button {
+    display: inline-block;
+    background-color: #1db954;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: bold;
 }
