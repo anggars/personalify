@@ -4,110 +4,233 @@
     <meta charset="UTF-8">
     <title>Personalify Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #121212;
-            color: #fff;
+            color: #ffffff;
+            padding: 1.5rem;
         }
 
         h1 {
             color: #1DB954;
-            margin-bottom: 10px;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
         }
 
         .filters {
-            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 3rem;
+        }
+
+        .filters label {
+            font-size: 1rem;
+            font-weight: 500;
         }
 
         .filters select {
-            padding: 8px 12px;
-            margin-right: 10px;
-            font-size: 1em;
-            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border-radius: 9999px;
+            border: none;
+            background-color: #2a2a2a;
+            color: #ffffff;
         }
 
         .container {
-            display: flex;
-            flex-direction: row;
-            gap: 20px;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
         }
 
         .section {
-            flex: 1 1 30%;
             background: #1e1e1e;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 0 8px rgba(0,0,0,0.3);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.5);
         }
 
         .section h2 {
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+            position: relative;
+            height: 60px; /* bisa sesuaikan */
+            line-height: 25px; /* bikin teks sejajar secara vertikal */
+            text-align: center;
+            font-size: 1.25rem;
             color: #1DB954;
+            border-bottom: 1px solid #333;
+            margin-bottom: 1rem;
+            padding: 0;
         }
 
+
         .artist, .track, .genre {
-            margin-bottom: 15px;
-            padding-bottom: 10px;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
             border-bottom: 1px solid #333;
         }
 
         .artist img {
-            height: 64px;
             width: 64px;
+            height: 64px;
+            border-radius: 0.5rem;
             object-fit: cover;
-            border-radius: 5px;
-            vertical-align: middle;
         }
 
         .info {
             display: inline-block;
+            margin-left: 1rem;
             vertical-align: top;
-            margin-left: 15px;
         }
 
         .info .name {
-            font-weight: bold;
-            font-size: 1.1em;
-            color: #fff;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
         }
 
         .info .meta {
-            color: #ccc;
-            font-size: 0.9em;
+            font-size: 0.8rem;
+            color: #bbb;
         }
 
         .genre-label {
             display: inline-block;
             background-color: #1DB954;
             color: black;
-            padding: 2px 8px;
-            margin: 2px 4px 0 0;
-            border-radius: 10px;
-            font-size: 0.65em;
+            font-size: 0.65rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 9999px;
+            margin: 0.1rem 0.2rem 0 0;
+        }
+
+        .more-genres {
+            display: none;
+        }
+
+        .show-more {
+            cursor: pointer;
+            color: #1DB954;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+            display: inline-block;
         }
 
         @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
+            #category-filter {
+                display: inline-block !important;
             }
-
             .section {
                 display: none;
             }
-
             .section.active {
                 display: block;
             }
+        }
 
-            .filters select#category-filter {
-                display: inline-block;
+        @media (min-width: 769px) {
+            .section {
+                display: block !important; /* Important untuk override js */
             }
+            #category-filter {
+                 display: none !important;
+            }
+        }
+
+        .download-btn {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            padding: 0.75rem 1.25rem;
+            background-color: #1DB954;
+            color: black;
+            border: none;
+            border-radius: 9999px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        /* CSS untuk Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; /* Awalnya disembunyikan */
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background-color: #2a2a2a;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: #1DB954;
+        }
+
+        .modal-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .modal-options button {
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border-radius: 9999px;
+            border: none;
+            background-color: #1DB954;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .modal-options button:hover {
+            background-color: #1ed760;
+        }
+
+        .modal-close {
+            margin-top: 1.5rem;
+            background: none;
+            border: 1px solid #555;
+            color: #aaa;
+        }
+        .modal-close:hover {
+            background-color: #333;
+            color: #fff;
         }
     </style>
 </head>
@@ -115,7 +238,6 @@
     <h1>Welcome, {{ user }}!</h1>
 
     <div class="filters">
-        <label for="time-filter">Time Range:</label>
         <select id="time-filter">
             <option value="short_term" {% if time_range == 'short_term' %}selected{% endif %}>Last Month</option>
             <option value="medium_term" {% if time_range == 'medium_term' %}selected{% endif %}>Mid-Term</option>
@@ -123,13 +245,13 @@
         </select>
 
         <select id="category-filter" style="display:none;">
-            <option value="artists">Top Artists</option>
-            <option value="tracks">Top Tracks</option>
-            <option value="genres">Top Genres</option>
+            <option value="artists" {% if category == 'artists' %}selected{% endif %}>Top Artists</option>
+            <option value="tracks" {% if category == 'tracks' %}selected{% endif %}>Top Tracks</option>
+            <option value="genres" {% if category == 'genres' %}selected{% endif %}>Top Genres</option>
         </select>
     </div>
 
-    <div class="container">
+    <div class="container" id="dashboard">
         <div class="section" id="artists-section">
             <h2>Top Artists</h2>
             {% for artist in artists %}
@@ -138,9 +260,14 @@
                 <div class="info">
                     <div class="name">{{ artist.name }}</div>
                     <div class="meta">
-                        {% for genre in artist.genres %}
-                            <span class="genre-label">{{ genre }}</span>
-                        {% endfor %}
+                        {% set max_genres = 3 %}
+                        {% for genre in artist.genres[:max_genres] %}<span class="genre-label">{{ genre }}</span>{% endfor %}
+                        {% if artist.genres | length > max_genres %}
+                        <span class="more-genres" id="more-{{ loop.index }}">
+                            {% for genre in artist.genres[max_genres:] %}<span class="genre-label">{{ genre }}</span>{% endfor %}
+                        </span>
+                        <span class="show-more" onclick="toggleMore({{ loop.index }}, this)">+ more</span>
+                        {% endif %}
                     </div>
                     <div class="meta">Popularity: {{ artist.popularity }}</div>
                 </div>
@@ -164,6 +291,7 @@
 
         <div class="section" id="genres-section">
             <h2>Top Genres</h2>
+            <canvas id="genreChart" style="max-height:300px;margin:1rem 0 2rem 0;"></canvas>
             {% for genre in genres %}
             <div class="genre">
                 <div class="info">
@@ -175,6 +303,25 @@
         </div>
     </div>
 
+    <button class="download-btn" onclick="showSaveOptions()">Save as Image</button>
+
+    <div id="save-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Choose Category to Save</h3>
+            <div class="modal-options">
+                <button id="save-artists-btn">Top Artists</button>
+                <button id="save-tracks-btn">Top Tracks</button>
+                <button id="save-genres-btn">Top Genres</button>
+                <button class="modal-close" onclick="hideSaveOptions()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Personalify © 2025 • Powered by Spotify API
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
         const categoryFilter = document.getElementById("category-filter");
         const sections = {
@@ -182,6 +329,7 @@
             tracks: document.getElementById("tracks-section"),
             genres: document.getElementById("genres-section")
         };
+        const modal = document.getElementById("save-modal-overlay");
 
         function updateCategoryDisplay() {
             const value = categoryFilter.value;
@@ -202,13 +350,14 @@
             } else {
                 for (const key in sections) {
                     sections[key].style.display = "block";
+                    sections[key].classList.remove("active");
                 }
                 categoryFilter.style.display = "none";
             }
         }
 
         window.addEventListener("resize", checkScreenSize);
-        window.addEventListener("load", checkScreenSize);
+        document.addEventListener("DOMContentLoaded", checkScreenSize);
 
         document.getElementById("time-filter").addEventListener("change", function() {
             const selected = this.value;
@@ -216,6 +365,188 @@
             const userId = currentURL.split('/').pop();
             window.location.href = `/dashboard/${userId}?time_range=${selected}`;
         });
+
+        function toggleMore(index, el) {
+            const more = document.getElementById("more-" + index);
+            const isVisible = more.style.display === "inline";
+            more.style.display = isVisible ? "none" : "inline";
+            el.textContent = isVisible ? "+ more" : "− less";
+        }
+        
+        // --- LOGIKA MODAL BARU ---
+        function showSaveOptions() {
+            modal.style.display = 'flex';
+        }
+
+        function hideSaveOptions() {
+            modal.style.display = 'none';
+        }
+
+        // --- FUNGSI GENERATE GAMBAR (YANG SEBELUMNYA BERNAMA saveAsImage) ---
+        function generateImage(selectedCategory) {
+            hideSaveOptions(); // Tutup modal setelah pilihan dibuat
+            
+            const timeText = document.querySelector('#time-filter option:checked').textContent;
+            const username = document.querySelector('h1').innerText;
+
+            // Sembunyikan semua section di halaman utama untuk sementara
+            for (const key in sections) {
+                sections[key].style.display = "none";
+            }
+
+            const sectionToCapture = sections[selectedCategory];
+            sectionToCapture.style.display = "block"; // Tampilkan hanya yang akan dicapture
+
+            // Clone konten yang dipilih
+            const clone = sectionToCapture.cloneNode(true);
+
+            if (selectedCategory === 'genres') {
+                const originalCanvas = document.getElementById('genreChart');
+                const clonedCanvas = clone.querySelector('#genreChart');
+
+                if (originalCanvas && clonedCanvas) {
+                    const chartImage = new Image();
+                    chartImage.src = originalCanvas.toDataURL('image/png');
+                    
+                    // Perbaikan: Atur lebar 100% dan biarkan tinggi otomatis
+                    // untuk menjaga rasio aspek (agar tidak penyok).
+                    chartImage.style.width = '100%';
+                    chartImage.style.height = 'auto';
+                    chartImage.style.display = 'block'; // Praktik terbaik untuk gambar blok
+                    chartImage.style.margin = clonedCanvas.style.margin; // Salin margin dari canvas asli
+
+                    // Ganti canvas kosong di dalam kloningan dengan gambar chart
+                    clonedCanvas.parentNode.replaceChild(chartImage, clonedCanvas);
+                }
+            }
+
+            // Buat kontainer untuk ekspor
+            const container = document.createElement("div");
+            container.style.width = "720px";
+            container.style.background = "#121212";
+            container.style.padding = "1.5rem";
+            container.style.boxSizing = "border-box";
+            container.style.color = "#fff";
+            container.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+
+            // Tambahkan elemen-elemen header
+            const title = document.createElement("h1");
+            title.innerText = "Personalify";
+            title.style.textAlign = "center";
+            title.style.color = "#1DB954";
+            title.style.marginBottom = "1rem";
+            container.appendChild(title);
+
+            const welcome = document.createElement("h2");
+            welcome.innerText = username;
+            welcome.style.textAlign = "center";
+            welcome.style.fontSize = "1rem";
+            welcome.style.color = "#ccc";
+            welcome.style.marginBottom = "0.75rem";
+            container.appendChild(welcome);
+
+            const timeLabel = document.createElement("div");
+            timeLabel.innerText = timeText;
+            timeLabel.style.textAlign = "center";
+            timeLabel.style.fontSize = "0.9rem";
+            timeLabel.style.color = "#aaa";
+            timeLabel.style.marginBottom = "1rem";
+            container.appendChild(timeLabel);
+
+            // Tambahkan section yang di-clone
+            container.appendChild(clone);
+
+            // Tambahkan footer
+            const footer = document.createElement("div");
+            footer.innerText = "Personalify © 2025 • Powered by Spotify API";
+            footer.style.marginTop = "2rem";
+            footer.style.fontSize = "0.75rem";
+            footer.style.color = "#888";
+            footer.style.textAlign = "center";
+            container.appendChild(footer);
+
+            // Fungsi untuk merender canvas setelah gambar dimuat
+            function renderCanvas() {
+                document.body.appendChild(container); // Tambahkan kontainer ke body agar bisa dirender
+                html2canvas(container, {
+                    backgroundColor: null,
+                    scale: 2,
+                    useCORS: true
+                }).then(canvas => {
+                    const link = document.createElement("a");
+                    link.download = `personalify-${selectedCategory}.png`;
+                    link.href = canvas.toDataURL("image/png");
+                    link.click();
+                    document.body.removeChild(container); // Hapus kontainer setelah selesai
+                    checkScreenSize(); // PENTING: Kembalikan layout seperti semula
+                });
+            }
+
+            // Preload gambar di dalam section yang di-clone
+            const imgs = clone.querySelectorAll('img');
+            if (imgs.length === 0) {
+                renderCanvas();
+            } else {
+                let loadedCount = 0;
+                imgs.forEach(img => {
+                    const tempImg = new Image();
+                    tempImg.crossOrigin = "anonymous";
+                    tempImg.src = img.src;
+                    tempImg.onload = () => {
+                        loadedCount++;
+                        if (loadedCount === imgs.length) renderCanvas();
+                    };
+                    tempImg.onerror = () => { // Jika gambar gagal dimuat, tetap lanjutkan
+                        loadedCount++;
+                        if (loadedCount === imgs.length) renderCanvas();
+                    };
+                });
+            }
+        }
+        
+        // --- EVENT LISTENERS UNTUK MODAL ---
+        document.getElementById('save-artists-btn').addEventListener('click', () => generateImage('artists'));
+        document.getElementById('save-tracks-btn').addEventListener('click', () => generateImage('tracks'));
+        document.getElementById('save-genres-btn').addEventListener('click', () => generateImage('genres'));
+
+        // Menutup modal jika user mengklik di luar area konten modal
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                hideSaveOptions();
+            }
+        });
+
+
+        window.onload = function() {
+            const ctx = document.getElementById('genreChart');
+            if (ctx) {
+                const data = {
+                    labels: [{% for genre in genres %}'{{ genre.name }}'{% if not loop.last %},{% endif %}{% endfor %}],
+                    datasets: [{
+                        data: [{% for genre in genres %}{{ genre.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+                        backgroundColor: [
+                            '#1DB954', '#FF6384', '#36A2EB', '#FFCE56', '#845EC2',
+                            '#FFC75F', '#F9F871', '#0081CF', '#00C9A7', '#C34A36'
+                        ]
+                    }]
+                };
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#fff'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            checkScreenSize(); // Panggil saat memuat halaman
+        };
     </script>
 </body>
 </html>
