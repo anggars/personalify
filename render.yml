@@ -1,0 +1,35 @@
+services:
+  # 1. Database PostgreSQL (Menggantikan 'postgresfy')
+  - type: psql
+    name: personalify-db
+    plan: free
+
+  # 2. Cache Redis (Menggantikan 'redisfy')
+  - type: redis
+    name: personalify-cache
+    plan: free
+
+  # 3. Backend FastAPI Anda
+  - type: web
+    name: personalify-backend
+    plan: free
+    env: docker
+    dockerfilePath: ./Dockerfile
+    # Perintah untuk menjalankan aplikasi di produksi (tanpa --reload)
+    dockerCommand: "uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    envVars:
+      # Render akan otomatis mengisi URL database & Redis
+      # Pastikan kode Python Anda membaca variabel ini
+      - key: DATABASE_URL
+        fromService:
+          type: psql
+          name: personalify-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: personalify-cache
+          property: connectionString
+      
+      # Variabel lain akan kita tambahkan di dashboard Render
+      # seperti SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, MONGO_URI, dll.
