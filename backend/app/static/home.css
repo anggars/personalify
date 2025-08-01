@@ -1,0 +1,103 @@
+/* Import Font dari Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+:root {
+    --primary: #1DB954;
+    --bg: #121212;
+    --text: #FFFFFF;
+    --muted: #B3B3B3;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    /* Latar belakang dengan gradasi halus */
+    background-color: var(--bg);
+    background-image: radial-gradient(ellipse at top, #1a2b22, var(--bg) 60%);
+    color: var(--text);
+    font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    text-align: center;
+    overflow-x: hidden; /* Mencegah scroll horizontal karena animasi */
+}
+
+/* Wrapper untuk konten utama dengan animasi */
+.hero {
+    animation: fadeInUp 1s ease-out forwards;
+    opacity: 0;
+}
+
+.logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 2rem;
+    /* Animasi masuk dengan sedikit delay */
+    opacity: 0;
+    animation: fadeInUp 0.8s ease-out 0.2s forwards;
+}
+
+h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+
+p {
+    font-size: 1.2rem;
+    color: var(--muted);
+    max-width: 600px;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+    margin-left: auto;   /* Tambahkan ini */
+    margin-right: auto;  /* Tambahkan ini */
+}
+
+.button {
+    display: inline-block;
+    padding: 14px 32px;
+    background-color: var(--primary);
+    color: black;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(29, 185, 84, 0.2);
+}
+
+.button:hover {
+    background-color: #1ed760;
+    transform: scale(1.05) translateY(-2px); /* Efek 'pop' saat hover */
+    box-shadow: 0 8px 25px rgba(29, 185, 84, 0.3);
+}
+
+footer {
+    position: absolute;
+    bottom: 1.5rem;
+    font-size: 0.8rem;
+    color: #666;
+    opacity: 0;
+    animation: fadeInUp 1s ease-out 0.6s forwards;
+}
+
+/* Keyframes untuk animasi masuk */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
