@@ -6,42 +6,31 @@ from psycopg2.pool import SimpleConnectionPool
 from contextlib import contextmanager
 from dotenv import load_dotenv
 
-# Memuat .env agar tetap berfungsi di lokal
 load_dotenv()
 
-# Variabel global untuk connection pool
 pool = None
 
 def init_db_pool():
     """
     Menginisialisasi connection pool.
-    Fungsi ini cerdas: ia akan menggunakan DATABASE_URL jika ada (untuk produksi),
-    atau menggunakan variabel terpisah jika tidak ada (untuk lokal).
+    Fungsi ini HANYA akan menggunakan DATABASE_URL.
     """
     global pool
     
-    # Prioritaskan DATABASE_URL untuk lingkungan produksi (seperti Zeabur)
     database_url = os.getenv("DATABASE_URL")
     
-    if database_url:
-        # Menambahkan sslmode='require' seringkali diperlukan di platform cloud
-        if 'sslmode' not in database_url:
-            database_url += "?sslmode=require"
-        pool = SimpleConnectionPool(minconn=1, maxconn=10, dsn=database_url)
-    else:
-        # Fallback untuk development lokal menggunakan variabel terpisah dari .env
-        dsn = (
-            f"host={os.getenv('POSTGRES_HOST')} "
-            f"port={os.getenv('POSTGRES_PORT')} "
-            f"dbname={os.getenv('POSTGRES_DB')} "
-            f"user={os.getenv('POSTGRES_USER')} "
-            f"password={os.getenv('POSTGRES_PASSWORD')}"
-        )
-        pool = SimpleConnectionPool(minconn=1, maxconn=10, dsn=dsn)
+    # Jika DATABASE_URL tidak ada, aplikasi akan crash dengan pesan error yang jelas.
+    if not database_url:
+        raise ValueError("DATABASE_URL environment variable is not set. This is required.")
+        
+    # Menambahkan sslmode='require' seringkali diperlukan di platform cloud
+    if 'sslmode' not in database_url:
+        database_url += "?sslmode=require"
+        
+    pool = SimpleConnectionPool(minconn=1, maxconn=10, dsn=database_url)
 
 @contextmanager
 def get_conn():
-    """Mengambil koneksi dari pool dan mengembalikannya secara otomatis."""
     if pool is None:
         raise Exception("Connection pool is not initialized. Call init_db_pool() on startup.")
     
@@ -90,8 +79,7 @@ def create_tables():
             """)
         conn.commit()
 
-# --- Fungsi-fungsi lain tetap sama, hanya memanggil get_conn ---
-
+# --- Sisa fungsi (save_user, save_artist, dll.) tidak perlu diubah ---
 def save_user(spotify_id, display_name):
     with get_conn() as conn:
         with conn.cursor() as cur:
