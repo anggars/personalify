@@ -128,7 +128,8 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
                 "artists": [a["name"] for a in track.get("artists", [])],
                 "album": track["album"]["name"],
                 "popularity": track["popularity"],
-                "preview_url": track.get("preview_url")
+                "preview_url": track.get("preview_url"),
+                "image": track["album"]["images"][0]["url"] if track["album"].get("images") else ""
             })
 
         # Simpan ke cache & database untuk masing-masing time range

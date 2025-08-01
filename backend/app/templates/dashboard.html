@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Personalify Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='favicon.ico') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -30,19 +31,43 @@
             margin-bottom: 3rem;
         }
 
-        .filters label {
-            font-size: 1rem;
-            font-weight: 500;
+        /* --- PERBAIKAN DROPDOWN --- */
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            border-radius: 9999px;
+        }
+
+        .select-wrapper::after {
+            content: '▼';
+            font-size: 0.8rem;
+            color: #aaa;
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
         }
 
         .filters select {
-            padding: 0.5rem 1rem;
-            font-size: 1rem;
-            border-radius: 9999px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-color: #2a2a2a; /* <-- KEMBALIKAN BACKGROUND */
             border: none;
-            background-color: #2a2a2a;
+            padding: 0.5rem 2.5rem 0.5rem 1rem;
+            font-size: 1rem;
+            color: #ffffff;
+            cursor: pointer;
+            border-radius: 9999px; /* <-- PINDAHKAN KE SINI */
+        }
+
+        .filters select option {
+            background: #2a2a2a;
             color: #ffffff;
         }
+        /* --- AKHIR PERBAIKAN DROPDOWN --- */
+
 
         .container {
             display: grid;
@@ -65,8 +90,8 @@
 
         .section h2 {
             position: relative;
-            height: 60px; /* bisa sesuaikan */
-            line-height: 25px; /* bikin teks sejajar secara vertikal */
+            height: 60px;
+            line-height: 25px;
             text-align: center;
             font-size: 1.25rem;
             color: #1DB954;
@@ -75,31 +100,44 @@
             padding: 0;
         }
 
-
+        /* --- PERBAIKAN LAYOUT LIST --- */
         .artist, .track, .genre {
             margin-bottom: 1rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .artist, .track {
+            min-height: 64px; /* Menjaga tinggi konsisten */
+        }
+        
+        .genre {
+            gap: 0; /* Genre tidak punya gambar, jadi tidak perlu gap */
         }
 
-        .artist img {
+        .artist img, .track img {
             width: 64px;
             height: 64px;
             border-radius: 0.5rem;
             object-fit: cover;
+            flex-shrink: 0; /* Mencegah gambar menyusut */
         }
 
         .info {
-            display: inline-block;
-            margin-left: 1rem;
-            vertical-align: top;
+            flex: 1;
+            min-width: 0;
         }
 
         .info .name {
             font-weight: 600;
             font-size: 1.1rem;
             margin-bottom: 0.25rem;
+            overflow-wrap: break-word;
         }
+        /* --- AKHIR PERBAIKAN LAYOUT LIST --- */
 
         .info .meta {
             font-size: 0.8rem;
@@ -129,9 +167,6 @@
         }
 
         @media (max-width: 768px) {
-            #category-filter {
-                display: inline-block !important;
-            }
             .section {
                 display: none;
             }
@@ -139,13 +174,10 @@
                 display: block;
             }
         }
-
+        
         @media (min-width: 769px) {
-            .section {
-                display: block !important; /* Important untuk override js */
-            }
-            #category-filter {
-                 display: none !important;
+            #category-filter-wrapper { /* Pastikan wrapper disembunyikan di desktop */
+                display: none !important;
             }
         }
 
@@ -171,7 +203,6 @@
             color: #888;
         }
         
-        /* CSS untuk Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -179,7 +210,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.7);
-            display: none; /* Awalnya disembunyikan */
+            display: none;
             justify-content: center;
             align-items: center;
             z-index: 2000;
@@ -238,17 +269,21 @@
     <h1>Welcome, {{ user }}!</h1>
 
     <div class="filters">
-        <select id="time-filter">
-            <option value="short_term" {% if time_range == 'short_term' %}selected{% endif %}>Last Month</option>
-            <option value="medium_term" {% if time_range == 'medium_term' %}selected{% endif %}>Mid-Term</option>
-            <option value="long_term" {% if time_range == 'long_term' %}selected{% endif %}>All Time</option>
-        </select>
+        <div class="select-wrapper">
+            <select id="time-filter">
+                <option value="short_term" {% if time_range == 'short_term' %}selected{% endif %}>Last Month</option>
+                <option value="medium_term" {% if time_range == 'medium_term' %}selected{% endif %}>6 Months</option>
+                <option value="long_term" {% if time_range == 'long_term' %}selected{% endif %}>Last Year</option>
+            </select>
+        </div>
 
-        <select id="category-filter" style="display:none;">
-            <option value="artists" {% if category == 'artists' %}selected{% endif %}>Top Artists</option>
-            <option value="tracks" {% if category == 'tracks' %}selected{% endif %}>Top Tracks</option>
-            <option value="genres" {% if category == 'genres' %}selected{% endif %}>Top Genres</option>
-        </select>
+        <div class="select-wrapper" id="category-filter-wrapper" style="display:none;">
+            <select id="category-filter">
+                <option value="artists" {% if category == 'artists' %}selected{% endif %}>Top Artists</option>
+                <option value="tracks" {% if category == 'tracks' %}selected{% endif %}>Top Tracks</option>
+                <option value="genres" {% if category == 'genres' %}selected{% endif %}>Top Genres</option>
+            </select>
+        </div>
     </div>
 
     <div class="container" id="dashboard">
@@ -260,7 +295,7 @@
                 <div class="info">
                     <div class="name">{{ artist.name }}</div>
                     <div class="meta">
-                        {% set max_genres = 3 %}
+                        {% set max_genres = 5 %}
                         {% for genre in artist.genres[:max_genres] %}<span class="genre-label">{{ genre }}</span>{% endfor %}
                         {% if artist.genres | length > max_genres %}
                         <span class="more-genres" id="more-{{ loop.index }}">
@@ -279,6 +314,7 @@
             <h2>Top Tracks</h2>
             {% for track in tracks %}
             <div class="track">
+                <img src="{{ track.image }}" alt="{{ track.name }}">
                 <div class="info">
                     <div class="name">{{ track.name }}</div>
                     <div class="meta">Artist(s): {{ track.artists | join(', ') }}</div>
@@ -323,7 +359,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
-        const categoryFilter = document.getElementById("category-filter");
+        // --- PERBAIKAN JAVASCRIPT ---
+        const categoryFilterSelect = document.getElementById("category-filter");
+        const categoryFilterWrapper = document.getElementById("category-filter-wrapper");
         const sections = {
             artists: document.getElementById("artists-section"),
             tracks: document.getElementById("tracks-section"),
@@ -332,7 +370,7 @@
         const modal = document.getElementById("save-modal-overlay");
 
         function updateCategoryDisplay() {
-            const value = categoryFilter.value;
+            const value = categoryFilterSelect.value;
             for (const key in sections) {
                 sections[key].classList.remove("active");
             }
@@ -341,20 +379,21 @@
             }
         }
 
-        categoryFilter.addEventListener("change", updateCategoryDisplay);
+        categoryFilterSelect.addEventListener("change", updateCategoryDisplay);
 
         function checkScreenSize() {
             if (window.innerWidth <= 768) {
-                categoryFilter.style.display = "inline-block";
+                categoryFilterWrapper.style.display = "inline-block";
                 updateCategoryDisplay();
             } else {
                 for (const key in sections) {
                     sections[key].style.display = "block";
                     sections[key].classList.remove("active");
                 }
-                categoryFilter.style.display = "none";
+                categoryFilterWrapper.style.display = "none";
             }
         }
+        // --- AKHIR PERBAIKAN JAVASCRIPT ---
 
         window.addEventListener("resize", checkScreenSize);
         document.addEventListener("DOMContentLoaded", checkScreenSize);
@@ -373,7 +412,6 @@
             el.textContent = isVisible ? "+ more" : "− less";
         }
         
-        // --- LOGIKA MODAL BARU ---
         function showSaveOptions() {
             modal.style.display = 'flex';
         }
@@ -382,22 +420,19 @@
             modal.style.display = 'none';
         }
 
-        // --- FUNGSI GENERATE GAMBAR (YANG SEBELUMNYA BERNAMA saveAsImage) ---
         function generateImage(selectedCategory) {
-            hideSaveOptions(); // Tutup modal setelah pilihan dibuat
+            hideSaveOptions();
             
             const timeText = document.querySelector('#time-filter option:checked').textContent;
             const username = document.querySelector('h1').innerText;
 
-            // Sembunyikan semua section di halaman utama untuk sementara
             for (const key in sections) {
                 sections[key].style.display = "none";
             }
 
             const sectionToCapture = sections[selectedCategory];
-            sectionToCapture.style.display = "block"; // Tampilkan hanya yang akan dicapture
+            sectionToCapture.style.display = "block";
 
-            // Clone konten yang dipilih
             const clone = sectionToCapture.cloneNode(true);
 
             if (selectedCategory === 'genres') {
@@ -408,19 +443,15 @@
                     const chartImage = new Image();
                     chartImage.src = originalCanvas.toDataURL('image/png');
                     
-                    // Perbaikan: Atur lebar 100% dan biarkan tinggi otomatis
-                    // untuk menjaga rasio aspek (agar tidak penyok).
                     chartImage.style.width = '100%';
                     chartImage.style.height = 'auto';
-                    chartImage.style.display = 'block'; // Praktik terbaik untuk gambar blok
-                    chartImage.style.margin = clonedCanvas.style.margin; // Salin margin dari canvas asli
+                    chartImage.style.display = 'block';
+                    chartImage.style.margin = clonedCanvas.style.margin;
 
-                    // Ganti canvas kosong di dalam kloningan dengan gambar chart
                     clonedCanvas.parentNode.replaceChild(chartImage, clonedCanvas);
                 }
             }
 
-            // Buat kontainer untuk ekspor
             const container = document.createElement("div");
             container.style.width = "720px";
             container.style.background = "#121212";
@@ -429,7 +460,6 @@
             container.style.color = "#fff";
             container.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 
-            // Tambahkan elemen-elemen header
             const title = document.createElement("h1");
             title.innerText = "Personalify";
             title.style.textAlign = "center";
@@ -453,10 +483,8 @@
             timeLabel.style.marginBottom = "1rem";
             container.appendChild(timeLabel);
 
-            // Tambahkan section yang di-clone
             container.appendChild(clone);
 
-            // Tambahkan footer
             const footer = document.createElement("div");
             footer.innerText = "Personalify © 2025 • Powered by Spotify API";
             footer.style.marginTop = "2rem";
@@ -465,9 +493,8 @@
             footer.style.textAlign = "center";
             container.appendChild(footer);
 
-            // Fungsi untuk merender canvas setelah gambar dimuat
             function renderCanvas() {
-                document.body.appendChild(container); // Tambahkan kontainer ke body agar bisa dirender
+                document.body.appendChild(container);
                 html2canvas(container, {
                     backgroundColor: null,
                     scale: 2,
@@ -477,12 +504,11 @@
                     link.download = `personalify-${selectedCategory}.png`;
                     link.href = canvas.toDataURL("image/png");
                     link.click();
-                    document.body.removeChild(container); // Hapus kontainer setelah selesai
-                    checkScreenSize(); // PENTING: Kembalikan layout seperti semula
+                    document.body.removeChild(container);
+                    checkScreenSize();
                 });
             }
 
-            // Preload gambar di dalam section yang di-clone
             const imgs = clone.querySelectorAll('img');
             if (imgs.length === 0) {
                 renderCanvas();
@@ -496,7 +522,7 @@
                         loadedCount++;
                         if (loadedCount === imgs.length) renderCanvas();
                     };
-                    tempImg.onerror = () => { // Jika gambar gagal dimuat, tetap lanjutkan
+                    tempImg.onerror = () => {
                         loadedCount++;
                         if (loadedCount === imgs.length) renderCanvas();
                     };
@@ -504,48 +530,66 @@
             }
         }
         
-        // --- EVENT LISTENERS UNTUK MODAL ---
         document.getElementById('save-artists-btn').addEventListener('click', () => generateImage('artists'));
         document.getElementById('save-tracks-btn').addEventListener('click', () => generateImage('tracks'));
         document.getElementById('save-genres-btn').addEventListener('click', () => generateImage('genres'));
 
-        // Menutup modal jika user mengklik di luar area konten modal
         modal.addEventListener('click', (event) => {
             if (event.target === modal) {
                 hideSaveOptions();
             }
         });
 
-
         window.onload = function() {
             const ctx = document.getElementById('genreChart');
             if (ctx) {
+                
+                // --- PLUGIN BARU UNTUK MEMBERI JARAK ---
+                const legendMarginPlugin = {
+                    id: 'legendMargin',
+                    beforeInit(chart, args, options) {
+                        if (chart.legend.options.position === 'top') {
+                            const originalFit = chart.legend.fit;
+                            chart.legend.fit = function() {
+                                originalFit.bind(chart.legend)();
+                                this.height += 25; // Menambah 25px ruang di bawah legend
+                            }
+                        }
+                    }
+                };
+                // --- AKHIR PLUGIN ---
+
                 const data = {
                     labels: [{% for genre in genres %}'{{ genre.name }}'{% if not loop.last %},{% endif %}{% endfor %}],
                     datasets: [{
                         data: [{% for genre in genres %}{{ genre.count }}{% if not loop.last %},{% endif %}{% endfor %}],
                         backgroundColor: [
-                            '#1DB954', '#FF6384', '#36A2EB', '#FFCE56', '#845EC2',
-                            '#FFC75F', '#F9F871', '#0081CF', '#00C9A7', '#C34A36'
+                            '#1DB954', '#F28E2B', '#E15759', '#76B7B2', '#59A14F',
+                            '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC'
                         ]
                     }]
                 };
+
                 new Chart(ctx, {
                     type: 'pie',
                     data: data,
+                    // Daftarkan plugin di sini
+                    plugins: [legendMarginPlugin],
                     options: {
                         responsive: true,
                         plugins: {
                             legend: {
+                                position: 'top', // Pastikan posisi legend di atas
                                 labels: {
-                                    color: '#fff'
+                                    color: '#fff',
+                                    padding: 10
                                 }
                             }
                         }
                     }
                 });
             }
-            checkScreenSize(); // Panggil saat memuat halaman
+            checkScreenSize();
         };
     </script>
 </body>
