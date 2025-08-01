@@ -38,10 +38,10 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
        +------------------------+                                              |
                                                                                |
                                                                                |
-                          +-----------------------------+                      |
-                          |         Frontend            | <--------------------+
-                          |          (Jinja)            |
-                          +-----------------------------+
+                          +-------------- --------+                            |
+                          |        Frontend       | <--------------------------+
+                          |        (Jinja)        |
+                          +--------------- -------+
 
 ```
 
@@ -65,7 +65,7 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
 
 | Komponen        | Teknologi            | Alasan Pemilihan                                                                 |
 |------------------|----------------------|----------------------------------------------------------------------------------|
-| **Frontend**     | Vite + Vue.js        | Ringan, cepat build time, dan cocok untuk membuat SPA dengan tampilan reaktif.  |
+| **Frontend**     | Jinja                | Ringan, cepat build time, dan cocok untuk membuat SPA dengan tampilan reaktif.  |
 | **Backend API**  | FastAPI              | Framework modern Python, mendukung async, cepat untuk membangun REST API.       |
 | **Main Database**| PostgreSQL           | RDBMS kuat, mendukung relasi kompleks, integrasi FDW, dan kompatibel dengan tools analitik. |
 | **Cache**        | Redis                | In-memory cache dengan TTL, sangat cepat untuk menyimpan data sementara per user.|
