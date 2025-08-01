@@ -1,6 +1,3 @@
-/* Import Font dari Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
-
 :root {
     --primary: #1DB954;
     --bg: #121212;
@@ -19,7 +16,7 @@ body {
     background-color: var(--bg);
     background-image: radial-gradient(ellipse at top, #1a2b22, var(--bg) 60%);
     color: var(--text);
-    font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
