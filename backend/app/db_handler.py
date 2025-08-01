@@ -1,20 +1,52 @@
 import psycopg2
 import os
+from dotenv import load_dotenv
 
+# Memuat .env agar tetap berfungsi di lokal
+load_dotenv()
+
+# --- BLOK KONEKSI PINTAR (FINAL) ---
+# Kode ini akan membaca variabel dari Zeabur (PG...) atau dari .env lokal (POSTGRES_...)
 DB_PARAMS = {
-    "host": os.getenv("POSTGRES_HOST", "postgresfy"),
-    "port": os.getenv("POSTGRES_PORT", "5432"),
-    "database": os.getenv("POSTGRES_DB", "streamdb"),
-    "user": os.getenv("POSTGRES_USER", "admin"),
-    "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
+    "host": os.getenv("PGHOST", os.getenv("POSTGRES_HOST")),
+    "port": os.getenv("PGPORT", os.getenv("POSTGRES_PORT")),
+    "dbname": os.getenv("PGDATABASE", os.getenv("POSTGRES_DB")),
+    "user": os.getenv("PGUSER", os.getenv("POSTGRES_USER")),
+    "password": os.getenv("PGPASSWORD", os.getenv("POSTGRES_PASSWORD")),
 }
 
-
 def get_conn():
+    """Fungsi ini kembali ke versi asli Anda yang simpel."""
     return psycopg2.connect(**DB_PARAMS)
 
-
 def init_db():
+    """
+    Fungsi ini ditingkatkan untuk secara otomatis MEMBUAT DATABASE jika belum ada,
+    sebelum mencoba membuat tabel. Ini menyelesaikan error "database does not exist".
+    """
+    try:
+        # Coba hubungkan ke database yang spesifik
+        conn = get_conn()
+        conn.close()
+    except psycopg2.OperationalError as e:
+        # Jika error karena database tidak ada, kita buat databasenya
+        if f'database "{DB_PARAMS["dbname"]}" does not exist' in str(e):
+            conn_params_for_creation = DB_PARAMS.copy()
+            db_to_create = conn_params_for_creation.pop("dbname")
+            
+            # Hubungkan ke database default 'postgres' untuk bisa membuat db baru
+            conn_params_for_creation['dbname'] = 'postgres'
+            conn = psycopg2.connect(**conn_params_for_creation)
+            conn.autocommit = True
+            cur = conn.cursor()
+            cur.execute(f"CREATE DATABASE {db_to_create}")
+            cur.close()
+            conn.close()
+        else:
+            # Jika error lain, tetap tampilkan
+            raise e
+
+    # Sekarang hubungkan ke database yang sudah pasti ada untuk membuat tabel
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -54,8 +86,10 @@ def init_db():
                     FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
                 );
             """)
-            conn.commit()
+        conn.commit()
 
+
+# --- SEMUA FUNGSI DI BAWAH INI ADALAH MILIK ANDA, TANPA PERUBAHAN ---
 
 def save_user(spotify_id, display_name):
     with get_conn() as conn:
