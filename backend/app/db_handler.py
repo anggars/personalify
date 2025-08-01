@@ -1,24 +1,15 @@
 import psycopg2
 import os
-from dotenv import load_dotenv
 
-# Memuat .env agar tetap berfungsi di lokal
-load_dotenv()
-
-# --- BLOK KODE BARU UNTUK KONEKSI PINTAR ---
-# Kode ini akan membaca variabel dari Zeabur (PG...)
-# atau dari .env lokal Anda (POSTGRES_...) jika di Zeabur tidak ada.
 DB_PARAMS = {
-    "host": os.getenv("PGHOST", os.getenv("POSTGRES_HOST")),
-    "port": os.getenv("PGPORT", os.getenv("POSTGRES_PORT")),
-    "dbname": os.getenv("PGDATABASE", os.getenv("POSTGRES_DB")),
-    "user": os.getenv("PGUSER", os.getenv("POSTGRES_USER")),
-    "password": os.getenv("PGPASSWORD", os.getenv("POSTGRES_PASSWORD")),
+    "host": os.getenv("POSTGRES_HOST", "postgresfy"),
+    "port": os.getenv("POSTGRES_PORT", "5432"),
+    "database": os.getenv("POSTGRES_DB", "streamdb"),
+    "user": os.getenv("POSTGRES_USER", "admin"),
+    "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
 }
-# --- AKHIR BLOK KODE BARU ---
 
 
-# SISA KODE DI BAWAH INI SAMA PERSIS SEPERTI KODE ANDA
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
