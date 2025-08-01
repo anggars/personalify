@@ -1,4 +1,3 @@
-// --- PERBAIKAN JAVASCRIPT ---
 const categoryFilterSelect = document.getElementById("category-filter");
 const categoryFilterWrapper = document.getElementById("category-filter-wrapper");
 const sections = {
@@ -32,7 +31,6 @@ function checkScreenSize() {
         categoryFilterWrapper.style.display = "none";
     }
 }
-// --- AKHIR PERBAIKAN JAVASCRIPT ---
 
 window.addEventListener("resize", checkScreenSize);
 document.addEventListener("DOMContentLoaded", checkScreenSize);

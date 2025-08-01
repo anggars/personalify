@@ -22,7 +22,6 @@ h1 {
     margin-bottom: 3rem;
 }
 
-/* --- PERBAIKAN DROPDOWN --- */
 .select-wrapper {
     position: relative;
     display: inline-block;
@@ -57,7 +56,6 @@ h1 {
     background: #2a2a2a;
     color: #ffffff;
 }
-/* --- AKHIR PERBAIKAN DROPDOWN --- */
 
 .container {
     display: grid;
@@ -90,7 +88,6 @@ h1 {
     padding: 0;
 }
 
-/* --- PERBAIKAN LAYOUT LIST --- */
 .artist, .track, .genre {
     margin-bottom: 1rem;
     padding-bottom: 1rem;
@@ -127,7 +124,6 @@ h1 {
     margin-bottom: 0.25rem;
     overflow-wrap: break-word;
 }
-/* --- AKHIR PERBAIKAN LAYOUT LIST --- */
 
 .info .meta {
     font-size: 0.8rem;
