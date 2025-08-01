@@ -40,14 +40,14 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
                                                                                |
                           +-----------------------------+                      |
                           |         Frontend            | <--------------------+
-                          |    (Vite + Vue — planned)   |
+                          |          (Jinja)            |
                           +-----------------------------+
 
 ```
 
 **Penjelasan Komponen:**
 
-- **Frontend (Vite + Vue.js) {Future Plan}:**  
+- **Frontend (Jinja):**  
   UI berbasis web yang menampilkan top artists, tracks, dan genres pengguna secara interaktif. Tampilan responsif untuk desktop & mobile.
 - **FastAPI (Backend API):**  
   Server utama yang menangani proses autentikasi Spotify (OAuth2), sinkronisasi data, penyimpanan ke database, cache, serta penyajian API ke frontend.
