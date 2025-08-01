@@ -6,4 +6,3 @@ psycopg2-binary
 redis
 pymongo[srv]
 jinja2
-urllib3
