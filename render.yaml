@@ -1,8 +1,7 @@
-# render.yaml
+# render.yaml (Final)
 
 databases:
   # Ini adalah pengganti servis 'postgresfy' Anda.
-  # Nama database dan user disamakan dengan .env Anda.
   - name: postgresfy
     plan: free
     databaseName: streamdb
@@ -13,6 +12,7 @@ services:
   - type: redis
     name: redisfy
     plan: free
+    ipAllowList: [] # <-- TAMBAHKAN BARIS INI. Mengizinkan koneksi hanya dari dalam akun Render Anda.
 
   # Ini adalah servis backend FastAPI Anda.
   - type: web
@@ -20,7 +20,6 @@ services:
     plan: free
     env: docker
     dockerfilePath: ./Dockerfile
-    # Perintah untuk menjalankan aplikasi di produksi (tanpa --reload dan sleep)
     dockerCommand: "uvicorn app.main:app --host 0.0.0.0 --port 8000"
     envVars:
       # --- Variabel PostgreSQL (diisi otomatis oleh Render) ---
@@ -58,8 +57,6 @@ services:
           property: port
       
       # --- Variabel Spotify & MongoDB (WAJIB DIISI MANUAL) ---
-      # sync: false berarti nilai ini tidak akan diubah oleh render.yaml di masa depan.
-      # Anda harus mengisinya sekali di dashboard Render.
       - key: SPOTIFY_CLIENT_ID
         sync: false
       - key: SPOTIFY_CLIENT_SECRET
