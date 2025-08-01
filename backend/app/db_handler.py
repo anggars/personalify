@@ -1,47 +1,20 @@
-# backend/app/db_handler.py
-
-import os
 import psycopg2
-from psycopg2.pool import SimpleConnectionPool
-from contextlib import contextmanager
-from dotenv import load_dotenv
+import os
 
-load_dotenv()
+DB_PARAMS = {
+    "host": os.getenv("POSTGRES_HOST", "postgresfy"),
+    "port": os.getenv("POSTGRES_PORT", "5432"),
+    "database": os.getenv("POSTGRES_DB", "streamdb"),
+    "user": os.getenv("POSTGRES_USER", "admin"),
+    "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
+}
 
-pool = None
 
-def init_db_pool():
-    """
-    Menginisialisasi connection pool.
-    Fungsi ini HANYA akan menggunakan DATABASE_URL.
-    """
-    global pool
-    
-    database_url = os.getenv("DATABASE_URL")
-    
-    # Jika DATABASE_URL tidak ada, aplikasi akan crash dengan pesan error yang jelas.
-    if not database_url:
-        raise ValueError("DATABASE_URL environment variable is not set. This is required.")
-        
-    # Menambahkan sslmode='require' seringkali diperlukan di platform cloud
-    if 'sslmode' not in database_url:
-        database_url += "?sslmode=require"
-        
-    pool = SimpleConnectionPool(minconn=1, maxconn=10, dsn=database_url)
-
-@contextmanager
 def get_conn():
-    if pool is None:
-        raise Exception("Connection pool is not initialized. Call init_db_pool() on startup.")
-    
-    conn = pool.getconn()
-    try:
-        yield conn
-    finally:
-        pool.putconn(conn)
+    return psycopg2.connect(**DB_PARAMS)
 
-def create_tables():
-    """Membuat tabel jika belum ada."""
+
+def init_db():
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -50,18 +23,21 @@ def create_tables():
                     spotify_id TEXT UNIQUE,
                     display_name TEXT
                 );
+
                 CREATE TABLE IF NOT EXISTS artists (
                     id TEXT PRIMARY KEY,
                     name TEXT,
                     popularity INTEGER,
                     image_url TEXT
                 );
+
                 CREATE TABLE IF NOT EXISTS tracks (
                     id TEXT PRIMARY KEY,
                     name TEXT,
                     popularity INTEGER,
                     preview_url TEXT
                 );
+
                 CREATE TABLE IF NOT EXISTS user_tracks (
                     spotify_id TEXT,
                     track_id TEXT,
@@ -69,6 +45,7 @@ def create_tables():
                     FOREIGN KEY (spotify_id) REFERENCES users(spotify_id) ON DELETE CASCADE,
                     FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
                 );
+
                 CREATE TABLE IF NOT EXISTS user_artists (
                     spotify_id TEXT,
                     artist_id TEXT,
@@ -77,48 +54,65 @@ def create_tables():
                     FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
                 );
             """)
-        conn.commit()
+            conn.commit()
 
-# --- Sisa fungsi (save_user, save_artist, dll.) tidak perlu diubah ---
+
 def save_user(spotify_id, display_name):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO users (spotify_id, display_name) VALUES (%s, %s)
+                INSERT INTO users (spotify_id, display_name)
+                VALUES (%s, %s)
                 ON CONFLICT (spotify_id) DO UPDATE SET display_name = EXCLUDED.display_name
             """, (spotify_id, display_name))
             conn.commit()
+
 
 def save_artist(artist_id, name, popularity, image_url):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO artists (id, name, popularity, image_url) VALUES (%s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, popularity = EXCLUDED.popularity, image_url = EXCLUDED.image_url
+                INSERT INTO artists (id, name, popularity, image_url)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE 
+                SET name = EXCLUDED.name,
+                    popularity = EXCLUDED.popularity,
+                    image_url = EXCLUDED.image_url
             """, (artist_id, name, popularity, image_url))
             conn.commit()
+
 
 def save_track(track_id, name, popularity, preview_url):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO tracks (id, name, popularity, preview_url) VALUES (%s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, popularity = EXCLUDED.popularity, preview_url = EXCLUDED.preview_url
+                INSERT INTO tracks (id, name, popularity, preview_url)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE 
+                SET name = EXCLUDED.name,
+                    popularity = EXCLUDED.popularity,
+                    preview_url = EXCLUDED.preview_url
             """, (track_id, name, popularity, preview_url))
             conn.commit()
+
 
 def save_user_track(spotify_id, track_id):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO user_tracks (spotify_id, track_id) VALUES (%s, %s) ON CONFLICT DO NOTHING
+                INSERT INTO user_tracks (spotify_id, track_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
             """, (spotify_id, track_id))
             conn.commit()
+
 
 def save_user_artist(spotify_id, artist_id):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO user_artists (spotify_id, artist_id) VALUES (%s, %s) ON CONFLICT DO NOTHING
+                INSERT INTO user_artists (spotify_id, artist_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
             """, (spotify_id, artist_id))
             conn.commit()
