@@ -7,7 +7,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromService:
-          type: psql
+          type: postgres # <--- Ubah di sini
           name: personalify-db
           property: connectionString
       - key: REDIS_URL
@@ -23,7 +23,7 @@ services:
         sync: false
       - key: SPOTIFY_REDIRECT_URI
         sync: false
-  - type: psql
+  - type: postgres # <--- Ubah di sini
     name: personalify-db
     region: singapore
     plan: free
