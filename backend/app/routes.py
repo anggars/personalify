@@ -1,6 +1,5 @@
 import os
 import requests
-import traceback
 from urllib.parse import urlencode
 from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
@@ -44,14 +43,11 @@ def login():
 
 @router.get("/callback", tags=["Auth"])
 def callback(code: str = Query(..., description="Spotify Authorization Code")):
-    # --- BLOK DEBUGGING DIMULAI DI SINI ---
-    print("\n--- [CALLBACK START] ---")
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
     redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
 
     # Step 1: Tukar code ke token
-    print("[1] Menukar authorization code dengan access token...")
     payload = {
         "grant_type": "authorization_code",
         "code": code,
@@ -59,77 +55,88 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
         "client_id": client_id,
         "client_secret": client_secret
     }
+
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    try:
-        res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
-        res.raise_for_status() # Error jika status bukan 2xx
-        tokens = res.json()
-        access_token = tokens.get("access_token")
-        if not access_token:
-            print("  [ERROR] Access token tidak ditemukan di respons.")
-            raise HTTPException(status_code=400, detail="Access token not found in response.")
-        print("  [SUCCESS] Token berhasil didapatkan.")
-    except requests.exceptions.RequestException as e:
-        print(f"  [ERROR] Gagal menukar token. Status: {e.response.status_code if e.response else 'N/A'}, Body: {e.response.text if e.response else 'N/A'}")
-        raise HTTPException(status_code=500, detail=f"Failed to exchange token: {e.response.text if e.response else 'Unknown Error'}")
+    res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
+    if res.status_code != 200:
+        raise HTTPException(status_code=res.status_code, detail=res.text)
+
+    tokens = res.json()
+    access_token = tokens.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=400, detail="Access token not found in response.")
 
     # Step 2: Ambil profil user
-    print("[2] Mengambil profil user...")
-    headers_auth = {"Authorization": f"Bearer {access_token}"}
-    user_res = requests.get("https://api.spotify.com/v1/me", headers=headers_auth)
+    headers = {"Authorization": f"Bearer {access_token}"}
+    user_res = requests.get("https://api.spotify.com/v1/me", headers=headers)
     if user_res.status_code != 200:
-        print(f"  [ERROR] Gagal mengambil profil user. Status: {user_res.status_code}, Body: {user_res.text}")
         raise HTTPException(status_code=user_res.status_code, detail=user_res.text)
+
     user_profile = user_res.json()
     spotify_id = user_profile["id"]
     display_name = user_profile.get("display_name", "Unknown")
-    print(f"  [SUCCESS] Profil user didapatkan: {display_name}")
-    
-    print("[3] Menyimpan data user ke database (Postgres)...")
     save_user(spotify_id, display_name)
-    print("  [SUCCESS] Data user berhasil disimpan.")
 
     # Step 3: Sync untuk semua time_range
-    print("[4] Memulai sync data top artists/tracks...")
     time_ranges = ["short_term", "medium_term", "long_term"]
+
     for time_range in time_ranges:
-        try:
-            print(f"  [SYNC] Memproses time_range: {time_range}")
-            artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=10", headers=headers_auth)
-            artist_resp.raise_for_status()
-            artists = artist_resp.json().get("items", [])
-            track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=10", headers=headers_auth)
-            track_resp.raise_for_status()
-            tracks = track_resp.json().get("items", [])
-            print(f"    [API OK] Data artists ({len(artists)}) & tracks ({len(tracks)}) untuk '{time_range}' berhasil diambil.")
+        # Ambil top artists
+        artist_resp = requests.get(
+            f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=10",
+            headers=headers
+        )
+        artists = artist_resp.json().get("items", [])
 
-            result = {"user": display_name, "artists": [], "tracks": []}
+        # Ambil top tracks
+        track_resp = requests.get(
+            f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=10",
+            headers=headers
+        )
+        tracks = track_resp.json().get("items", [])
 
-            print("    [PROSES] Memproses dan menyimpan data artists...")
-            for artist in artists:
-                image_url = artist["images"][0]["url"] if artist.get("images") and len(artist["images"]) > 0 else None
-                save_artist(artist["id"], artist["name"], artist["popularity"], image_url)
-                save_user_artist(spotify_id, artist["id"])
-                result["artists"].append({"id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []), "popularity": artist["popularity"], "image": image_url if image_url else ""})
+        # Siapkan data hasil
+        result = {"user": display_name, "artists": [], "tracks": []}
 
-            print("    [PROSES] Memproses dan menyimpan data tracks...")
-            for track in tracks:
-                album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") and len(track["album"]["images"]) > 0 else ""
-                save_track(track["id"], track["name"], track["popularity"], track.get("preview_url"))
-                save_user_track(spotify_id, track["id"])
-                result["tracks"].append({"id": track["id"], "name": track["name"], "artists": [a["name"] for a in track.get("artists", [])], "album": track["album"]["name"], "popularity": track["popularity"], "preview_url": track.get("preview_url"), "image": album_image_url})
+        for artist in artists:
+            save_artist(
+                artist["id"],
+                artist["name"],
+                artist["popularity"],
+                artist["images"][0]["url"] if artist.get("images") else None
+            )
+            save_user_artist(spotify_id, artist["id"])
+            result["artists"].append({
+                "id": artist["id"],
+                "name": artist["name"],
+                "genres": artist.get("genres", []),
+                "popularity": artist["popularity"],
+                "image": artist["images"][0]["url"] if artist.get("images") else ""
+            })
 
-            print("    [SIMPAN] Menyimpan ke cache (Redis) dan history (MongoDB)...")
-            cache_top_data("top", spotify_id, time_range, result)
-            save_user_sync(spotify_id, time_range, result)
-            print(f"    [OK] Data untuk '{time_range}' berhasil diproses dan disimpan.")
-        except Exception as e:
-            print(f"  [FATAL ERROR] Terjadi error saat memproses time_range: {time_range}")
-            traceback.print_exc() # Mencetak traceback error yang detail
-            raise HTTPException(status_code=500, detail=f"An error occurred during data sync for {time_range}. Check logs.")
+        for track in tracks:
+            save_track(
+                track["id"],
+                track["name"],
+                track["popularity"],
+                track.get("preview_url")
+            )
+            save_user_track(spotify_id, track["id"])
+            result["tracks"].append({
+                "id": track["id"],
+                "name": track["name"],
+                "artists": [a["name"] for a in track.get("artists", [])],
+                "album": track["album"]["name"],
+                "popularity": track["popularity"],
+                "preview_url": track.get("preview_url"),
+                "image": track["album"]["images"][0]["url"] if track["album"].get("images") else ""
+            })
 
-    print("[5] Semua proses sync selesai. Redirecting ke dashboard...")
-    print("--- [CALLBACK END] ---\n")
+        # Simpan ke cache & database untuk masing-masing time range
+        cache_top_data("top", spotify_id, time_range, result)
+        save_user_sync(spotify_id, time_range, result)
+
+    # Step 4: Redirect ke dashboard
     return RedirectResponse(url=f"/dashboard/{spotify_id}?time_range=short_term")
 
 @router.get("/sync/top-data", tags=["Sync"])
