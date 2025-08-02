@@ -1,3 +1,5 @@
+#render.yaml
+version: v1
 services:
   - type: web
     name: personalify
@@ -7,7 +9,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromService:
-          type: postgres # <--- Ubah di sini
+          type: postgres
           name: personalify-db
           property: connectionString
       - key: REDIS_URL
@@ -23,7 +25,7 @@ services:
         sync: false
       - key: SPOTIFY_REDIRECT_URI
         sync: false
-  - type: postgres # <--- Ubah di sini
+  - type: postgres
     name: personalify-db
     region: singapore
     plan: free
