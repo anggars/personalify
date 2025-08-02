@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: personalify
+    env: docker
+    region: singapore
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromService:
+          type: psql
+          name: personalify-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: personalify-cache
+          property: connectionString
+      - key: MONGO_URI
+        sync: false
+      - key: SPOTIFY_CLIENT_ID
+        sync: false
+      - key: SPOTIFY_CLIENT_SECRET
+        sync: false
+      - key: SPOTIFY_REDIRECT_URI
+        sync: false
+  - type: psql
+    name: personalify-db
+    region: singapore
+    plan: free
+  - type: redis
+    name: personalify-cache
+    region: singapore
+    plan: free
