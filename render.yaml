@@ -1,15 +1,15 @@
 services:
   # 1. Servis untuk Aplikasi FastAPI Anda
   - type: web
-    name: personalify # <-- DISAMAKAN dengan nama di dashboard Anda
+    name: personalify
     env: docker
-    region: oregon # <-- DIUBAH agar cocok
+    region: oregon
     plan: free
     healthCheckPath: /
     envVars:
       - key: DATABASE_URL
         fromService:
-          type: psql
+          type: postgres # <-- DIUBAH DARI psql
           name: personalify-db
           property: connectionString
       - key: REDIS_URL
@@ -28,13 +28,13 @@ services:
         sync: false
 
   # 2. Servis untuk Database PostgreSQL
-  - type: psql
+  - type: postgres # <-- DIUBAH DARI psql
     name: personalify-db
-    region: oregon # <-- DIUBAH agar cocok
+    region: oregon
     plan: free
 
   # 3. Servis untuk Cache Redis
   - type: redis
     name: personalify-cache
-    region: oregon # <-- DIUBAH agar cocok
+    region: oregon
     plan: free
