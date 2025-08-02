@@ -1,18 +1,15 @@
 FROM python:3.12-slim
 
-# 1. Buat folder kerja
+# Set folder kerja utama di /code
 WORKDIR /code
 
-# 2. Copy file requirements dulu (untuk efisiensi cache)
+# Copy file requirements terlebih dahulu untuk efisiensi cache
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 3. Copy SELURUH folder backend ke dalam /code
-# Ini akan membuat struktur /code/backend/app/...
-COPY ./backend /code/backend
+# Copy seluruh isi dari folder 'backend' lokal ke dalam folder '/code' di container
+COPY backend/ .
 
-# 4. Set PYTHONPATH agar Python tahu di mana harus mencari modul
-ENV PYTHONPATH=/code
-
-# 5. Jalankan uvicorn dari folder yang benar
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Perintah CMD sekarang akan dijalankan dari /code,
+# dan Python akan bisa menemukan folder 'app' di dalamnya.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
