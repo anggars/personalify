@@ -47,7 +47,6 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
     redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
 
-    # Step 1: Tukar code ke token
     payload = {
         "grant_type": "authorization_code",
         "code": code,
@@ -57,87 +56,8 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
     }
 
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
-    if res.status_code != 200:
-        raise HTTPException(status_code=res.status_code, detail=res.text)
-
-    tokens = res.json()
-    access_token = tokens.get("access_token")
-    if not access_token:
-        raise HTTPException(status_code=400, detail="Access token not found in response.")
-
-    # Step 2: Ambil profil user
-    headers = {"Authorization": f"Bearer {access_token}"}
-    user_res = requests.get("https://api.spotify.com/v1/me", headers=headers)
-    if user_res.status_code != 200:
-        raise HTTPException(status_code=user_res.status_code, detail=user_res.text)
-
-    user_profile = user_res.json()
-    spotify_id = user_profile["id"]
-    display_name = user_profile.get("display_name", "Unknown")
-    save_user(spotify_id, display_name)
-
-    # Step 3: Sync untuk semua time_range
-    time_ranges = ["short_term", "medium_term", "long_term"]
-
-    for time_range in time_ranges:
-        # Ambil top artists
-        artist_resp = requests.get(
-            f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=10",
-            headers=headers
-        )
-        artists = artist_resp.json().get("items", [])
-
-        # Ambil top tracks
-        track_resp = requests.get(
-            f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=10",
-            headers=headers
-        )
-        tracks = track_resp.json().get("items", [])
-
-        # Siapkan data hasil
-        result = {"user": display_name, "artists": [], "tracks": []}
-
-        for artist in artists:
-            save_artist(
-                artist["id"],
-                artist["name"],
-                artist["popularity"],
-                artist["images"][0]["url"] if artist.get("images") else None
-            )
-            save_user_artist(spotify_id, artist["id"])
-            result["artists"].append({
-                "id": artist["id"],
-                "name": artist["name"],
-                "genres": artist.get("genres", []),
-                "popularity": artist["popularity"],
-                "image": artist["images"][0]["url"] if artist.get("images") else ""
-            })
-
-        for track in tracks:
-            save_track(
-                track["id"],
-                track["name"],
-                track["popularity"],
-                track.get("preview_url")
-            )
-            save_user_track(spotify_id, track["id"])
-            result["tracks"].append({
-                "id": track["id"],
-                "name": track["name"],
-                "artists": [a["name"] for a in track.get("artists", [])],
-                "album": track["album"]["name"],
-                "popularity": track["popularity"],
-                "preview_url": track.get("preview_url"),
-                "image": track["album"]["images"][0]["url"] if track["album"].get("images") else ""
-            })
-
-        # Simpan ke cache & database untuk masing-masing time range
-        cache_top_data("top", spotify_id, time_range, result)
-        save_user_sync(spotify_id, time_range, result)
-
-    # Step 4: Redirect ke dashboard
-    return RedirectResponse(url=f"/dashboard/{spotify_id}?time_range=short_term")
+    response = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
+    return JSONResponse(content=response.json())
 
 @router.get("/sync/top-data", tags=["Sync"])
 def sync_top_data(
