@@ -1,17 +1,28 @@
-# backend/app/db_handler.py
 import psycopg2
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_PARAMS = {
-    "host": os.getenv("PGHOST", os.getenv("POSTGRES_HOST")),
-    "port": os.getenv("PGPORT", os.getenv("POSTGRES_PORT")),
-    "dbname": os.getenv("PGDATABASE", os.getenv("POSTGRES_DB")),
-    "user": os.getenv("PGUSER", os.getenv("POSTGRES_USER")),
-    "password": os.getenv("PGPASSWORD", os.getenv("POSTGRES_PASSWORD")),
-}
+# --- BLOK KODE BARU UNTUK KONEKSI PINTAR ---
+# Kode ini akan memprioritaskan DATABASE_URL (dari Render),
+# dan fallback ke variabel biasa jika di lokal.
+DB_PARAMS = {}
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    # Jika ada DATABASE_URL (saat di Render), langsung gunakan itu.
+    # psycopg2 bisa langsung menerima URL ini.
+    DB_PARAMS['dsn'] = DATABASE_URL
+else:
+    # Jika tidak ada (saat di lokal), pakai .env seperti biasa
+    DB_PARAMS = {
+        "host": os.getenv("POSTGRES_HOST"),
+        "port": os.getenv("POSTGRES_PORT"),
+        "dbname": os.getenv("POSTGRES_DB"),
+        "user": os.getenv("POSTGRES_USER"),
+        "password": os.getenv("POSTGRES_PASSWORD"),
+    }
 
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
