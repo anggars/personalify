@@ -1,14 +1,15 @@
-version: v1
 services:
+  # 1. Servis untuk Aplikasi FastAPI Anda
   - type: web
-    name: personalify
+    name: personalify # <-- DISAMAKAN dengan nama di dashboard Anda
     env: docker
-    region: singapore
+    region: oregon # <-- DIUBAH agar cocok
     plan: free
+    healthCheckPath: /
     envVars:
       - key: DATABASE_URL
         fromService:
-          type: postgres
+          type: psql
           name: personalify-db
           property: connectionString
       - key: REDIS_URL
@@ -16,6 +17,7 @@ services:
           type: redis
           name: personalify-cache
           property: connectionString
+      # Variabel sensitif di bawah ini akan kita isi manual di dashboard
       - key: MONGO_URI
         sync: false
       - key: SPOTIFY_CLIENT_ID
@@ -25,12 +27,14 @@ services:
       - key: SPOTIFY_REDIRECT_URI
         sync: false
 
-  - type: postgres
+  # 2. Servis untuk Database PostgreSQL
+  - type: psql
     name: personalify-db
-    region: singapore
+    region: oregon # <-- DIUBAH agar cocok
     plan: free
 
+  # 3. Servis untuk Cache Redis
   - type: redis
     name: personalify-cache
-    region: singapore
+    region: oregon # <-- DIUBAH agar cocok
     plan: free
