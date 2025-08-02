@@ -1,18 +1,22 @@
+# backend/app/db_handler.py
 import psycopg2
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 DB_PARAMS = {
-    "host": os.getenv("POSTGRES_HOST", "postgresfy"),
-    "port": os.getenv("POSTGRES_PORT", "5432"),
-    "database": os.getenv("POSTGRES_DB", "streamdb"),
-    "user": os.getenv("POSTGRES_USER", "admin"),
-    "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
+    "host": os.getenv("PGHOST", os.getenv("POSTGRES_HOST")),
+    "port": os.getenv("PGPORT", os.getenv("POSTGRES_PORT")),
+    "dbname": os.getenv("PGDATABASE", os.getenv("POSTGRES_DB")),
+    "user": os.getenv("PGUSER", os.getenv("POSTGRES_USER")),
+    "password": os.getenv("PGPASSWORD", os.getenv("POSTGRES_PASSWORD")),
 }
-
 
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
+# ... sisa kode Anda (init_db, save_user, dll.)
 
 def init_db():
     with get_conn() as conn:
