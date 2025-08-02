@@ -1,6 +1,5 @@
-# Menggunakan struktur yang benar dengan 'services' dan 'databases' terpisah
 services:
-  # 1. Servis untuk Aplikasi FastAPI dan Redis
+  # 1. Servis untuk Aplikasi FastAPI
   - type: web
     name: personalify
     env: docker
@@ -9,15 +8,15 @@ services:
     healthCheckPath: /
     envVars:
       - key: DATABASE_URL
-        fromDatabase: # <-- DIUBAH: Menggunakan fromDatabase untuk Postgres
+        fromDatabase:
           name: personalify-db
           property: connectionString
       - key: REDIS_URL
-        fromService: # <-- BENAR: Menggunakan fromService untuk Redis
+        fromService:
           type: redis
           name: personalify-cache
           property: connectionString
-      # Variabel sensitif di bawah ini akan kita isi manual di dashboard
+      # Variabel sensitif
       - key: MONGO_URI
         sync: false
       - key: SPOTIFY_CLIENT_ID
@@ -27,13 +26,16 @@ services:
       - key: SPOTIFY_REDIRECT_URI
         sync: false
 
-  # Servis Redis tetap di dalam 'services'
+  # 2. Servis untuk Cache Redis
   - type: redis
     name: personalify-cache
     region: oregon
     plan: free
+    ipAllowList: # <-- TAMBAHKAN BLOK INI
+      - source: 0.0.0.0/0
+        description: everywhere
 
-# Database PostgreSQL dipindah ke kategori sendiri di level atas
+# 3. Database PostgreSQL
 databases:
   - name: personalify-db
     region: oregon
