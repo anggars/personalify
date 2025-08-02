@@ -1,4 +1,3 @@
-#render.yaml
 version: v1
 services:
   - type: web
@@ -25,10 +24,12 @@ services:
         sync: false
       - key: SPOTIFY_REDIRECT_URI
         sync: false
+
   - type: postgres
     name: personalify-db
     region: singapore
     plan: free
+
   - type: redis
     name: personalify-cache
     region: singapore
