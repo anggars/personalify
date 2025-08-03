@@ -1,25 +1,31 @@
 import os
 from pymongo import MongoClient
 from datetime import datetime
+from dotenv import load_dotenv
 
-# --- BLOK KODE BARU ---
-# Ambil MONGO_URI dari environment variable.
+# Memuat .env agar tetap berfungsi di lokal
+load_dotenv()
+
+# --- BLOK KONEKSI PINTAR ---
 MONGO_URI = os.getenv("MONGO_URI")
 
-# Pastikan MONGO_URI ada sebelum membuat koneksi.
-if not MONGO_URI:
-    # Di Render, ini seharusnya tidak pernah terjadi jika env var sudah diatur.
-    raise Exception("MONGO_URI environment variable not set.")
+if MONGO_URI:
+    # Jika ada MONGO_URI (saat di Render), gunakan itu
+    client = MongoClient(MONGO_URI)
+    db = client.get_database("personalify_sync_history") # Nama DB Anda di Atlas
+else:
+    # Jika tidak ada (saat di lokal), gunakan host dan port dari .env
+    mongo_host = os.getenv("MONGO_HOST", "mangofy")
+    mongo_port = int(os.getenv("MONGO_PORT", 27017))
+    client = MongoClient(mongo_host, mongo_port)
+    db = client["personalify_db"] # Nama DB lokal Anda
 
-client = MongoClient(MONGO_URI)
-# Anda bisa tentukan nama database di sini atau langsung dari URI.
-# Jika URI Anda sudah mengandung nama database, baris ini bisa dikosongkan.
-db = client.get_database("personalify_sync_history") 
-# --- AKHIR BLOK KODE BARU ---
+# --- AKHIR BLOK KONEKSI PINTAR ---
+
 
 def save_user_sync(spotify_id, time_range, data):
-    # Membuat koleksi untuk setiap user agar lebih terorganisir
-    collection = db[spotify_id] 
+    # Menggunakan koleksi untuk setiap user agar lebih terorganisir
+    collection = db[spotify_id]
     collection.update_one(
         {'time_range': time_range},
         {
@@ -33,11 +39,9 @@ def save_user_sync(spotify_id, time_range, data):
 
 def get_user_history(spotify_id):
     collection = db[spotify_id]
-    # Mengambil semua histori untuk user tersebut
     history = collection.find({}, {'_id': 0}).sort('last_synced', -1)
     return list(history)
 
-# Anda mungkin perlu fungsi ini juga di masa depan
 def get_user_sync(spotify_id, time_range):
     collection = db[spotify_id]
     return collection.find_one({"time_range": time_range}, {"_id": 0})

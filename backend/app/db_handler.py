@@ -11,20 +11,19 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
     # Jika ada DATABASE_URL (saat di Render), langsung gunakan itu.
-    # psycopg2 bisa langsung menerima URL ini sebagai DSN (Data Source Name).
     DB_PARAMS['dsn'] = DATABASE_URL
 else:
     # Jika tidak ada (saat di lokal), pakai .env seperti biasa
     DB_PARAMS = {
-        "host": os.getenv("POSTGRES_HOST"),
-        "port": os.getenv("POSTGRES_PORT"),
-        "dbname": os.getenv("POSTGRES_DB"),
-        "user": os.getenv("POSTGRES_USER"),
-        "password": os.getenv("POSTGRES_PASSWORD"),
+        "host": os.getenv("POSTGRES_HOST", "postgresfy"),
+        "port": os.getenv("POSTGRES_PORT", "5432"),
+        "database": os.getenv("POSTGRES_DB", "streamdb"),
+        "user": os.getenv("POSTGRES_USER", "admin"),
+        "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
     }
 # --- AKHIR BLOK KODE BARU ---
 
-# Sisa kode di bawah ini sama persis seperti kode Anda
+# SISA KODE DI BAWAH INI SAMA PERSIS SEPERTI KODE ANDA
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
@@ -37,18 +36,21 @@ def init_db():
                     spotify_id TEXT UNIQUE,
                     display_name TEXT
                 );
+
                 CREATE TABLE IF NOT EXISTS artists (
                     id TEXT PRIMARY KEY,
                     name TEXT,
                     popularity INTEGER,
                     image_url TEXT
                 );
+
                 CREATE TABLE IF NOT EXISTS tracks (
                     id TEXT PRIMARY KEY,
                     name TEXT,
                     popularity INTEGER,
                     preview_url TEXT
                 );
+
                 CREATE TABLE IF NOT EXISTS user_tracks (
                     spotify_id TEXT,
                     track_id TEXT,
@@ -56,6 +58,7 @@ def init_db():
                     FOREIGN KEY (spotify_id) REFERENCES users(spotify_id) ON DELETE CASCADE,
                     FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
                 );
+
                 CREATE TABLE IF NOT EXISTS user_artists (
                     spotify_id TEXT,
                     artist_id TEXT,
@@ -64,8 +67,7 @@ def init_db():
                     FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
                 );
             """)
-        conn.commit()
-
+            conn.commit()
 
 def save_user(spotify_id, display_name):
     with get_conn() as conn:
@@ -76,7 +78,6 @@ def save_user(spotify_id, display_name):
                 ON CONFLICT (spotify_id) DO UPDATE SET display_name = EXCLUDED.display_name
             """, (spotify_id, display_name))
             conn.commit()
-
 
 def save_artist(artist_id, name, popularity, image_url):
     with get_conn() as conn:
@@ -91,7 +92,6 @@ def save_artist(artist_id, name, popularity, image_url):
             """, (artist_id, name, popularity, image_url))
             conn.commit()
 
-
 def save_track(track_id, name, popularity, preview_url):
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -105,7 +105,6 @@ def save_track(track_id, name, popularity, preview_url):
             """, (track_id, name, popularity, preview_url))
             conn.commit()
 
-
 def save_user_track(spotify_id, track_id):
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -115,7 +114,6 @@ def save_user_track(spotify_id, track_id):
                 ON CONFLICT DO NOTHING
             """, (spotify_id, track_id))
             conn.commit()
-
 
 def save_user_artist(spotify_id, artist_id):
     with get_conn() as conn:
