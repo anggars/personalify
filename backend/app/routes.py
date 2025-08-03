@@ -14,7 +14,11 @@ from app.cache_handler import cache_top_data, get_cached_top_data
 from app.mongo_handler import save_user_sync, get_user_history
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
+# --- Perbaikan Path Template ---
+current_dir = os.path.dirname(os.path.abspath(__file__))
+templates_dir = os.path.join(current_dir, "templates")
+templates = Jinja2Templates(directory=templates_dir)
+# --- Akhir Perbaikan ---
 
 
 @router.get("/", response_class=HTMLResponse, tags=["Root"])
@@ -27,17 +31,12 @@ def login():
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
     scope = "user-top-read"
-
     if not client_id or not redirect_uri:
         raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
-
     query_params = urlencode({
-        "response_type": "code",
-        "client_id": client_id,
-        "redirect_uri": redirect_uri,
-        "scope": scope
+        "response_type": "code", "client_id": client_id,
+        "redirect_uri": redirect_uri, "scope": scope
     })
-
     return RedirectResponse(url=f"https://accounts.spotify.com/authorize?{query_params}")
 
 
@@ -47,17 +46,67 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
     redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
 
+    # Step 1: Tukar code ke token
     payload = {
-        "grant_type": "authorization_code",
-        "code": code,
-        "redirect_uri": redirect_uri,
-        "client_id": client_id,
-        "client_secret": client_secret
+        "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
+        "client_id": client_id, "client_secret": client_secret
     }
-
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    response = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
-    return JSONResponse(content=response.json())
+    res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
+    if res.status_code != 200:
+        raise HTTPException(status_code=res.status_code, detail=res.text)
+    tokens = res.json()
+    access_token = tokens.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=400, detail="Access token not found in response.")
+
+    # Step 2: Ambil profil user
+    headers = {"Authorization": f"Bearer {access_token}"}
+    user_res = requests.get("https://api.spotify.com/v1/me", headers=headers)
+    if user_res.status_code != 200:
+        raise HTTPException(status_code=user_res.status_code, detail=user_res.text)
+    user_profile = user_res.json()
+    spotify_id = user_profile["id"]
+    display_name = user_profile.get("display_name", "Unknown")
+    save_user(spotify_id, display_name)
+
+    # Step 3: Sync untuk semua time_range
+    time_ranges = ["short_term", "medium_term", "long_term"]
+    for time_range in time_ranges:
+        artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=10", headers=headers)
+        artists = artist_resp.json().get("items", [])
+        track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=10", headers=headers)
+        tracks = track_resp.json().get("items", [])
+
+        result = {"user": display_name, "artists": [], "tracks": []}
+
+        for artist in artists:
+            # PERBAIKAN PENTING: Cek jika list 'images' ada dan tidak kosong
+            image_url = artist["images"][0]["url"] if artist.get("images") and len(artist["images"]) > 0 else None
+            save_artist(artist["id"], artist["name"], artist["popularity"], image_url)
+            save_user_artist(spotify_id, artist["id"])
+            result["artists"].append({
+                "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
+                "popularity": artist["popularity"], "image": image_url if image_url else ""
+            })
+
+        for track in tracks:
+            # PERBAIKAN PENTING: Cek jika 'album' dan 'images' ada dan tidak kosong
+            album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") and len(track["album"]["images"]) > 0 else ""
+            save_track(track["id"], track["name"], track["popularity"], track.get("preview_url"))
+            save_user_track(spotify_id, track["id"])
+            result["tracks"].append({
+                "id": track["id"], "name": track["name"],
+                "artists": [a["name"] for a in track.get("artists", [])],
+                "album": track["album"]["name"], "popularity": track["popularity"],
+                "preview_url": track.get("preview_url"), "image": album_image_url
+            })
+
+        cache_top_data("top", spotify_id, time_range, result)
+        save_user_sync(spotify_id, time_range, result)
+
+    # Step 4: Redirect ke dashboard
+    return RedirectResponse(url=f"/dashboard/{spotify_id}?time_range=short_term")
 
 @router.get("/sync/top-data", tags=["Sync"])
 def sync_top_data(
