@@ -1,16 +1,25 @@
 import redis
 import json
 import os
+from dotenv import load_dotenv
 
-# --- BLOK KODE BARU ---
-# Ambil REDIS_URL dari environment. Jika tidak ada (di lokal), 
-# gunakan default 'redis://localhost:6379'.
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+# Memuat .env agar tetap berfungsi di lokal
+load_dotenv()
 
-# Buat koneksi Redis menggunakan URL yang sudah ditentukan.
-# decode_responses=True agar kita tidak perlu decode manual.
-r = redis.from_url(REDIS_URL, decode_responses=True)
-# --- AKHIR BLOK KODE BARU ---
+# --- BLOK KONEKSI PINTAR ---
+REDIS_URL = os.getenv("REDIS_URL")
+
+if REDIS_URL:
+    # Jika ada REDIS_URL (saat di Render), gunakan itu
+    r = redis.from_url(REDIS_URL, decode_responses=True)
+else:
+    # Jika tidak ada (saat di lokal), gunakan host dan port dari .env
+    redis_host = os.getenv("REDIS_HOST", "redisfy")
+    redis_port = int(os.getenv("REDIS_PORT", 6379))
+    r = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
+
+# --- AKHIR BLOK KONEKSI PINTAR ---
+
 
 def cache_top_data(key_prefix, spotify_id, term, data, ttl=3600):
     """
@@ -18,7 +27,6 @@ def cache_top_data(key_prefix, spotify_id, term, data, ttl=3600):
     TTL (Time-to-live) dalam detik, default 1 jam.
     """
     key = f"{key_prefix}:{spotify_id}:{term}"
-    # r.setex sekarang akan menggunakan koneksi yang sudah benar
     r.setex(key, ttl, json.dumps(data))
 
 def get_cached_top_data(key_prefix, spotify_id, term):
