@@ -20,11 +20,9 @@ templates_dir = os.path.join(current_dir, "templates")
 templates = Jinja2Templates(directory=templates_dir)
 # --- Akhir Perbaikan ---
 
-
 @router.get("/", response_class=HTMLResponse, tags=["Root"])
 def root(request: Request):
     return templates.TemplateResponse("home.html", {"request": request})
-
 
 @router.get("/login", tags=["Auth"])
 def login():
@@ -38,7 +36,6 @@ def login():
         "redirect_uri": redirect_uri, "scope": scope
     })
     return RedirectResponse(url=f"https://accounts.spotify.com/authorize?{query_params}")
-
 
 @router.get("/callback", tags=["Auth"])
 def callback(code: str = Query(..., description="Spotify Authorization Code")):
@@ -189,7 +186,6 @@ def sync_top_data(
     save_user_sync(spotify_id, time_range, result)
     return result
 
-
 @router.get("/top-data", tags=["Query"])
 def get_top_data(
     spotify_id: str = Query(..., description="Spotify ID"),
@@ -208,7 +204,6 @@ def get_top_data(
     data["tracks"] = sort_items(data.get("tracks", []))
     return data
 
-
 @router.get("/top-genres", tags=["Query"])
 def top_genres(
     spotify_id: str = Query(..., description="Spotify ID"),
@@ -226,17 +221,29 @@ def top_genres(
     sorted_genres = sorted(genre_count.items(), key=lambda x: x[1], reverse=True)
     return {"genres": [{"name": name, "count": count} for name, count in sorted_genres]}
 
-
 @router.get("/history", tags=["Query"])
 def get_sync_history(spotify_id: str = Query(..., description="Spotify ID")):
     return get_user_history(spotify_id)
-
 
 @router.get("/dashboard/{spotify_id}", response_class=HTMLResponse, tags=["Dashboard"])
 def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request = None):
     data = get_cached_top_data("top", spotify_id, time_range)
     if not data:
-        return HTMLResponse(content="No data found", status_code=404)
+        # Memberikan pesan yang lebih informatif jika data belum siap
+        return templates.TemplateResponse("loading.html", {"request": request})
+
+    # --- BLOK BARU UNTUK DATA TOOLTIP ---
+    genre_artists_map = {}
+    # Loop melalui daftar artis yang didapat dari cache
+    for artist in data.get("artists", []):
+        # Untuk setiap artis, loop melalui daftar genre-nya
+        for genre in artist.get("genres", []):
+            # Jika genre ini belum ada di peta kita, buat entri baru (list kosong)
+            if genre not in genre_artists_map:
+                genre_artists_map[genre] = []
+            # Tambahkan nama artis ini ke daftar untuk genre tersebut
+            genre_artists_map[genre].append(artist["name"])
+    # --- AKHIR BLOK BARU ---
 
     genre_count = {}
     for artist in data.get("artists", []):
@@ -251,5 +258,6 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         "artists": data["artists"],
         "tracks": data["tracks"],
         "genres": genre_list,
-        "time_range": time_range
+        "time_range": time_range,
+        "genre_artists_map": genre_artists_map  # <-- Kirim data baru ini ke template
     })
