@@ -209,8 +209,9 @@ window.onload = function() {
             datasets: [{
                 data: genreData.counts,
                 backgroundColor: [
-                    '#1DB954', '#F28E2B', '#E15759', '#76B7B2', '#59A14F',
-                    '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC'
+                    '#1DB954', '#F28E2B', '#E15759', '#76B7B2', '#9AA067',
+                    '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC',
+                    '#4D4D4D', '#6B5B95', '#88B04B', '#F7CAC9', '#92A8D1'
                 ]
             }]
         };
@@ -227,6 +228,16 @@ window.onload = function() {
                         labels: {
                             color: '#fff',
                             padding: 10
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            footer: function(tooltipItems) {
+                                const genre = tooltipItems[0].label;
+                                const artists = genreArtistsMap[genre] || [];
+                                const artistList = artists.map(artist => `• ${artist}`);
+                                return artistList;
+                            }
                         }
                     }
                 }
