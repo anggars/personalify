@@ -72,19 +72,30 @@ function generateImage(selectedCategory) {
 
     const clone = sectionToCapture.cloneNode(true);
 
+    // --- OPTIMISASI UNTUK MENGATASI LAG ---
+    // Jika kategori adalah 'artists', hapus elemen genre yang rumit dari 'clone'
+    if (selectedCategory === 'artists') {
+        const artistClones = clone.querySelectorAll('.artist');
+        artistClones.forEach(artistClone => {
+            // Cari div.meta pertama yang berisi genre
+            const genreMeta = artistClone.querySelector('.meta:first-of-type');
+            if (genreMeta) {
+                genreMeta.parentNode.removeChild(genreMeta); // Hapus seluruh div genre
+            }
+        });
+    }
+    // --- AKHIR OPTIMISASI ---
+
     if (selectedCategory === 'genres') {
         const originalCanvas = document.getElementById('genreChart');
         const clonedCanvas = clone.querySelector('#genreChart');
-
         if (originalCanvas && clonedCanvas) {
             const chartImage = new Image();
             chartImage.src = originalCanvas.toDataURL('image/png');
-            
             chartImage.style.width = '100%';
             chartImage.style.height = 'auto';
             chartImage.style.display = 'block';
             chartImage.style.margin = clonedCanvas.style.margin;
-
             clonedCanvas.parentNode.replaceChild(chartImage, clonedCanvas);
         }
     }
@@ -133,7 +144,6 @@ function generateImage(selectedCategory) {
     function renderCanvas() {
         document.body.appendChild(container);
         html2canvas(container, {
-            // backgroundColor: null,
             scale: 2,
             useCORS: true
         }).then(canvas => {
