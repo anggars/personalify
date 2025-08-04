@@ -133,7 +133,7 @@ function generateImage(selectedCategory) {
     function renderCanvas() {
         document.body.appendChild(container);
         html2canvas(container, {
-            backgroundColor: null,
+            // backgroundColor: null,
             scale: 2,
             useCORS: true
         }).then(canvas => {
