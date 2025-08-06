@@ -12,11 +12,10 @@
 }
 
 body {
-    /* Latar belakang dengan gradasi halus */
-    background-color: var(--bg);
-    background-image: radial-gradient(ellipse at top, #1a2b22, var(--bg) 60%);
+    background-color: var(--bg); /* Latar belakang disamakan dengan dashboard */
     color: var(--text);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* Font baru diterapkan di sini */
+    font-family: 'Plus Jakarta Sans', sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -24,10 +23,9 @@ body {
     min-height: 100vh;
     padding: 2rem;
     text-align: center;
-    overflow-x: hidden; /* Mencegah scroll horizontal karena animasi */
+    overflow-x: hidden;
 }
 
-/* Wrapper untuk konten utama dengan animasi */
 .hero {
     animation: fadeInUp 1s ease-out forwards;
     opacity: 0;
@@ -37,16 +35,19 @@ body {
     width: 80px;
     height: 80px;
     margin-bottom: 2rem;
-    /* Animasi masuk dengan sedikit delay */
     opacity: 0;
     animation: fadeInUp 0.8s ease-out 0.2s forwards;
 }
 
 h1 {
     font-size: 3.5rem;
-    font-weight: 700;
-    color: var(--primary);
+    font-weight: 800; /* Dibuat lebih tebal */
+    color: var(--text); /* Warna diubah jadi putih agar lebih fokus */
     margin-bottom: 1rem;
+}
+
+h1 span {
+    color: var(--primary); /* Kata "Story" dibuat berwarna hijau */
 }
 
 p {
@@ -55,8 +56,9 @@ p {
     max-width: 600px;
     margin-bottom: 2.5rem;
     line-height: 1.6;
-    margin-left: auto;   /* Tambahkan ini */
-    margin-right: auto;  /* Tambahkan ini */
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: 500; /* Sedikit lebih tebal dari normal */
 }
 
 .button {
@@ -65,7 +67,7 @@ p {
     background-color: var(--primary);
     color: black;
     text-decoration: none;
-    font-weight: 700;
+    font-weight: 700; /* Dibuat lebih tebal */
     font-size: 1rem;
     border-radius: 50px;
     transition: all 0.3s ease;
@@ -74,7 +76,7 @@ p {
 
 .button:hover {
     background-color: #1ed760;
-    transform: scale(1.05) translateY(-2px); /* Efek 'pop' saat hover */
+    transform: scale(1.05) translateY(-2px);
     box-shadow: 0 8px 25px rgba(29, 185, 84, 0.3);
 }
 
@@ -87,7 +89,15 @@ footer {
     animation: fadeInUp 1s ease-out 0.6s forwards;
 }
 
-/* Keyframes untuk animasi masuk */
+.footer-link {
+    color: #888;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+.footer-link:hover {
+    color: var(--primary);
+}
+
 @keyframes fadeInUp {
     from {
         opacity: 0;

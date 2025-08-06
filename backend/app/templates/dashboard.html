@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Personalify Dashboard</title>
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='favicon.ico') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='Spotify_Primary_Logo_RGB_White.ico') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='dashboard.css') }}">
 </head>
 <body>
-    <h1>Welcome, {{ user }}!</h1>
+    <h1>Your Recap, {{ user }}!</h1>
 
     <div class="filters">
         <div class="select-wrapper">
@@ -32,53 +34,68 @@
     <div class="container" id="dashboard">
         <div class="section" id="artists-section">
             <h2>Top Artists</h2>
-            {% for artist in artists %}
-            <div class="artist">
-                <img src="{{ artist.image }}" alt="{{ artist.name }}">
-                <div class="info">
-                    <div class="name">{{ artist.name }}</div>
-                    <div class="meta">
-                        {% set max_genres = 5 %}
-                        {% for genre in artist.genres[:max_genres] %}<span class="genre-label">{{ genre }}</span>{% endfor %}
-                        {% if artist.genres | length > max_genres %}
-                        <span class="more-genres" id="more-{{ loop.index }}">
-                            {% for genre in artist.genres[max_genres:] %}<span class="genre-label">{{ genre }}</span>{% endfor %}
-                        </span>
-                        <span class="show-more" onclick="toggleMore({{ loop.index }}, this)">+ more</span>
-                        {% endif %}
+            <ol class="list-container">
+                {% for artist in artists[:10] %}
+                <li>
+                    <div class="list-item">
+                        <span class="rank">{{ loop.index }}</span>
+                        <img src="{{ artist.image }}" alt="{{ artist.name }}">
+                        <div class="info">
+                            <div class="name">{{ artist.name }}</div>
+                            <div class="meta genre-pills">
+                                {% set max_genres = 6 %}
+                                {% for genre in artist.genres[:max_genres] %}<span class="genre-label">{{ genre }}</span>{% endfor %}
+                                {% if artist.genres | length > max_genres %}
+                                <span class="more-genres" id="more-{{ loop.index }}">
+                                    {% for genre in artist.genres[max_genres:] %}<span class="genre-label">{{ genre }}</span>{% endfor %}
+                                </span>
+                                <span class="show-more" onclick="toggleMore({{ loop.index }}, this)">more</span>
+                                {% endif %}
+                            </div>
+                            <div class="meta">Popularity: {{ artist.popularity }}</div>
+                        </div>
                     </div>
-                    <div class="meta">Popularity: {{ artist.popularity }}</div>
-                </div>
-            </div>
-            {% endfor %}
+                </li>
+                {% endfor %}
+            </ol>
         </div>
 
         <div class="section" id="tracks-section">
             <h2>Top Tracks</h2>
-            {% for track in tracks %}
-            <div class="track">
-                <img src="{{ track.image }}" alt="{{ track.name }}">
-                <div class="info">
-                    <div class="name">{{ track.name }}</div>
-                    <div class="meta">Artist(s): {{ track.artists | join(', ') }}</div>
-                    <div class="meta">Album: {{ track.album }}</div>
-                    <div class="meta">Popularity: {{ track.popularity }}</div>
-                </div>
-            </div>
-            {% endfor %}
+            <ol class="list-container">
+                {% for track in tracks[:10] %}
+                <li>
+                    <div class="list-item">
+                        <span class="rank">{{ loop.index }}</span>
+                        <img src="{{ track.image }}" alt="{{ track.name }}">
+                        <div class="info">
+                            <div class="name">{{ track.name }}</div>
+                            <div class="meta">Artist(s): {{ track.artists | join(', ') }}</div>
+                            <div class="meta">Album: {{ track.album }}</div>
+                            <div class="meta">Popularity: {{ track.popularity }}</div>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ol>
         </div>
 
         <div class="section" id="genres-section">
             <h2>Top Genres</h2>
             <canvas id="genreChart" style="max-height:300px;margin:1rem 0 2rem 0;"></canvas>
-            {% for genre in genres %}
-            <div class="genre">
-                <div class="info">
-                    <div class="name">{{ genre.name }}</div>
-                    <div class="meta">Count: {{ genre.count }}</div>
-                </div>
-            </div>
-            {% endfor %}
+            <ol class="list-container">
+                {% for genre in genres[:10] %}
+                <li>
+                    <div class="list-item">
+                        <span class="rank">{{ loop.index }}</span>
+                        <div class="info">
+                            <div class="name">{{ genre.name }}</div>
+                            <div class="meta">Mentioned {{ genre.count }} times</div>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ol>
         </div>
     </div>
 
@@ -97,7 +114,7 @@
     </div>
 
     <footer>
-        Personalify &copy; 2025 • Powered by Spotify API
+        Personalify &copy; 2025 • Powered by <a href="https://developer.spotify.com/" target="_blank" class="footer-link">Spotify API</a>
         <br>
         Created by <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>
     </footer>
