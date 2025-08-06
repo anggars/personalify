@@ -12,14 +12,23 @@
     <link rel="stylesheet" href="{{ url_for('static', path='dashboard.css') }}">
 </head>
 <body>
-    <h1>Your Recap, {{ user }}!</h1>
+<header>
+    <h1>Personalify</h1>
+    {% if time_range == 'short_term' %}
+        <p class="subtitle">Here's your monthly recap, {{ user }}!</p>
+    {% elif time_range == 'medium_term' %}
+        <p class="subtitle">A look at your last 6 months, {{ user }}!</p>
+    {% else %}
+        <p class="subtitle">Your listening overview for the year, {{ user }}!</p>
+    {% endif %}
+</header>
 
     <div class="filters">
         <div class="select-wrapper">
             <select id="time-filter">
-                <option value="short_term" {% if time_range == 'short_term' %}selected{% endif %}>Last Month</option>
-                <option value="medium_term" {% if time_range == 'medium_term' %}selected{% endif %}>6 Months</option>
-                <option value="long_term" {% if time_range == 'long_term' %}selected{% endif %}>Last Year</option>
+                <option value="short_term" {% if time_range == 'short_term' %}selected{% endif %}>Short Term</option>
+                <option value="medium_term" {% if time_range == 'medium_term' %}selected{% endif %}>Mid Term</option>
+                <option value="long_term" {% if time_range == 'long_term' %}selected{% endif %}>Long Term</option>
             </select>
         </div>
 
@@ -91,7 +100,9 @@
                         <span class="rank">{{ loop.index }}</span>
                         <div class="info">
                             <div class="name">{{ genre.name }}</div>
-                            <div class="meta">Mentioned {{ genre.count }} times</div>
+                            <div class="meta">
+                                Mentioned {{ genre.count }} times{% if genre_artists_map[genre.name] %}: {{ genre_artists_map[genre.name] | join(', ') }}{% endif %}
+                            </div>
                         </div>
                     </div>
                 </li>
