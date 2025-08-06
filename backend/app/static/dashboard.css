@@ -155,8 +155,9 @@ li:last-child {
 }
 
 .genre-label {
-    display: inline-block;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.25rem 0.4rem 0.2rem;
     font-weight: 500;
     background-color: #1DB954;
@@ -164,7 +165,6 @@ li:last-child {
     font-size: 0.65rem;
     border-radius: 9999px;
     margin: 0.1rem 0.2rem 0 0;
-    vertical-align: middle;
 }
 
 .more-genres {
