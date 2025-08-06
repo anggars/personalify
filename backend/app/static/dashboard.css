@@ -14,6 +14,15 @@ h1 {
     margin-bottom: 2rem;
 }
 
+.subtitle {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #B3B3B3; /* Warna abu-abu agar kontrasnya pas */
+    margin-top: -1.5rem; /* Menariknya sedikit ke atas */
+    margin-bottom: 2rem;
+}
+
 .filters {
     display: flex;
     flex-wrap: wrap;

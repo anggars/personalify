@@ -59,33 +59,18 @@ function hideSaveOptions() {
 
 function generateImage(selectedCategory) {
     hideSaveOptions();
-    
-    const timeText = document.querySelector('#time-filter option:checked').textContent;
-    const username = document.querySelector('h1').innerText;
 
+    // 1. Sembunyikan semua section dulu
     for (const key in sections) {
         sections[key].style.display = "none";
     }
 
+    // 2. Tampilkan dan siapkan section yang akan di-capture
     const sectionToCapture = sections[selectedCategory];
     sectionToCapture.style.display = "block";
-
     const clone = sectionToCapture.cloneNode(true);
 
-    // --- OPTIMISASI UNTUK MENGATASI LAG ---
-    // Jika kategori adalah 'artists', hapus elemen genre yang rumit dari 'clone'
-    if (selectedCategory === 'artists') {
-        const artistClones = clone.querySelectorAll('.artist');
-        artistClones.forEach(artistClone => {
-            // Cari div.meta pertama yang berisi genre
-            const genreMeta = artistClone.querySelector('.meta:first-of-type');
-            if (genreMeta) {
-                genreMeta.parentNode.removeChild(genreMeta); // Hapus seluruh div genre
-            }
-        });
-    }
-    // --- AKHIR OPTIMISASI ---
-
+    // 3. Khusus untuk genre, ganti canvas dengan gambar statis
     if (selectedCategory === 'genres') {
         const originalCanvas = document.getElementById('genreChart');
         const clonedCanvas = clone.querySelector('#genreChart');
@@ -100,79 +85,71 @@ function generateImage(selectedCategory) {
         }
     }
 
+    // 4. Buat container utama untuk gambar
     const container = document.createElement("div");
     container.style.width = "720px";
     container.style.background = "#121212";
-    container.style.padding = "1.5rem";
+    container.style.padding = "2rem"; // Jarak lebih simetris
     container.style.boxSizing = "border-box";
     container.style.color = "#fff";
-    container.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    container.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
 
-    const title = document.createElement("h1");
-    title.innerText = "Personalify";
-    title.style.textAlign = "center";
-    title.style.color = "#1DB954";
-    title.style.marginBottom = "1rem";
-    container.appendChild(title);
+    // 5. Copy header dari halaman web (solusi utama)
+    const pageHeader = document.querySelector('header');
+    const headerClone = pageHeader.cloneNode(true);
+    headerClone.style.textAlign = 'center';
+    headerClone.style.marginBottom = '2rem';
+    container.appendChild(headerClone);
 
-    const welcome = document.createElement("h2");
-    welcome.innerText = username;
-    welcome.style.textAlign = "center";
-    welcome.style.fontSize = "1rem";
-    welcome.style.color = "#ccc";
-    welcome.style.marginBottom = "0.75rem";
-    container.appendChild(welcome);
-
-    const timeLabel = document.createElement("div");
-    timeLabel.innerText = timeText;
-    timeLabel.style.textAlign = "center";
-    timeLabel.style.fontSize = "0.9rem";
-    timeLabel.style.color = "#aaa";
-    timeLabel.style.marginBottom = "1rem";
-    container.appendChild(timeLabel);
-
+    // 6. Masukkan konten (artist/track/genre)
     container.appendChild(clone);
 
+    // 7. Buat footer baru untuk gambar
     const footer = document.createElement("div");
-    footer.innerText = "Personalify © 2025 • Powered by Spotify API";
+    footer.innerHTML = `Personalify © 2025 • <a href="https://developer.spotify.com/" target="_blank" style="color: #888; text-decoration: none;">Powered by Spotify API</a>`;
     footer.style.marginTop = "2rem";
     footer.style.fontSize = "0.75rem";
     footer.style.color = "#888";
     footer.style.textAlign = "center";
     container.appendChild(footer);
-
+    
+    // 8. Proses rendering menjadi gambar
     function renderCanvas() {
         document.body.appendChild(container);
         html2canvas(container, {
             scale: 2,
-            useCORS: true
+            useCORS: true,
+            backgroundColor: '#121212'
         }).then(canvas => {
             const link = document.createElement("a");
-            link.download = `personalify-${selectedCategory}.png`;
+            link.download = `personalify-${selectedCategory}-${new Date().getTime()}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
             document.body.removeChild(container);
+            // Kembalikan tampilan seperti semula
             checkScreenSize();
         });
     }
 
+    // Tunggu semua gambar di dalam konten dimuat sebelum render
     const imgs = clone.querySelectorAll('img');
     if (imgs.length === 0) {
         renderCanvas();
     } else {
         let loadedCount = 0;
         imgs.forEach(img => {
-            const tempImg = new Image();
-            tempImg.crossOrigin = "anonymous";
-            tempImg.src = img.src;
-            tempImg.onload = () => {
+            // Trik untuk memastikan gambar dari cache juga memicu 'onload'
+            const newImg = new Image();
+            newImg.crossOrigin = "anonymous";
+            newImg.src = img.src;
+            const checkDone = () => {
                 loadedCount++;
-                if (loadedCount === imgs.length) renderCanvas();
+                if (loadedCount === imgs.length) {
+                    renderCanvas();
+                }
             };
-            tempImg.onerror = () => {
-                loadedCount++;
-                if (loadedCount === imgs.length) renderCanvas();
-            };
+            newImg.onload = checkDone;
+            newImg.onerror = checkDone;
         });
     }
 }
