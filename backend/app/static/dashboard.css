@@ -1,6 +1,6 @@
 body {
     margin: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     background-color: #121212;
     color: #ffffff;
     padding: 1.5rem;
@@ -8,7 +8,8 @@ body {
 
 h1 {
     color: #1DB954;
-    font-size: 2rem;
+    font-size: 2.5rem;
+    font-weight: 800;
     text-align: center;
     margin-bottom: 2rem;
 }
@@ -69,6 +70,7 @@ h1 {
     padding: 1.5rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #282828;
 }
 
 .section:hover {
@@ -77,35 +79,48 @@ h1 {
 }
 
 .section h2 {
-    position: relative;
-    height: 60px;
-    line-height: 25px;
     text-align: center;
-    font-size: 1.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: #1DB954;
     border-bottom: 1px solid #333;
-    margin-bottom: 1rem;
-    padding: 0;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
 }
 
-.artist, .track, .genre {
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
+.list-container {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+li {
+    padding: 0.75rem 0;
     border-bottom: 1px solid #333;
+}
+
+li:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.list-item {
     display: flex;
     align-items: center;
     gap: 1rem;
 }
 
-.artist, .track {
-    min-height: 64px;
+.rank {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    width: 2rem;
+    text-align: center;
+    flex-shrink: 0;
 }
 
-.genre {
-    gap: 0;
-}
-
-.artist img, .track img {
+.list-item img {
     width: 64px;
     height: 64px;
     border-radius: 0.5rem;
@@ -266,7 +281,18 @@ footer {
     border: 1px solid #555;
     color: #aaa;
 }
+
 .modal-close:hover {
     background-color: #333;
     color: #fff;
+}
+
+.footer-link {
+    color: #888;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+    color: #1DB954; /* Spotify Green */
 }

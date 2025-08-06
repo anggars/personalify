@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Personalify</title>
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='favicon.ico') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='Spotify_Primary_Logo_RGB_White.ico') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='home.css') }}">
 </head>
 <body>
     
-    <img src="{{ url_for('static', path='favicon.ico') }}" alt="Personalify Logo" class="logo">
+    <img src="{{ url_for('static', path='Spotify_Primary_Logo_RGB_Green.ico') }}" alt="Personalify Logo" class="logo">
 
     <div class="hero">
         <h1>Welcome to Personalify!</h1>
@@ -18,7 +20,7 @@
     </div>
 
     <footer>
-        Personalify &copy; 2025 • Powered by Spotify API
+        Personalify &copy; 2025 • Powered by <a href="https://developer.spotify.com/" target="_blank" class="footer-link">Spotify API</a>
         <br>
         Created by <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>
     </footer>
