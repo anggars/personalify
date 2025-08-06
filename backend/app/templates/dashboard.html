@@ -137,7 +137,6 @@
             labels: [{% for genre in genres %}'{{ genre.name | safe }}'{% if not loop.last %},{% endif %}{% endfor %}],
             counts: [{% for genre in genres %}{{ genre.count }}{% if not loop.last %},{% endif %}{% endfor %}]
         };
-        // TAMBAHKAN INI: data baru untuk tooltip interaktif
         const genreArtistsMap = {{ genre_artists_map | tojson | safe }};
     </script>    
     <script src="{{ url_for('static', path='dashboard.js') }}"></script>
