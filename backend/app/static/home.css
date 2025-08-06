@@ -94,8 +94,9 @@ footer {
     text-decoration: none;
     transition: color 0.2s ease;
 }
+
 .footer-link:hover {
-    color: var(--primary);
+    color: #1DB954; /* Spotify Green */
 }
 
 @keyframes fadeInUp {
