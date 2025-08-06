@@ -96,7 +96,7 @@ footer {
 }
 
 .footer-link:hover {
-    color: #1DB954; /* Spotify Green */
+    color: #1DB954;
 }
 
 @keyframes fadeInUp {
