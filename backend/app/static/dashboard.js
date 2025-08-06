@@ -60,17 +60,17 @@ function hideSaveOptions() {
 function generateImage(selectedCategory) {
     hideSaveOptions();
 
-    // 1. Sembunyikan semua section dulu
+    // Sembunyikan semua section dulu
     for (const key in sections) {
         sections[key].style.display = "none";
     }
 
-    // 2. Tampilkan dan siapkan section yang akan di-capture
+    // Siapkan section yang akan di-capture
     const sectionToCapture = sections[selectedCategory];
     sectionToCapture.style.display = "block";
     const clone = sectionToCapture.cloneNode(true);
 
-    // 3. Khusus untuk genre, ganti canvas dengan gambar statis
+    // Khusus untuk genre, ganti canvas dengan gambar statis
     if (selectedCategory === 'genres') {
         const originalCanvas = document.getElementById('genreChart');
         const clonedCanvas = clone.querySelector('#genreChart');
@@ -85,37 +85,55 @@ function generateImage(selectedCategory) {
         }
     }
 
-    // 4. Buat container utama untuk gambar
+    // -- LOGIKA BARU UNTUK INSTAGRAM STORY --
+    const STORY_WIDTH = 720;
+    const STORY_HEIGHT = 1280;
+
     const container = document.createElement("div");
-    container.style.width = "720px";
+    container.style.width = `${STORY_WIDTH}px`;
+    container.style.height = `${STORY_HEIGHT}px`;
     container.style.background = "#121212";
-    container.style.padding = "2rem"; // Jarak lebih simetris
-    container.style.boxSizing = "border-box";
     container.style.color = "#fff";
     container.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
+    container.style.overflow = 'hidden';
 
-    // 5. Copy header dari halaman web (solusi utama)
+    const contentWrapper = document.createElement("div");
+    contentWrapper.style.padding = "80px 40px 40px 40px";
+    contentWrapper.style.boxSizing = "border-box";
+    contentWrapper.style.width = '100%';
+    
     const pageHeader = document.querySelector('header');
     const headerClone = pageHeader.cloneNode(true);
     headerClone.style.textAlign = 'center';
-    headerClone.style.marginBottom = '2rem';
-    container.appendChild(headerClone);
-
-    // 6. Masukkan konten (artist/track/genre)
-    container.appendChild(clone);
-
-    // 7. Buat footer baru untuk gambar
+    headerClone.style.marginBottom = '1.5rem';
+    contentWrapper.appendChild(headerClone);
+    contentWrapper.appendChild(clone);
+    
     const footer = document.createElement("div");
     footer.innerHTML = `Personalify © 2025 • <a href="https://developer.spotify.com/" target="_blank" style="color: #888; text-decoration: none;">Powered by Spotify API</a>`;
-    footer.style.marginTop = "2rem";
+    footer.style.paddingTop = "2rem";
+    footer.style.marginTop = "auto";
     footer.style.fontSize = "0.75rem";
     footer.style.color = "#888";
     footer.style.textAlign = "center";
-    container.appendChild(footer);
-    
-    // 8. Proses rendering menjadi gambar
+    contentWrapper.appendChild(footer);
+
+    container.appendChild(contentWrapper);
+
+    // Proses rendering menjadi gambar
     function renderCanvas() {
         document.body.appendChild(container);
+
+        // --- PERBAIKAN KUNCI: Pengukuran dan scaling dipindah ke sini ---
+        // Ini memastikan pengukuran dilakukan SETELAH semua gambar dimuat
+        const contentHeight = contentWrapper.scrollHeight;
+        if (contentHeight > STORY_HEIGHT) {
+            const scale = STORY_HEIGHT / contentHeight;
+            contentWrapper.style.transform = `scale(${scale})`;
+            contentWrapper.style.transformOrigin = 'top center';
+        }
+        // --- AKHIR PERBAIKAN ---
+
         html2canvas(container, {
             scale: 2,
             useCORS: true,
@@ -126,7 +144,6 @@ function generateImage(selectedCategory) {
             link.href = canvas.toDataURL("image/png");
             link.click();
             document.body.removeChild(container);
-            // Kembalikan tampilan seperti semula
             checkScreenSize();
         });
     }
@@ -138,7 +155,6 @@ function generateImage(selectedCategory) {
     } else {
         let loadedCount = 0;
         imgs.forEach(img => {
-            // Trik untuk memastikan gambar dari cache juga memicu 'onload'
             const newImg = new Image();
             newImg.crossOrigin = "anonymous";
             newImg.src = img.src;
