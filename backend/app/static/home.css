@@ -12,9 +12,8 @@
 }
 
 body {
-    background-color: var(--bg); /* Latar belakang disamakan dengan dashboard */
+    background-color: var(--bg);
     color: var(--text);
-    /* Font baru diterapkan di sini */
     font-family: 'Plus Jakarta Sans', sans-serif;
     display: flex;
     flex-direction: column;
