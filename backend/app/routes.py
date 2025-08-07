@@ -70,9 +70,9 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
     # Step 3: Sync untuk semua time_range
     time_ranges = ["short_term", "medium_term", "long_term"]
     for time_range in time_ranges:
-        artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=10", headers=headers)
+        artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
         artists = artist_resp.json().get("items", [])
-        track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=10", headers=headers)
+        track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20", headers=headers)
         tracks = track_resp.json().get("items", [])
 
         result = {"user": display_name, "artists": [], "tracks": []}

@@ -1,3 +1,5 @@
+let genreChartInstance = null;
+
 const categoryFilterSelect = document.getElementById("category-filter");
 const categoryFilterWrapper = document.getElementById("category-filter-wrapper");
 const sections = {
@@ -6,6 +8,27 @@ const sections = {
     genres: document.getElementById("genres-section")
 };
 const modal = document.getElementById("save-modal-overlay");
+
+// ... setelah const modal = ...
+// TAMBAHKAN FUNGSI BARU INI
+function updateGenreChart(newLabels, newCounts) {
+    if (!genreChartInstance) return;
+
+    // Sediakan daftar warna yang lebih panjang untuk 20 item
+    const fullColorList = [
+        '#1DB954', '#F28E2B', '#E15759', '#76B7B2', '#9AA067',
+        '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC',
+        '#4D4D4D', '#6B5B95', '#88B04B', '#F7CAC9', '#92A8D1',
+        '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
+    ];
+
+    genreChartInstance.data.labels = newLabels;
+    genreChartInstance.data.datasets[0].data = newCounts;
+    // Perbarui juga warnanya agar cukup untuk data baru
+    genreChartInstance.data.datasets[0].backgroundColor = fullColorList;
+    
+    genreChartInstance.update(); // Perintah untuk me-render ulang chart
+}
 
 function updateCategoryDisplay() {
     const value = categoryFilterSelect.value;
@@ -68,6 +91,20 @@ function generateImage(selectedCategory) {
     // Siapkan section yang akan di-capture
     const sectionToCapture = sections[selectedCategory];
     sectionToCapture.style.display = "block";
+
+     // Sembunyikan item lebih dari 10 sebelum meng-clone untuk gambar
+    const allItems = sectionToCapture.querySelectorAll('ol.list-container > li');
+    allItems.forEach((item, index) => {
+        if (index >= 10) {
+            item.style.display = 'none';
+        }
+    });
+    // Sembunyikan juga tombol "Show More" dari gambar
+    const showMoreContainer = sectionToCapture.querySelector('.show-more-container');
+    if (showMoreContainer) {
+        showMoreContainer.style.display = 'none';
+    }
+
     const clone = sectionToCapture.cloneNode(true);
 
     // Khusus untuk genre, ganti canvas dengan gambar statis
@@ -197,19 +234,25 @@ window.onload = function() {
             }
         };
 
+        // ▼▼▼ PERBAIKAN UTAMA DI SINI ▼▼▼
+        // Ambil hanya 10 data teratas untuk ditampilkan di chart
+        const top10Labels = genreData.labels.slice(0, 10);
+        const top10Counts = genreData.counts.slice(0, 10);
+        const top10Colors = [
+            '#1DB954', '#F28E2B', '#E15759', '#76B7B2', '#9AA067',
+            '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC'
+        ];
+        // ▲▲▲ AKHIR PERBAIKAN ▲▲▲
+
         const data = {
-            labels: genreData.labels,
+            labels: top10Labels, // Gunakan data yang sudah dipotong
             datasets: [{
-                data: genreData.counts,
-                backgroundColor: [
-                    '#1DB954', '#F28E2B', '#E15759', '#76B7B2', '#9AA067',
-                    '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC',
-                    '#4D4D4D', '#6B5B95', '#88B04B', '#F7CAC9', '#92A8D1'
-                ]
+                data: top10Counts, // Gunakan data yang sudah dipotong
+                backgroundColor: top10Colors
             }]
         };
 
-        new Chart(ctx, {
+        genreChartInstance = new Chart(ctx, {
             type: 'pie',
             data: data,
             plugins: [legendMarginPlugin],
@@ -238,4 +281,17 @@ window.onload = function() {
         });
     }
     checkScreenSize();
+
+    // FUNGSI FINAL UNTUK "HIDDEN GEM" DI FOOTER (VERSI BARU)
+    document.querySelectorAll('.footer-toggler').forEach(toggler => {
+        toggler.addEventListener('click', function() {
+            // Tampilkan semua item yang tersembunyi
+            document.querySelectorAll('.hidden-item').forEach(item => {
+                item.style.display = 'list-item';
+            });
+            
+            // Panggil fungsi update dengan data lengkap
+            updateGenreChart(genreData.labels, genreData.counts);
+        });
+    });
 };
