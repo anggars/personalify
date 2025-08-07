@@ -45,21 +45,20 @@
         <div class="section" id="artists-section">
             <h2>Top Artists</h2>
             <ol class="list-container">
-                {% for artist in artists[:10] %}
-                <li>
+                {% for artist in artists %}
+                <li {% if loop.index > 10 %}class="hidden-item"{% endif %}>
                     <div class="list-item">
                         <span class="rank">{{ loop.index }}</span>
                         <img src="{{ artist.image }}" alt="{{ artist.name }}">
                         <div class="info">
                             <div class="name">{{ artist.name }}</div>
                             <div class="meta genre-pills">
-                                {% set max_genres = 6 %}
-                                {% for genre in artist.genres[:max_genres] %}<span class="genre-label">{{ genre }}</span>{% endfor %}
-                                {% if artist.genres | length > max_genres %}
-                                <span class="more-genres" id="more-{{ loop.index }}">
-                                    {% for genre in artist.genres[max_genres:] %}<span class="genre-label">{{ genre }}</span>{% endfor %}
+                                {% for genre in artist.genres[:6] %}<span class="genre-label">{{ genre }}</span>{% endfor %}
+                                {% if artist.genres | length > 6 %}
+                                <span class="more-genres" id="more-artists-{{ loop.index }}">
+                                    {% for genre in artist.genres[6:] %}<span class="genre-label">{{ genre }}</span>{% endfor %}
                                 </span>
-                                <span class="show-more" onclick="toggleMore({{ loop.index }}, this)">more</span>
+                                <span class="show-more" onclick="toggleMore('artists-{{ loop.index }}', this)">more</span>
                                 {% endif %}
                             </div>
                             <div class="meta">Popularity: {{ artist.popularity }}</div>
@@ -73,8 +72,8 @@
         <div class="section" id="tracks-section">
             <h2>Top Tracks</h2>
             <ol class="list-container">
-                {% for track in tracks[:10] %}
-                <li>
+                {% for track in tracks %}
+                <li {% if loop.index > 10 %}class="hidden-item"{% endif %}>
                     <div class="list-item">
                         <span class="rank">{{ loop.index }}</span>
                         <img src="{{ track.image }}" alt="{{ track.name }}">
@@ -94,8 +93,8 @@
             <h2>Top Genres</h2>
             <canvas id="genreChart" style="max-height:300px;margin:1rem 0 2rem 0;"></canvas>
             <ol class="list-container">
-                {% for genre in genres[:10] %}
-                <li>
+                {% for genre in genres %}
+                <li {% if loop.index > 10 %}class="hidden-item"{% endif %}>
                     <div class="list-item">
                         <span class="rank">{{ loop.index }}</span>
                         <div class="info">
@@ -126,9 +125,13 @@
     </div>
 
     <footer>
-        Personalify &copy; 2025 • Powered by <a href="https://developer.spotify.com/" target="_blank" class="footer-link">Spotify API</a>
+        <span class="footer-toggler" title="Easter Egg!">
+            <a href="/" class="footer-link">Personalify</a> © 2025 • Powered by <a href="https://developer.spotify.com/" target="_blank" class="footer-link">Spotify API</a>
+        </span>
         <br>
-        Created by <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>
+        <span class="footer-toggler" title="Easter Egg!">
+            Created by <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>
+        </span>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
