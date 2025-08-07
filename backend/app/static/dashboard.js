@@ -9,6 +9,7 @@ const sections = {
 };
 const modal = document.getElementById("save-modal-overlay");
 
+// GANTI SELURUH FUNGSI INI
 function updateGenreChart(newLabels, newCounts) {
     if (!genreChartInstance) return;
 
@@ -257,6 +258,7 @@ window.onload = function() {
             type: 'pie',
             data: data,
             plugins: [legendMarginPlugin],
+            // GANTI SELURUH BLOK 'options' ANDA DENGAN INI
             // GANTI SELURUH BLOK 'options' ANDA DENGAN INI
             options: {
                 responsive: true,
