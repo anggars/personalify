@@ -9,12 +9,9 @@ const sections = {
 };
 const modal = document.getElementById("save-modal-overlay");
 
-// ... setelah const modal = ...
-// TAMBAHKAN FUNGSI BARU INI
 function updateGenreChart(newLabels, newCounts) {
     if (!genreChartInstance) return;
 
-    // Sediakan daftar warna yang lebih panjang untuk 20 item
     const fullColorList = [
         '#1DB954', '#F28E2B', '#E15759', '#76B7B2', '#9AA067',
         '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC',
@@ -22,12 +19,16 @@ function updateGenreChart(newLabels, newCounts) {
         '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
     ];
 
+    // Update data chart
     genreChartInstance.data.labels = newLabels;
     genreChartInstance.data.datasets[0].data = newCounts;
-    // Perbarui juga warnanya agar cukup untuk data baru
     genreChartInstance.data.datasets[0].backgroundColor = fullColorList;
     
-    genreChartInstance.update(); // Perintah untuk me-render ulang chart
+    // Terapkan lagi aturan mobile saat chart di-update
+    genreChartInstance.options.plugins.legend.display = window.innerWidth > 768;
+
+    // Paksa chart untuk me-render ulang tanpa mengubah ukuran fundamentalnya
+    genreChartInstance.update();
 }
 
 function updateCategoryDisplay() {
@@ -256,10 +257,13 @@ window.onload = function() {
             type: 'pie',
             data: data,
             plugins: [legendMarginPlugin],
+            // GANTI SELURUH BLOK 'options' ANDA DENGAN INI
             options: {
                 responsive: true,
+                maintainAspectRatio: false, // <-- KUNCI #1: Mencegah chart mengecil
                 plugins: {
                     legend: {
+                        display: window.innerWidth > 768, // <-- KUNCI #2: Sembunyikan legenda di HP
                         position: 'top',
                         labels: {
                             color: '#fff',
