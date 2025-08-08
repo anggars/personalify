@@ -64,6 +64,13 @@ h1 {
     border-radius: 1rem;
     padding: 1.5rem;
     border: 1px solid #282828;
+    position: relative;
+    z-index: 1;
+}
+.section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    z-index: 2;
 }
 .section h2 {
     text-align: center;
