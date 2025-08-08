@@ -76,6 +76,56 @@ function hideSaveOptions() {
     modal.style.display = 'none';
 }
 
+function customTooltip(tooltipModel) {
+    let tooltipEl = document.getElementById('chartjs-tooltip');
+
+    if (!tooltipEl) {
+        tooltipEl = document.createElement('div');
+        tooltipEl.id = 'chartjs-tooltip';
+        tooltipEl.innerHTML = '<table></table>';
+        document.body.appendChild(tooltipEl);
+    }
+
+    if (tooltipModel.opacity === 0) {
+        tooltipEl.style.opacity = 0;
+        return;
+    }
+
+    // INI BAGIAN YANG DIPERBAIKI:
+    // Pengecekan sekarang lebih lengkap
+    if (tooltipModel.body || (tooltipModel.title && tooltipModel.title.length > 0) || (tooltipModel.footer && tooltipModel.footer.length > 0)) {
+        const titleLines = tooltipModel.title || [];
+        const footerLines = tooltipModel.footer || [];
+        let innerHtml = '<thead>';
+
+        titleLines.forEach(function(title) {
+            innerHtml += '<tr><th>' + title + '</th></tr>';
+        });
+
+        innerHtml += '</thead><tbody>';
+
+        footerLines.forEach(function(footer) {
+             innerHtml += '<tr><td>' + footer + '</td></tr>';
+        });
+
+        innerHtml += '</tbody>';
+        let tableRoot = tooltipEl.querySelector('table');
+        tableRoot.innerHTML = innerHtml;
+    }
+
+    const position = tooltipModel._chart.canvas.getBoundingClientRect(); 
+    
+    tooltipEl.style.opacity = 1;
+    tooltipEl.style.position = 'absolute';
+    tooltipEl.style.left = position.left + window.pageXOffset + tooltipModel.caretX + 'px';
+    tooltipEl.style.top = position.top + window.pageYOffset + tooltipModel.caretY + 'px';
+    tooltipEl.style.fontFamily = tooltipModel._bodyFontFamily;
+    tooltipEl.style.fontSize = tooltipModel.bodyFontSize + 'px';
+    tooltipEl.style.fontStyle = tooltipModel._bodyFontStyle;
+    tooltipEl.style.padding = tooltipModel.yPadding + 'px ' + tooltipModel.xPadding + 'px';
+    tooltipEl.style.pointerEvents = 'none';
+}
+
 function generateImage(selectedCategory) {
     hideSaveOptions();
 
@@ -214,6 +264,9 @@ modal.addEventListener('click', (event) => {
 });
 
 window.onload = function() {
+    // Perintah global untuk memastikan legenda TIDAK PERNAH muncul
+    Chart.defaults.global.legend.display = false;
+    
     const ctx = document.getElementById('genreChart');
     if (ctx) {
         const chartColors = [
@@ -223,39 +276,30 @@ window.onload = function() {
             '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
         ];
 
-        // Default cuma top 10
-        const initialLabels = genreData.labels.slice(0, 10);
-        const initialCounts = genreData.counts.slice(0, 10);
-
+        // 1. BUAT CHART DENGAN SEMUA DATA (TOP 20)
         genreChartInstance = new Chart(ctx, {
             type: 'pie',
             data: {
-                labels: initialLabels,
+                labels: genreData.labels,
                 datasets: [{
-                    data: initialCounts,
-                    backgroundColor: chartColors.slice(0, 10)
+                    data: genreData.counts,
+                    backgroundColor: chartColors
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                legend: {
-                    display: false
-                },
                 tooltips: {
                     callbacks: {
                         footer: function(tooltipItems, data) {
                             const tooltipItem = tooltipItems[0];
-                            if (!tooltipItem) {
-                                return '';
-                            }
+                            if (!tooltipItem) return '';
                             const genre = data.labels[tooltipItem.index];
                             const artists = genreArtistsMap[genre] || [];
                             
                             if (artists.length > 0) {
-                                const maxArtistsToShow = 10;
+                                const maxArtistsToShow = 6;
                                 let artistList = artists.slice(0, maxArtistsToShow).map(artist => `• ${artist}`);
-
                                 if (artists.length > maxArtistsToShow) {
                                     artistList.push(`• and ${artists.length - maxArtistsToShow} more...`);
                                 }
@@ -268,49 +312,55 @@ window.onload = function() {
             }
         });
 
-        // Warna di custom list cuma top 10 dulu
+        // 2. SEMBUNYIKAN SLICE DI ATAS 10 SECARA MANUAL
+        genreChartInstance.getDatasetMeta(0).data.forEach((slice, index) => {
+            if (index >= 10) {
+                slice.hidden = true;
+            }
+        });
+        genreChartInstance.update(); // Terapkan perubahan
+
+        // 3. SINKRONISASI WARNA DAN INTERAKTIVITAS LEGENDA KUSTOM
         const genreListItems = document.querySelectorAll('#genres-section li');
         genreListItems.forEach((item) => {
             const itemIndex = parseInt(item.getAttribute('data-index'));
+
             const colorLabel = item.querySelector('.genre-color-label');
-            if (colorLabel && itemIndex < 10) {
+            if (colorLabel) {
                 colorLabel.style.backgroundColor = chartColors[itemIndex % chartColors.length];
             }
+
+            // Fungsi klik sekarang akan bekerja untuk semua item
             item.addEventListener('click', function() {
                 const meta = genreChartInstance.getDatasetMeta(0);
                 if (meta.data[itemIndex]) {
-                    const isHidden = meta.data[itemIndex].hidden;
-                    meta.data[itemIndex].hidden = !isHidden;
+                    meta.data[itemIndex].hidden = !meta.data[itemIndex].hidden;
                     this.classList.toggle('disabled');
                     genreChartInstance.update();
                 }
             });
         });
-
-        // Easter egg klik → tampilkan semua + update chart jadi top 20
-        document.querySelectorAll('.footer-toggler').forEach(toggler => {
-            toggler.addEventListener('click', function() {
-                document.querySelectorAll('.hidden-item').forEach(item => {
-                    item.style.display = 'list-item';
-                });
-
-                // Update chart ke 20 data
-                genreChartInstance.data.labels = genreData.labels.slice(0, 20);
-                genreChartInstance.data.datasets[0].data = genreData.counts.slice(0, 20);
-                genreChartInstance.data.datasets[0].backgroundColor = chartColors.slice(0, 20);
-                genreChartInstance.update();
-
-                // Update warna label di list
-                document.querySelectorAll('#genres-section li').forEach((item) => {
-                    const itemIndex = parseInt(item.getAttribute('data-index'));
-                    const colorLabel = item.querySelector('.genre-color-label');
-                    if (colorLabel) {
-                        colorLabel.style.backgroundColor = chartColors[itemIndex % chartColors.length];
-                    }
-                });
-            });
-        });
     }
 
     checkScreenSize();
+
+    // 4. FUNGSI "HIDDEN GEM" SEKARANG LEBIH SIMPEL
+    let easterEggClicked = false;
+    document.querySelectorAll('.footer-toggler').forEach(toggler => {
+        toggler.addEventListener('click', function() {
+            if (easterEggClicked) return;
+
+            document.querySelectorAll('.hidden-item').forEach(item => {
+                item.style.display = 'list-item';
+            });
+            
+            // Kita hanya perlu memunculkan kembali semua slice yang tersembunyi
+            genreChartInstance.getDatasetMeta(0).data.forEach((slice) => {
+                slice.hidden = false;
+            });
+            genreChartInstance.update();
+            
+            easterEggClicked = true;
+        });
+    });
 };
