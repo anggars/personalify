@@ -228,7 +228,7 @@ footer {
 }
 /* === GAYA UNTUK LEGENDA KUSTOM === */
 #genreChart {
-    max-height: 300px;
+    max-height: 250px;
     margin: 2.3rem 0; /* Memberi jarak atas & bawah yang simetris */
 }
 .name-container {
