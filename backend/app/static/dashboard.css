@@ -231,6 +231,9 @@ footer {
     max-height: 250px;
     margin: 2.3rem 0; /* Memberi jarak atas & bawah yang simetris */
 }
+#genres-section {
+    overflow: visible;
+}
 .name-container {
     display: flex;
     align-items: center;
