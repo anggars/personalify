@@ -6,7 +6,6 @@ body {
     padding: 1.5rem;
     overflow-x: hidden;
 }
-
 h1 {
     color: #1DB954;
     font-size: 2.5rem;
@@ -14,16 +13,14 @@ h1 {
     text-align: center;
     margin-bottom: 2rem;
 }
-
 .subtitle {
     text-align: center;
     font-size: 1.2rem;
     font-weight: 500;
-    color: #B3B3B3; /* Warna abu-abu agar kontrasnya pas */
-    margin-top: -1.5rem; /* Menariknya sedikit ke atas */
+    color: #B3B3B3;
+    margin-top: -1.5rem;
     margin-bottom: 2rem;
 }
-
 .filters {
     display: flex;
     flex-wrap: wrap;
@@ -32,13 +29,11 @@ h1 {
     gap: 0.75rem;
     margin-bottom: 3rem;
 }
-
 .select-wrapper {
     position: relative;
     display: inline-block;
     border-radius: 9999px;
 }
-
 .select-wrapper::after {
     content: '▼';
     font-size: 0.8rem;
@@ -49,11 +44,8 @@ h1 {
     transform: translateY(-50%);
     pointer-events: none;
 }
-
 .filters select {
     appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
     background-color: #2a2a2a;
     border: none;
     padding: 0.5rem 2.5rem 0.5rem 1rem;
@@ -62,32 +54,17 @@ h1 {
     cursor: pointer;
     border-radius: 9999px;
 }
-
-.filters select option {
-    background: #2a2a2a;
-    color: #ffffff;
-}
-
 .container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
 }
-
 .section {
     background: #1e1e1e;
     border-radius: 1rem;
     padding: 1.5rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
     border: 1px solid #282828;
 }
-
-.section:hover {
-    transform: scale(1.005);
-    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.5);
-}
-
 .section h2 {
     text-align: center;
     font-size: 1.5rem;
@@ -98,29 +75,31 @@ h1 {
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
 }
-
 .list-container {
     list-style: none;
     padding: 0;
     margin: 0;
 }
-
+#genres-section li { /* Aturan spesifik untuk genre list */
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+#genres-section li:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
 li {
     padding: 0.75rem 0;
     border-bottom: 1px solid #333;
 }
-
 li:last-child {
     border-bottom: none;
     padding-bottom: 0;
 }
-
 .list-item {
     display: flex;
     align-items: center;
     gap: 1rem;
 }
-
 .rank {
     font-size: 1.2rem;
     font-weight: 700;
@@ -129,7 +108,6 @@ li:last-child {
     text-align: center;
     flex-shrink: 0;
 }
-
 .list-item img {
     width: 64px;
     height: 64px;
@@ -137,82 +115,39 @@ li:last-child {
     object-fit: cover;
     flex-shrink: 0;
 }
-
 .info {
     flex: 1;
     min-width: 0;
 }
-
 .info .name {
     font-weight: 600;
     font-size: 1.1rem;
-    margin-bottom: 0.25rem;
     overflow-wrap: break-word;
+    display: flex;
+    align-items: center;
 }
-
 .info .meta {
     font-size: 0.8rem;
     color: #bbb;
+    margin-top: 0.25rem;
 }
-
-.genre-label {
+.genre-pills .genre-label {
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
     padding: 0.25rem 0.4rem 0.2rem;
-    font-weight: 500;
     background-color: #1DB954;
     color: black;
     font-size: 0.65rem;
     border-radius: 9999px;
     margin: 0.1rem 0.2rem 0 0;
 }
-
 .more-genres {
     display: none;
 }
-
 .show-more {
     cursor: pointer;
     color: #1DB954;
     font-size: 0.75rem;
-    margin-top: 0.5rem;
-    display: inline-block;
 }
-
-@media (max-width: 768px) {
-    body {
-        padding-bottom: 100px;
-    }
-    .container {
-        grid-template-columns: 1fr;
-    }
-    .download-btn {
-        width: calc(100% - 40px);
-        left: 20px;
-        right: 20px;
-        bottom: 20px;
-        padding: 1rem;
-        text-align: center;
-        box-sizing: border-box; 
-    }
-    #category-filter-wrapper {
-        display: block !important; /* Paksa untuk tampil */
-    }
-    .section {
-        display: none;
-    }
-    .section.active {
-        display: block;
-    }
-}
-
-@media (min-width: 769px) {
-    #category-filter-wrapper {
-        display: none !important;
-    }
-}
-
 .download-btn {
     position: fixed;
     bottom: 1.5rem;
@@ -227,14 +162,12 @@ li:last-child {
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     z-index: 1000;
 }
-
 footer {
     margin-top: 3rem;
     text-align: center;
     font-size: 0.75rem;
     color: #888;
 }
-
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -247,28 +180,24 @@ footer {
     align-items: center;
     z-index: 2000;
 }
-
 .modal-content {
     background-color: #2a2a2a;
     padding: 2rem;
     border-radius: 1rem;
     text-align: center;
-    max-width: 90%;
     width: 400px;
+    max-width: 90%;
 }
-
 .modal-content h3 {
     margin-top: 0;
     color: #1DB954;
 }
-
 .modal-options {
     display: flex;
     flex-direction: column;
     gap: 1rem;
     margin-top: 1.5rem;
 }
-
 .modal-options button {
     padding: 0.75rem 1rem;
     font-size: 1rem;
@@ -278,63 +207,70 @@ footer {
     color: #000;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s;
 }
-
-.modal-options button:hover {
-    background-color: #1ed760;
-}
-
 .modal-close {
-    margin-top: 1.5rem;
     background: none;
     border: 1px solid #555;
     color: #aaa;
 }
-
-.modal-close:hover {
-    background-color: #333;
-    color: #fff;
-}
-
 .footer-link {
     color: #888;
     text-decoration: none;
-    transition: color 0.2s ease;
 }
-
 .footer-link:hover {
-    color: #1DB954; /* Spotify Green */
+    color: #1DB954;
 }
-
 .hidden-item {
     display: none;
 }
-.show-more-container {
-    text-align: center;
-    margin-top: 1.5rem;
-}
-.show-more-btn {
-    background-color: #2a2a2a;
-    border: 1px solid #444;
-    color: #fff;
-    padding: 0.5rem 1.5rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-}
-.show-more-btn:hover {
-    background-color: #333;
-}
-
 .footer-toggler {
     cursor: pointer;
-    transition: color 0.2s ease;
 }
-
-.footer-toggler:hover {
-    color: #fff; /* Teks akan sedikit lebih terang saat mouse diarahkan */
+/* === GAYA UNTUK LEGENDA KUSTOM === */
+#genreChart {
+    max-height: 300px;
+    margin: 2.3rem 0; /* Memberi jarak atas & bawah yang simetris */
+}
+.name-container {
+    display: flex;
+    align-items: center;
+}
+.genre-color-label {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-right: 0.65rem;
+    position: relative;
+    top: 2px;    
+}
+#genres-section li.disabled .name {
+    text-decoration: line-through;
+    color: #888;
+}
+#genres-section li.disabled .genre-color-label {
+    background-color: #888 !important;
+}
+/* === ATURAN UNTUK MOBILE === */
+@media (max-width: 768px) {
+    body {
+        padding-bottom: 100px;
+    }
+    .container {
+        grid-template-columns: 1fr;
+    }
+    .download-btn {
+        width: calc(100% - 40px);
+        left: 20px;
+        right: 20px;
+        bottom: 20px;
+        padding: 1rem;
+    }
+    .section {
+        display: none;
+    }
+    .section.active {
+        display: block;
+    }
 }

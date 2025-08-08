@@ -6,7 +6,7 @@
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='Spotify_Primary_Logo_RGB_White.ico') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="google-site-verification" content="JgCSMAYUdz7lltCAqQ0TyE4fW0EwZEQazmvQt6K5T7s" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='dashboard.css') }}">
@@ -91,14 +91,17 @@
 
         <div class="section" id="genres-section">
             <h2>Top Genres</h2>
-            <canvas id="genreChart" style="max-height:300px;margin:1rem 0 2rem 0;"></canvas>
+            <canvas id="genreChart"></canvas>
             <ol class="list-container">
                 {% for genre in genres %}
-                <li {% if loop.index > 10 %}class="hidden-item"{% endif %}>
+                <li {% if loop.index > 10 %}class="hidden-item"{% endif %} data-index="{{ loop.index0 }}">
                     <div class="list-item">
                         <span class="rank">{{ loop.index }}</span>
                         <div class="info">
-                            <div class="name">{{ genre.name }}</div>
+                            <div class="name-container">
+                                <span class="genre-color-label"></span> 
+                                <span class="name">{{ genre.name }}</span>
+                            </div>
                             <div class="meta">
                                 Mentioned {{ genre.count }} times{% if genre_artists_map[genre.name] %}: {{ genre_artists_map[genre.name] | join(', ') }}{% endif %}
                             </div>
