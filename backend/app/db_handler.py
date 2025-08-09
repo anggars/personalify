@@ -1,31 +1,40 @@
-import psycopg2
 import os
+import psycopg2
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 # Memuat .env agar tetap berfungsi di lokal
 load_dotenv()
 
-# --- BLOK KODE BARU UNTUK KONEKSI PINTAR ---
-DB_PARAMS = {}
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-if DATABASE_URL:
-    # Jika ada DATABASE_URL (saat di Render), langsung gunakan itu.
-    DB_PARAMS['dsn'] = DATABASE_URL
-else:
-    # Jika tidak ada (saat di lokal), pakai .env seperti biasa
-    DB_PARAMS = {
-        "host": os.getenv("POSTGRES_HOST", "postgresfy"),
-        "port": os.getenv("POSTGRES_PORT", "5432"),
-        "database": os.getenv("POSTGRES_DB", "streamdb"),
-        "user": os.getenv("POSTGRES_USER", "admin"),
-        "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
-    }
-# --- AKHIR BLOK KODE BARU ---
-
-# SISA KODE DI BAWAH INI SAMA PERSIS SEPERTI KODE ANDA
 def get_conn():
-    return psycopg2.connect(**DB_PARAMS)
+    """
+    Membuat koneksi database yang cerdas.
+    Bisa menangani DATABASE_URL (untuk Render/Supabase) 
+    atau variabel terpisah (untuk Docker lokal).
+    """
+    DATABASE_URL = os.getenv("DATABASE_URL")
+
+    if DATABASE_URL:
+        # Jika ada DATABASE_URL, kita parse secara manual untuk Supabase
+        result = urlparse(DATABASE_URL)
+        db_params = {
+            'dbname': result.path[1:],
+            'user': result.username,
+            'password': result.password,
+            'host': result.hostname,
+            'port': result.port
+        }
+        return psycopg2.connect(**db_params)
+    else:
+        # Jika tidak ada, gunakan variabel terpisah untuk lokal
+        db_params = {
+            "host": os.getenv("POSTGRES_HOST", "postgresfy"),
+            "port": os.getenv("POSTGRES_PORT", "5432"),
+            "database": os.getenv("POSTGRES_DB", "streamdb"),
+            "user": os.getenv("POSTGRES_USER", "admin"),
+            "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
+        }
+        return psycopg2.connect(**db_params)
 
 def init_db():
     with get_conn() as conn:
