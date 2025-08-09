@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="{{ url_for('static', path='dashboard.css') }}">
 </head>
 <body>
+
 <header>
     <h1>Personalify</h1>
     {% if time_range == 'short_term' %}
@@ -21,6 +22,9 @@
     {% else %}
         <p class="subtitle">Your listening overview for the year, {{ user }}!</p>
     {% endif %}
+
+    <p class="emotion-recap">{{ emotion_paragraph | safe }}</p>
+
 </header>
 
     <div class="filters">
