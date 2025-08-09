@@ -57,16 +57,16 @@ def generate_emotion_paragraph(track_names):
 
     # --- PARAGRAF DENGAN TAG HTML <b> ---
     if emotion_label == 'joy':
-        return "Your playlist is filled with energetic tunes, reflecting a mood of <b>joy</b>."
+        return "Playlist filled with energetic tunes, reflecting <b>joy</b>."
     elif emotion_label == 'sadness':
-        return "You're in a reflective mood, with music that evokes a sense of <b>sadness</b>."
+        return "Reflective mood with music steeped in <b>sadness</b>."
     elif emotion_label == 'anger':
-        return "Your playlist is packed with powerful, high-energy tracks that carry an undercurrent of <b>anger</b>."
+        return "Playlist packed with powerful, high-energy tracks carrying <b>anger</b>."
     elif emotion_label == 'fear':
-        return "You're currently into mysterious and atmospheric sounds that create a feeling of <b>fear</b> or suspense."
+        return "Drawn to mysterious and atmospheric sounds creating <b>fear</b> or suspense."
     elif emotion_label == 'surprise':
-        return "Your current music taste is dynamic and unpredictable, full of <b>surprise</b>."
+        return "Dynamic and unpredictable taste, full of <b>surprise</b>."
     elif emotion_label == 'disgust':
-        return "You're exploring raw sounds, showing a rebellious <b>disgust</b> for mainstream norms."
-    else: # Default untuk 'neutral'
-        return "Your music taste appears quite balanced, indicating a <b>neutral</b> emotional state."
+        return "Exploring raw sounds with a rebellious <b>disgust</b> for mainstream norms."
+    else:  # neutral
+        return "Balanced taste indicating a <b>neutral</b> emotional state."
