@@ -81,11 +81,14 @@ p {
 
 footer {
     position: absolute;
-    bottom: 1.5rem;
-    font-size: 0.8rem;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 1.5rem 0;
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 0.75rem;
     color: #888;
-    opacity: 0;
-    animation: fadeInUp 1s ease-out 0.6s forwards;
 }
 
 .footer-link {
