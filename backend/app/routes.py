@@ -43,73 +43,66 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
     redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
 
-    # Step 1: Tukarkan code ke token (Cepat)
+    # Step 1: Tukar code ke token
     payload = {
         "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
         "client_id": client_id, "client_secret": client_secret
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
-    
-    # Cek jika ada error dari Spotify
     if res.status_code != 200:
-        raise HTTPException(status_code=res.status_code, detail=res.json()) # Tampilkan error JSON
-    
+        raise HTTPException(status_code=res.status_code, detail=res.text)
     tokens = res.json()
     access_token = tokens.get("access_token")
     if not access_token:
         raise HTTPException(status_code=400, detail="Access token not found in response.")
 
-    # Step 2: Ambil profil user (Cepat)
+    # Step 2: Ambil profil user
     headers = {"Authorization": f"Bearer {access_token}"}
     user_res = requests.get("https://api.spotify.com/v1/me", headers=headers)
     if user_res.status_code != 200:
         raise HTTPException(status_code=user_res.status_code, detail=user_res.text)
-    
     user_profile = user_res.json()
     spotify_id = user_profile["id"]
-    display_name = user_profile.get("display_name", spotify_id)
-
-    # Step 3: SIMPAN HANYA USER KE DATABASE (Satu kali tulis, Cepat)
+    display_name = user_profile.get("display_name", "Unknown")
     save_user(spotify_id, display_name)
 
-    # Step 4: SINKRONISASI DATA PERTAMA KALI (HANYA short_term, agar tidak timeout)
-    # Ini penting agar halaman dashboard tidak kosong saat pertama kali dibuka.
-    time_range = "short_term"
-    artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
-    artists = artist_resp.json().get("items", [])
-    track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20", headers=headers)
-    tracks = track_resp.json().get("items", [])
+    # Step 3: Sync untuk semua time_range
+    time_ranges = ["short_term", "medium_term", "long_term"]
+    for time_range in time_ranges:
+        artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
+        artists = artist_resp.json().get("items", [])
+        track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20", headers=headers)
+        tracks = track_resp.json().get("items", [])
 
-    result = {"user": display_name, "artists": [], "tracks": []}
-    
-    # Simpan data artis
-    for artist in artists:
-        image_url = artist["images"][0]["url"] if artist.get("images") else None
-        save_artist(artist["id"], artist["name"], artist["popularity"], image_url)
-        save_user_artist(spotify_id, artist["id"])
-        result["artists"].append({
-            "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
-            "popularity": artist["popularity"], "image": image_url if image_url else ""
-        })
-    
-    # Simpan data lagu
-    for track in tracks:
-        album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
-        save_track(track["id"], track["name"], track["popularity"], track.get("preview_url"))
-        save_user_track(spotify_id, track["id"])
-        result["tracks"].append({
-            "id": track["id"], "name": track["name"],
-            "artists": [a["name"] for a in track.get("artists", [])],
-            "album": track["album"]["name"], "popularity": track["popularity"],
-            "preview_url": track.get("preview_url"), "image": album_image_url
-        })
+        result = {"user": display_name, "artists": [], "tracks": []}
 
-    # Simpan ke cache dan database sync
-    cache_top_data("top", spotify_id, time_range, result)
-    save_user_sync(spotify_id, time_range, result)
+        for artist in artists:
+            # PERBAIKAN PENTING: Cek jika list 'images' ada dan tidak kosong
+            image_url = artist["images"][0]["url"] if artist.get("images") and len(artist["images"]) > 0 else None
+            save_artist(artist["id"], artist["name"], artist["popularity"], image_url)
+            save_user_artist(spotify_id, artist["id"])
+            result["artists"].append({
+                "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
+                "popularity": artist["popularity"], "image": image_url if image_url else ""
+            })
 
-    # Step 5: Redirect ke dashboard (Cepat)
+        for track in tracks:
+            # PERBAIKAN PENTING: Cek jika 'album' dan 'images' ada dan tidak kosong
+            album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") and len(track["album"]["images"]) > 0 else ""
+            save_track(track["id"], track["name"], track["popularity"], track.get("preview_url"))
+            save_user_track(spotify_id, track["id"])
+            result["tracks"].append({
+                "id": track["id"], "name": track["name"],
+                "artists": [a["name"] for a in track.get("artists", [])],
+                "album": track["album"]["name"], "popularity": track["popularity"],
+                "preview_url": track.get("preview_url"), "image": album_image_url
+            })
+
+        cache_top_data("top", spotify_id, time_range, result)
+        save_user_sync(spotify_id, time_range, result)
+
+    # Step 4: Redirect ke dashboard
     return RedirectResponse(url=f"/dashboard/{spotify_id}?time_range=short_term")
 
 @router.get("/sync/top-data", tags=["Sync"])

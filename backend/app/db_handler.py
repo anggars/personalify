@@ -9,7 +9,7 @@ load_dotenv()
 def get_conn():
     """
     Membuat koneksi database yang cerdas.
-    Bisa menangani DATABASE_URL (untuk Render/Supabase) 
+    Bisa menangani DATABASE_URL (untuk Render/Supabase)
     atau variabel terpisah (untuk Docker lokal).
     """
     DATABASE_URL = os.getenv("DATABASE_URL")
@@ -94,7 +94,7 @@ def save_artist(artist_id, name, popularity, image_url):
             cur.execute("""
                 INSERT INTO artists (id, name, popularity, image_url)
                 VALUES (%s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE 
+                ON CONFLICT (id) DO UPDATE
                 SET name = EXCLUDED.name,
                     popularity = EXCLUDED.popularity,
                     image_url = EXCLUDED.image_url
@@ -107,7 +107,7 @@ def save_track(track_id, name, popularity, preview_url):
             cur.execute("""
                 INSERT INTO tracks (id, name, popularity, preview_url)
                 VALUES (%s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE 
+                ON CONFLICT (id) DO UPDATE
                 SET name = EXCLUDED.name,
                     popularity = EXCLUDED.popularity,
                     preview_url = EXCLUDED.preview_url
