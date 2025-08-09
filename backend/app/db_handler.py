@@ -1,5 +1,6 @@
 import os
 import psycopg2
+from psycopg2.extras import execute_values
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 
@@ -132,4 +133,50 @@ def save_user_artist(spotify_id, artist_id):
                 VALUES (%s, %s)
                 ON CONFLICT DO NOTHING
             """, (spotify_id, artist_id))
+            conn.commit()
+            
+def save_artists_batch(artists_data):
+    """Menyimpan banyak artis sekaligus."""
+    if not artists_data: return
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            # Kolom: id, name, popularity, image_url
+            execute_values(cur, """
+                INSERT INTO artists (id, name, popularity, image_url)
+                VALUES %s
+                ON CONFLICT (id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    popularity = EXCLUDED.popularity,
+                    image_url = EXCLUDED.image_url
+            """, artists_data)
+            conn.commit()
+
+def save_tracks_batch(tracks_data):
+    """Menyimpan banyak lagu sekaligus."""
+    if not tracks_data: return
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            # Kolom: id, name, popularity, preview_url
+            execute_values(cur, """
+                INSERT INTO tracks (id, name, popularity, preview_url)
+                VALUES %s
+                ON CONFLICT (id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    popularity = EXCLUDED.popularity,
+                    preview_url = EXCLUDED.preview_url
+            """, tracks_data)
+            conn.commit()
+
+def save_user_associations_batch(table_name, column_name, spotify_id, item_ids):
+    """Menyimpan banyak relasi user-lagu atau user-artis sekaligus."""
+    if not item_ids: return
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            # Membuat data tuple (spotify_id, item_id)
+            data_to_insert = [(spotify_id, item_id) for item_id in item_ids]
+            execute_values(cur, f"""
+                INSERT INTO {table_name} (spotify_id, {column_name})
+                VALUES %s
+                ON CONFLICT DO NOTHING
+            """, data_to_insert)
             conn.commit()

@@ -8,8 +8,10 @@ from typing import Optional
 from app.nlp_handler import generate_emotion_paragraph
 
 from app.db_handler import (
-    save_user, save_artist, save_track,
-    save_user_artist, save_user_track
+    save_user,
+    save_artists_batch,
+    save_tracks_batch,
+    save_user_associations_batch
 )
 from app.cache_handler import cache_top_data, get_cached_top_data
 from app.mongo_handler import save_user_sync, get_user_history
@@ -68,7 +70,7 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
     display_name = user_profile.get("display_name", "Unknown")
     save_user(spotify_id, display_name)
 
-    # Step 3: Sync untuk semua time_range
+    # Step 3: Sync untuk semua time_range dengan metode BATCH
     time_ranges = ["short_term", "medium_term", "long_term"]
     for time_range in time_ranges:
         artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
@@ -76,23 +78,48 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
         track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20", headers=headers)
         tracks = track_resp.json().get("items", [])
 
-        result = {"user": display_name, "artists": [], "tracks": []}
-
+        # --- PROSES BATCH DIMULAI ---
+        
+        # 1. Kumpulkan semua data ke dalam list terlebih dahulu
+        artists_to_save = []
+        artist_ids = []
         for artist in artists:
-            # PERBAIKAN PENTING: Cek jika list 'images' ada dan tidak kosong
-            image_url = artist["images"][0]["url"] if artist.get("images") and len(artist["images"]) > 0 else None
-            save_artist(artist["id"], artist["name"], artist["popularity"], image_url)
-            save_user_artist(spotify_id, artist["id"])
-            result["artists"].append({
-                "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
-                "popularity": artist["popularity"], "image": image_url if image_url else ""
-            })
+            artist_ids.append(artist["id"])
+            artists_to_save.append((
+                artist["id"],
+                artist["name"],
+                artist["popularity"],
+                artist["images"][0]["url"] if artist.get("images") else None
+            ))
 
+        tracks_to_save = []
+        track_ids = []
         for track in tracks:
-            # PERBAIKAN PENTING: Cek jika 'album' dan 'images' ada dan tidak kosong
-            album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") and len(track["album"]["images"]) > 0 else ""
-            save_track(track["id"], track["name"], track["popularity"], track.get("preview_url"))
-            save_user_track(spotify_id, track["id"])
+            track_ids.append(track["id"])
+            tracks_to_save.append((
+                track["id"],
+                track["name"],
+                track["popularity"],
+                track.get("preview_url")
+            ))
+        
+        # 2. Kirim data sekaligus ke database dalam beberapa panggilan saja
+        save_artists_batch(artists_to_save)
+        save_tracks_batch(tracks_to_save)
+        save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
+        save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
+
+        # --- PROSES BATCH SELESAI ---
+
+        # 3. Siapkan data untuk cache (setelah semua data tersimpan)
+        result = {"user": display_name, "artists": [], "tracks": []}
+        for artist in artists:
+             result["artists"].append({
+                "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
+                "popularity": artist["popularity"], "image": artist["images"][0]["url"] if artist.get("images") else ""
+            })
+        for track in tracks:
+            album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
             result["tracks"].append({
                 "id": track["id"], "name": track["name"],
                 "artists": [a["name"] for a in track.get("artists", [])],
@@ -100,10 +127,9 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
                 "preview_url": track.get("preview_url"), "image": album_image_url
             })
 
-        # Analisis emosi berdasarkan judul lagu yang baru didapat
+        # Analisis emosi tetap dilakukan seperti biasa
         track_names = [track['name'] for track in result.get("tracks", [])]
         emotion_paragraph = generate_emotion_paragraph(track_names)
-        # Simpan hasil analisis ke dalam dictionary 'result'
         result['emotion_paragraph'] = emotion_paragraph
 
         cache_top_data("top", spotify_id, time_range, result)
@@ -119,78 +145,77 @@ def sync_top_data(
 ):
     headers = {"Authorization": f"Bearer {access_token}"}
     res = requests.get("https://api.spotify.com/v1/me", headers=headers)
-
-    try:
-        user_profile = res.json()
-    except Exception:
-        raise HTTPException(status_code=500, detail=f"Spotify API returned invalid response: {res.text}")
-
+    
     if res.status_code != 200:
-        raise HTTPException(status_code=res.status_code, detail=user_profile.get("error", {}).get("message", "Unknown error"))
-
+        raise HTTPException(status_code=res.status_code, detail=res.json())
+        
+    user_profile = res.json()
     spotify_id = user_profile["id"]
     display_name = user_profile.get("display_name", "Unknown")
-    save_user(spotify_id, display_name)
+    save_user(spotify_id, display_name) # save_user masih dipakai
 
-    # Get top artists
-    artist_resp = requests.get(
-        f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=10",
-        headers=headers
-    )
-    try:
-        artist_data = artist_resp.json()
-        artists = artist_data.get("items", [])
-    except Exception:
-        raise HTTPException(status_code=500, detail=f"Spotify artist API returned invalid response: {artist_resp.text}")
+    # Mengambil data dari Spotify (tidak berubah)
+    artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
+    artists = artist_resp.json().get("items", [])
+    track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20", headers=headers)
+    tracks = track_resp.json().get("items", [])
 
-    # Get top tracks
-    track_resp = requests.get(
-        f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=10",
-        headers=headers
-    )
-    try:
-        track_data = track_resp.json()
-        tracks = track_data.get("items", [])
-    except Exception:
-        raise HTTPException(status_code=500, detail=f"Spotify track API returned invalid response: {track_resp.text}")
+    # --- ▼▼▼ PROSES BATCH DIMULAI ▼▼▼ ---
 
-    result = {"user": display_name, "artists": [], "tracks": []}
-
+    # 1. Kumpulkan semua data ke dalam list
+    artists_to_save = []
+    artist_ids = []
     for artist in artists:
-        save_artist(
+        artist_ids.append(artist["id"])
+        artists_to_save.append((
             artist["id"],
             artist["name"],
             artist["popularity"],
             artist["images"][0]["url"] if artist.get("images") else None
-        )
-        save_user_artist(spotify_id, artist["id"])
-        result["artists"].append({
-            "id": artist["id"],
-            "name": artist["name"],
-            "genres": artist.get("genres", []),
-            "popularity": artist["popularity"],
-            "image": artist["images"][0]["url"] if artist.get("images") else ""
-        })
+        ))
 
+    tracks_to_save = []
+    track_ids = []
     for track in tracks:
-        save_track(
+        track_ids.append(track["id"])
+        tracks_to_save.append((
             track["id"],
             track["name"],
             track["popularity"],
             track.get("preview_url")
-        )
-        save_user_track(spotify_id, track["id"])
-        result["tracks"].append({
-            "id": track["id"],
-            "name": track["name"],
-            "artists": [a["name"] for a in track.get("artists", [])],
-            "album": track["album"]["name"],
-            "popularity": track["popularity"],
-            "preview_url": track.get("preview_url")
+        ))
+
+    # 2. Kirim data sekaligus ke database menggunakan fungsi batch
+    save_artists_batch(artists_to_save)
+    save_tracks_batch(tracks_to_save)
+    save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
+    save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
+
+    # --- ▲▲▲ PROSES BATCH SELESAI ▲▲▲ ---
+
+    # 3. Siapkan data untuk response JSON dan cache
+    result = {"user": display_name, "artists": [], "tracks": []}
+    for artist in artists:
+         result["artists"].append({
+            "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
+            "popularity": artist["popularity"], "image": artist["images"][0]["url"] if artist.get("images") else ""
         })
+    for track in tracks:
+        album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
+        result["tracks"].append({
+            "id": track["id"], "name": track["name"],
+            "artists": [a["name"] for a in track.get("artists", [])],
+            "album": track["album"]["name"], "popularity": track["popularity"],
+            "preview_url": track.get("preview_url"), "image": album_image_url
+        })
+        
+    track_names = [track['name'] for track in result.get("tracks", [])]
+    emotion_paragraph = generate_emotion_paragraph(track_names)
+    result['emotion_paragraph'] = emotion_paragraph
 
     cache_top_data("top", spotify_id, time_range, result)
     save_user_sync(spotify_id, time_range, result)
+    
     return result
 
 @router.get("/top-data", tags=["Query"])
