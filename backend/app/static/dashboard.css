@@ -273,6 +273,11 @@ footer {
     .container {
         grid-template-columns: 1fr;
     }
+    .emotion-recap {
+        font-size: 0.8rem; /* Perkecil font khusus mobile */
+        margin-top: -1rem;  /* Sesuaikan jarak atas */
+        max-width: 90%;   /* Pastikan tidak terlalu mepet ke tepi */
+    }
     .download-btn {
         width: calc(100% - 40px);
         left: 20px;
