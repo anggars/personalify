@@ -172,6 +172,7 @@ li:last-child {
     z-index: 1000;
 }
 footer {
+    width: 100%;
     margin-top: 3rem;
     text-align: center;
     font-size: 0.75rem;
@@ -310,4 +311,15 @@ footer {
 #chartjs-tooltip th {
     font-weight: bold;
     border-bottom: 1px solid #555;
+}
+
+/* Gaya untuk bagian yang bisa diklik (Easter Egg) */
+.footer-toggler {
+    cursor: pointer; /* Mengubah kursor menjadi tangan */
+    transition: color 0.2s ease; /* Efek transisi halus */
+}
+
+/* Efek saat kursor di atas trigger Easter Egg */
+.footer-toggler:hover {
+    color: #ffffff; /* Mengubah warna teks menjadi putih (sesuaikan jika perlu) */
 }
