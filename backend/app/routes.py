@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from typing import Optional
+from app.nlp_handler import generate_emotion_paragraph
 
 from app.db_handler import (
     save_user, save_artist, save_track,
@@ -98,6 +99,12 @@ def callback(code: str = Query(..., description="Spotify Authorization Code")):
                 "album": track["album"]["name"], "popularity": track["popularity"],
                 "preview_url": track.get("preview_url"), "image": album_image_url
             })
+
+        # Analisis emosi berdasarkan judul lagu yang baru didapat
+        track_names = [track['name'] for track in result.get("tracks", [])]
+        emotion_paragraph = generate_emotion_paragraph(track_names)
+        # Simpan hasil analisis ke dalam dictionary 'result'
+        result['emotion_paragraph'] = emotion_paragraph
 
         cache_top_data("top", spotify_id, time_range, result)
         save_user_sync(spotify_id, time_range, result)
@@ -229,22 +236,20 @@ def get_sync_history(spotify_id: str = Query(..., description="Spotify ID")):
 def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request = None):
     data = get_cached_top_data("top", spotify_id, time_range)
     if not data:
-        # Memberikan pesan yang lebih informatif jika data belum siap
+        # Jika data belum siap (mungkin saat login pertama kali), tampilkan loading
         return templates.TemplateResponse("loading.html", {"request": request})
 
-    # --- BLOK BARU UNTUK DATA TOOLTIP ---
+    # Ambil paragraf emosi dari data cache. Beri teks default jika tidak ada.
+    emotion_paragraph = data.get("emotion_paragraph", "Vibe analysis is getting ready...")
+    
+    # --- BLOK DATA TOOLTIP & GENRE (TIDAK BERUBAH) ---
     genre_artists_map = {}
-    # Loop melalui daftar artis yang didapat dari cache
     for artist in data.get("artists", []):
-        # Untuk setiap artis, loop melalui daftar genre-nya
         for genre in artist.get("genres", []):
-            # Jika genre ini belum ada di peta kita, buat entri baru (list kosong)
             if genre not in genre_artists_map:
                 genre_artists_map[genre] = []
-            # Tambahkan nama artis ini ke daftar untuk genre tersebut
             genre_artists_map[genre].append(artist["name"])
-    # --- AKHIR BLOK BARU ---
-
+    
     genre_count = {}
     for artist in data.get("artists", []):
         for genre in artist.get("genres", []):
@@ -259,5 +264,6 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         "tracks": data["tracks"],
         "genres": genre_list,
         "time_range": time_range,
-        "genre_artists_map": genre_artists_map  # <-- Kirim data baru ini ke template
+        "genre_artists_map": genre_artists_map,
+        "emotion_paragraph": emotion_paragraph  # <-- Kirim data emosi ke template
     })
