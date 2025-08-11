@@ -175,26 +175,28 @@ function generateImage(selectedCategory) {
     container.style.overflow = 'hidden';
 
     const contentWrapper = document.createElement("div");
-    // ▼▼▼ PERBAIKAN PADDING ▼▼▼
-    // Atur padding atas 80px, padding bawah 60px untuk memberi ruang footer
-    contentWrapper.style.padding = "80px 40px 60px 40px";
-    // ▲▲▲
+    // ▼▼▼ PERBAIKAN UTAMA DENGAN FLEXBOX ▼▼▼
+    contentWrapper.style.display = 'flex';
+    contentWrapper.style.flexDirection = 'column';
+    contentWrapper.style.justifyContent = 'space-between'; // Kunci simetri
+    contentWrapper.style.height = '100%';
+    contentWrapper.style.padding = "60px 40px"; // Padding atas & bawah simetris
     contentWrapper.style.boxSizing = "border-box";
     contentWrapper.style.width = '100%';
+    // ▲▲▲
     
     const pageHeader = document.querySelector('header');
     const headerClone = pageHeader.cloneNode(true);
-    headerClone.style.textAlign = 'center';
-    headerClone.style.marginBottom = '1.5rem';
+    // Hapus margin-bottom agar space-between bekerja
+    headerClone.style.marginBottom = '0';
     contentWrapper.appendChild(headerClone);
     contentWrapper.appendChild(clone);
     
     const footer = document.createElement("div");
     footer.innerHTML = `Personalify © 2025 • <a href="https://developer.spotify.com/" target="_blank" style="color: #888; text-decoration: none;">Powered by Spotify API</a>`;
-    // ▼▼▼ PERBAIKAN MARGIN & PADDING FOOTER ▼▼▼
-    footer.style.paddingTop = "0"; // Hapus padding atas footer
-    footer.style.marginTop = "2rem"; // Beri jarak dari konten di atasnya
-    // ▲▲▲
+    // Hapus semua margin/padding atas footer
+    footer.style.paddingTop = "0";
+    footer.style.marginTop = "0";
     footer.style.fontSize = "0.75rem";
     footer.style.color = "#888";
     footer.style.textAlign = "center";
@@ -204,12 +206,9 @@ function generateImage(selectedCategory) {
 
     function renderCanvas() {
         document.body.appendChild(container);
-        const contentHeight = contentWrapper.scrollHeight;
-        if (contentHeight > STORY_HEIGHT) {
-            const scale = STORY_HEIGHT / contentHeight;
-            contentWrapper.style.transform = `scale(${scale})`;
-            contentWrapper.style.transformOrigin = 'top center';
-        }
+        // Hapus logika scaling karena space-between sudah mengatur konten
+        // const contentHeight = contentWrapper.scrollHeight;
+        // if (contentHeight > STORY_HEIGHT) { ... }
 
         html2canvas(container, {
             scale: 2, useCORS: true, backgroundColor: '#121212'
