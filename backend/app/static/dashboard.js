@@ -126,6 +126,7 @@ function customTooltip(tooltipModel) {
     tooltipEl.style.pointerEvents = 'none';
 }
 
+// Ganti hanya isi fungsi generateImage ini
 function generateImage(selectedCategory) {
     hideSaveOptions();
     document.body.classList.add('force-desktop-view');
@@ -174,12 +175,10 @@ function generateImage(selectedCategory) {
     container.style.overflow = 'hidden';
 
     const contentWrapper = document.createElement("div");
-    // ▼▼▼ PERBAIKAN DENGAN FLEXBOX ▼▼▼
-    contentWrapper.style.display = 'flex';
-    contentWrapper.style.flexDirection = 'column';
-    contentWrapper.style.height = '100%';
+    // ▼▼▼ PERBAIKAN PADDING ▼▼▼
+    // Atur padding atas 80px, padding bawah 60px untuk memberi ruang footer
+    contentWrapper.style.padding = "80px 40px 60px 40px";
     // ▲▲▲
-    contentWrapper.style.padding = "80px 40px 40px 40px";
     contentWrapper.style.boxSizing = "border-box";
     contentWrapper.style.width = '100%';
     
@@ -187,20 +186,14 @@ function generateImage(selectedCategory) {
     const headerClone = pageHeader.cloneNode(true);
     headerClone.style.textAlign = 'center';
     headerClone.style.marginBottom = '1.5rem';
-    
-    // ▼▼▼ PERBAIKAN: Buat clone content bisa membesar/mengecil ▼▼▼
-    clone.style.flexGrow = '1'; 
-    clone.style.minHeight = '0';
-    // ▲▲▲
-    
     contentWrapper.appendChild(headerClone);
     contentWrapper.appendChild(clone);
     
     const footer = document.createElement("div");
     footer.innerHTML = `Personalify © 2025 • <a href="https://developer.spotify.com/" target="_blank" style="color: #888; text-decoration: none;">Powered by Spotify API</a>`;
-    // ▼▼▼ PERBAIKAN: Hapus margin-top auto, biarkan flexbox yang mengatur ▼▼▼
-    footer.style.paddingTop = "2rem";
-    footer.style.flexShrink = '0'; // Pastikan footer tidak ikut mengecil
+    // ▼▼▼ PERBAIKAN MARGIN & PADDING FOOTER ▼▼▼
+    footer.style.paddingTop = "0"; // Hapus padding atas footer
+    footer.style.marginTop = "2rem"; // Beri jarak dari konten di atasnya
     // ▲▲▲
     footer.style.fontSize = "0.75rem";
     footer.style.color = "#888";
@@ -236,7 +229,6 @@ function generateImage(selectedCategory) {
         });
     }
 
-    // Tunggu semua gambar dimuat (tidak berubah)
     const imgs = clone.querySelectorAll('img');
     if (imgs.length === 0) {
         renderCanvas();
