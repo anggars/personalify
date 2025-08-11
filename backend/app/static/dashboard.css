@@ -305,6 +305,32 @@ footer {
     }
 }
 
+/* === KELAS KHUSUS UNTUK MEMAKSA TAMPILAN DESKTOP SAAT DOWNLOAD === */
+.force-desktop-view {
+    width: 1200px !important; /* Paksa lebar seperti desktop */
+    padding: 2rem !important;
+}
+
+.force-desktop-view h1 {
+    font-size: 2.5rem !important;
+}
+
+.force-desktop-view .subtitle,
+.force-desktop-view .emotion-recap {
+    font-size: 1.2rem !important;
+}
+
+/* Aturan tambahan untuk memastikan layout grid desktop */
+.force-desktop-view .container {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important; /* Paksa layout 2 kolom */
+    gap: 2rem !important;
+}
+
+.force-desktop-view .section {
+    display: block !important; /* Tampilkan semua section */
+}
+
 #chartjs-tooltip {
     background: rgba(0, 0, 0, 0.8);
     color: white;

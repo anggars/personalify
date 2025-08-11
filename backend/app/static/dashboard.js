@@ -129,6 +129,9 @@ function customTooltip(tooltipModel) {
 function generateImage(selectedCategory) {
     hideSaveOptions();
 
+    // ▼▼▼ 1. TAMBAHKAN KELAS 'PENIPU' DI AWAL ▼▼▼
+    document.body.classList.add('force-desktop-view');
+
     // Sembunyikan semua section dulu
     for (const key in sections) {
         sections[key].style.display = "none";
@@ -138,7 +141,7 @@ function generateImage(selectedCategory) {
     const sectionToCapture = sections[selectedCategory];
     sectionToCapture.style.display = "block";
 
-     // Sembunyikan item lebih dari 10 sebelum meng-clone untuk gambar
+    // Sembunyikan item lebih dari 10 sebelum meng-clone untuk gambar
     const allItems = sectionToCapture.querySelectorAll('ol.list-container > li');
     allItems.forEach((item, index) => {
         if (index >= 10) {
@@ -168,7 +171,7 @@ function generateImage(selectedCategory) {
         }
     }
 
-    // -- LOGIKA BARU UNTUK INSTAGRAM STORY --
+    // -- LOGIKA UNTUK INSTAGRAM STORY --
     const STORY_WIDTH = 720;
     const STORY_HEIGHT = 1280;
 
@@ -203,19 +206,14 @@ function generateImage(selectedCategory) {
 
     container.appendChild(contentWrapper);
 
-    // Proses rendering menjadi gambar
     function renderCanvas() {
         document.body.appendChild(container);
-
-        // --- PERBAIKAN KUNCI: Pengukuran dan scaling dipindah ke sini ---
-        // Ini memastikan pengukuran dilakukan SETELAH semua gambar dimuat
         const contentHeight = contentWrapper.scrollHeight;
         if (contentHeight > STORY_HEIGHT) {
             const scale = STORY_HEIGHT / contentHeight;
             contentWrapper.style.transform = `scale(${scale})`;
             contentWrapper.style.transformOrigin = 'top center';
         }
-        // --- AKHIR PERBAIKAN ---
 
         html2canvas(container, {
             scale: 2,
@@ -226,12 +224,21 @@ function generateImage(selectedCategory) {
             link.download = `personalify-${selectedCategory}-${new Date().getTime()}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
+            
+            // ▼▼▼ 2. HAPUS KELAS 'PENIPU' SETELAH SELESAI ▼▼▼
+            document.body.classList.remove('force-desktop-view');
+            document.body.removeChild(container);
+            checkScreenSize(); // Kembalikan tampilan mobile normal
+        }).catch(err => {
+            console.error("html2canvas failed:", err);
+            // Pastikan kelas dihapus & container dibuang jika ada error
+            document.body.classList.remove('force-desktop-view');
             document.body.removeChild(container);
             checkScreenSize();
         });
     }
 
-    // Tunggu semua gambar di dalam konten dimuat sebelum render
+    // Tunggu semua gambar dimuat (tidak berubah)
     const imgs = clone.querySelectorAll('img');
     if (imgs.length === 0) {
         renderCanvas();
