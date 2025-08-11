@@ -173,17 +173,19 @@ function generateImage(selectedCategory) {
     container.style.color = "#fff";
     container.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
     container.style.overflow = 'hidden';
-    // ▼▼▼ PERBAIKAN UTAMA: Jadikan container luar sebagai Flexbox ▼▼▼
-    container.style.display = 'flex';
-    container.style.alignItems = 'center';      // Pusatkan secara vertikal
-    container.style.justifyContent = 'center'; // Pusatkan secara horizontal
-    // ▲▲▲
+    // ▼▼▼ PERBAIKAN #1: Container luar menjadi acuan posisi ▼▼▼
+    container.style.position = 'relative';
 
     const contentWrapper = document.createElement("div");
     contentWrapper.style.padding = "80px 40px 40px 40px";
     contentWrapper.style.boxSizing = "border-box";
     contentWrapper.style.width = '100%';
-    
+    // ▼▼▼ PERBAIKAN #2: Terapkan trik absolute centering ▼▼▼
+    contentWrapper.style.position = 'absolute';
+    contentWrapper.style.top = '50%';
+    contentWrapper.style.left = '50%';
+    contentWrapper.style.transform = 'translate(-50%, -50%)'; // Ini kuncinya
+
     const pageHeader = document.querySelector('header');
     const headerClone = pageHeader.cloneNode(true);
     headerClone.style.textAlign = 'center';
@@ -204,11 +206,13 @@ function generateImage(selectedCategory) {
 
     function renderCanvas() {
         document.body.appendChild(container);
-        const contentHeight = contentWrapper.scrollHeight;
+
+        // ▼▼▼ PERBAIKAN #3: Gabungkan scale dengan transform yang sudah ada ▼▼▼
+        const contentHeight = contentWrapper.offsetHeight;
         if (contentHeight > STORY_HEIGHT) {
             const scale = STORY_HEIGHT / contentHeight;
-            contentWrapper.style.transform = `scale(${scale})`;
-            contentWrapper.style.transformOrigin = 'center center'; // Pusatkan scaling
+            // Gabungkan centering dan scaling dalam satu perintah transform
+            contentWrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
         }
 
         html2canvas(container, {
