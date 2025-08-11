@@ -7,33 +7,30 @@ body {
     overflow-x: hidden;
 }
 
-/* Ganti aturan h1 yang lama dengan ini */
 h1 {
     color: #1DB954;
     font-size: 2.5rem;
     font-weight: 800;
     text-align: center;
-    margin-top: 0; /* Reset margin atas */
-    margin-bottom: 0.5rem; /* Jarak ke subtitle */
+    margin-top: 1rem;      /* Tambahkan jarak dari atas */
+    margin-bottom: 1rem;   /* Jarak ke subtitle */
 }
 
-/* Ganti aturan .subtitle yang lama dengan ini */
 .subtitle {
     text-align: center;
     font-size: 1.2rem;
     font-weight: 500;
     color: #B3B3B3;
-    margin-top: 0; /* Reset margin atas */
-    margin-bottom: 1.5rem; /* Jarak ke emotion recap */
+    margin-top: 0;
+    margin-bottom: 1rem;   /* Jarak ke emotion recap (SAMA DENGAN DI ATAS) */
 }
 
-/* Ganti aturan .emotion-recap yang lama dengan ini */
 .emotion-recap {
     text-align: center;
     font-size: 1rem;
     color: #ddd;
     max-width: 600px;
-    margin: 0 auto 2.5rem auto; /* Atur margin atas ke 0 */
+    margin: 0 auto 2.5rem auto; /* margin-top direset ke 0 */
     line-height: 1.6;
     font-style: italic;
 }
@@ -288,22 +285,22 @@ footer {
         padding: 1rem;
         padding-bottom: 100px;
     }
-
     header h1 {
         font-size: 2rem;
-        margin-bottom: 0.25rem; /* Jarak ke subtitle versi mobile */
+        margin-top: 0; /* Di mobile tidak perlu margin atas tambahan */
+        margin-bottom: 0.75rem; /* Jarak ke subtitle versi mobile */
     }
     header .subtitle {
         font-size: 1rem;
-        margin-bottom: 1rem; /* Jarak ke emotion recap versi mobile */
+        margin-top: 0;
+        margin-bottom: 0.75rem; /* Jarak ke emotion recap (SAMA DENGAN DI ATAS) */
     }
     header .emotion-recap {
         font-size: 0.75rem;
-        margin-top: 0; /* Reset margin atas */
+        margin-top: 0;
         max-width: 95%;
         line-height: 1.5;
     }
-
     .container {
         grid-template-columns: 1fr;
     }
