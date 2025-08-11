@@ -128,35 +128,25 @@ function customTooltip(tooltipModel) {
 
 function generateImage(selectedCategory) {
     hideSaveOptions();
-
-    // ▼▼▼ 1. TAMBAHKAN KELAS 'PENIPU' DI AWAL ▼▼▼
     document.body.classList.add('force-desktop-view');
 
-    // Sembunyikan semua section dulu
+    // Sembunyikan semua section
     for (const key in sections) {
         sections[key].style.display = "none";
     }
-
-    // Siapkan section yang akan di-capture
     const sectionToCapture = sections[selectedCategory];
     sectionToCapture.style.display = "block";
 
-    // Sembunyikan item lebih dari 10 sebelum meng-clone untuk gambar
+    // Sembunyikan item > 10
     const allItems = sectionToCapture.querySelectorAll('ol.list-container > li');
     allItems.forEach((item, index) => {
-        if (index >= 10) {
-            item.style.display = 'none';
-        }
+        if (index >= 10) item.style.display = 'none';
     });
-    // Sembunyikan juga tombol "Show More" dari gambar
     const showMoreContainer = sectionToCapture.querySelector('.show-more-container');
-    if (showMoreContainer) {
-        showMoreContainer.style.display = 'none';
-    }
+    if (showMoreContainer) showMoreContainer.style.display = 'none';
 
     const clone = sectionToCapture.cloneNode(true);
 
-    // Khusus untuk genre, ganti canvas dengan gambar statis
     if (selectedCategory === 'genres') {
         const originalCanvas = document.getElementById('genreChart');
         const clonedCanvas = clone.querySelector('#genreChart');
@@ -171,7 +161,7 @@ function generateImage(selectedCategory) {
         }
     }
 
-    // -- LOGIKA UNTUK INSTAGRAM STORY --
+    // --- LOGIKA PEMBUATAN CONTAINER GAMBAR ---
     const STORY_WIDTH = 720;
     const STORY_HEIGHT = 1280;
 
@@ -184,6 +174,11 @@ function generateImage(selectedCategory) {
     container.style.overflow = 'hidden';
 
     const contentWrapper = document.createElement("div");
+    // ▼▼▼ PERBAIKAN DENGAN FLEXBOX ▼▼▼
+    contentWrapper.style.display = 'flex';
+    contentWrapper.style.flexDirection = 'column';
+    contentWrapper.style.height = '100%';
+    // ▲▲▲
     contentWrapper.style.padding = "80px 40px 40px 40px";
     contentWrapper.style.boxSizing = "border-box";
     contentWrapper.style.width = '100%';
@@ -192,13 +187,21 @@ function generateImage(selectedCategory) {
     const headerClone = pageHeader.cloneNode(true);
     headerClone.style.textAlign = 'center';
     headerClone.style.marginBottom = '1.5rem';
+    
+    // ▼▼▼ PERBAIKAN: Buat clone content bisa membesar/mengecil ▼▼▼
+    clone.style.flexGrow = '1'; 
+    clone.style.minHeight = '0';
+    // ▲▲▲
+    
     contentWrapper.appendChild(headerClone);
     contentWrapper.appendChild(clone);
     
     const footer = document.createElement("div");
     footer.innerHTML = `Personalify © 2025 • <a href="https://developer.spotify.com/" target="_blank" style="color: #888; text-decoration: none;">Powered by Spotify API</a>`;
+    // ▼▼▼ PERBAIKAN: Hapus margin-top auto, biarkan flexbox yang mengatur ▼▼▼
     footer.style.paddingTop = "2rem";
-    footer.style.marginTop = "auto";
+    footer.style.flexShrink = '0'; // Pastikan footer tidak ikut mengecil
+    // ▲▲▲
     footer.style.fontSize = "0.75rem";
     footer.style.color = "#888";
     footer.style.textAlign = "center";
@@ -216,22 +219,17 @@ function generateImage(selectedCategory) {
         }
 
         html2canvas(container, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#121212'
+            scale: 2, useCORS: true, backgroundColor: '#121212'
         }).then(canvas => {
             const link = document.createElement("a");
             link.download = `personalify-${selectedCategory}-${new Date().getTime()}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
-            
-            // ▼▼▼ 2. HAPUS KELAS 'PENIPU' SETELAH SELESAI ▼▼▼
             document.body.classList.remove('force-desktop-view');
             document.body.removeChild(container);
-            checkScreenSize(); // Kembalikan tampilan mobile normal
+            checkScreenSize();
         }).catch(err => {
             console.error("html2canvas failed:", err);
-            // Pastikan kelas dihapus & container dibuang jika ada error
             document.body.classList.remove('force-desktop-view');
             document.body.removeChild(container);
             checkScreenSize();
@@ -250,9 +248,7 @@ function generateImage(selectedCategory) {
             newImg.src = img.src;
             const checkDone = () => {
                 loadedCount++;
-                if (loadedCount === imgs.length) {
-                    renderCanvas();
-                }
+                if (loadedCount === imgs.length) renderCanvas();
             };
             newImg.onload = checkDone;
             newImg.onerror = checkDone;
