@@ -51,9 +51,9 @@ def generate_emotion_paragraph(track_names):
     elif emotion_label == 'anger':
         return "Playlist packed with powerful, high-energy tracks carrying <b>anger</b>."
     elif emotion_label == 'fear':
-        return "Drawn to mysterious and atmospheric sounds creating <b>fear</b> or suspense."
+        return "Mysterious and atmospheric sounds creating <b>fear</b> or suspense."
     elif emotion_label == 'love':
-        return "Your playlist has a romantic and affectionate vibe, full of <b>love</b>."
+        return "Your playlist has a romantic and affectionate <b>love</b> vibe."
     elif emotion_label == 'surprise':
         return "Dynamic and unpredictable taste, full of <b>surprise</b>."
     else: # Default jika ada label lain
