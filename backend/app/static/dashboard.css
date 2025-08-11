@@ -271,18 +271,19 @@ footer {
         padding: 1rem;
         padding-bottom: 100px;
     }
-
-    /* ▼▼▼ SELEKTOR DIBUAT LEBIH SPESIFIK ▼▼▼ */
-    header h1 { /* <- Lebih spesifik */
-        font-size: 2rem !important; /* Paksa aturan ini */
+    /* ▼▼▼ PENGATURAN ULANG FONT ▼▼▼ */
+    header h1 {
+        font-size: 2rem; /* Judul utama tetap besar */
     }
-    header .subtitle { /* <- Lebih spesifik */
-        font-size: 1rem !important; /* Paksa aturan ini */
+    header .subtitle {
+        font-size: 1rem; /* Subtitle sedikit lebih kecil */
+        margin-top: -1.2rem;
     }
-    header .emotion-recap { /* <- Lebih spesifik */
-        font-size: 0.7rem !important; /* Paksa aturan ini */
-        margin-top: -1rem;
-        max-width: 90%;
+    header .emotion-recap {
+        font-size: 0.75rem; /* Paragraf emosi, batas minimum keterbacaan */
+        margin-top: -1.2rem;
+        max-width: 95%; /* Beri sedikit ruang ekstra */
+        line-height: 1.5; /* Atur jarak baris jika terpaksa 2 baris */
     }
     /* ▲▲▲ AKHIR PERUBAHAN ▲▲▲ */
 
