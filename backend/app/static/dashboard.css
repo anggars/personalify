@@ -280,7 +280,7 @@ footer {
         font-size: 1rem !important; /* Paksa aturan ini */
     }
     header .emotion-recap { /* <- Lebih spesifik */
-        font-size: 0.8rem !important; /* Paksa aturan ini */
+        font-size: 0.7rem !important; /* Paksa aturan ini */
         margin-top: -1rem;
         max-width: 90%;
     }
