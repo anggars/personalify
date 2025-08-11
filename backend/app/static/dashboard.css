@@ -6,21 +6,38 @@ body {
     padding: 1.5rem;
     overflow-x: hidden;
 }
+
+/* Ganti aturan h1 yang lama dengan ini */
 h1 {
     color: #1DB954;
     font-size: 2.5rem;
     font-weight: 800;
     text-align: center;
-    margin-bottom: 2rem;
+    margin-top: 0; /* Reset margin atas */
+    margin-bottom: 0.5rem; /* Jarak ke subtitle */
 }
+
+/* Ganti aturan .subtitle yang lama dengan ini */
 .subtitle {
     text-align: center;
     font-size: 1.2rem;
     font-weight: 500;
     color: #B3B3B3;
-    margin-top: -1.5rem;
-    margin-bottom: 2rem;
+    margin-top: 0; /* Reset margin atas */
+    margin-bottom: 1.5rem; /* Jarak ke emotion recap */
 }
+
+/* Ganti aturan .emotion-recap yang lama dengan ini */
+.emotion-recap {
+    text-align: center;
+    font-size: 1rem;
+    color: #ddd;
+    max-width: 600px;
+    margin: 0 auto 2.5rem auto; /* Atur margin atas ke 0 */
+    line-height: 1.6;
+    font-style: italic;
+}
+
 .filters {
     display: flex;
     flex-wrap: wrap;
@@ -271,21 +288,21 @@ footer {
         padding: 1rem;
         padding-bottom: 100px;
     }
-    /* ▼▼▼ PENGATURAN ULANG FONT ▼▼▼ */
+
     header h1 {
-        font-size: 2rem; /* Judul utama tetap besar */
+        font-size: 2rem;
+        margin-bottom: 0.25rem; /* Jarak ke subtitle versi mobile */
     }
     header .subtitle {
-        font-size: 1rem; /* Subtitle sedikit lebih kecil */
-        margin-top: -1.2rem;
+        font-size: 1rem;
+        margin-bottom: 1rem; /* Jarak ke emotion recap versi mobile */
     }
     header .emotion-recap {
-        font-size: 0.75rem; /* Paragraf emosi, batas minimum keterbacaan */
-        margin-top: -1.2rem;
-        max-width: 95%; /* Beri sedikit ruang ekstra */
-        line-height: 1.5; /* Atur jarak baris jika terpaksa 2 baris */
+        font-size: 0.75rem;
+        margin-top: 0; /* Reset margin atas */
+        max-width: 95%;
+        line-height: 1.5;
     }
-    /* ▲▲▲ AKHIR PERUBAHAN ▲▲▲ */
 
     .container {
         grid-template-columns: 1fr;
@@ -365,14 +382,4 @@ footer {
 /* Efek saat kursor di atas trigger Easter Egg */
 .footer-toggler:hover {
     color: #ffffff; /* Mengubah warna teks menjadi putih (sesuaikan jika perlu) */
-}
-
-.emotion-recap {
-    text-align: center;
-    font-size: 1rem;
-    color: #ddd;
-    max-width: 600px;
-    margin: -1rem auto 2.5rem auto;
-    line-height: 1.6;
-    font-style: italic;
 }
