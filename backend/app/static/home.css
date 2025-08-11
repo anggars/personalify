@@ -60,6 +60,33 @@ p {
     font-weight: 500; /* Sedikit lebih tebal dari normal */
 }
 
+/* === ATURAN UNTUK MOBILE === */
+@media (max-width: 768px) {
+    body {
+        padding: 1.5rem; /* Jarak tepi disesuaikan */
+    }
+
+    .logo {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 1.5rem;
+    }
+
+    h1 {
+        font-size: 2.5rem; /* Ukuran judul dikecilkan */
+    }
+
+    p {
+        font-size: 1rem; /* Ukuran paragraf dikecilkan */
+        margin-bottom: 2rem;
+    }
+
+    .button {
+        padding: 12px 28px; /* Tombol sedikit lebih kecil */
+        font-size: 0.9rem;
+    }
+}
+
 .button {
     display: inline-block;
     padding: 14px 32px;
