@@ -173,30 +173,28 @@ function generateImage(selectedCategory) {
     container.style.color = "#fff";
     container.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
     container.style.overflow = 'hidden';
+    // ▼▼▼ PERBAIKAN UTAMA: Jadikan container luar sebagai Flexbox ▼▼▼
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';      // Pusatkan secara vertikal
+    container.style.justifyContent = 'center'; // Pusatkan secara horizontal
+    // ▲▲▲
 
     const contentWrapper = document.createElement("div");
-    // ▼▼▼ PERBAIKAN UTAMA DENGAN FLEXBOX ▼▼▼
-    contentWrapper.style.display = 'flex';
-    contentWrapper.style.flexDirection = 'column';
-    contentWrapper.style.justifyContent = 'space-between'; // Kunci simetri
-    contentWrapper.style.height = '100%';
-    contentWrapper.style.padding = "60px 40px"; // Padding atas & bawah simetris
+    contentWrapper.style.padding = "80px 40px 40px 40px";
     contentWrapper.style.boxSizing = "border-box";
     contentWrapper.style.width = '100%';
-    // ▲▲▲
     
     const pageHeader = document.querySelector('header');
     const headerClone = pageHeader.cloneNode(true);
-    // Hapus margin-bottom agar space-between bekerja
-    headerClone.style.marginBottom = '0';
+    headerClone.style.textAlign = 'center';
+    headerClone.style.marginBottom = '1.5rem';
     contentWrapper.appendChild(headerClone);
     contentWrapper.appendChild(clone);
     
     const footer = document.createElement("div");
     footer.innerHTML = `Personalify © 2025 • <a href="https://developer.spotify.com/" target="_blank" style="color: #888; text-decoration: none;">Powered by Spotify API</a>`;
-    // Hapus semua margin/padding atas footer
-    footer.style.paddingTop = "0";
-    footer.style.marginTop = "0";
+    footer.style.paddingTop = "2rem";
+    footer.style.marginTop = "auto";
     footer.style.fontSize = "0.75rem";
     footer.style.color = "#888";
     footer.style.textAlign = "center";
@@ -206,9 +204,12 @@ function generateImage(selectedCategory) {
 
     function renderCanvas() {
         document.body.appendChild(container);
-        // Hapus logika scaling karena space-between sudah mengatur konten
-        // const contentHeight = contentWrapper.scrollHeight;
-        // if (contentHeight > STORY_HEIGHT) { ... }
+        const contentHeight = contentWrapper.scrollHeight;
+        if (contentHeight > STORY_HEIGHT) {
+            const scale = STORY_HEIGHT / contentHeight;
+            contentWrapper.style.transform = `scale(${scale})`;
+            contentWrapper.style.transformOrigin = 'center center'; // Pusatkan scaling
+        }
 
         html2canvas(container, {
             scale: 2, useCORS: true, backgroundColor: '#121212'
@@ -223,7 +224,9 @@ function generateImage(selectedCategory) {
         }).catch(err => {
             console.error("html2canvas failed:", err);
             document.body.classList.remove('force-desktop-view');
-            document.body.removeChild(container);
+            if (document.body.contains(container)) {
+                 document.body.removeChild(container);
+            }
             checkScreenSize();
         });
     }
