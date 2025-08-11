@@ -287,7 +287,7 @@ footer {
     }
     header h1 {
         font-size: 2rem;
-        margin-top: 0; /* Di mobile tidak perlu margin atas tambahan */
+        margin-top: 0.75rem; /* Di mobile tidak perlu margin atas tambahan */
         margin-bottom: 0.75rem; /* Jarak ke subtitle versi mobile */
     }
     header .subtitle {
