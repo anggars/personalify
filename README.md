@@ -1,48 +1,49 @@
 # Personalify
 
+## ✨ Live Demo
+Aplikasi ini telah di-hosting dan dapat diakses secara publik melalui link berikut:
+**[https://personalify-irf2.onrender.com/](https://personalify-irf2.onrender.com/)**
+
+---
+
 ## 1. Introduction
 
-Personalify adalah dashboard analitik Spotify personal yang dibangun untuk menampilkan preferensi musik pengguna berdasarkan data dari Spotify API. Proyek ini didesain dengan pendekatan distributed system, memanfaatkan integrasi berbagai database (PostgreSQL, MongoDB, Redis) serta fitur seperti FDW dan cache.
+Personalify adalah dashboard analitik Spotify personal yang dibangun untuk menampilkan preferensi musik pengguna berdasarkan data dari Spotify API. Proyek ini tidak hanya menampilkan data, tetapi juga menganalisis **mood atau vibe** dari lagu-lagu tersebut menggunakan Natural Language Processing (NLP) dari Hugging Face. Proyek ini didesain dengan pendekatan distributed system, memanfaatkan integrasi berbagai database (PostgreSQL, MongoDB, Redis) serta fitur seperti FDW dan cache.
 
 ## 2. Use Case Overview
 
-| Use Case              | Deskripsi                                                                 |
-|-----------------------|---------------------------------------------------------------------------|
-| 🎵 Spotify Login/Auth | Pengguna login menggunakan OAuth2 Spotify untuk mengizinkan akses ke data musik mereka. |
-| 📥 Sync Top Data      | Data seperti top artists, top tracks, dan genres disinkronisasi dan disimpan di database terdistribusi. |
-| 🧠 Caching & History  | Redis digunakan untuk cache cepat, MongoDB untuk menyimpan riwayat sinkronisasi user. |
-| 📊 Dashboard          | Frontend responsif menampilkan visualisasi berdasarkan device pengguna (desktop/mobile). |
-| 🌍 Distributed Query  | FDW memungkinkan query lintas PostgreSQL dan sumber eksternal (simulasi distribusi). |
-
+| Use Case                 | Deskripsi                                                                                |
+|--------------------------|------------------------------------------------------------------------------------------|
+| 🎵 Spotify Login/Auth    | Pengguna login menggunakan OAuth2 Spotify untuk mengizinkan akses ke data musik mereka.      |
+| 📥 Sync Top Data         | Data seperti top artists, top tracks, dan genres disinkronisasi dan disimpan di database.  |
+| 🧠 Mood Analysis (NLP)   | Menganalisis judul lagu menggunakan model dari Hugging Face untuk menentukan emosi dominan.    |
+| ⚡ Caching & History      | Redis digunakan untuk cache cepat, MongoDB untuk menyimpan riwayat sinkronisasi user.        |
+| 📊 Dashboard             | Frontend responsif menampilkan visualisasi berdasarkan device pengguna (desktop/mobile).      |
+| 🌍 Distributed Query     | FDW memungkinkan query lintas PostgreSQL dan sumber eksternal (simulasi distribusi).      |
 
 ## 3. System Architecture
 
-Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitektur berbasis layanan (service-based), dengan backend FastAPI sebagai pusat orkestrasi data dari berbagai sumber (Spotify API, PostgreSQL, Redis, MongoDB, dan FDW).
+Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitektur berbasis layanan, dengan backend FastAPI sebagai pusat orkestrasi data dari berbagai sumber (Spotify API, Hugging Face API, PostgreSQL, Redis, MongoDB, dan FDW).
 
 ```text
-                            +------------------+
-                            |     FastAPI      | <-----------------------------+
-                            |  (Backend API)   |                               |
-                            +--------+---------+                               |
-                                     |                                         |
-                                     v                                         |
-        +---------------+       +----------+         +------------------+      |
-        |  PostgreSQL    |<---->|  Redis   |<------->|      MongoDB     |      |
-        |  (Main DB)     |      | (Cache)  |         |  (Sync History)  |      |
-        +---------------+       +----------+         +------------------+      |
-                 |                                                             |
-                 v                                                             |
-       +------------------------+                                              |
-       | PostgreSQL + FDW       |                                              |
-       | (foreign remote table) |                                              |
-       +------------------------+                                              |
-                                                                               |
-                                                                               |
-                          +-------------- --------+                            |
-                          |        Frontend       | <--------------------------+
-                          |        (Jinja)        |
-                          +--------------- -------+
-
++-------------------------+      +------------------+      +----------------------+
+|       Spotify API       |<---->|      FastAPI     |<---->|   Hugging Face API   |
+|       (User Data)       |      |  (Backend API)   |      |  (NLP Emotion Model) |
++-------------------------+      +--------+---------+      +----------------------+
+                                          |
+              +---------------------------+---------------------------+
+              |                           |                           |
+              v                           v                           v
+      +---------------+             +----------+              +------------------+
+      |  PostgreSQL   |<----------->|   Redis  |<------------>|     MongoDB      |
+      |   (Main DB)   |             |  (Cache) |              | (Sync History)   |
+      +---------------+             +----------+              +------------------+
+              |
+              v
+      +------------------------+
+      |   PostgreSQL + FDW     |
+      | (foreign remote table) |
+      +------------------------+
 ```
 
 **Penjelasan Komponen:**
@@ -50,7 +51,7 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
 - **Frontend (Jinja):**  
   UI berbasis web yang menampilkan top artists, tracks, dan genres pengguna secara interaktif. Tampilan responsif untuk desktop & mobile.
 - **FastAPI (Backend API):**  
-  Server utama yang menangani proses autentikasi Spotify (OAuth2), sinkronisasi data, penyimpanan ke database, cache, serta penyajian API ke frontend.
+  Server utama yang menangani proses autentikasi Spotify (OAuth2), sinkronisasi data, penyimpanan ke database, cache, panggilan ke API eksternal (Hugging Face) untuk analisis NLP, serta penyajian API ke frontend.
 - **PostgreSQL (Main DB):**  
   Menyimpan metadata utama seperti user, artist, dan track. Digunakan sebagai pusat relasional sistem.
 - **Redis (Cache):**  
@@ -71,6 +72,7 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
 | **Cache**        | Redis                | In-memory cache dengan TTL, sangat cepat untuk menyimpan data sementara per user.|
 | **Sync Storage** | MongoDB              | Cocok untuk menyimpan riwayat dalam bentuk dokumen fleksibel (top data per waktu).|
 | **Auth**         | Spotify OAuth2       | Protokol standar resmi dari Spotify, aman untuk login dan akses data user.      |
+| **NLP Model**    | Hugging Face API     | Akses ke model AI pre-trained untuk analisis emosi tanpa perlu membangun dari nol.|
 | **FDW**          | PostgreSQL FDW       | Digunakan untuk simulasi query antar instance PostgreSQL (distributed query).   |
 | **Containerization** | Docker + Compose | Menjamin isolasi lingkungan, konsistensi deployment, dan kemudahan replikasi.   |
 
@@ -331,3 +333,4 @@ Lebih jauh lagi, proyek ini mengimplementasikan PostgreSQL Foreign Data Wrapper 
 Selama pengembangan, sejumlah tantangan teknis berhasil diatasi, mulai dari sinkronisasi data yang tidak homogen antara API Spotify dan struktur tabel relasional, hingga konfigurasi hostname antar-container Docker agar dapat saling terhubung. Tantangan-tantangan ini menghasilkan pembelajaran praktis seputar pemilihan teknologi, pengelolaan cache, dan penggabungan data dari sumber berbeda secara efisien.
 
 Secara keseluruhan, Personalify telah berhasil menjadi bukti konsep dari sistem terdistribusi yang memadukan otentikasi modern, sinkronisasi API eksternal, penyimpanan multi-database, serta cache dan federasi data dalam satu ekosistem yang kohesif. Proyek ini bukan hanya memenuhi aspek fungsional dan teknis dari tugas Pemrosesan Data Terdistribusi, tetapi juga memberikan pengalaman praktik nyata dalam membangun dan mengelola sistem data yang kompleks dan dapat diskalakan.
+
