@@ -1,0 +1,215 @@
+/* ====== LYRIC ANALYZER STYLES ====== */
+body {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #121212;
+    color: #ffffff;
+    padding: 1.5rem;
+    overflow-x: hidden;
+}
+
+header h1 {
+    color: #1DB954;
+    font-size: 2.5rem;
+    font-weight: 800;
+    text-align: center;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+header p.subtitle {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #B3B3B3;
+    margin-top: 0.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.section {
+    background: #1e1e1e;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid #282828;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.section:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+    z-index: 2;
+}
+
+.lyrics-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.lyrics-form textarea {
+    width: 100%;
+    min-height: 250px;
+    padding: 18px;
+    border-radius: 12px;
+    border: 1px solid #282828;
+    background-color: #181818;
+    color: #fff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.05rem;
+    resize: vertical;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.lyrics-form textarea:focus {
+    outline: none;
+    border-color: #1DB954;
+    box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
+}
+
+.analysis-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+#analysisResultTitle {
+    display: none;
+    margin: 0;
+}
+
+.button-primary {
+    padding: 12px 24px;
+    border-radius: 50px;
+    border: none;
+    background-color: #1DB954;
+    color: #121212;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.2s ease;
+}
+
+.button-primary:hover {
+    background-color: #1ed760;
+}
+
+.emotion-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.emotion-label {
+    min-width: 150px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: capitalize;
+    letter-spacing: 0.5px;
+}
+
+.emotion-bar-bg {
+    flex-grow: 1;
+    background: #282828;
+    border-radius: 50px;
+    height: 14px;
+    overflow: hidden;
+}
+
+.emotion-bar {
+    background: #1DB954;
+    height: 100%;
+    border-radius: 50px;
+    transition: width 0.5s ease-out;
+}
+
+.emotion-score {
+    min-width: 50px;
+    text-align: right;
+    color: #b3b3b3;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.loading-spinner {
+    border: 4px solid #333;
+    border-top: 4px solid #1DB954;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    animation: spin 1s linear infinite;
+    margin: 1rem auto;
+}
+
+#results-section {
+    margin-top: 3rem;
+}
+
+#results-section h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+footer {
+    width: 100%;
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #888;
+}
+
+.footer-link {
+    color: #888;
+    text-decoration: none;
+}
+.footer-link:hover {
+    color: #1DB954;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 1rem;
+        padding-bottom: 100px;
+    }
+    header h1 {
+        font-size: 2rem;
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    header .subtitle {
+        font-size: 1rem;
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+    }
+    .container {
+        grid-template-columns: 1fr;
+    }
+    .section {
+        padding: 1rem;
+    }
+    .lyrics-form textarea {
+        min-height: 140px;
+        font-size: 1rem;
+    }
+}

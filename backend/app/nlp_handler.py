@@ -79,3 +79,20 @@ def generate_emotion_paragraph(track_names):
     )
 
     return f"Shades of {formatted}."
+
+def analyze_lyrics_emotion(lyrics: str):
+    """
+    Analisis emosi dari lirik lagu menggunakan model GoEmotions.
+    Return: dict berisi label emosi dan skor.
+    """
+    if not lyrics or not HF_API_KEY:
+        return {"error": "No lyrics provided or Hugging Face API key not set."}
+    emotion_data = get_emotion_from_text(lyrics)
+    if not emotion_data or not emotion_data[0]:
+        return {"error": "Failed to analyze emotion."}
+    try:
+        sorted_emotions = sorted(emotion_data[0], key=lambda x: x['score'], reverse=True)
+        top_emotions = sorted_emotions[:10]
+        return {"emotions": top_emotions}
+    except Exception:
+        return {"error": "Could not parse emotion result."}
