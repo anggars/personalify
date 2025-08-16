@@ -5,7 +5,7 @@ body {
     background-color: #121212;
     color: #ffffff;
     padding: 1.5rem;
-    padding-bottom: 90px;
+    padding-bottom: 140px;
     overflow-x: hidden;
 }
 
@@ -125,19 +125,40 @@ header p.subtitle {
 }
 
 .emotion-label {
-    min-width: 150px;
+    /* biarkan label panjang, tidak di-ellipsis */
     font-weight: 700;
     color: #fff;
     text-transform: capitalize;
     letter-spacing: 0.5px;
+    white-space: nowrap;
+    /* hilangkan overflow/ellipsis agar teks tidak terpotong */
+    overflow: visible;
+    text-overflow: unset;
+    /* JANGAN pakai flex-basis/fixed width di sini */
 }
 
 .emotion-bar-bg {
-    flex-grow: 1;
+    /* Bar akan menyesuaikan sisa ruang, tapi... */
+    flex: 1 1 0;
     background: #282828;
     border-radius: 50px;
     height: 14px;
     overflow: hidden;
+    min-width: 80px;
+    max-width: 100%;
+    display: block;
+}
+
+/* Agar semua bar sejajar mengikuti label terpanjang */
+.emotion-bars-group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+}
+
+.emotion-bar-row {
+    width: 100%;
 }
 
 .emotion-bar {
@@ -145,6 +166,8 @@ header p.subtitle {
     height: 100%;
     border-radius: 50px;
     transition: width 0.5s ease-out;
+    min-width: 0;
+    display: block;
 }
 
 .emotion-score {
@@ -175,19 +198,19 @@ header p.subtitle {
 }
 
 footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
     width: 100%;
+    position: relative;
+    left: 0;
+    bottom: 0;
     padding: 1.5rem 0;
     margin-top: 3rem;
     text-align: center;
     font-size: 0.75rem;
     color: #888;
-    background: none;
+    background: #121212;
     border-top: none;
     box-shadow: none;
-    z-index: 1;
+    z-index: 100;
 }
 
 .footer-link {
@@ -208,7 +231,7 @@ footer {
 /* =================================== */
 @media (max-width: 768px) {
     body {
-        padding: 1.5rem;
+        padding: 1rem;
         padding-bottom: 100px;
     }
 
@@ -222,6 +245,11 @@ footer {
     }
 
     .container {
+        max-width: 100vw;
+        padding: 0;
+        margin: 0 auto;
+        gap: 0.5rem;
+        min-height: 60vh;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -229,14 +257,15 @@ footer {
     }
 
     .section {
-        width: 100vw;
-        max-width: 100vw;
-        box-sizing: border-box;
-        padding: 1.5rem 0.5rem;
+        width: 100%;
+        max-width: 600px;
+        padding: 1.5rem 1rem;
         margin: 0 auto;
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
     }
 
     .lyrics-form {
@@ -244,22 +273,37 @@ footer {
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
     }
 
     .lyrics-form textarea {
         width: 100%;
-        max-width: 100vw;
-        box-sizing: border-box;
+        max-width: 100%;
         margin: 0 auto;
         display: block;
+        box-sizing: border-box;
         min-height: 200px;
         font-size: 1rem;
+        border-radius: 12px;
+        background: #181818;
     }
 
+    /* Hasil emosi tetap lebar seperti desktop, tidak dipaksa ke tengah */
+    #results-section {
+        margin-top: 3rem;
+        width: 100%;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        box-sizing: border-box;
+    }
+
+    /* Kembalikan tombol ke posisi desktop (kanan) */
     .analysis-controls {
-        flex-direction: column;
+        flex-direction: row;
         gap: 1.5rem;
-        align-items: stretch;
+        align-items: center;
+        justify-content: space-between;
     }
 
     .analysis-controls h2 {
@@ -267,28 +311,86 @@ footer {
     }
     
     .button-primary {
-        width: 100%;
+        width: auto;
         text-align: center;
     }
 
     .emotion-bar-row {
+        display: flex;
+        align-items: center;
         gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .emotion-label {
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: unset;
+    }
+    .emotion-bar-bg {
+        flex: 1 1 0;
+        background: #282828;
+        border-radius: 50px;
+        height: 10px;
+        min-width: 40px;
+        max-width: 100%;
+        overflow: hidden;
+        display: block;
+    }
+    .emotion-bar {
+        background: #1DB954;
+        height: 100%;
+        border-radius: 50px;
+        transition: width 0.5s ease-out;
+        min-width: 0;
+        display: block;
     }
 
+    .emotion-bars-group {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+    .emotion-bar-row {
+        width: 100%;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
     .emotion-label {
-        min-width: 100px;
         font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: unset;
+    }
+    .emotion-bar-bg {
+        flex: 1 1 0;
+        background: #282828;
+        border-radius: 50px;
+        height: 10px;
+        min-width: 40px;
+        max-width: 100%;
+        overflow: hidden;
+        display: block;
+    }
+    .emotion-bar {
+        background: #1DB954;
+        height: 100%;
+        border-radius: 50px;
+        transition: width 0.5s ease-out;
+        min-width: 0;
+        display: block;
     }
 
     footer {
         font-size: 0.65rem;
         margin-top: 2rem;
         padding: 1.5rem 0;
-        position: absolute;
+        position: relative;
         left: 0;
         bottom: 0;
         width: 100%;
-        background: none;
+        background: #121212;
         border-top: none;
         box-shadow: none;
     }
