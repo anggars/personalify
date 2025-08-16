@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Personalify - Lyric Analyzer</title>
+    <title>Personalify - Lyrics Analyzer</title>
     <link rel="stylesheet" href="{{ url_for('static', path='lyrics.css') }}">
     <link rel="icon" href="{{ url_for('static', path='Spotify_Primary_Logo_RGB_White.ico') }}" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,7 +11,7 @@
 <body>
 
 <header>
-    <h1>Lyric Analyzer</h1>
+    <h1>Lyrics Analyzer</h1>
     <p class="subtitle">Paste any song lyrics below to uncover their emotional shades.</p>
 </header>
 
@@ -21,7 +21,7 @@
             <textarea id="lyricsInput" name="lyrics" required placeholder="Write or paste your lyrics here... (English only)"></textarea>
         </form>
 
-        <div class="analysis-controls">
+        <div class="analysis-controls" id="analysisControls">
             <h2 id="analysisResultTitle">Analysis Result</h2>
             <button id="analyzeButton" type="button" class="button-primary">Analyze Emotions</button>
         </div>
@@ -37,8 +37,6 @@
     <span> © 2025 • Powered by </span>
     <a href="https://developer.spotify.com/" target="_blank" class="footer-link">Spotify API</a>
     <br>
-    <a href="{% if spotify_id %}/dashboard/{{ spotify_id }}?time_range=short_term{% else %}/{% endif %}" class="footer-link">Back to Home</a>
-    <span> • </span>
     <span>Created by </span>
     <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>
 </footer>
@@ -50,17 +48,21 @@
     const resultDiv = document.getElementById('resultOutput');
     const resultsSection = document.getElementById('results-section');
     const analysisResultTitle = document.getElementById('analysisResultTitle');
+    const analysisControls = document.getElementById('analysisControls');
 
     // Hubungkan tombol ke form submit secara manual
     analyzeButton.addEventListener('click', function() {
-        form.requestSubmit(); // Ini cara modern untuk submit form dari tombol luar
+        form.requestSubmit();
     });
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
+        // Saat loading, tombol tetap di tengah
+        analysisControls.style.justifyContent = "center";
+        analysisResultTitle.style.display = 'none';
+
         resultsSection.style.display = 'block';
-        analysisResultTitle.style.display = 'block'; // Tampilkan judul saat loading
         resultDiv.innerHTML = `
             <div class="loading-spinner"></div>
             <p class="emotion-recap" style="text-align: center;">Analyzing...</p>
@@ -81,6 +83,10 @@
 
             const data = await res.json();
 
+            // Setelah result keluar, tombol pindah ke kanan & judul muncul
+            analysisControls.style.justifyContent = "space-between";
+            analysisResultTitle.style.display = 'block';
+
             if (data.error) {
                 resultDiv.innerHTML = `<p class="emotion-recap" style="color:#ff6b6b;">${data.error}</p>`;
             } else if (data.emotions && data.emotions.length > 0) {
@@ -90,7 +96,7 @@
                      resultDiv.innerHTML = '<p class="emotion-recap">Could not find significant emotions in the provided text.</p>';
                      return;
                 }
-                
+
                 const maxScore = Math.max(...topEmotions.map(e => e.score));
 
                 resultDiv.innerHTML = topEmotions.map(e => `
@@ -106,10 +112,16 @@
                 resultDiv.innerHTML = '<p class="emotion-recap">Could not determine emotions from the provided text.</p>';
             }
         } catch (err) {
+            analysisControls.style.justifyContent = "space-between";
+            analysisResultTitle.style.display = 'block';
             console.error("Fetch error:", err);
             resultDiv.innerHTML = '<p class="emotion-recap" style="color:#ff6b6b;">Failed to contact the analysis server. Please try again later.</p>';
         }
     });
+
+    // Set posisi awal tombol di tengah
+    analysisControls.style.justifyContent = "center";
+    analysisResultTitle.style.display = 'none';
 </script>
 
 </body>
