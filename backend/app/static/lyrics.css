@@ -190,76 +190,76 @@ footer {
 
 @media (max-width: 768px) {
     body {
-        padding: 0.5rem;
-        padding-bottom: 80px;
-        font-size: 0.97rem;
+        padding: 0.5rem !important;
+        padding-bottom: 60px !important;
+        font-size: 0.97rem !important;
     }
     header h1 {
-        font-size: 1.35rem;
-        margin-top: 0.7rem;
-        margin-bottom: 0.5rem;
-        letter-spacing: 0.01em;
+        font-size: 1.15rem !important;
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.3rem !important;
+        letter-spacing: 0.01em !important;
     }
     header .subtitle {
-        font-size: 0.97rem;
-        margin-top: 0;
-        margin-bottom: 1.1rem;
-        line-height: 1.4;
+        font-size: 0.92rem !important;
+        margin-top: 0 !important;
+        margin-bottom: 0.7rem !important;
+        line-height: 1.3 !important;
     }
     .container {
-        grid-template-columns: 1fr;
-        max-width: 100vw;
-        padding: 0;
-        gap: 0.5rem;
+        grid-template-columns: 1fr !important;
+        max-width: 100vw !important;
+        padding: 0 !important;
+        gap: 0.2rem !important;
     }
     .section {
-        padding: 0.7rem 0.3rem;
-        border-radius: 0.7rem;
-        margin: 0 0.1rem;
+        padding: 0.5rem 0.1rem !important;
+        border-radius: 0.5rem !important;
+        margin: 0 0.05rem !important;
     }
     .lyrics-form textarea {
-        min-height: 90px;
-        font-size: 0.97rem;
-        padding: 10px;
-        border-radius: 8px;
+        min-height: 70px !important;
+        font-size: 0.92rem !important;
+        padding: 8px !important;
+        border-radius: 7px !important;
     }
     .button-primary {
-        font-size: 0.97rem;
-        padding: 10px 0;
-        width: 100%;
-        border-radius: 999px;
-        margin-top: 0.5rem;
+        font-size: 0.92rem !important;
+        padding: 9px 0 !important;
+        width: 100% !important;
+        border-radius: 999px !important;
+        margin-top: 0.4rem !important;
     }
     .emotion-bar-row {
-        gap: 0.5rem;
-        margin-bottom: 0.7rem;
+        gap: 0.3rem !important;
+        margin-bottom: 0.5rem !important;
     }
     .emotion-label {
-        min-width: 70px;
-        font-size: 0.92rem;
+        min-width: 60px !important;
+        font-size: 0.88rem !important;
     }
     .emotion-bar-bg {
-        height: 10px;
+        height: 8px !important;
     }
     .emotion-score {
-        font-size: 0.8rem;
-        min-width: 36px;
+        font-size: 0.75rem !important;
+        min-width: 28px !important;
     }
     .analysis-controls {
-        flex-direction: column;
-        gap: 0.5rem;
-        align-items: stretch;
-        margin-top: 1rem;
-        margin-bottom: 1.2rem;
+        flex-direction: column !important;
+        gap: 0.3rem !important;
+        align-items: stretch !important;
+        margin-top: 0.7rem !important;
+        margin-bottom: 0.7rem !important;
     }
     #analysisResultTitle {
-        font-size: 1rem;
+        font-size: 0.95rem !important;
     }
     #results-section {
-        margin-top: 1.2rem;
+        margin-top: 0.7rem !important;
     }
     footer {
-        font-size: 0.7rem;
-        margin-top: 2rem;
+        font-size: 0.65rem !important;
+        margin-top: 1.2rem !important;
     }
 }
