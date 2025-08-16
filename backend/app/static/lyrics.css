@@ -226,20 +226,32 @@ footer {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        max-width: 100vw;
-        padding: 0;
-        gap: 0.5rem;
-        min-height: 60vh;
     }
 
     .section {
-        width: 100%;
+        width: 100vw;
         max-width: 100vw;
+        box-sizing: border-box;
         padding: 1.5rem 0.5rem;
         margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .lyrics-form {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     .lyrics-form textarea {
+        width: 100%;
+        max-width: 100vw;
+        box-sizing: border-box;
+        margin: 0 auto;
+        display: block;
         min-height: 200px;
         font-size: 1rem;
     }
