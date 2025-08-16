@@ -308,11 +308,13 @@ footer {
 
     .analysis-controls h2 {
         text-align: center;
+        font-size: 1.25rem;
     }
     
     .button-primary {
         width: auto;
         text-align: center;
+        font-size: 0.9rem;
     }
 
     .emotion-bar-row {
