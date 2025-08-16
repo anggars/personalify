@@ -189,7 +189,7 @@ header p.subtitle {
 }
 
 #results-section {
-    margin-top: 3rem;
+    margin-top: 1rem;
 }
 
 #results-section h2 {
@@ -290,7 +290,7 @@ footer {
 
     /* Hasil emosi tetap lebar seperti desktop, tidak dipaksa ke tengah */
     #results-section {
-        margin-top: 3rem;
+        margin-top: 1rem;
         width: 100%;
         max-width: 600px;
         margin-left: auto;
