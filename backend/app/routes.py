@@ -1,11 +1,11 @@
 import os
 import requests
 from urllib.parse import urlencode
-from fastapi import APIRouter, Request, Query, HTTPException
+from fastapi import APIRouter, Request, Query, HTTPException, Body
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from typing import Optional
-from app.nlp_handler import generate_emotion_paragraph
+from app.nlp_handler import generate_emotion_paragraph, analyze_lyrics_emotion
 
 from app.db_handler import (
     save_user,
@@ -292,3 +292,20 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         "genre_artists_map": genre_artists_map,
         "emotion_paragraph": emotion_paragraph  # <-- Kirim data emosi ke template
     })
+
+# Ganti endpoint agar sesuai dengan frontend (POST /analyze-lyrics)
+@router.post("/analyze-lyrics", tags=["NLP"])
+def analyze_lyrics_emotion_endpoint(
+    lyrics: str = Body(..., embed=True, description="Lirik lagu untuk dianalisis")
+):
+    """
+    Analisis emosi dari lirik lagu menggunakan model Hugging Face GoEmotions.
+    """
+    return analyze_lyrics_emotion(lyrics)
+
+@router.get("/lyrics", response_class=HTMLResponse, tags=["Pages"])
+def lyrics_page(request: Request, spotify_id: str = None):
+    """
+    Serves the lyric analyzer page.
+    """
+    return templates.TemplateResponse("lyrics.html", {"request": request, "spotify_id": spotify_id})

@@ -377,3 +377,18 @@ footer {
 .footer-toggler:hover {
     color: #ffffff; /* Mengubah warna teks menjadi putih (sesuaikan jika perlu) */
 }
+
+/* Pastikan ada di dashboard.css */
+.button-primary {
+    padding: 12px 24px;
+    border-radius: 50px;
+    border: none;
+    background-color: #1DB954;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.2s ease;
+}
