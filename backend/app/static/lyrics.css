@@ -5,6 +5,7 @@ body {
     background-color: #121212;
     color: #ffffff;
     padding: 1.5rem;
+    padding-bottom: 90px;
     overflow-x: hidden;
 }
 
@@ -27,14 +28,21 @@ header p.subtitle {
 }
 
 .container {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    grid-template-columns: none;
     gap: 1.5rem;
     max-width: 700px;
     margin: 0 auto;
+    min-height: 60vh;
 }
 
 .section {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
     background: #1e1e1e;
     border-radius: 1rem;
     padding: 1.5rem;
@@ -80,7 +88,6 @@ header p.subtitle {
 
 .analysis-controls {
     display: flex;
-    /* justify-content diatur lewat JS */
     align-items: center;
     margin-top: 1.5rem;
     margin-bottom: 2rem;
@@ -168,11 +175,19 @@ header p.subtitle {
 }
 
 footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
     width: 100%;
+    padding: 1.5rem 0;
     margin-top: 3rem;
     text-align: center;
     font-size: 0.75rem;
     color: #888;
+    background: none;
+    border-top: none;
+    box-shadow: none;
+    z-index: 1;
 }
 
 .footer-link {
@@ -188,78 +203,81 @@ footer {
     100% { transform: rotate(360deg); }
 }
 
+/* =================================== */
+/* ====== MOBILE RESPONSIVE STYLES ====== */
+/* =================================== */
 @media (max-width: 768px) {
     body {
-        padding: 0.5rem !important;
-        padding-bottom: 60px !important;
-        font-size: 0.97rem !important;
+        padding: 1.5rem;
+        padding-bottom: 100px;
     }
+
     header h1 {
-        font-size: 1.15rem !important;
-        margin-top: 0.5rem !important;
-        margin-bottom: 0.3rem !important;
-        letter-spacing: 0.01em !important;
+        font-size: 2rem;
     }
-    header .subtitle {
-        font-size: 0.92rem !important;
-        margin-top: 0 !important;
-        margin-bottom: 0.7rem !important;
-        line-height: 1.3 !important;
+
+    header p.subtitle {
+        font-size: 1rem;
+        margin-bottom: 2rem;
     }
+
     .container {
-        grid-template-columns: 1fr !important;
-        max-width: 100vw !important;
-        padding: 0 !important;
-        gap: 0.2rem !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        max-width: 100vw;
+        padding: 0;
+        gap: 0.5rem;
+        min-height: 60vh;
     }
+
     .section {
-        padding: 0.5rem 0.1rem !important;
-        border-radius: 0.5rem !important;
-        margin: 0 0.05rem !important;
+        width: 100%;
+        max-width: 100vw;
+        padding: 1.5rem 0.5rem;
+        margin: 0 auto;
     }
+
     .lyrics-form textarea {
-        min-height: 70px !important;
-        font-size: 0.92rem !important;
-        padding: 8px !important;
-        border-radius: 7px !important;
+        min-height: 200px;
+        font-size: 1rem;
     }
-    .button-primary {
-        font-size: 0.92rem !important;
-        padding: 9px 0 !important;
-        width: 100% !important;
-        border-radius: 999px !important;
-        margin-top: 0.4rem !important;
-    }
-    .emotion-bar-row {
-        gap: 0.3rem !important;
-        margin-bottom: 0.5rem !important;
-    }
-    .emotion-label {
-        min-width: 60px !important;
-        font-size: 0.88rem !important;
-    }
-    .emotion-bar-bg {
-        height: 8px !important;
-    }
-    .emotion-score {
-        font-size: 0.75rem !important;
-        min-width: 28px !important;
-    }
+
     .analysis-controls {
-        flex-direction: column !important;
-        gap: 0.3rem !important;
-        align-items: stretch !important;
-        margin-top: 0.7rem !important;
-        margin-bottom: 0.7rem !important;
+        flex-direction: column;
+        gap: 1.5rem;
+        align-items: stretch;
     }
-    #analysisResultTitle {
-        font-size: 0.95rem !important;
+
+    .analysis-controls h2 {
+        text-align: center;
     }
-    #results-section {
-        margin-top: 0.7rem !important;
+    
+    .button-primary {
+        width: 100%;
+        text-align: center;
     }
+
+    .emotion-bar-row {
+        gap: 0.5rem;
+    }
+
+    .emotion-label {
+        min-width: 100px;
+        font-size: 0.9rem;
+    }
+
     footer {
-        font-size: 0.65rem !important;
-        margin-top: 1.2rem !important;
+        font-size: 0.65rem;
+        margin-top: 2rem;
+        padding: 1.5rem 0;
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background: none;
+        border-top: none;
+        box-shadow: none;
     }
 }
