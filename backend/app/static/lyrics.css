@@ -86,6 +86,10 @@ header p.subtitle {
     box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
 }
 
+#lyricsInput::placeholder {
+  white-space: pre-line; /* biar \n kebaca jadi enter */
+}
+
 .analysis-controls {
     display: flex;
     align-items: center;
