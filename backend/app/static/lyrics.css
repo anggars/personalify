@@ -95,8 +95,11 @@ header p.subtitle {
 }
 
 #analysisResultTitle {
-    display: none;
-    margin: 0;
+    display: none !important;
+}
+
+.lyrics-form button {
+    align-self: stretch; /* tombol ikut lebar container */
 }
 
 .button-primary {
@@ -122,6 +125,10 @@ header p.subtitle {
     align-items: center;
     gap: 1rem;
     margin-bottom: 1rem;
+}
+
+.emotion-bar-row:last-child {
+    margin-bottom: 0;
 }
 
 .emotion-label {
@@ -189,7 +196,8 @@ header p.subtitle {
 }
 
 #results-section {
-    margin-top: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 #results-section h2 {
@@ -290,7 +298,7 @@ footer {
 
     /* Hasil emosi tetap lebar seperti desktop, tidak dipaksa ke tengah */
     #results-section {
-        margin-top: 1rem;
+        margin-top: 1.5rem;
         width: 100%;
         max-width: 600px;
         margin-left: auto;
