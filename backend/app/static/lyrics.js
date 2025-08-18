@@ -2,9 +2,20 @@ const form = document.getElementById('lyricsForm');
 const lyricsInput = document.getElementById('lyricsInput');
 const resultDiv = document.getElementById('resultOutput');
 const resultsSection = document.getElementById('results-section');
+const analyzeButton = document.getElementById('analyzeButton');
 
-form.addEventListener('submit', async function(e) {
-    e.preventDefault();
+// ▼▼▼ TAMBAHKAN DETEKSI PERANGKAT MOBILE DI SINI ▼▼▼
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// Fungsi untuk menangani submit
+async function analyzeLyrics() {
+    const lyrics = lyricsInput.value;
+
+    if (!lyrics || lyrics.trim() === '') {
+        resultsSection.style.display = 'block';
+        resultDiv.innerHTML = `<p style="color:#ff6b6b; text-align:center;">Please paste some lyrics first.</p>`;
+        return;
+    }
 
     resultsSection.style.display = 'block';
     resultDiv.innerHTML = `
@@ -12,8 +23,6 @@ form.addEventListener('submit', async function(e) {
         <p style="text-align: center;">Analyzing...</p>
     `;
     
-    const lyrics = lyricsInput.value;
-
     try {
         const res = await fetch('/analyze-lyrics', {
             method: 'POST',
@@ -22,7 +31,6 @@ form.addEventListener('submit', async function(e) {
         });
 
         if (!res.ok) throw new Error(`Server error: ${res.statusText}`);
-
         const data = await res.json();
 
         if (data.error) {
@@ -36,7 +44,6 @@ form.addEventListener('submit', async function(e) {
             }
             
             const maxScore = Math.max(...topEmotions.map(e => e.score));
-
             resultDiv.innerHTML = topEmotions.map(e => `
                 <div class="emotion-bar-row">
                     <span class="emotion-label">${e.label}</span>
@@ -52,5 +59,20 @@ form.addEventListener('submit', async function(e) {
     } catch (err) {
         console.error("Fetch error:", err);
         resultDiv.innerHTML = '<p style="color:#ff6b6b; text-align:center;">Failed to contact the analysis server.</p>';
+    }
+}
+
+// Event listener untuk form, tidak ada perubahan
+form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    analyzeLyrics();
+});
+
+// Event listener untuk keyboard, dengan tambahan pengecekan mobile
+lyricsInput.addEventListener('keydown', function(event) {
+    // ▼▼▼ TAMBAHKAN '&& !isMobile' DI SINI ▼▼▼
+    if (event.key === 'Enter' && !event.shiftKey && !isMobile) {
+        event.preventDefault(); 
+        analyzeLyrics();
     }
 });
