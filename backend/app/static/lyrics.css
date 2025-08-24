@@ -1,8 +1,4 @@
 /* ====== LYRIC ANALYZER STYLES ====== */
-* {
-    box-sizing: border-box;
-}
-
 body {
     margin: 0;
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -10,7 +6,6 @@ body {
     color: #ffffff;
     padding: 2rem;
     overflow-x: hidden;
-    min-height: 100vh;
 }
 
 header h1 {
@@ -20,12 +15,6 @@ header h1 {
     text-align: center;
     margin-top: 1rem;
     margin-bottom: 1rem;
-}
-
-header {
-    max-width: 700px; /* Samakan dengan .container */
-    margin-left: auto;
-    margin-right: auto;
 }
 
 header p.subtitle {
@@ -42,24 +31,24 @@ header p.subtitle {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    grid-template-columns: none;
     gap: 1.5rem;
-    max-width: 800px;
+    max-width: 700px;
     margin: 0 auto;
     min-height: 60vh;
 }
 
 .section {
     width: 100%;
-    max-width: 700px;
+    max-width: 600px;
     margin: 0 auto;
-    background: linear-gradient(145deg, #1e1e1e, #252525);
+    background: #1e1e1e;
     border-radius: 1rem;
-    padding: 2rem;
+    padding: 1.5rem;
     border: 1px solid #282828;
     position: relative;
     z-index: 1;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .section:hover {
@@ -68,433 +57,157 @@ header p.subtitle {
     z-index: 2;
 }
 
-/* ====== MODE SELECTOR ====== */
-.filters {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 2rem;
-}
-
-.select-wrapper {
-    position: relative;
-    display: inline-block;
-}
-
-.select-wrapper::after {
-    content: '▼';
-    font-size: 0.8rem;
-    color: #aaa;
-    position: absolute;
-    right: 1.2rem;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-}
-
-.filters select {
-    appearance: none;
-    background-color: #2a2a2a;
-    border: 1px solid #444;
-    padding: 0.8rem 3rem 0.8rem 1.5rem;
-    font-size: 1rem;
-    color: #ffffff;
-    cursor: pointer;
-    border-radius: 50px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.filters option {
-    background: #2a2a2a;
-    color: #ffffff;
-    border: none;
-    padding: 10px; /* Memberi sedikit ruang di dalam opsi */
-}
-
-.filters select:hover {
-    background: linear-gradient(145deg, #333333, #3a3a3a);
-    border-color: #1DB954;
-}
-
-.filters select:focus {
-    outline: none;
-    border-color: #1DB954;
-    box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
-}
-
-/* ====== MANUAL FORM STYLING ====== */
 .lyrics-form {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    align-items: stretch;
-    width: 100%;
+    align-items: center;
 }
 
 .lyrics-form textarea {
     width: 100%;
-    min-height: 280px;
-    padding: 20px;
+    min-height: 250px;
+    padding: 18px;
     border-radius: 12px;
-    border: 1px solid #383838;
-    background: linear-gradient(145deg, #181818, #202020);
+    border: 1px solid #282828;
+    background-color: #181818;
     color: #fff;
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 1.05rem;
-    line-height: 1.6;
     resize: vertical;
-    transition: all 0.3s ease;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .lyrics-form textarea:focus {
     outline: none;
     border-color: #1DB954;
     box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
-    background: linear-gradient(145deg, #202020, #252525);
 }
 
-.lyrics-form textarea::placeholder {
-    color: #888;
-    font-style: italic;
+#lyricsInput::placeholder {
+  white-space: pre-line; /* biar \n kebaca jadi enter */
 }
 
-/* ====== GENIUS SEARCH STYLING ====== */
-.genius-area {
+.analysis-controls {
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    width: 100%;
     align-items: center;
-    text-align: center;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+    gap: 1.5rem;
 }
 
-.genius-search-row {
-    display: flex;
-    flex-direction: column; /* <-- UBAH MENJADI COLUMN */
-    gap: 1.5rem;             /* <-- SESUAIKAN JARAKNYA */
-    align-items: stretch;    /* <-- BUAT ISINYA IKUT LEBAR PENUH */
-    width: 100%;
+#analysisResultTitle {
+    display: none !important;
 }
 
-.genius-input {
-    background: linear-gradient(145deg, #181818, #202020);
-    color: #fff;
-    border: 1px solid #383838;
-    border-radius: 12px;
-    padding: 1rem 1.2rem;
-    font-size: 1rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    transition: all 0.3s ease;
+.lyrics-form button {
+    align-self: stretch; /* tombol ikut lebar container */
 }
 
-.genius-input:focus {
-    outline: none;
-    border-color: #1DB954;
-    box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
-    background: linear-gradient(145deg, #202020, #252525);
-}
-
-.genius-input::placeholder {
-    color: #888;
-    font-style: italic;
-}
-
-/* Results sections styling - CONSISTENT WIDTH */
-#artistResults,
-#songResults,
-#geniusLyricsResult {
-    width: 100%;
-    margin: 0 auto;
-}
-
-#artistResults h3,
-#songResults h3,
-#geniusLyricsResult h3 {
-    color: #1DB954;
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    text-align: center;
-}
-
-/* List hasil: grid rapi */
-.genius-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1rem;
-    overflow-y: auto;
-    padding: 0.5rem;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.02);
-}
-
-/* Custom scrollbar for song lists */
-.genius-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.genius-list::-webkit-scrollbar-track {
-    background: #2a2a2a;
-    border-radius: 3px;
-}
-
-.genius-list::-webkit-scrollbar-thumb {
-    background: #1DB954;
-    border-radius: 3px;
-}
-
-.genius-list::-webkit-scrollbar-thumb:hover {
-    background: #1ed760;
-}
-
-.artist-btn, .song-btn {
-    background: linear-gradient(145deg, #2a2a2a, #333333);
-    color: #eee;
-    border: 1px solid #444;
-    border-radius: 12px;
-    padding: 1rem;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 500;
-    text-align: center;
-    word-wrap: break-word;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    position: relative;
-    overflow: hidden;
-}
-
-.artist-btn::before, .song-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(29, 185, 84, 0.2), transparent);
-    transition: left 0.5s;
-}
-
-.artist-btn:hover::before, .song-btn:hover::before {
-    left: 100%;
-}
-
-.artist-btn:hover, .song-btn:hover,
-.artist-btn.active, .song-btn.active {
-    background: linear-gradient(145deg, #1DB954, #1ed760);
-    color: #121212;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(29, 185, 84, 0.3);
-    border-color: #1DB954;
-}
-
-/* Area hasil lirik - CONSISTENT WIDTH WITH OTHER SECTIONS */
-.genius-lyrics-result {
-    width: 100%;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: center;
-}
-
-.lyrics-display {
-    width: 100%;
-    min-height: 280px;
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid #383838;
-    background: linear-gradient(145deg, #181818, #202020);
-    color: #fff;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.05rem;
-    line-height: 1.6;
-    resize: vertical;
-    transition: all 0.3s ease;
-    max-height: 350px;
-    overflow-y: auto;
-    margin-bottom: 1.5rem;
-}
-
-/* ▼▼▼ TAMBAHKAN BLOK KODE INI ▼▼▼ */
-.lyrics-display:focus {
-    outline: none;
-    border-color: #1DB954;
-    box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
-    background: linear-gradient(145deg, #202020, #252525);
-}
-
-/* Custom scrollbar for lyrics display */
-.lyrics-display::-webkit-scrollbar {
-    width: 8px;
-}
-
-.lyrics-display::-webkit-scrollbar-track {
-    background: #2a2a2a;
-    border-radius: 4px;
-}
-
-.lyrics-display::-webkit-scrollbar-thumb {
-    background: #1DB954;
-    border-radius: 4px;
-}
-
-.lyrics-display::-webkit-scrollbar-thumb:hover {
-    background: #1ed760;
-}
-
-/* ====== BUTTONS ====== */
 .button-primary {
-    width: 100%;
-    padding: 14px 28px;
+    padding: 12px 24px;
     border-radius: 50px;
     border: none;
-    background: linear-gradient(145deg, #1DB954, #1ed760);
+    background-color: #1DB954;
     color: #121212;
-    font-weight: 700;
+    font-weight: 600;
     font-size: 1rem;
     cursor: pointer;
     text-decoration: none;
     display: inline-block;
-    transition: all 0.3s ease;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
-    position: relative;
-    overflow: hidden;
-}
-
-.button-primary::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-}
-
-.button-primary:hover::before {
-    left: 100%;
+    transition: background-color 0.2s ease;
 }
 
 .button-primary:hover {
-    background: linear-gradient(145deg, #1ed760, #22ff6b);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(29, 185, 84, 0.4);
+    background-color: #1ed760;
 }
 
-.button-primary:active {
-    transform: translateY(0px);
-    box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+.emotion-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
-/* ====== EMOTION BARS - HUGGINGFACE STYLE (LABEL AT TOP) ====== */
+.emotion-bar-row:last-child {
+    margin-bottom: 0;
+}
+
+.emotion-label {
+    /* biarkan label panjang, tidak di-ellipsis */
+    font-weight: 700;
+    color: #fff;
+    text-transform: capitalize;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    /* hilangkan overflow/ellipsis agar teks tidak terpotong */
+    overflow: visible;
+    text-overflow: unset;
+    /* JANGAN pakai flex-basis/fixed width di sini */
+}
+
+.emotion-bar-bg {
+    /* Bar akan menyesuaikan sisa ruang, tapi... */
+    flex: 1 1 0;
+    background: #282828;
+    border-radius: 50px;
+    height: 14px;
+    overflow: hidden;
+    min-width: 80px;
+    max-width: 100%;
+    display: block;
+}
+
+/* Agar semua bar sejajar mengikuti label terpanjang */
 .emotion-bars-group {
     display: flex;
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    gap: 1rem;
 }
 
 .emotion-bar-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 0;
-}
-
-.emotion-label {
-    font-weight: 700;
-    color: #fff;
-    text-transform: capitalize;
-    letter-spacing: 0.5px;
-    font-size: 0.95rem;
-    text-align: left;
-    margin-bottom: 0.3rem;
-}
-
-.emotion-bar-container {
-    display: flex;
-    align-items: center;
-}
-
-.emotion-bar-bg {
-    background: linear-gradient(145deg, #282828, #333333);
-    border-radius: 25px;
-    height: 10px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-    flex: 1;
+    width: 100%;
 }
 
 .emotion-bar {
-    background: linear-gradient(145deg, #1DB954, #1ed760);
+    background: #1DB954;
     height: 100%;
-    border-radius: 25px;
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 50px;
+    transition: width 0.5s ease-out;
     min-width: 0;
-    position: relative;
-    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.3);
-}
-
-.emotion-bar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-    0% { left: -100%; }
-    100% { left: 100%; }
+    display: block;
 }
 
 .emotion-score {
+    min-width: 40px;
+    text-align: right;
     color: #b3b3b3;
     font-size: 0.9rem;
-    font-weight: 600;
-    font-family: 'JetBrains Mono', monospace;
-    min-width: 55px;
-    text-align: right;
+    font-weight: 500;
 }
 
-/* ====== LOADING SPINNER ====== */
 .loading-spinner {
     border: 4px solid #333;
     border-top: 4px solid #1DB954;
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     animation: spin 1s linear infinite;
-    margin: 2rem auto;
+    margin: 1rem auto;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* ====== RESULTS SECTION - CONSISTENT WIDTH ====== */
 #results-section {
-    margin-top: 2rem;
-    width: 100%;
+    margin-top: 1.5rem;
+    margin-bottom: -1rem;
 }
 
 #results-section h2 {
     text-align: center;
     margin-bottom: 2rem;
-    color: #1DB954;
 }
 
-/* ====== FOOTER ====== */
 footer {
     width: 100%;
     position: relative;
@@ -519,10 +232,18 @@ footer {
     color: #FEE133;
 }
 
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* =================================== */
 /* ====== MOBILE RESPONSIVE STYLES ====== */
+/* =================================== */
 @media (max-width: 768px) {
     body {
         padding: 1rem;
+        padding-bottom: 100px;
     }
 
     header h1 {
@@ -535,65 +256,143 @@ footer {
     }
 
     .container {
-        max-width: 100%;
+        max-width: 100vw;
         padding: 0;
-        gap: 1rem;
+        margin: 0 auto;
+        gap: 0.5rem;
+        min-height: 60vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
     .section {
-        padding: 1.5rem;
-        border-radius: 1rem;
+        width: 100%;
+        max-width: 600px;
+        padding: 1.5rem 1rem;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+    .lyrics-form {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
     .lyrics-form textarea {
-        min-height: 220px;
-        padding: 15px;
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        display: block;
+        box-sizing: border-box;
+        min-height: 200px;
         font-size: 1rem;
+        border-radius: 12px;
+        background: #181818;
     }
 
-    .genius-search-row {
+    /* Hasil emosi tetap lebar seperti desktop, tidak dipaksa ke tengah */
+    #results-section {
+        margin-top: 1.5rem;
+        width: 100%;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        box-sizing: border-box;
+    }
+
+    /* Kembalikan tombol ke posisi desktop (kanan) */
+    .analysis-controls {
+        flex-direction: row;
+        gap: 1.5rem;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .analysis-controls h2 {
+        text-align: center;
+        font-size: 1.25rem;
+    }
+    
+    .button-primary {
+        width: auto;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+
+    .emotion-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .emotion-label {
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: unset;
+    }
+    .emotion-bar-bg {
+        flex: 1 1 0;
+        background: #282828;
+        border-radius: 50px;
+        height: 10px;
+        min-width: 40px;
+        max-width: 100%;
+        overflow: hidden;
+        display: block;
+    }
+    .emotion-bar {
+        background: #1DB954;
+        height: 100%;
+        border-radius: 50px;
+        transition: width 0.5s ease-out;
+        min-width: 0;
+        display: block;
+    }
+
+    .emotion-bars-group {
+        display: flex;
         flex-direction: column;
-        gap: 1rem;
-    }
-
-    .genius-input, 
-    #searchArtistBtn {
+        align-items: stretch;
         width: 100%;
     }
-
-    /* List: 1 kolom di mobile untuk readability */
-    .genius-list {
-        grid-template-columns: 1fr;
-        gap: 0.6rem;
+    .emotion-bar-row {
+        width: 100%;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
     }
-
-    .artist-btn, .song-btn {
-        font-size: 0.85rem;
-        padding: 0.8rem;
-    }
-
-    .lyrics-display {
-        font-size: 0.9rem;
-        max-height: 280px;
-        padding: 1.2rem;
-    }
-
-    .button-primary {
-        font-size: 0.9rem;
-        padding: 12px 24px;
-    }
-
     .emotion-label {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: unset;
     }
-
     .emotion-bar-bg {
-        height: 8px;
+        flex: 1 1 0;
+        background: #282828;
+        border-radius: 50px;
+        height: 10px;
+        min-width: 40px;
+        max-width: 100%;
+        overflow: hidden;
+        display: block;
     }
-
-    .emotion-score {
-        min-width: 50px;
-        font-size: 0.8rem;
+    .emotion-bar {
+        background: #1DB954;
+        height: 100%;
+        border-radius: 50px;
+        transition: width 0.5s ease-out;
+        min-width: 0;
+        display: block;
     }
 
     footer {
@@ -608,47 +407,63 @@ footer {
         border-top: none;
         box-shadow: none;
     }
-
-    .filters select {
-        padding: 0.7rem 2.5rem 0.7rem 1.2rem;
-        font-size: 0.9rem;
-    }
 }
 
-/* ====== ADDITIONAL ANIMATIONS ====== */
-.section {
-    animation: fadeInUp 0.6s ease-out;
+/* ================================================== */
+/* ====== PENYEMPURNAAN FINAL: ANIMASI & JARAK ====== */
+/* ================================================== */
+
+/* 1. PERBAIKAN: EFEK "GERAK" (HOVER) PADA TEXTBOX */
+.lyrics-form textarea {
+    /* Menambahkan 'transform' ke transisi agar gerakan mulus */
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s ease;
 }
 
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.lyrics-form textarea:hover {
+    border-color: #555;
+    box-shadow: 0 0 0 2px rgba(85, 85, 85, 0.2);
 }
 
-.emotion-bar-row {
-    animation: slideInLeft 0.4s ease-out;
-    animation-fill-mode: both;
+/* 2. PERBAIKAN: JARAK BAWAH YANG SIMETRIS */
+/* Aturan ini menimpa aturan lama yang salah */
+.emotion-bar-row:last-child {
+    margin-bottom: 1rem; /* Mengembalikan jarak bawah agar tidak menempel */
 }
 
-.emotion-bar-row:nth-child(1) { animation-delay: 0.1s; }
-.emotion-bar-row:nth-child(2) { animation-delay: 0.2s; }
-.emotion-bar-row:nth-child(3) { animation-delay: 0.3s; }
-.emotion-bar-row:nth-child(4) { animation-delay: 0.4s; }
-.emotion-bar-row:nth-child(5) { animation-delay: 0.5s; }
+/* 3. PERBAIKAN: ANIMASI KILAU (SHIMMER) DI SELURUH BAR */
+/* Siapkan bar background untuk menampung animasi */
+.emotion-bar-bg {
+    position: relative;
+    overflow: hidden;
+}
 
-@keyframes slideInLeft {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
+/* Buat elemen kilaunya di atas bar background */
+.emotion-bar-bg::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0) 0%, 
+        rgba(255, 255, 255, 0.15) 50%, 
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: translateX(-100%);
+    animation: shimmer 2.5s infinite;
+    animation-delay: 1s; /* Jeda sebelum kilau muncul */
+}
+
+/* Hapus animasi dari bar hijau agar tidak double */
+.emotion-bar::after {
+    display: none;
+    content: none;
+}
+
+/* Definisi animasi kilau (jika belum ada) */
+@keyframes shimmer {
+    100% {
+        transform: translateX(250%);
     }
 }
