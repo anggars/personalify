@@ -253,16 +253,15 @@ document.addEventListener('click', function(e) {
         e.target.classList.add('active');
     }
     
+    // Handle klik tombol analyze genius lyrics
     if (e.target.matches('#analyzeGeniusBtn')) {
-        const lyricsTextarea = document.querySelector('.lyrics-display'); // Ini sekarang adalah textarea
+        const lyricsTextarea = document.querySelector('#geniusLyricsTextarea');
         if (lyricsTextarea) {
-            const lyricsText = lyricsTextarea.value; // <-- UBAH KE .value
+            const lyricsText = lyricsTextarea.value;
             analyzeLyrics(lyricsText);
         }
     }
 });
-
-// ▼▼▼ TAMBAHKAN BLOK KODE INI DI AKHIR FILE ▼▼▼
 
 // Event listener untuk keyboard di area lirik Genius (hanya desktop)
 document.addEventListener('keydown', function(event) {

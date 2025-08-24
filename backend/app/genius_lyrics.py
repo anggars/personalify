@@ -1,24 +1,45 @@
 import os
 import requests
 import time
+import random
 from fastapi import HTTPException
 from bs4 import BeautifulSoup
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
 
+# Session untuk maintain cookies
+session = requests.Session()
+
 def genius_headers():
     return {"Authorization": f"Bearer {GENIUS_TOKEN}"}
 
+def get_random_user_agent():
+    """Rotate user agents untuk avoid detection"""
+    user_agents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/120.0.0.0',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    ]
+    return random.choice(user_agents)
+
 def scraping_headers():
-    """Headers untuk scraping yang lebih convincing"""
+    """Headers yang lebih realistic"""
     return {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate',
+        'User-Agent': get_random_user_agent(),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Cache-Control': 'max-age=0',
     }
 
 def search_artist(q: str):
@@ -67,105 +88,151 @@ def song_lyrics(song_id: int):
         resp = requests.get(
             f"{GENIUS_API_URL}/songs/{song_id}",
             headers=genius_headers(),
-            timeout=10
+            timeout=15
         )
         if resp.status_code != 200:
             raise HTTPException(status_code=500, detail="Gagal mengambil info lagu")
         
-        song_url = resp.json()["response"]["song"]["url"]
-        print(f"Scraping lyrics from: {song_url}")
+        song_data = resp.json()["response"]["song"]
+        song_url = song_data["url"]
+        song_title = song_data["title"]
+        artist_name = song_data["primary_artist"]["name"]
         
-        # Scraping dengan retry mechanism
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                # Tambah delay untuk avoid rate limit
-                if attempt > 0:
-                    time.sleep(2)
-                
-                html_resp = requests.get(
-                    song_url, 
-                    headers=scraping_headers(),
-                    timeout=15,
-                    allow_redirects=True
-                )
-                
-                if html_resp.status_code != 200:
-                    print(f"HTTP {html_resp.status_code} on attempt {attempt + 1}")
-                    continue
-                
-                soup = BeautifulSoup(html_resp.text, "html.parser")
-                lyrics = ""
-                
-                # Try multiple selectors (Genius changes their structure sometimes)
-                selectors = [
-                    "div[data-lyrics-container='true']",
-                    "div.lyrics",
-                    "div[class*='lyrics']",
-                    "div[class*='Lyrics__Container']"
-                ]
-                
-                for selector in selectors:
-                    elements = soup.select(selector)
-                    if elements:
-                        for div in elements:
-                            lyrics += div.get_text(separator="\n")
-                        break
-                
-                lyrics = lyrics.strip()
-                
-                if lyrics:
-                    # Clean up lyrics
-                    lines = lyrics.split('\n')
-                    cleaned_lines = []
-                    for line in lines:
-                        line = line.strip()
-                        if line and not line.startswith('[') and not line.endswith(']'):
-                            # Remove common unwanted patterns
-                            if not any(skip in line.lower() for skip in ['embed', 'you might also like', 'see live']):
-                                cleaned_lines.append(line)
-                    
-                    final_lyrics = '\n'.join(cleaned_lines)
-                    if final_lyrics:
-                        return {"lyrics": final_lyrics}
-                
-            except requests.RequestException as e:
-                print(f"Request error on attempt {attempt + 1}: {e}")
-                continue
-            except Exception as e:
-                print(f"Parse error on attempt {attempt + 1}: {e}")
-                continue
+        print(f"Scraping lyrics: {artist_name} - {song_title}")
+        print(f"URL: {song_url}")
         
-        # Jika semua attempt gagal, coba fallback method
-        return fallback_lyrics_method(song_id)
+        # Method 1: Coba scraping dengan session yang lebih advanced
+        lyrics = try_advanced_scraping(song_url)
+        if lyrics:
+            return {"lyrics": lyrics}
+        
+        # Method 2: Coba alternative scraping method
+        lyrics = try_alternative_scraping(song_url)
+        if lyrics:
+            return {"lyrics": lyrics}
+        
+        # Method 3: Return fallback message dengan info lagu
+        return {
+            "lyrics": f"Sorry, lyrics for '{song_title}' by {artist_name} could not be retrieved due to website restrictions.\n\nYou can view the lyrics manually at:\n{song_url}\n\nThen copy and paste them into the manual input field above."
+        }
         
     except Exception as e:
         print(f"Error in song_lyrics: {e}")
-        raise HTTPException(status_code=404, detail=f"Lirik tidak ditemukan: {str(e)}")
+        raise HTTPException(status_code=404, detail="Lirik tidak ditemukan")
 
-def fallback_lyrics_method(song_id: int):
-    """Fallback method jika scraping gagal"""
+def try_advanced_scraping(song_url):
+    """Advanced scraping dengan session dan better stealth"""
     try:
-        # Coba ambil dari API lagi dengan parameter berbeda
-        resp = requests.get(
-            f"{GENIUS_API_URL}/songs/{song_id}",
-            headers=genius_headers(),
-            params={"text_format": "plain"},
-            timeout=10
+        # Warm up session dengan homepage visit dulu
+        session.get("https://genius.com", headers=scraping_headers(), timeout=10)
+        time.sleep(random.uniform(1, 3))
+        
+        # Scraping dengan session
+        response = session.get(
+            song_url,
+            headers=scraping_headers(),
+            timeout=20,
+            allow_redirects=True
         )
         
-        if resp.status_code == 200:
-            song_data = resp.json()["response"]["song"]
-            # Beberapa lagu mungkin punya lyrics di API response
-            if "lyrics" in song_data and song_data["lyrics"]:
-                return {"lyrics": song_data["lyrics"]}
+        if response.status_code == 200:
+            return extract_lyrics_from_html(response.text)
+        else:
+            print(f"Advanced scraping failed: {response.status_code}")
+            return None
+            
+    except Exception as e:
+        print(f"Advanced scraping error: {e}")
+        return None
+
+def try_alternative_scraping(song_url):
+    """Alternative scraping method dengan requests biasa tapi lebih stealth"""
+    try:
+        # Random delay
+        time.sleep(random.uniform(2, 5))
         
-        # Jika masih gagal, return message
-        raise HTTPException(status_code=404, detail="Lirik tidak dapat diambil dari server")
+        # Different approach: pretend to be coming from Google
+        headers = scraping_headers()
+        headers['Referer'] = 'https://www.google.com/'
+        
+        response = requests.get(
+            song_url,
+            headers=headers,
+            timeout=20,
+            allow_redirects=True
+        )
+        
+        if response.status_code == 200:
+            return extract_lyrics_from_html(response.text)
+        else:
+            print(f"Alternative scraping failed: {response.status_code}")
+            return None
+            
+    except Exception as e:
+        print(f"Alternative scraping error: {e}")
+        return None
+
+def extract_lyrics_from_html(html_text):
+    """Extract lyrics dari HTML dengan multiple methods"""
+    try:
+        soup = BeautifulSoup(html_text, "html.parser")
+        lyrics = ""
+        
+        # Try multiple selectors
+        selectors = [
+            "div[data-lyrics-container='true']",
+            "div[class*='Lyrics__Container']",
+            "div[class*='lyrics']",
+            ".lyrics",
+            "[data-lyrics-container]"
+        ]
+        
+        for selector in selectors:
+            elements = soup.select(selector)
+            if elements:
+                for div in elements:
+                    # Remove script tags and other unwanted elements
+                    for script in div(["script", "style"]):
+                        script.decompose()
+                    lyrics += div.get_text(separator="\n")
+                break
+        
+        if lyrics:
+            # Clean up lyrics
+            lines = [line.strip() for line in lyrics.split('\n') if line.strip()]
+            cleaned_lines = []
+            
+            for line in lines:
+                # Skip unwanted patterns
+                skip_patterns = [
+                    'you might also like',
+                    'embed',
+                    'see live',
+                    'get tickets',
+                    'more on genius',
+                    'about',
+                    'produced by',
+                    'written by'
+                ]
+                
+                if not any(pattern in line.lower() for pattern in skip_patterns):
+                    # Remove section markers like [Verse 1], [Chorus], etc but keep them readable
+                    if line.startswith('[') and line.endswith(']'):
+                        cleaned_lines.append(f"\n{line}")
+                    else:
+                        cleaned_lines.append(line)
+            
+            final_lyrics = '\n'.join(cleaned_lines).strip()
+            if len(final_lyrics) > 50:  # Basic validation
+                return final_lyrics
+        
+        return None
         
     except Exception as e:
-        raise HTTPException(status_code=404, detail="Lirik tidak dapat diambil")
+        print(f"HTML extraction error: {e}")
+        return None
 
+# Rest of the functions remain the same...
 def artist_albums(artist_id: int, max_pages: int = 5):
     albums = []
     page = 1
@@ -223,7 +290,6 @@ def artist_singles(artist_id: int, max_pages: int = 5):
         if not data:
             break
         for song in data:
-            # Jika tidak punya album, berarti single
             if not song.get("album"):
                 singles.append({
                     "id": song["id"],
