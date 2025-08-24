@@ -9,15 +9,16 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import json
 import re
+from urllib.parse import urljoin, urlparse
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
 
-# Enhanced session with more settings
+# Global session with connection pooling
 session = requests.Session()
 retry_strategy = Retry(
-    total=5,
-    backoff_factor=2,
+    total=3,
+    backoff_factor=1,
     status_forcelist=[429, 500, 502, 503, 504],
 )
 adapter = HTTPAdapter(
@@ -31,60 +32,48 @@ session.mount("https://", adapter)
 def genius_headers():
     return {"Authorization": f"Bearer {GENIUS_TOKEN}"}
 
-def get_random_browser_profile():
-    """Generate random but consistent browser profiles"""
+def get_browser_profile():
+    """Get realistic browser profiles"""
     profiles = [
         {
             'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'sec_ch_ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
-            'sec_ch_ua_platform': '"Windows"',
-            'accept_language': 'en-US,en;q=0.9'
+            'platform': 'Windows',
+            'viewport': '1920x1080'
         },
         {
             'user_agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'sec_ch_ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
-            'sec_ch_ua_platform': '"macOS"',
-            'accept_language': 'en-US,en;q=0.9'
+            'platform': 'macOS',
+            'viewport': '1440x900'
         },
         {
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0',
-            'accept_language': 'en-US,en;q=0.5'
-        },
-        {
-            'user_agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15',
-            'accept_language': 'en-US,en;q=0.9'
+            'user_agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'platform': 'Linux',
+            'viewport': '1920x1080'
         }
     ]
     return random.choice(profiles)
 
-def get_enhanced_headers(referer=None, profile=None):
-    """Generate enhanced headers with browser profiles"""
+def get_stealth_headers(referer=None, profile=None):
+    """Generate stealth headers that mimic real browser behavior"""
     if not profile:
-        profile = get_random_browser_profile()
+        profile = get_browser_profile()
     
     headers = {
-        'User-Agent': profile['user_agent'],
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'Accept-Language': profile['accept_language'],
         'Accept-Encoding': 'gzip, deflate, br',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'max-age=0',
+        'Dnt': '1',
+        'Sec-Ch-Ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': f'"{profile["platform"]}"',
         'Sec-Fetch-Dest': 'document',
         'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'cross-site' if referer else 'none',
+        'Sec-Fetch-Site': 'same-origin' if referer else 'none',
         'Sec-Fetch-User': '?1',
-        'Cache-Control': 'max-age=0',
-        'Pragma': 'no-cache'
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': profile['user_agent']
     }
-    
-    # Add Chrome-specific headers
-    if 'Chrome' in profile['user_agent']:
-        headers.update({
-            'sec-ch-ua': profile.get('sec_ch_ua', ''),
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': profile.get('sec_ch_ua_platform', '"Windows"')
-        })
     
     if referer:
         headers['Referer'] = referer
@@ -135,14 +124,14 @@ def artist_songs(artist_id: int, max_pages: int = 10):
 
 def song_lyrics(song_id: int):
     try:
-        # Get song info from API
+        # Get song info
         resp = requests.get(
             f"{GENIUS_API_URL}/songs/{song_id}",
             headers=genius_headers(),
             timeout=15
         )
         if resp.status_code != 200:
-            raise HTTPException(status_code=500, detail="Gagal mengambil info lagu")
+            raise HTTPException(status_code=500, detail="Failed to get song info")
         
         song_data = resp.json()["response"]["song"]
         song_url = song_data["url"]
@@ -150,299 +139,268 @@ def song_lyrics(song_id: int):
         artist_name = song_data["primary_artist"]["name"]
         
         print(f"Attempting to scrape: {artist_name} - {song_title}")
-        print(f"URL: {song_url}")
         
-        # Enhanced scraping methods with more aggressive approaches
-        scraping_methods = [
-            lambda: try_direct_scraping(song_url),
-            lambda: try_session_scraping(song_url),
-            lambda: try_mobile_scraping(song_url),
-            lambda: try_search_engine_scraping(song_url),
-            lambda: try_javascript_disabled_scraping(song_url),
-            lambda: try_api_endpoint_scraping(song_id),
+        # Try different scraping strategies
+        strategies = [
+            ("Direct Request", lambda: direct_scrape(song_url)),
+            ("Stealth Session", lambda: stealth_scrape(song_url)),
+            ("Mobile Agent", lambda: mobile_scrape(song_url)),
+            ("Cached Version", lambda: cached_scrape(song_url)),
+            ("Alternative Sources", lambda: alternative_scrape(artist_name, song_title)),
         ]
         
-        for i, method in enumerate(scraping_methods):
-            method_name = method.__name__ if hasattr(method, '__name__') else f"method_{i+1}"
-            print(f"Trying {method_name}...")
-            
+        for strategy_name, strategy_func in strategies:
+            print(f"Trying: {strategy_name}")
             try:
-                lyrics = method()
-                if lyrics and len(lyrics.strip()) > 100:
-                    print(f"✓ Success with {method_name}")
-                    return {"lyrics": lyrics}
-                elif lyrics:
-                    print(f"✗ {method_name} returned insufficient content: {len(lyrics)} chars")
+                result = strategy_func()
+                if result and len(result.strip()) > 150:  # Require substantial content
+                    print(f"✓ Success with {strategy_name}")
+                    return {"lyrics": result}
+                elif result:
+                    print(f"✗ {strategy_name} returned minimal content: {len(result)} chars")
             except Exception as e:
-                print(f"✗ {method_name} failed: {str(e)}")
+                print(f"✗ {strategy_name} failed: {str(e)[:100]}")
             
-            # Progressive delay between attempts
-            if i < len(scraping_methods) - 1:
-                delay = random.uniform(2 + i, 5 + i)
-                print(f"Waiting {delay:.1f}s before next attempt...")
-                time.sleep(delay)
+            # Progressive delay
+            time.sleep(random.uniform(1, 3))
         
-        # Enhanced fallback with more options
-        fallback_message = generate_fallback_message(song_title, artist_name, song_url)
-        return {"lyrics": fallback_message}
+        # Enhanced fallback with more helpful info
+        return {"lyrics": create_enhanced_fallback(song_title, artist_name, song_url)}
         
     except Exception as e:
         print(f"Error in song_lyrics: {e}")
-        raise HTTPException(status_code=404, detail="Lirik tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Song not found")
 
-def try_direct_scraping(song_url):
-    """Direct scraping with basic headers"""
-    profile = get_random_browser_profile()
-    headers = get_enhanced_headers(profile=profile)
+def direct_scrape(song_url):
+    """Direct scraping with rotating headers"""
+    profile = get_browser_profile()
+    headers = get_stealth_headers(profile=profile)
     
-    response = requests.get(song_url, headers=headers, timeout=25)
+    response = requests.get(song_url, headers=headers, timeout=20)
     if response.status_code == 200:
-        return extract_lyrics_from_html(response.text)
+        return extract_lyrics(response.text)
     return None
 
-def try_session_scraping(song_url):
-    """Session-based scraping with warming"""
-    profile = get_random_browser_profile()
+def stealth_scrape(song_url):
+    """Advanced stealth scraping with session warming"""
+    profile = get_browser_profile()
     
-    # Warm up session
-    session.get("https://genius.com", 
-                headers=get_enhanced_headers(profile=profile), 
-                timeout=10)
-    time.sleep(random.uniform(1, 3))
+    # Multi-step browsing simulation
+    steps = [
+        ("https://genius.com", "Homepage visit"),
+        ("https://genius.com/artists", "Browse artists"),
+        (song_url, "Target page")
+    ]
     
-    # Visit search page first
-    search_term = song_url.split('/')[-1].replace('-', ' ')
-    session.get(f"https://genius.com/search?q={urllib.parse.quote(search_term)}", 
-                headers=get_enhanced_headers(referer="https://genius.com", profile=profile),
-                timeout=15)
-    time.sleep(random.uniform(1, 2))
+    last_url = None
+    for url, description in steps:
+        print(f"  - {description}")
+        headers = get_stealth_headers(referer=last_url, profile=profile)
+        
+        try:
+            response = session.get(url, headers=headers, timeout=15)
+            if url == song_url and response.status_code == 200:
+                return extract_lyrics(response.text)
+            last_url = url
+            time.sleep(random.uniform(0.5, 2))
+        except Exception as e:
+            print(f"    Error in {description}: {e}")
+            break
     
-    # Finally get the song page
-    response = session.get(song_url, 
-                          headers=get_enhanced_headers(referer="https://genius.com/search", profile=profile),
-                          timeout=25)
-    
-    if response.status_code == 200:
-        return extract_lyrics_from_html(response.text)
     return None
 
-def try_mobile_scraping(song_url):
+def mobile_scrape(song_url):
     """Mobile user agent scraping"""
-    mobile_headers = {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1',
+    mobile_agents = [
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        'Mozilla/5.0 (Android 14; Mobile; rv:121.0) Gecko/121.0 Firefox/121.0',
+        'Mozilla/5.0 (Linux; Android 14; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36'
+    ]
+    
+    headers = {
+        'User-Agent': random.choice(mobile_agents),
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept-Encoding': 'gzip, deflate',
         'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
+        'Upgrade-Insecure-Requests': '1'
     }
     
-    response = requests.get(song_url, headers=mobile_headers, timeout=25)
+    response = requests.get(song_url, headers=headers, timeout=20)
     if response.status_code == 200:
-        return extract_lyrics_from_html(response.text)
+        return extract_lyrics(response.text)
     return None
 
-def try_search_engine_scraping(song_url):
-    """Simulate coming from Google search"""
-    profile = get_random_browser_profile()
-    headers = get_enhanced_headers(referer="https://www.google.com/search?q=genius+lyrics", profile=profile)
-    headers['Accept'] = 'text/html,application/xhtml+xml'
+def cached_scrape(song_url):
+    """Try to find cached/archived versions"""
+    cached_urls = [
+        f"https://web.archive.org/web/{song_url}",
+        f"https://webcache.googleusercontent.com/search?q=cache:{song_url}",
+    ]
     
-    response = requests.get(song_url, headers=headers, timeout=25)
-    if response.status_code == 200:
-        return extract_lyrics_from_html(response.text)
-    return None
-
-def try_javascript_disabled_scraping(song_url):
-    """Try with headers that suggest JS is disabled"""
-    profile = get_random_browser_profile()
-    headers = get_enhanced_headers(profile=profile)
-    headers['Accept'] = 'text/html,application/xhtml+xml'
-    headers.pop('sec-ch-ua', None)
-    headers.pop('sec-ch-ua-mobile', None)
-    headers.pop('sec-ch-ua-platform', None)
+    for cached_url in cached_urls:
+        try:
+            headers = get_stealth_headers()
+            response = requests.get(cached_url, headers=headers, timeout=25)
+            if response.status_code == 200:
+                lyrics = extract_lyrics(response.text)
+                if lyrics:
+                    return lyrics
+        except:
+            continue
     
-    response = requests.get(song_url, headers=headers, timeout=30)
-    if response.status_code == 200:
-        return extract_lyrics_from_html(response.text)
     return None
 
-def try_api_endpoint_scraping(song_id):
-    """Try to find alternative API endpoints"""
-    # This is speculative - Genius might have other endpoints
+def alternative_scrape(artist_name, song_title):
+    """Try alternative lyrics sources as last resort"""
+    # Note: This would typically involve other lyrics sites
+    # But we should be careful about copyright and ToS
+    print("  - Checking alternative sources...")
+    
+    # For now, just return None to fall back to manual
+    # In production, you might integrate with other APIs that have proper licensing
+    return None
+
+def extract_lyrics(html_content):
+    """Enhanced lyrics extraction"""
     try:
-        # Try different API approaches
-        endpoints = [
-            f"https://genius.com/api/songs/{song_id}/lyrics",
-            f"https://genius.com/api/songs/{song_id}",
-            f"https://api.genius.com/songs/{song_id}/lyrics"
-        ]
+        soup = BeautifulSoup(html_content, 'html.parser')
         
-        for endpoint in endpoints:
-            try:
-                response = requests.get(endpoint, 
-                                     headers=genius_headers(), 
-                                     timeout=15)
-                if response.status_code == 200:
-                    data = response.json()
-                    if 'lyrics' in data:
-                        return data['lyrics']
-            except:
-                continue
-    except:
-        pass
-    
-    return None
-
-def extract_lyrics_from_html(html_text):
-    """Enhanced lyrics extraction with more selectors"""
-    try:
-        soup = BeautifulSoup(html_text, "html.parser")
-        
-        # Remove unwanted elements first
-        for element in soup(["script", "style", "noscript", "iframe", "nav", "header", "footer", "aside"]):
+        # Remove scripts, styles, and other non-content elements
+        for element in soup(['script', 'style', 'nav', 'header', 'footer', 'aside', 'iframe']):
             element.decompose()
         
-        lyrics_text = ""
-        
-        # Extended selector list with more variations
+        # Try multiple selectors in order of preference
         selectors = [
-            "div[data-lyrics-container='true']",
-            "div[class*='Lyrics__Container']",
-            "div[class*='LyricsBody__Container']",
-            "div[class*='SongPage__Section']",
-            "div[class*='lyrics']",
-            ".lyrics",
-            "[data-lyrics-container]",
-            ".song_body-lyrics",
-            "#lyrics-root",
-            "div[class*='RichText__Container']",
-            "div[class*='Verse__Container']",
-            ".genius-lyrics"
+            'div[data-lyrics-container="true"]',
+            'div[class*="Lyrics__Container"]',
+            'div[class*="LyricsBody__Container"]', 
+            'div[class*="SongPage__Section"]',
+            '.lyrics',
+            'div[class*="lyrics"]',
+            '[data-lyrics-container]'
         ]
         
         for selector in selectors:
             elements = soup.select(selector)
             if elements:
-                print(f"Found lyrics using selector: {selector}")
+                lyrics_parts = []
                 for element in elements:
-                    text = element.get_text(separator="\n")
-                    if len(text.strip()) > lyrics_text.__len__():
-                        lyrics_text = text
-                break
+                    text = element.get_text(separator='\n').strip()
+                    if text:
+                        lyrics_parts.append(text)
+                
+                if lyrics_parts:
+                    combined_lyrics = '\n'.join(lyrics_parts)
+                    cleaned = clean_extracted_lyrics(combined_lyrics)
+                    if cleaned and len(cleaned) > 100:
+                        return cleaned
         
-        # Fallback: look for JSON-LD structured data
-        if not lyrics_text:
-            scripts = soup.find_all('script', type='application/ld+json')
-            for script in scripts:
-                try:
-                    data = json.loads(script.string)
-                    if isinstance(data, dict) and 'text' in data:
-                        lyrics_text = data['text']
-                        break
-                except:
-                    continue
-        
-        # Another fallback: pattern matching for lyrics
-        if not lyrics_text:
-            all_text = soup.get_text()
-            # Look for patterns that suggest lyrics
-            patterns = [
-                r'\[Verse.*?\](.*?)(?=\[|$)',
-                r'\[Chorus.*?\](.*?)(?=\[|$)',
-                r'(\[.*?\].*?(?=\[|$))'
-            ]
-            
-            for pattern in patterns:
-                matches = re.findall(pattern, all_text, re.DOTALL | re.IGNORECASE)
-                if matches and len(' '.join(matches)) > 100:
-                    lyrics_text = ' '.join(matches)
-                    break
-        
-        if lyrics_text:
-            cleaned = clean_lyrics(lyrics_text)
-            if cleaned:
-                return cleaned
+        # Fallback: search for structured data
+        scripts = soup.find_all('script', type='application/ld+json')
+        for script in scripts:
+            try:
+                data = json.loads(script.string)
+                if 'lyrics' in str(data).lower():
+                    # Try to extract lyrics from JSON
+                    lyrics_text = extract_from_json(data)
+                    if lyrics_text:
+                        return clean_extracted_lyrics(lyrics_text)
+            except:
+                continue
         
         return None
         
     except Exception as e:
-        print(f"HTML extraction error: {e}")
+        print(f"Extraction error: {e}")
         return None
 
-def clean_lyrics(raw_lyrics):
-    """Enhanced lyrics cleaning"""
-    if not raw_lyrics:
+def extract_from_json(data):
+    """Extract lyrics from JSON-LD or other structured data"""
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if 'lyric' in key.lower() and isinstance(value, str):
+                return value
+            elif isinstance(value, (dict, list)):
+                result = extract_from_json(value)
+                if result:
+                    return result
+    elif isinstance(data, list):
+        for item in data:
+            result = extract_from_json(item)
+            if result:
+                return result
+    return None
+
+def clean_extracted_lyrics(raw_text):
+    """Clean and validate extracted lyrics"""
+    if not raw_text:
         return None
     
-    # Split into lines and clean
-    lines = [line.strip() for line in raw_lyrics.split('\n') if line.strip()]
+    lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
     
-    # Extended skip patterns
+    # Filter out common non-lyrics content
+    filtered_lines = []
     skip_patterns = [
         'you might also like', 'embed', 'see live', 'get tickets',
-        'more on genius', 'about', 'produced by', 'written by',
-        'genius.com', 'advertisement', 'subscribe', 'follow',
-        'share', 'genius lyrics', 'download', 'stream',
-        'listen on spotify', 'apple music', 'youtube',
-        'credits', 'tags', 'comments', 'annotation'
+        'more on genius', 'produced by', 'written by', 'genius.com',
+        'advertisement', 'subscribe', 'follow', 'download', 'stream',
+        'spotify', 'apple music', 'youtube', 'soundcloud'
     ]
     
-    cleaned_lines = []
     for line in lines:
         line_lower = line.lower()
         
-        # Skip unwanted content
+        # Skip promotional/navigation content
         if any(pattern in line_lower for pattern in skip_patterns):
             continue
-            
-        # Skip URLs and social media handles
-        if any(x in line_lower for x in ['http', 'www.', '@', '#hashtag']):
-            continue
-            
-        # Skip very short lines that are likely UI elements
-        if len(line) < 2:
+        
+        # Skip URLs and handles
+        if any(x in line_lower for x in ['http', 'www.', '@']):
             continue
         
-        # Format section headers
-        if line.startswith('[') and line.endswith(']'):
-            cleaned_lines.append(f"\n{line}")
-        else:
-            cleaned_lines.append(line)
+        # Keep section markers and actual lyrics
+        if len(line) >= 2:  # Minimum length
+            filtered_lines.append(line)
     
-    final_lyrics = '\n'.join(cleaned_lines).strip()
+    if not filtered_lines:
+        return None
     
-    # Validation: should have reasonable length and structure
-    if (len(final_lyrics) > 100 and 
-        not all(c.isdigit() or c.isspace() for c in final_lyrics) and
-        len(final_lyrics.split()) > 20):
-        return final_lyrics
+    cleaned_text = '\n'.join(filtered_lines)
+    
+    # Final validation
+    word_count = len(cleaned_text.split())
+    if word_count > 15 and len(cleaned_text) > 100:
+        return cleaned_text
     
     return None
 
-def generate_fallback_message(song_title, artist_name, song_url):
-    """Generate helpful fallback message"""
-    return f'''🎵 Unable to automatically retrieve lyrics for "{song_title}" by {artist_name}
+def create_enhanced_fallback(song_title, artist_name, song_url):
+    """Create informative fallback message"""
+    return f"""🎵 Lyrics retrieval failed for "{song_title}" by {artist_name}
 
-🚫 COMMON ISSUES:
-• Anti-bot protection active
-• Lyrics require login/subscription  
-• Regional content restrictions
-• Rate limiting in effect
-• JavaScript-heavy page structure
+🔒 PROTECTION DETECTED:
+• Website has advanced anti-scraping measures
+• Content may be dynamically loaded via JavaScript  
+• Rate limiting or IP-based restrictions active
+• Login or subscription might be required
 
-✅ MANUAL SOLUTION:
-1. Open: {song_url}
-2. Copy all the lyrics from the page
-3. Switch to "Manual Input" mode (dropdown above)
-4. Paste the lyrics in the text area
-5. Click "Analyze Lyrics"
+📋 MANUAL STEPS:
+1. 🌐 Visit: {song_url}
+2. 📝 Select and copy all lyrics from the page
+3. ⚙️  Switch to "Manual Input" mode (dropdown above)
+4. 📄 Paste lyrics in the text area
+5. 🎯 Click "Analyze Lyrics" button
 
-💡 TIP: Try opening the link in an incognito/private window if you encounter any issues.
+💡 TROUBLESHOOTING TIPS:
+• Try opening in incognito/private mode
+• Disable ad blockers temporarily  
+• Check if you need to create a Genius account
+• Some lyrics may require premium access
 
-🔄 You can switch modes using the dropdown at the top of this page.'''
+🔄 Use the mode dropdown above to switch to Manual Input."""
 
-# Keep existing functions for albums/singles
+# Keep existing album/singles functions unchanged
 def artist_albums(artist_id: int, max_pages: int = 5):
     albums = []
     page = 1
