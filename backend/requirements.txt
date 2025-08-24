@@ -8,3 +8,4 @@ pymongo[srv]
 jinja2
 langdetect
 googletrans==4.0.0-rc1
+beautifulsoup4
