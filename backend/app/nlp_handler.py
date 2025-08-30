@@ -1,7 +1,6 @@
 import os
 import requests
-from langdetect import detect
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 
 API_URL = "https://api-inference.huggingface.co/models/SamLowe/roberta-base-go_emotions"
 HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
@@ -9,28 +8,28 @@ headers = {"Authorization": f"Bearer {HF_API_KEY}"}
 
 def prepare_text_for_analysis(text: str) -> str:
     """
-    Mendeteksi bahasa teks. Jika bukan bahasa Inggris, terjemahkan secara langsung.
-    Ini adalah metode yang paling stabil.
+    Menerjemahkan teks ke Inggris menggunakan deep-translator.
+    Library ini lebih tangguh dalam menangani koneksi di environment yang sulit.
     """
+    if not text or not text.strip():
+        return ""
+
     try:
-        # 1. Deteksi bahasa
-        language = detect(text)
+        print("Checking language and translating with deep-translator...")
+        # Library ini otomatis mendeteksi bahasa sumber (source='auto')
+        # dan menerjemahkan ke Inggris (target='en')
+        translated_text = GoogleTranslator(source='auto', target='en').translate(text)
         
-        # 2. Jika bukan bahasa Inggris, terjemahkan secara langsung
-        if language != 'en':
-            print(f"Detected language: '{language}'. Translating to English...")
-            translator = Translator()
-            translation = translator.translate(text, dest='en')
-            print(f"Translated text: '{translation.text}'")
-            return translation.text
+        if translated_text:
+            print(f"Translated text: '{translated_text[:100]}...'")
+            return translated_text
         
-        # 3. Jika sudah bahasa Inggris, langsung kembalikan
-        print("Language is English. No translation needed.")
+        # Fallback jika hasil terjemahan kosong
+        print("Translation returned empty. Using original text.")
         return text
         
     except Exception as e:
-        print(f"An error occurred during text preparation: {e}. Analyzing original text.")
-        # Jika ada error, kembalikan teks asli sebagai fallback
+        print(f"An error occurred during translation with deep-translator: {e}. Analyzing original text.")
         return text
 
 def get_emotion_from_text(text):
