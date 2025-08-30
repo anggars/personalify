@@ -432,7 +432,6 @@ footer {
     overflow: hidden;
 }
 
-/* Buat elemen kilaunya di atas bar background */
 .emotion-bar-bg::after {
     content: '';
     position: absolute;
@@ -447,16 +446,14 @@ footer {
     );
     transform: translateX(-100%);
     animation: shimmer 2.5s infinite;
-    animation-delay: 1s; /* Jeda sebelum kilau muncul */
+    animation-delay: 1s;
 }
 
-/* Hapus animasi dari bar hijau agar tidak double */
 .emotion-bar::after {
     display: none;
     content: none;
 }
 
-/* Definisi animasi kilau (jika belum ada) */
 @keyframes shimmer {
     100% {
         transform: translateX(250%);
