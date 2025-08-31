@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from app.routes import router
@@ -9,6 +10,20 @@ from app.db_handler import init_db
 load_dotenv()
 
 app = FastAPI()
+
+# CORS middleware untuk Vercel
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://personalify.vercel.app",
+        "https://*.vercel.app",
+        "http://localhost:3000",
+        "http://127.0.0.1:8000"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Perbaikan Path Statis ---
 # Mendapatkan path absolut ke direktori tempat file ini berada

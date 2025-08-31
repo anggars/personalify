@@ -23,14 +23,25 @@ templates_dir = os.path.join(current_dir, "templates")
 templates = Jinja2Templates(directory=templates_dir)
 # --- Akhir Perbaikan ---
 
+def get_redirect_uri(request: Request):
+    """
+    Fungsi helper untuk mendapatkan redirect URI yang tepat
+    berdasarkan host yang mengakses
+    """
+    host = str(request.headers.get("host", ""))
+    if "vercel.app" in host:
+        return os.getenv("SPOTIFY_REDIRECT_URI_VERCEL", "https://personalify.vercel.app/callback")
+    else:
+        return os.getenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8000/callback")
+
 @router.get("/", response_class=HTMLResponse, tags=["Root"])
 def root(request: Request):
     return templates.TemplateResponse("home.html", {"request": request})
 
 @router.get("/login", tags=["Auth"])
-def login():
+def login(request: Request):
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
-    redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
+    redirect_uri = get_redirect_uri(request)
     scope = "user-top-read"
     if not client_id or not redirect_uri:
         raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
@@ -41,10 +52,10 @@ def login():
     return RedirectResponse(url=f"https://accounts.spotify.com/authorize?{query_params}")
 
 @router.get("/callback", tags=["Auth"])
-def callback(code: str = Query(..., description="Spotify Authorization Code")):
+def callback(request: Request, code: str = Query(..., description="Spotify Authorization Code")):
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-    redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
+    redirect_uri = get_redirect_uri(request)
 
     # Step 1: Tukar code ke token
     payload = {
