@@ -28,7 +28,7 @@ def get_redirect_uri(request: Request):
     Fungsi helper untuk mendapatkan redirect URI yang tepat
     berdasarkan host yang mengakses
     """
-    host = str(request.headers.get("host", ""))
+    host = str(request.headers.get("x-forwarded-host", request.headers.get("host", "")))
     if "vercel.app" in host:
         return os.getenv("SPOTIFY_REDIRECT_URI_VERCEL", "https://personalify.vercel.app/callback")
     else:
