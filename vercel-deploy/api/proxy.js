@@ -13,11 +13,19 @@ export default async function handler(req, res) {
     const response = await fetch(backendUrl, {
       method,
       headers: {
-        ...headers,
-        'host': undefined, // Remove host header
-        'x-forwarded-for': undefined,
-        'x-forwarded-proto': undefined,
-        'x-vercel-ip': undefined,
+          // Meneruskan header penting dari request asli
+          'user-agent': req.headers['user-agent'],
+          'accept': req.headers['accept'],
+          'content-type': req.headers['content-type'],
+          'authorization': req.headers['authorization'],
+          'cookie': req.headers['cookie'],
+
+          // ▼▼▼ INI KODE TAMBAHANNYA ▼▼▼
+          // Memberitahu Render siapa "pengirim aslinya" (yaitu Vercel)
+          'x-forwarded-host': req.headers.host,
+
+          // Memberitahu Render siapa "tamu yang dituju" (yaitu Render sendiri)
+          'host': 'personalify-irf2.onrender.com'
       },
       body: method !== 'GET' && method !== 'HEAD' ? JSON.stringify(body) : undefined,
     });
