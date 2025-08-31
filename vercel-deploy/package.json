@@ -5,7 +5,7 @@
   "main": "api/proxy.js",
   "scripts": {
     "dev": "vercel dev",
-    "build": "echo 'No build needed'",
+    "build": "",
     "start": "echo 'Serverless'"
   },
   "dependencies": {},
