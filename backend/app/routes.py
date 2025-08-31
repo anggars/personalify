@@ -147,7 +147,8 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         save_user_sync(spotify_id, time_range, result)
 
     # Step 4: Redirect ke dashboard
-    return RedirectResponse(url=f"/dashboard/{spotify_id}?time_range=short_term")
+    frontend_url = f"{request.url.scheme}://{request.headers['host']}"
+    return RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
 
 @router.get("/sync/top-data", tags=["Sync"])
 def sync_top_data(
