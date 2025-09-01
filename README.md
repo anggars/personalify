@@ -1,29 +1,29 @@
 # Personalify
 
 ## ✨ Live Demo
-Aplikasi ini telah di-hosting dan dapat diakses secara publik melalui link berikut:
-**[https://personalify-irf2.onrender.com/](https://personalify-irf2.onrender.com/)**
+This application is hosted and can be accessed publicly through the following link:
+**[https://personalify.vercel.app/](https://personalify.vercel.app/)**
 
 ---
 
 ## 1. Introduction
 
-Personalify adalah dashboard analitik Spotify personal yang dibangun untuk menampilkan preferensi musik pengguna berdasarkan data dari Spotify API. Proyek ini tidak hanya menampilkan data, tetapi juga menganalisis **mood atau vibe** dari lagu-lagu tersebut menggunakan Natural Language Processing (NLP) dari Hugging Face. Proyek ini didesain dengan pendekatan distributed system, memanfaatkan integrasi berbagai database (PostgreSQL, MongoDB, Redis) serta fitur seperti FDW dan cache.
+Personalify is a personal Spotify analytics dashboard built to display user music preferences based on data from the Spotify API. This project not only displays data but also analyzes the **mood or vibe** of songs using Natural Language Processing (NLP) from Hugging Face. The project is designed with a distributed system approach, leveraging the integration of various databases (PostgreSQL, MongoDB, Redis) as well as features like FDW and caching.
 
 ## 2. Use Case Overview
 
-| Use Case                 | Deskripsi                                                                                |
+| Use Case                 | Description                                                                                |
 |--------------------------|------------------------------------------------------------------------------------------|
-| 🎵 Spotify Login/Auth    | Pengguna login menggunakan OAuth2 Spotify untuk mengizinkan akses ke data musik mereka.      |
-| 📥 Sync Top Data         | Data seperti top artists, top tracks, dan genres disinkronisasi dan disimpan di database.  |
-| 🧠 Mood Analysis (NLP)   | Menganalisis judul lagu menggunakan model dari Hugging Face untuk menentukan emosi dominan.    |
-| ⚡ Caching & History      | Redis digunakan untuk cache cepat, MongoDB untuk menyimpan riwayat sinkronisasi user.        |
-| 📊 Dashboard             | Frontend responsif menampilkan visualisasi berdasarkan device pengguna (desktop/mobile).      |
-| 🌍 Distributed Query     | FDW memungkinkan query lintas PostgreSQL dan sumber eksternal (simulasi distribusi).      |
+| 🎵 Spotify Login/Auth    | Users log in using Spotify OAuth2 to authorize access to their music data.               |
+| 📥 Sync Top Data         | Data such as top artists, top tracks, and genres are synchronized and stored in database. |
+| 🧠 Mood Analysis (NLP)   | Analyzes song titles using models from Hugging Face to determine dominant emotions.       |
+| ⚡ Caching & History      | Redis is used for fast caching, MongoDB for storing user synchronization history.        |
+| 📊 Dashboard             | Responsive frontend displays visualizations based on user device (desktop/mobile).        |
+| 🌍 Distributed Query     | FDW enables cross-PostgreSQL queries and external sources (distribution simulation).      |
 
 ## 3. System Architecture
 
-Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitektur berbasis layanan, dengan backend FastAPI sebagai pusat orkestrasi data dari berbagai sumber (Spotify API, Hugging Face API, PostgreSQL, Redis, MongoDB, dan FDW).
+The Personalify system consists of several components connected through service-based architecture, with FastAPI backend as the data orchestration center from various sources (Spotify API, Hugging Face API, PostgreSQL, Redis, MongoDB, and FDW).
 
 ```text
 +-------------------------+      +------------------+      +----------------------+
@@ -46,42 +46,42 @@ Sistem Personalify terdiri dari beberapa komponen yang terhubung melalui arsitek
       +------------------------+
 ```
 
-**Penjelasan Komponen:**
+**Component Explanation:**
 
 - **Frontend (Jinja):**  
-  UI berbasis web yang menampilkan top artists, tracks, dan genres pengguna secara interaktif. Tampilan responsif untuk desktop & mobile.
+  Web-based UI that displays user's top artists, tracks, and genres interactively. Responsive display for desktop & mobile.
 - **FastAPI (Backend API):**  
-  Server utama yang menangani proses autentikasi Spotify (OAuth2), sinkronisasi data, penyimpanan ke database, cache, panggilan ke API eksternal (Hugging Face) untuk analisis NLP, serta penyajian API ke frontend.
+  Main server that handles Spotify authentication (OAuth2), data synchronization, database storage, caching, external API calls (Hugging Face) for NLP analysis, and API serving to frontend.
 - **PostgreSQL (Main DB):**  
-  Menyimpan metadata utama seperti user, artist, dan track. Digunakan sebagai pusat relasional sistem.
+  Stores main metadata such as users, artists, and tracks. Used as the relational center of the system.
 - **Redis (Cache):**  
-  Cache in-memory untuk menyimpan top data (artist, track, genre) per user berdasarkan `spotify_id` dan `time_range`, dengan TTL untuk efisiensi.
+  In-memory cache to store top data (artist, track, genre) per user based on `spotify_id` and `time_range`, with TTL for efficiency.
 - **MongoDB (Sync DB):**  
-  Menyimpan log historis sinkronisasi user dalam format dokumen. Cocok untuk data fleksibel dan akses log berdasarkan waktu.
+  Stores historical user synchronization logs in document format. Suitable for flexible data and time-based log access.
 - **PostgreSQL + FDW:**  
-  Foreign Data Wrapper digunakan untuk mengakses data dari server PostgreSQL lain (simulasi distribusi). Berguna untuk query lintas instance.
+  Foreign Data Wrapper used to access data from other PostgreSQL servers (distribution simulation). Useful for cross-instance queries.
 
 
 ## 4. Technology Stack & Rationale
 
-| Komponen        | Teknologi            | Alasan Pemilihan                                                                 |
+| Component        | Technology           | Selection Rationale                                                               |
 |------------------|----------------------|----------------------------------------------------------------------------------|
-| **Frontend**     | Jinja                | Ringan, cepat build time, dan cocok untuk membuat SPA dengan tampilan reaktif.  |
-| **Backend API**  | FastAPI              | Framework modern Python, mendukung async, cepat untuk membangun REST API.       |
-| **Main Database**| PostgreSQL           | RDBMS kuat, mendukung relasi kompleks, integrasi FDW, dan kompatibel dengan tools analitik. |
-| **Cache**        | Redis                | In-memory cache dengan TTL, sangat cepat untuk menyimpan data sementara per user.|
-| **Sync Storage** | MongoDB              | Cocok untuk menyimpan riwayat dalam bentuk dokumen fleksibel (top data per waktu).|
-| **Auth**         | Spotify OAuth2       | Protokol standar resmi dari Spotify, aman untuk login dan akses data user.      |
-| **NLP Model**    | Hugging Face API     | Akses ke model AI pre-trained untuk analisis emosi tanpa perlu membangun dari nol.|
-| **FDW**          | PostgreSQL FDW       | Digunakan untuk simulasi query antar instance PostgreSQL (distributed query).   |
-| **Containerization** | Docker + Compose | Menjamin isolasi lingkungan, konsistensi deployment, dan kemudahan replikasi.   |
+| **Frontend**     | Jinja                | Lightweight, fast build time, suitable for creating SPA with reactive display.   |
+| **Backend API**  | FastAPI              | Modern Python framework, supports async, fast for building REST APIs.           |
+| **Main Database**| PostgreSQL           | Powerful RDBMS, supports complex relations, FDW integration, compatible with analytical tools. |
+| **Cache**        | Redis                | In-memory cache with TTL, very fast for storing temporary data per user.        |
+| **Sync Storage** | MongoDB              | Suitable for storing history in flexible document format (top data per time).   |
+| **Auth**         | Spotify OAuth2       | Official standard protocol from Spotify, secure for login and user data access. |
+| **NLP Model**    | Hugging Face API     | Access to pre-trained AI models for emotion analysis without building from scratch. |
+| **FDW**          | PostgreSQL FDW       | Used for simulating queries between PostgreSQL instances (distributed query).   |
+| **Containerization** | Docker + Compose | Ensures environment isolation, deployment consistency, and easy replication.     |
 
 
 ## 5. Database Schema Design
 
 ### 🗄️ PostgreSQL (Main DB)
 
-Digunakan untuk menyimpan metadata utama seperti user, artist, dan track. Relasi many-to-many disimpan pada tabel `user_tracks` dan `user_artists`.
+Used to store main metadata such as users, artists, and tracks. Many-to-many relations are stored in `user_tracks` and `user_artists` tables.
 
 ```sql
 -- Users
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS tracks (
   preview_url TEXT
 );
 
--- Relasi user-tracks
+-- User-tracks relation
 CREATE TABLE IF NOT EXISTS user_tracks (
   spotify_id TEXT,
   track_id TEXT,
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS user_tracks (
   FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
 );
 
--- Relasi user-artists
+-- User-artists relation
 CREATE TABLE IF NOT EXISTS user_artists (
   spotify_id TEXT,
   artist_id TEXT,
@@ -128,88 +128,88 @@ CREATE TABLE IF NOT EXISTS user_artists (
 
 ### 📄 MongoDB (Sync History DB)
 
-MongoDB digunakan sebagai database fleksibel untuk menyimpan histori hasil sinkronisasi data pengguna dari Spotify. Data disimpan dalam koleksi `user_syncs`, yang berisi satu dokumen untuk setiap kombinasi `spotify_id` dan `time_range` (`short_term`, `medium_term`, `long_term`)
+MongoDB is used as a flexible database to store history of user synchronization results from Spotify. Data is stored in the `user_syncs` collection, which contains one document for each combination of `spotify_id` and `time_range` (`short_term`, `medium_term`, `long_term`)
 
-Struktur dokumen bersifat fleksibel dan dapat berkembang sesuai kebutuhan, biasanya berisi daftar top artists, tracks, dan genres hasil sinkronisasi. MongoDB dipilih karena keunggulannya dalam menyimpan data semi-terstruktur tanpa perlu migrasi schema.
+The document structure is flexible and can evolve according to needs, usually containing lists of top artists, tracks, and genres from synchronization results. MongoDB was chosen for its advantages in storing semi-structured data without requiring schema migration.
 
-Proses sinkronisasi menggunakan operasi `upsert`, sehingga jika data untuk kombinasi tertentu sudah ada, maka akan diperbarui. Hal ini memungkinkan backend menyimpan histori secara efisien dan tetap menjaga satu entri unik per user dan time range.
+The synchronization process uses `upsert` operations, so if data for a specific combination already exists, it will be updated. This allows the backend to store history efficiently while maintaining one unique entry per user and time range.
 
 ### ⚡ Redis (In-Memory Cache)
 
-Redis digunakan sebagai lapisan cache untuk mempercepat penyajian data ke dashboard frontend. Cache ini menyimpan hasil sinkronisasi dalam bentuk key-value, dengan key yang disusun berdasarkan kombinasi `spotify_id` dan `time_range`.
+Redis is used as a cache layer to accelerate data serving to the frontend dashboard. This cache stores synchronization results in key-value format, with keys constructed based on combinations of `spotify_id` and `time_range`.
 
-Karena Redis adalah cache volatile (tidak permanen), data yang disimpan di dalamnya bersifat sementara dan dapat diberikan TTL (Time-To-Live) agar otomatis terhapus setelah periode tertentu. Hal ini mengurangi beban pada database utama maupun API Spotify saat data yang sama sering diakses dalam waktu singkat.
+Since Redis is a volatile cache (not permanent), data stored in it is temporary and can be given TTL (Time-To-Live) to automatically expire after a certain period. This reduces load on the main database and Spotify API when the same data is frequently accessed in a short time.
 
-Cache akan dicek terlebih dahulu setiap kali dashboard dipanggil. Jika data tidak ditemukan, backend akan mengambil ulang dari Spotify, menyimpan ke Redis, dan meneruskannya ke frontend.
+Cache will be checked first every time the dashboard is called. If data is not found, the backend will retrieve from Spotify again, store in Redis, and forward to the frontend.
 
 ## 6. Sharding and Replication Strategy
 
-Sistem `Personalify` memanfaatkan prinsip-prinsip pemrosesan data terdistribusi melalui kombinasi penggunaan tiga jenis database yang memiliki karakteristik berbeda, dengan strategi berikut:
+The `Personalify` system leverages distributed data processing principles through a combination of three different types of databases with different characteristics, with the following strategy:
 
 ### 🧩 Redis (Cache-Based Sharding)
 
-Redis digunakan sebagai in-memory cache yang secara tidak langsung membentuk pola sharding berdasarkan key `spotify_id` dan `time_range`. Karena Redis menyimpan data dalam bentuk key-value, distribusi data terjadi secara otomatis berdasarkan key space. Dengan pendekatan ini, setiap user memiliki partisi cache tersendiri, sehingga tidak saling mengganggu dan cepat diakses.
+Redis is used as an in-memory cache that indirectly forms a sharding pattern based on keys `spotify_id` and `time_range`. Since Redis stores data in key-value format, data distribution happens automatically based on key space. With this approach, each user has their own cache partition, so they don't interfere with each other and can be accessed quickly.
 
-Redis juga memungkinkan scale-out horizontal dengan teknik clustering jika kapasitas bertambah besar.
+Redis also allows horizontal scale-out with clustering techniques if capacity grows significantly.
 
 ### 🗂️ MongoDB (Document-Based Distribution)
 
-MongoDB menyimpan histori sinkronisasi Spotify user dalam format dokumen, dan sangat cocok untuk model penyimpanan data semi-terstruktur yang terus berkembang. Walaupun deployment saat ini menggunakan instance tunggal, MongoDB mendukung replikasi otomatis (replica set) dan sharding native berdasarkan key seperti `spotify_id`.
+MongoDB stores Spotify user synchronization history in document format, and is very suitable for semi-structured data storage models that continue to evolve. Although the current deployment uses a single instance, MongoDB supports automatic replication (replica set) and native sharding based on keys like `spotify_id`.
 
-Strategi replikasi MongoDB:
-- Memberikan toleransi terhadap kegagalan (failover).
-- Memungkinkan pembacaan dari secondary nodes (read scalability).
+MongoDB replication strategy:
+- Provides failure tolerance (failover).
+- Enables reading from secondary nodes (read scalability).
 
-Strategi sharding MongoDB (opsional):
-- Dapat diaktifkan menggunakan hashed sharding key (misalnya `spotify_id`).
-- Cocok untuk distribusi data user secara merata.
+MongoDB sharding strategy (optional):
+- Can be activated using hashed sharding key (e.g., `spotify_id`).
+- Suitable for even distribution of user data.
 
 ### 🏛️ PostgreSQL FDW (Distributed Query via Foreign Data Wrapper)
 
-Salah satu poin utama dalam arsitektur ini adalah penggunaan **PostgreSQL Foreign Data Wrapper (FDW)**, yang memungkinkan backend melakukan query ke database eksternal seolah-olah mereka adalah bagian dari satu sistem terpadu.
+One of the main points in this architecture is the use of **PostgreSQL Foreign Data Wrapper (FDW)**, which allows the backend to perform queries to external databases as if they were part of one unified system.
 
-Dalam sistem ini:
-- PostgreSQL utama menyimpan metadata.
-- Instance PostgreSQL lain (dummy/fdw) dapat disambungkan menggunakan `postgres_fdw`.
-- Query lintas node dapat dieksekusi seperti biasa dengan `SELECT` atau `JOIN`, tanpa perlu melakukan ETL manual.
+In this system:
+- Main PostgreSQL stores metadata.
+- Other PostgreSQL instances (dummy/fdw) can be connected using `postgres_fdw`.
+- Cross-node queries can be executed as usual with `SELECT` or `JOIN`, without needing manual ETL.
 
-Contoh skenario:
-- Menyimpan data Spotify user di node A, dan statistik agregat di node B.
-- Node A dapat melakukan query ke node B tanpa perlu migrasi data, cukup dengan `IMPORT FOREIGN SCHEMA`.
+Example scenario:
+- Store Spotify user data on node A, and aggregate statistics on node B.
+- Node A can query node B without data migration, simply with `IMPORT FOREIGN SCHEMA`.
 
-### 🔄 Integrasi Multi-Database (Manual Sharding)
+### 🔄 Multi-Database Integration (Manual Sharding)
 
-Secara keseluruhan, sistem ini memanfaatkan "manual sharding" berdasarkan fungsi:
+Overall, this system leverages "manual sharding" based on function:
 
-| Layer      | Database     | Fungsi                                              |
+| Layer      | Database     | Function                                             |
 |------------|--------------|-----------------------------------------------------|
-| Metadata   | PostgreSQL   | Menyimpan data artist, track, user, dan relasinya  |
-| Riwayat    | MongoDB      | Menyimpan histori sinkronisasi (document-based)    |
-| Cache      | Redis        | Penyajian cepat berdasarkan key `spotify_id`       |
-| Cross-node | PostgreSQL + FDW | Simulasi distribusi query antar instance DB  |
+| Metadata   | PostgreSQL   | Store artist, track, user data and their relations |
+| History    | MongoDB      | Store synchronization history (document-based)     |
+| Cache      | Redis        | Fast serving based on `spotify_id` key             |
+| Cross-node | PostgreSQL + FDW | Simulate distributed queries between DB instances |
 
-Strategi ini dipilih untuk mendemonstrasikan bagaimana sistem dapat menggunakan berbagai model penyimpanan dan distribusi untuk kebutuhan yang berbeda, serta mendukung skalabilitas jika proyek tumbuh lebih besar.
+This strategy was chosen to demonstrate how systems can use various storage and distribution models for different needs, and support scalability if the project grows larger.
 
 
 ## 7. Sample Distributed Query or Scenario
 
-Berikut adalah contoh skenario nyata yang mendemonstrasikan integrasi sistem terdistribusi dalam proyek Personalify, dengan fokus pada pemanfaatan PostgreSQL Foreign Data Wrapper (FDW) dan query lintas sumber data.
+Here are real-world scenario examples that demonstrate distributed system integration in the Personalify project, focusing on utilizing PostgreSQL Foreign Data Wrapper (FDW) and cross-data source queries.
 
-### 🐧 A. Masuk ke Container PostgreSQL
-Langkah pertama: masuk ke container postgresfy untuk mengakses database utama (streamdb):
+### 🐧 A. Access PostgreSQL Container
+First step: enter the postgresfy container to access the main database (streamdb):
 sudo docker exec -it postgresfy psql -U admin -d streamdb
 
-Untuk menampilkan daftar tabel beserta detailnya:
+To display table list with details:
 ```bash 
 \dt+
 ```
-Untuk melihat struktur tabel lokal seperti users, artists, dan tracks:
+To see local table structures like users, artists, and tracks:
 ```bash 
 \d+ users
 \d+ artists
 \d+ tracks
 ```
-Gunakan query berikut untuk melihat isi tabel utama:
+Use the following queries to see main table contents:
 ```sql
 SELECT * FROM users;
 SELECT * FROM artists;
@@ -218,119 +218,118 @@ SELECT * FROM user_tracks;
 SELECT * FROM user_artists;
 ```
 
-Jika sudah mengatur postgres_fdw dan mengimpor foreign table seperti dummy_data, maka bisa menjalankan:
-1. Lihat struktur tabel foreign:
+If you have set up postgres_fdw and imported foreign tables like dummy_data, you can run:
+1. See foreign table structure:
 ```bash 
 \d+ dummy_data 
 ```
-2. Tampilkan isi tabel foreign:
+2. Display foreign table contents:
 ```sql 
 SELECT * FROM dummy_data; 
 ```
-3. Join tabel lokal (users) dengan tabel foreign (dummy_data):
+3. Join local table (users) with foreign table (dummy_data):
 ```sql 
 SELECT u.display_name, d.name AS remote_note
 FROM users u
 JOIN dummy_data d ON u.id = d.id;
 ```
 
-4. Lihat execution plan dan remote SQL:
+4. See execution plan and remote SQL:
 EXPLAIN VERBOSE SELECT * FROM dummy_data;
 
-### 🍃 B. Query Sync History dari MongoDB
-MongoDB digunakan untuk menyimpan data sinkronisasi Spotify berdasarkan spotify_id dan time_range. Data disimpan sebagai dokumen JSON fleksibel di koleksi user_syncs.
+### 🍃 B. Query Sync History from MongoDB
+MongoDB is used to store Spotify synchronization data based on spotify_id and time_range. Data is stored as flexible JSON documents in the user_syncs collection.
 
-1. Masuk ke MongoDB container:
+1. Enter MongoDB container:
 ```bash 
 sudo docker exec -it mongofy mongosh 
 ```
-2. Gunakan database dan cek koleksi:
+2. Use database and check collections:
 ```bash 
 use personalify_db 
 db.user_syncs.find().pretty() 
 ```
-3. Contoh query history user berdasarkan spotify_id:
+3. Example query user history based on spotify_id:
 ```bash 
 db.user_syncs.find({ spotify_id: "31xon7qetimdnbmhkupbaszl52nu" }).pretty() 
 ```
 
-### 🔴 C. Akses Cache Redis untuk Top Data
-Redis digunakan untuk menyimpan data top artists/tracks/genres hasil sinkronisasi agar akses cepat dan tidak selalu memanggil API Spotify.
-1. Masuk ke Redis container:
+### 🔴 C. Access Redis Cache for Top Data
+Redis is used to store top artists/tracks/genres data from synchronization results for fast access without always calling Spotify API.
+1. Enter Redis container:
 ```bash 
 sudo docker exec -it redisfy redis-cli 
 ```
-2. Tampilkan isi cache berdasarkan key:
+2. Display cache contents based on key:
 ```bash
 GET top:31xon7qetimdnbmhkupbaszl52nu:short_term
 ```
-3. (Opsional) Format JSON menggunakan jq:
+3. (Optional) Format JSON using jq:
 ```bash
 sudo docker exec -it redisfy redis-cli GET top:31xon7qetimdnbmhkupbaszl52nu:short_term | jq
 ```
 
-Dengan tiga lapis distribusi ini (PostgreSQL-FDW, MongoDB, Redis), sistem dapat menggabungkan kekuatan relational query, document storage, dan high-speed caching dalam satu aplikasi yang ringan dan scalable.
+With these three distribution layers (PostgreSQL-FDW, MongoDB, Redis), the system can combine the strengths of relational queries, document storage, and high-speed caching in one lightweight and scalable application.
 
 ## 8. Challenges & Lessons Learned
-Selama pengembangan Personalify, sejumlah tantangan teknis muncul seiring dengan upaya mengintegrasikan sistem multi-database dan containerized environment. Berikut adalah beberapa tantangan utama beserta pembelajaran yang didapat:
+During Personalify development, several technical challenges emerged alongside efforts to integrate multi-database systems and containerized environments. Here are some main challenges along with lessons learned:
 
 ### 🔄 A. FDW (Foreign Data Wrapper)
-Tantangan:
-- Saat menggunakan postgres_fdw, hostname database remote tidak bisa menggunakan localhost, karena konteksnya berada di dalam container Docker.
-- Kesalahan umum terjadi jika tidak mengganti localhost dengan nama service container yang sesuai (remotedb, postgresfy, dsb).
+Challenges:
+- When using postgres_fdw, remote database hostname cannot use localhost, because the context is inside a Docker container.
+- Common errors occur if not replacing localhost with appropriate container service names (remotedb, postgresfy, etc.).
 
-Solusi:
-- Pastikan semua koneksi antar-database dalam konteks Docker menggunakan service name dari docker-compose.yml.
+Solutions:
+- Ensure all inter-database connections in Docker context use service names from docker-compose.yml.
 
-Pembelajaran:
-- Pahami bahwa localhost dalam container berbeda konteks dari localhost di host machine.
-- Gunakan IMPORT FOREIGN SCHEMA untuk mempermudah pengaturan foreign tables daripada membuatnya satu per satu.
+Lessons Learned:
+- Understand that localhost in containers has different context from localhost on host machine.
+- Use IMPORT FOREIGN SCHEMA to simplify foreign table setup rather than creating them one by one.
 
-### 🧩 B. Sinkronisasi Data & Skema
-Tantangan:
-- Data Spotify yang didapat dari API sangat fleksibel (non-tabular), sedangkan PostgreSQL bersifat struktural dan membutuhkan skema tetap.
-- Skema harus konsisten antara relasi user, artist, dan track — terutama saat menyimpan many-to-many data (e.g. user_tracks, user_artists).
+### 🧩 B. Data Synchronization & Schema
+Challenges:
+- Spotify data obtained from API is very flexible (non-tabular), while PostgreSQL is structural and requires fixed schema.
+- Schema must be consistent between user, artist, and track relations — especially when storing many-to-many data (e.g. user_tracks, user_artists).
 
-Solusi:
-- Gunakan MongoDB untuk menyimpan data mentah hasil sinkronisasi per time_range.
-- Gunakan Redis untuk caching hasil query yang sudah diformat agar tidak perlu parsing berulang kali.
+Solutions:
+- Use MongoDB to store raw synchronization result data per time_range.
+- Use Redis for caching formatted query results to avoid repeated parsing.
 
-Pembelajaran:
-- Penyimpanan data di tempat yang sesuai (structured vs unstructured) penting untuk efisiensi dan skalabilitas.
+Lessons Learned:
+- Storing data in appropriate places (structured vs unstructured) is important for efficiency and scalability.
 
 ### 🚨 C. Caching Strategy
-Tantangan:
+Challenges:
 
-- Data Redis bersifat ephemeral. Jika container Redis mati tanpa volume persistence, seluruh cache hilang.
-- Tanpa pengelolaan key yang baik (misal: top:{spotify_id}:{time_range}), cache bisa saling timpa atau bentrok.
+- Redis data is ephemeral. If Redis container dies without volume persistence, all cache is lost.
+- Without good key management (e.g.: top:{spotify_id}:{time_range}), cache can overwrite or conflict with each other.
 
-Solusi:
-- Terapkan penamaan key yang sistematis dan unik.
-- Simpan cache hasil sync per user + time_range untuk menghindari redudansi.
+Solutions:
+- Apply systematic and unique key naming.
+- Store sync result cache per user + time_range to avoid redundancy.
 
-Pembelajaran:
-- Redis ideal untuk read-heavy scenarios seperti dashboard, tapi bukan untuk data permanen.
+Lessons Learned:
+- Redis is ideal for read-heavy scenarios like dashboards, but not for permanent data.
 
 ### 🔧 D. Deployment & Containerization
-Tantangan:
-- Debugging multi-container bisa rumit tanpa log monitoring yang baik.
-- Beberapa container service butuh urutan start tertentu (e.g. Postgres harus siap sebelum backend query).
+Challenges:
+- Debugging multi-container can be complicated without good log monitoring.
+- Some container services need specific startup order (e.g. Postgres must be ready before backend queries).
 
-Solusi:
-- Gunakan depends_on di docker-compose.yml.
-Manfaatkan volume untuk persistensi dan named network agar service saling mengenali.
+Solutions:
+- Use depends_on in docker-compose.yml.
+- Utilize volumes for persistence and named networks so services recognize each other.
 
-Pembelajaran:
-- Containerization sangat powerful untuk isolasi, tapi perlu pemahaman dependency dan urutan lifecycle.
+Lessons Learned:
+- Containerization is very powerful for isolation, but requires understanding of dependencies and lifecycle order.
 
 ## 9. Conclusion
-Personalify merupakan proyek yang dirancang untuk mengeksplorasi konsep sistem terdistribusi dalam konteks aplikasi berbasis data nyata. Dengan memanfaatkan data dari Spotify melalui proses otentikasi OAuth2, pengguna dapat melihat preferensi musik mereka seperti artis, lagu, dan genre teratas yang dikelompokkan berdasarkan rentang waktu tertentu. Data tersebut kemudian disimpan dan diolah melalui kombinasi database yang masing-masing memiliki peran berbeda, mencerminkan pendekatan arsitektur multi-layer dan terdistribusi secara nyata.
+Personalify is a project designed to explore distributed system concepts in the context of real data-based applications. By utilizing data from Spotify through OAuth2 authentication processes, users can see their music preferences such as top artists, songs, and genres grouped by specific time ranges. This data is then stored and processed through a combination of databases, each with different roles, reflecting a multi-layer and truly distributed architectural approach.
 
-PostgreSQL digunakan sebagai basis data utama untuk menyimpan entitas yang bersifat relasional seperti pengguna, artis, dan lagu, termasuk relasi many-to-many antar entitas tersebut. Sementara itu, MongoDB berperan sebagai penyimpan histori sinkronisasi per user dan time_range dalam format dokumen JSON yang lebih fleksibel, mencerminkan pemisahan beban kerja (separation of concern) antara struktur dan fleksibilitas data. Redis juga digunakan untuk menyimpan hasil sinkronisasi yang telah diformat ulang dalam bentuk cache, sehingga sistem dapat menghindari permintaan ulang ke API Spotify atau query ke database utama untuk data yang sama.
+PostgreSQL is used as the main database to store relational entities such as users, artists, and songs, including many-to-many relationships between these entities. Meanwhile, MongoDB serves as storage for synchronization history per user and time_range in more flexible JSON document format, reflecting separation of concerns between data structure and flexibility. Redis is also used to store reformatted synchronization results in cache form, so the system can avoid repeated requests to Spotify API or queries to the main database for the same data.
 
-Lebih jauh lagi, proyek ini mengimplementasikan PostgreSQL Foreign Data Wrapper (FDW) untuk mengakses tabel dari database eksternal (remote DB) secara real-time. Hal ini menunjukkan bagaimana query lintas database dapat dilakukan seolah-olah berasal dari satu sumber, memungkinkan fleksibilitas federasi data dan skenario lintas node. Dalam praktiknya, FDW digunakan untuk membaca tabel eksternal dan menggabungkannya dengan data lokal melalui operasi join yang berjalan transparan.
+Furthermore, this project implements PostgreSQL Foreign Data Wrapper (FDW) to access tables from external databases (remote DB) in real-time. This shows how cross-database queries can be performed as if they came from one source, enabling data federation flexibility and cross-node scenarios. In practice, FDW is used to read external tables and combine them with local data through join operations that run transparently.
 
-Selama pengembangan, sejumlah tantangan teknis berhasil diatasi, mulai dari sinkronisasi data yang tidak homogen antara API Spotify dan struktur tabel relasional, hingga konfigurasi hostname antar-container Docker agar dapat saling terhubung. Tantangan-tantangan ini menghasilkan pembelajaran praktis seputar pemilihan teknologi, pengelolaan cache, dan penggabungan data dari sumber berbeda secara efisien.
+During development, several technical challenges were successfully overcome, from synchronizing non-homogeneous data between Spotify API and relational table structures, to configuring hostnames between Docker containers so they can connect to each other. These challenges resulted in practical learning about technology selection, cache management, and efficient data integration from different sources.
 
-Secara keseluruhan, Personalify telah berhasil menjadi bukti konsep dari sistem terdistribusi yang memadukan otentikasi modern, sinkronisasi API eksternal, penyimpanan multi-database, serta cache dan federasi data dalam satu ekosistem yang kohesif. Proyek ini bukan hanya memenuhi aspek fungsional dan teknis dari tugas Pemrosesan Data Terdistribusi, tetapi juga memberikan pengalaman praktik nyata dalam membangun dan mengelola sistem data yang kompleks dan dapat diskalakan.
-
+Overall, Personalify has successfully become a proof of concept for distributed systems that combine modern authentication, external API synchronization, multi-database storage, as well as cache and data federation in one cohesive ecosystem. This project not only meets the functional and technical aspects of the Distributed Data Processing assignment, but also provides real-world practical experience in building and managing complex and scalable data systems.
