@@ -10,3 +10,4 @@ deep-translator
 lyricsgenius
 beautifulsoup4
 urllib3
+lxml
