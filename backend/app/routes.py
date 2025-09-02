@@ -314,63 +314,49 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
 genius_token = os.getenv("GENIUS_ACCESS_TOKEN")
 genius = lyricsgenius.Genius(genius_token, timeout=15, retries=3) if genius_token else None
 
-@router.get("/genius/search_artist", tags=["Genius"])
-def search_genius_artist(q: str = Query(..., description="Artist name to search")):
-    if not genius:
-        raise HTTPException(status_code=500, detail="Genius API not configured on server.")
+# Update this part in your routes.py file
+
+@router.get("/genius/song_lyrics")
+def route_song_lyrics(song_id: int):
+    """
+    Updated lyrics route with better error handling
+    """
     try:
-        # Genius API tidak punya pencarian artis murni, jadi kita cari lagu lalu ambil artisnya
-        response = genius.search_songs(q, per_page=10)
-        artists = []
-        artist_ids = set()
-        for hit in response['hits']:
-            artist_info = hit['result']['primary_artist']
-            if artist_info['id'] not in artist_ids:
-                artists.append({'id': artist_info['id'], 'name': artist_info['name']})
-                artist_ids.add(artist_info['id'])
-        return artists
+        result = song_lyrics(song_id)  # Use the new improved function
+        return result
+    except HTTPException as e:
+        # Re-raise HTTP exceptions
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Failed to search Genius: {str(e)}")
+        print(f"Unexpected error in lyrics route: {e}")
+        return {
+            "lyrics": "Sorry, there was an unexpected error retrieving the lyrics. Please try again or paste the lyrics manually.",
+            "manual_needed": True,
+            "error": str(e)
+        }
 
-
-@router.get("/genius/artist_songs", tags=["Genius"])
-def get_genius_artist_songs(artist_id: int = Query(..., description="Genius Artist ID")):
-    if not genius:
-        raise HTTPException(status_code=500, detail="Genius API not configured on server.")
+# Also update the old genius routes section - replace the entire section with this:
+@router.get("/genius/search_artist")
+def route_search_artist(q: str = Query(..., description="Artist name")):
+    """Updated search with better error handling"""
+    if not GENIUS_TOKEN:
+        raise HTTPException(status_code=500, detail="Genius API not configured")
     try:
-        # Ambil maksimal 50 lagu (batasan API untuk performa)
-        artist_songs = genius.artist_songs(artist_id, per_page=50, sort='popularity')
-        songs = [{'id': song['id'], 'title': song['title']} for song in artist_songs['songs']]
-        return songs
+        return search_artist(q)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Failed to get artist songs: {str(e)}")
+        print(f"Search artist error: {e}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
-
-@router.get("/genius/song_lyrics", tags=["Genius"])
-def get_genius_song_lyrics(song_id: int = Query(..., description="Genius Song ID")):
-    if not genius:
-        raise HTTPException(status_code=500, detail="Genius API not configured on server.")
+@router.get("/genius/artist_songs")
+def route_artist_songs(artist_id: int = Query(..., description="Genius Artist ID")):
+    """Updated artist songs with better error handling"""
+    if not GENIUS_TOKEN:
+        raise HTTPException(status_code=500, detail="Genius API not configured")
     try:
-        # Genius API tidak memberikan lirik, hanya URL. Kita harus scrape.
-        song = genius.song(song_id)
-        song_url = song['song']['url']
-        
-        # Scrape lirik dari halaman web Genius
-        page = requests.get(song_url)
-        if page.status_code != 200:
-            raise HTTPException(status_code=404, detail="Genius page not found.")
-            
-        html = BeautifulSoup(page.text, "html.parser")
-        lyrics_divs = html.find_all("div", class_=lambda c: c and "Lyrics__Container" in c)
-        
-        if not lyrics_divs:
-            return {"lyrics": "Lyrics not found on page."}
-
-        # Gabungkan teks dari semua div dan bersihkan
-        lyrics = "\n".join(div.get_text(separator="\n") for div in lyrics_divs)
-        return {"lyrics": lyrics.strip()}
+        return artist_songs(artist_id)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Failed to get lyrics: {str(e)}")
+        print(f"Artist songs error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get songs: {str(e)}")
 
 # Ganti endpoint agar sesuai dengan frontend (POST /analyze-lyrics)
 @router.post("/analyze-lyrics", tags=["NLP"])

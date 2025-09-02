@@ -187,36 +187,76 @@ async function getArtistSongs(artistId) {
     }
 }
 
+// REPLACE ONLY this getSongLyrics function in your existing lyrics.js:
+
 async function getSongLyrics(songId) {
     geniusLyricsResultDiv.innerHTML = `
         <h3>Lyrics:</h3>
         <div class="loading-spinner"></div>
+        <p style="text-align: center;">Fetching lyrics... This may take a moment.</p>
     `;
 
     try {
         const res = await fetch(`${API_BASE_URL}/genius/song_lyrics?song_id=${songId}`);
-        if (!res.ok) throw new Error('Failed to fetch lyrics');
+        
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
         
         const data = await res.json();
+        console.log('Lyrics response:', data);
 
         if (!data || !data.lyrics) {
             geniusLyricsResultDiv.innerHTML = `
                 <h3>Lyrics:</h3>
                 <p style="text-align:center; color:#ff6b6b;">Could not retrieve lyrics for this song.</p>
+                <p style="text-align:center; color:#888; font-size:0.9rem;">Please try a different song or paste lyrics manually.</p>
             `;
             return;
         }
 
-        geniusLyricsResultDiv.innerHTML = `
-            <h3>Lyrics (Editable):</h3>
-            <textarea id="geniusLyricsTextarea" class="lyrics-display">${data.lyrics}</textarea>
-            <button type="button" id="analyzeGeniusBtn" class="button-primary">Analyze These Lyrics</button>
-        `;
+        // Check if manual input is needed (fallback scenario)
+        if (data.manual_needed) {
+            geniusLyricsResultDiv.innerHTML = `
+                <h3>Lyrics Not Found Automatically</h3>
+                <div style="background: #2a2a2a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <p style="color: #ffa500; margin-bottom: 0.5rem;"><strong>⚠️ Auto-fetch failed</strong></p>
+                    <p style="color: #ccc; font-size: 0.9rem;">${data.lyrics}</p>
+                    ${data.url ? `<p style="margin-top: 0.5rem;"><a href="${data.url}" target="_blank" style="color: #1DB954;">Open song page →</a></p>` : ''}
+                </div>
+                <h3>Paste Lyrics Manually:</h3>
+                <textarea id="geniusLyricsTextarea" class="lyrics-display" placeholder="Paste the lyrics here and click analyze...">${data.song_title ? `[${data.song_title}${data.artist ? ` - ${data.artist}` : ''}]\n\n` : ''}</textarea>
+                <button type="button" id="analyzeGeniusBtn" class="button-primary">Analyze These Lyrics</button>
+            `;
+        } else {
+            // Success case - lyrics found
+            geniusLyricsResultDiv.innerHTML = `
+                <h3>Lyrics Found! (Editable):</h3>
+                <div style="background: #1a4a2e; padding: 0.5rem 1rem; border-radius: 4px; margin-bottom: 1rem;">
+                    <p style="color: #4ade80; font-size: 0.9rem; margin: 0;">✅ Lyrics retrieved successfully</p>
+                </div>
+                <textarea id="geniusLyricsTextarea" class="lyrics-display">${data.lyrics}</textarea>
+                <button type="button" id="analyzeGeniusBtn" class="button-primary">Analyze These Lyrics</button>
+            `;
+        }
+        
+        // Scroll to lyrics section
+        setTimeout(() => {
+            geniusLyricsResultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+        
     } catch (error) {
         console.error('Lyrics fetch error:', error);
         geniusLyricsResultDiv.innerHTML = `
-            <h3>Lyrics:</h3>
-            <p style="text-align:center; color:#ff6b6b;">Failed to load lyrics. Please try again.</p>
+            <h3>Error:</h3>
+            <div style="background: #4a1a1a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <p style="color: #ff6b6b; margin-bottom: 0.5rem;"><strong>❌ Connection Error</strong></p>
+                <p style="color: #ccc; font-size: 0.9rem;">Failed to load lyrics: ${error.message}</p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 0.5rem;">Try refreshing the page or use manual input instead.</p>
+            </div>
+            <h3>Manual Input:</h3>
+            <textarea id="geniusLyricsTextarea" class="lyrics-display" placeholder="Paste lyrics manually here..."></textarea>
+            <button type="button" id="analyzeGeniusBtn" class="button-primary">Analyze These Lyrics</button>
         `;
     }
 }
