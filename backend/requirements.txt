@@ -7,7 +7,3 @@ redis
 pymongo[srv]
 jinja2
 deep-translator
-lyricsgenius
-beautifulsoup4
-urllib3
-lxml
