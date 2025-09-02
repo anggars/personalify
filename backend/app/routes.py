@@ -1,6 +1,5 @@
 import os
 import requests
-import lyricsgenius
 from urllib.parse import urlencode
 from fastapi import APIRouter, Request, Query, HTTPException, Body
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
@@ -16,10 +15,6 @@ from app.db_handler import (
 )
 from app.cache_handler import cache_top_data, get_cached_top_data
 from app.mongo_handler import save_user_sync, get_user_history
-from app.genius_lyrics import (
-    search_artist, artist_songs, song_lyrics
-)
-from bs4 import BeautifulSoup
 
 router = APIRouter()
 # --- Perbaikan Path Template ---
@@ -311,53 +306,6 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         "emotion_paragraph": emotion_paragraph  # <-- Kirim data emosi ke template
     })
 
-genius_token = os.getenv("GENIUS_ACCESS_TOKEN")
-genius = lyricsgenius.Genius(genius_token, timeout=15, retries=3) if genius_token else None
-
-# Update this part in your routes.py file
-
-@router.get("/genius/song_lyrics")
-def route_song_lyrics(song_id: int):
-    """
-    Updated lyrics route with better error handling
-    """
-    try:
-        result = song_lyrics(song_id)  # Use the new improved function
-        return result
-    except HTTPException as e:
-        # Re-raise HTTP exceptions
-        raise e
-    except Exception as e:
-        print(f"Unexpected error in lyrics route: {e}")
-        return {
-            "lyrics": "Sorry, there was an unexpected error retrieving the lyrics. Please try again or paste the lyrics manually.",
-            "manual_needed": True,
-            "error": str(e)
-        }
-
-# Also update the old genius routes section - replace the entire section with this:
-@router.get("/genius/search_artist")
-def route_search_artist(q: str = Query(..., description="Artist name")):
-    """Updated search with better error handling"""
-    if not GENIUS_TOKEN:
-        raise HTTPException(status_code=500, detail="Genius API not configured")
-    try:
-        return search_artist(q)
-    except Exception as e:
-        print(f"Search artist error: {e}")
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
-
-@router.get("/genius/artist_songs")
-def route_artist_songs(artist_id: int = Query(..., description="Genius Artist ID")):
-    """Updated artist songs with better error handling"""
-    if not GENIUS_TOKEN:
-        raise HTTPException(status_code=500, detail="Genius API not configured")
-    try:
-        return artist_songs(artist_id)
-    except Exception as e:
-        print(f"Artist songs error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get songs: {str(e)}")
-
 # Ganti endpoint agar sesuai dengan frontend (POST /analyze-lyrics)
 @router.post("/analyze-lyrics", tags=["NLP"])
 def analyze_lyrics_emotion_endpoint(
@@ -374,21 +322,3 @@ def lyrics_page(request: Request, spotify_id: str = None):
     Serves the lyric analyzer page.
     """
     return templates.TemplateResponse("lyrics.html", {"request": request, "spotify_id": spotify_id})
-
-GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
-GENIUS_API_URL = "https://api.genius.com"
-
-def genius_headers():
-    return {"Authorization": f"Bearer {GENIUS_TOKEN}"}
-
-@router.get("/genius/search_artist")
-def route_search_artist(q: str = Query(..., description="Nama artis")):
-    return search_artist(q)
-
-@router.get("/genius/artist_songs")
-def route_artist_songs(artist_id: int):
-    return artist_songs(artist_id)
-
-@router.get("/genius/song_lyrics")
-def route_song_lyrics(song_id: int):
-    return song_lyrics(song_id)
