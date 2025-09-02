@@ -7,3 +7,4 @@ redis
 pymongo[srv]
 jinja2
 deep-translator
+beautifulsoup4

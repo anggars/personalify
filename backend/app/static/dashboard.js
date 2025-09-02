@@ -1,5 +1,6 @@
 let genreChartInstance = null;
-
+const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE_URL = isLocal ? 'http://localhost:8000' : '';
 const categoryFilterSelect = document.getElementById("category-filter");
 const categoryFilterWrapper = document.getElementById("category-filter-wrapper");
 const sections = {
