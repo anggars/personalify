@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Personalify Dashboard - {{ user }}</title>
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='Spotify_Primary_Logo_RGB_White.ico') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='assets/Spotify_Primary_Logo_RGB_White.ico') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="google-site-verification" content="JgCSMAYUdz7lltCAqQ0TyE4fW0EwZEQazmvQt6K5T7s" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', path='dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}">
 </head>
 <body>
 <main class="main-content"></main>
@@ -148,6 +148,6 @@
         };
         const genreArtistsMap = {{ genre_artists_map | tojson | safe }};
     </script>    
-    <script src="{{ url_for('static', path='dashboard.js') }}"></script>
+    <script src="{{ url_for('static', path='js/dashboard.js') }}"></script>
 </body>
 </html>

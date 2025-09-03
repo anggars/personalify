@@ -49,7 +49,9 @@ async def redirect_if_not_vercel_or_local(request: Request, call_next):
     return response
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-static_dir = os.path.join(current_dir, "static")
+# Naik 2 level ke root project, lalu masuk ke frontend/static
+static_dir = os.path.join(current_dir, "..", "..", "frontend", "static")
+static_dir = os.path.abspath(static_dir)  # Normalize path
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Memasukkan semua endpoint dari routes.py
