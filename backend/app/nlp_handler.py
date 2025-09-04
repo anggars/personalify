@@ -36,7 +36,7 @@ def get_emotion_from_text(text):
     if not HF_API_KEY: return None
     try:
         payload = {"inputs": text}
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=10)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:

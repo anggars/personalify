@@ -140,10 +140,19 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                 "preview_url": track.get("preview_url"), "image": album_image_url
             })
 
-        # Analisis emosi tetap dilakukan seperti biasa
-        track_names = [track['name'] for track in result.get("tracks", [])]
-        emotion_paragraph = generate_emotion_paragraph(track_names)
-        result['emotion_paragraph'] = emotion_paragraph
+        # Di dalam loop di fungsi callback
+        # ...
+        try:
+            # Coba lakukan analisis seperti biasa
+            track_names = [track['name'] for track in result.get("tracks", [])]
+            emotion_paragraph = generate_emotion_paragraph(track_names)
+            result['emotion_paragraph'] = emotion_paragraph
+        except Exception as e:
+            # JIKA GAGAL (karena timeout atau error lain), jangan panik.
+            # Cukup catat di log dan beri pesan default.
+            print(f"WARNING: Hugging Face analysis failed. Skipping. Error: {e}")
+            result['emotion_paragraph'] = "Vibe analysis is currently unavailable."
+        # ...
 
         cache_top_data("top", spotify_id, time_range, result)
         save_user_sync(spotify_id, time_range, result)
