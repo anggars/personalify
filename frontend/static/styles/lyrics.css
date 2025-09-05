@@ -85,6 +85,50 @@ header p.subtitle {
     box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
 }
 
+/* Lebar scrollbar */
+.lyrics-form textarea::-webkit-scrollbar {
+    width: 10px;
+}
+
+/* Bagian track (latar belakang scrollbar) */
+.lyrics-form textarea::-webkit-scrollbar-track {
+    background: #181818;
+    border-radius: 5px;
+}
+
+/* Bagian thumb (gagang scrollbar yang digerakkan) */
+.lyrics-form textarea::-webkit-scrollbar-thumb {
+    background-color: #1DB954; /* Warna hijau Spotify */
+    border-radius: 5px;
+    border: 2px solid #181818; /* Memberi sedikit jarak */
+}
+
+/* Efek saat thumb di-hover */
+.lyrics-form textarea::-webkit-scrollbar-thumb:hover {
+    background-color: #1ed760; /* Warna hijau yang lebih terang */
+}
+
+.lyrics-form textarea::-webkit-resizer {
+    /* Menghilangkan gaya default browser */
+    -webkit-appearance: none;
+    appearance: none;
+    
+    /* KUNCI: Samakan warna dengan background textarea untuk menutupi teks di belakangnya */
+    background-color: transparent;
+    
+    /* Hapus semua elemen visual lainnya (border, gambar, dll) */
+    border: none;
+    outline: none;
+    background-image: none;
+
+    /* Tentukan area klik yang tak terlihat */
+    width: 16px;
+    height: 16px;
+    
+    /* Kursor tetap berubah sebagai satu-satunya petunjuk */
+    cursor: se-resize;
+}
+
 #lyricsInput::placeholder {
   white-space: pre-line; /* biar \n kebaca jadi enter */
 }
