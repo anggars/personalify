@@ -60,8 +60,6 @@ The Personalify system consists of several components connected through service-
   Stores historical user synchronization logs in document format. Suitable for flexible data and time-based log access.
 - **PostgreSQL + FDW:**  
   Foreign Data Wrapper used to access data from other PostgreSQL servers (distribution simulation). Useful for cross-instance queries.
-- **Hugging Face API (NLP Service):**
-  An external API service that provides access to pre-trained Natural Language Processing (NLP) models. In Personalify, it's used to perform emotion classification on song titles and lyrics, enriching the standard Spotify data with a unique "emotional vibe" analysis.
 
 
 ## 4. Technology Stack & Rationale
