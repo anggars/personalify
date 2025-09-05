@@ -142,20 +142,20 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
 
         # Di dalam loop di fungsi callback
         # ...
+        emotion_paragraph_final = ""
         try:
-            # Coba lakukan analisis seperti biasa
-            track_names = [track['name'] for track in result.get("tracks", [])]
-            emotion_paragraph = generate_emotion_paragraph(track_names)
-            result['emotion_paragraph'] = emotion_paragraph
+            track_names = [track['name'] for track in last_result_tracks]
+            emotion_paragraph_final = generate_emotion_paragraph(track_names)
         except Exception as e:
-            # JIKA GAGAL (karena timeout atau error lain), jangan panik.
-            # Cukup catat di log dan beri pesan default.
-            print(f"WARNING: Hugging Face analysis failed. Skipping. Error: {e}")
-            result['emotion_paragraph'] = "Vibe analysis is currently unavailable."
-        # ...
-
-        cache_top_data("top", spotify_id, time_range, result)
-        save_user_sync(spotify_id, time_range, result)
+            print(f"WARNING: Hugging Face analysis failed post-sync. Skipping. Error: {e}")
+            emotion_paragraph_final = "Vibe analysis is currently unavailable."
+        
+        # Update cache untuk SEMUA time range dengan paragraf yang sama
+        for tr in time_ranges:
+            cached_data = get_cached_top_data("top", spotify_id, tr)
+            if cached_data:
+                cached_data['emotion_paragraph'] = emotion_paragraph_final
+                cache_top_data("top", spotify_id, tr, cached_data)
 
     # Step 4: Redirect ke dashboard
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
