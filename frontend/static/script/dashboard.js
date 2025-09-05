@@ -264,6 +264,73 @@ modal.addEventListener('click', (event) => {
     }
 });
 
+// Function untuk load analisis emosi di background
+async function loadEmotionAnalysis() {
+    const emotionElement = document.querySelector('.emotion-recap');
+    const currentText = emotionElement.textContent;
+    
+    // Cek apakah masih menggunakan teks placeholder
+    if (currentText.includes("being analyzed") || currentText.includes("getting ready")) {
+        // Tambahkan loading indicator
+        emotionElement.innerHTML = 'Your music vibe is being analyzed... <span class="loading-dots">⚡</span>';
+        
+        try {
+            // Ambil spotify_id dari URL
+            const urlParts = window.location.pathname.split('/');
+            const spotifyId = urlParts[urlParts.length - 1];
+            
+            // Ambil time_range dari URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const timeRange = urlParams.get('time_range') || 'short_term';
+            
+            // Panggil endpoint analisis emosi
+            const response = await fetch('/analyze-emotions-background', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    spotify_id: spotifyId,
+                    time_range: timeRange
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.emotion_paragraph) {
+                // Ganti teks dengan hasil analisis
+                emotionElement.innerHTML = data.emotion_paragraph;
+            } else {
+                emotionElement.textContent = "Vibe analysis is currently unavailable.";
+            }
+            
+        } catch (error) {
+            console.warn("Could not load emotion analysis:", error);
+            emotionElement.textContent = "Vibe analysis is currently unavailable.";
+        }
+    }
+}
+
+// CSS untuk loading dots animation
+const style = document.createElement('style');
+style.textContent = `
+.loading-dots {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+`;
+document.head.appendChild(style);
+
+// Panggil function setelah halaman dimuat dengan delay kecil
+document.addEventListener('DOMContentLoaded', function() {
+    // Delay 1 detik agar user bisa lihat dashboard dulu
+    setTimeout(loadEmotionAnalysis, 1000);
+});
+
 window.onload = function() {
     // Perintah global untuk memastikan legenda TIDAK PERNAH muncul
     Chart.defaults.global.legend.display = false;

@@ -53,6 +53,8 @@ def login(request: Request):
     })
     return RedirectResponse(url=f"https://accounts.spotify.com/authorize?{query_params}")
 
+# Ganti bagian callback function di routes.py dengan ini:
+
 @router.get("/callback", tags=["Auth"])
 def callback(request: Request, code: str = Query(..., description="Spotify Authorization Code")):
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
@@ -83,7 +85,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     display_name = user_profile.get("display_name", "Unknown")
     save_user(spotify_id, display_name)
 
-    # Step 3: Sync untuk semua time_range dengan metode BATCH
+    # Step 3: Sync untuk semua time_range dengan metode BATCH (TANPA ANALISIS EMOSI)
     time_ranges = ["short_term", "medium_term", "long_term"]
     for time_range in time_ranges:
         artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
@@ -140,27 +142,48 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                 "preview_url": track.get("preview_url"), "image": album_image_url
             })
 
-        # Di dalam loop di fungsi callback
-        # ...
-        try:
-            # Coba lakukan analisis seperti biasa
-            track_names = [track['name'] for track in result.get("tracks", [])]
-            emotion_paragraph = generate_emotion_paragraph(track_names)
-            result['emotion_paragraph'] = emotion_paragraph
-        except Exception as e:
-            # JIKA GAGAL (karena timeout atau error lain), jangan panik.
-            # Cukup catat di log dan beri pesan default.
-            print(f"WARNING: Hugging Face analysis failed. Skipping. Error: {e}")
-            result['emotion_paragraph'] = "Vibe analysis is currently unavailable."
-        # ...
+        # 4. SKIP ANALISIS EMOSI DI CALLBACK - Berikan teks default saja
+        result['emotion_paragraph'] = "Your music vibe is being analyzed..."
 
         cache_top_data("top", spotify_id, time_range, result)
         save_user_sync(spotify_id, time_range, result)
 
-    # Step 4: Redirect ke dashboard
+    # Step 4: Redirect ke dashboard LANGSUNG (lebih cepat!)
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
     frontend_url = f"{request.url.scheme}://{original_host}"
     return RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
+
+
+# TAMBAHAN: Buat endpoint baru untuk analisis emosi yang berjalan di background
+@router.post("/analyze-emotions-background", tags=["Background"])
+async def analyze_emotions_background(
+    spotify_id: str = Body(..., embed=True, description="Spotify ID"),
+    time_range: str = Body("short_term", embed=True, description="Time range")
+):
+    """
+    Endpoint terpisah untuk analisis emosi yang bisa dipanggil dari frontend
+    setelah dashboard sudah dimuat.
+    """
+    try:
+        # Ambil data dari cache
+        cached_data = get_cached_top_data("top", spotify_id, time_range)
+        if not cached_data:
+            return {"error": "No data found for analysis"}
+        
+        # Lakukan analisis emosi
+        track_names = [track['name'] for track in cached_data.get("tracks", [])]
+        emotion_paragraph = generate_emotion_paragraph(track_names)
+        
+        # Update data di cache dengan hasil analisis
+        cached_data['emotion_paragraph'] = emotion_paragraph
+        cache_top_data("top", spotify_id, time_range, cached_data)
+        save_user_sync(spotify_id, time_range, cached_data)
+        
+        return {"emotion_paragraph": emotion_paragraph}
+        
+    except Exception as e:
+        print(f"Background emotion analysis failed: {e}")
+        return {"emotion_paragraph": "Vibe analysis is currently unavailable."}
 
 @router.get("/sync/top-data", tags=["Sync"])
 def sync_top_data(
