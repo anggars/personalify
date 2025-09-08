@@ -1,4 +1,5 @@
-imlamort requests
+import os
+import requests
 from deep_translator import GoogleTranslator
 
 API_URL = "https://api-inference.huggingface.co/models/SamLowe/roberta-base-go_emotions"
