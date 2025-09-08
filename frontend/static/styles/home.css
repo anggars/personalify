@@ -26,11 +26,11 @@ body {
 }
 
 .main-content {
-    flex-grow: 1; /* Perintah untuk mengisi sisa ruang */
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Pindahkan 'justify-content' ke sini */
+    justify-content: center;
 }
 
 .hero {
@@ -81,16 +81,16 @@ p {
     }
 
     h1 {
-        font-size: 2.5rem; /* Ukuran judul dikecilkan */
+        font-size: 2.5rem; 
     }
 
     p {
-        font-size: 0.76rem; /* Ukuran paragraf dikecilkan */
+        font-size: 0.76rem; 
         margin-bottom: 2rem;
     }
 
     .button {
-        padding: 12px 28px; /* Tombol sedikit lebih kecil */
+        padding: 12px 28px; 
         font-size: 0.9rem;
     }
 }
@@ -101,7 +101,7 @@ p {
     background-color: var(--primary);
     color: black;
     text-decoration: none;
-    font-weight: 700; /* Dibuat lebih tebal */
+    font-weight: 700; 
     font-size: 1rem;
     border-radius: 50px;
     transition: all 0.3s ease;
