@@ -76,8 +76,9 @@ def generate_emotion_paragraph(track_names):
     if not track_names:
         return "Couldn't analyze music mood."
 
-    # Analisis track_names tidak perlu terjemahan karena biasanya sudah English
-    text_to_analyze = ". ".join(track_names[:10])
+    text_to_join = ". ".join(track_names[:20])
+    text_to_analyze = prepare_text_for_analysis(text_to_join)
+    
     emotion_data = get_emotion_from_text(text_to_analyze)
 
     if not emotion_data or not emotion_data[0]:
