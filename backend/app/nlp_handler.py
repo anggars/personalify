@@ -1,5 +1,4 @@
-import os
-import requests
+imlamort requests
 from deep_translator import GoogleTranslator
 
 API_URL = "https://api-inference.huggingface.co/models/SamLowe/roberta-base-go_emotions"
@@ -76,7 +75,7 @@ def generate_emotion_paragraph(track_names):
     if not track_names:
         return "Couldn't analyze music mood."
 
-    text_to_join = ". ".join(track_names[:20])
+    text_to_join = ". ".join(track_names[:10])
     text_to_analyze = prepare_text_for_analysis(text_to_join)
     
     emotion_data = get_emotion_from_text(text_to_analyze)
