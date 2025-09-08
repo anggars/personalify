@@ -48,13 +48,13 @@ body {
 
 h1 {
     font-size: 3.5rem;
-    font-weight: 800; /* Dibuat lebih tebal */
-    color: var(--text); /* Warna diubah jadi putih agar lebih fokus */
+    font-weight: 800;
+    color: var(--text);
     margin-bottom: 1rem;
 }
 
 h1 span {
-    color: var(--primary); /* Kata "Story" dibuat berwarna hijau */
+    color: var(--primary);
 }
 
 p {
