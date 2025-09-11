@@ -62,7 +62,6 @@ def analyze_lyrics_emotion(lyrics: str):
         
     try:
         sorted_emotions = sorted(emotion_data[0], key=lambda x: x['score'], reverse=True)
-        # Filter emosi dengan skor sangat rendah untuk hasil lebih bersih
         top_emotions = [e for e in sorted_emotions if e['score'] > 0.01]
         
         if not top_emotions:
