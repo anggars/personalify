@@ -72,11 +72,13 @@ def analyze_lyrics_emotion(lyrics: str):
     except Exception:
         return {"error": "Could not parse the emotion analysis result."}
 
-def generate_emotion_paragraph(track_names):
+def generate_emotion_paragraph(track_names, extended=False):
     if not track_names:
         return "Couldn't analyze music mood."
 
-    text_to_join = ". ".join(track_names[:10])
+    # Gunakan maksimal 20 lagu untuk analisis (kalau lebih dari itu)
+    tracks_to_analyze = track_names[:20] if len(track_names) > 20 else track_names
+    text_to_join = ". ".join(tracks_to_analyze)
     text_to_analyze = prepare_text_for_analysis(text_to_join)
     
     emotion_data = get_emotion_from_text(text_to_analyze)
@@ -125,4 +127,9 @@ def generate_emotion_paragraph(track_names):
         f"{emotion_texts.get(e['label'], e['label'])}"
         for e in top_emotions
     )
-    return f"Shades of {formatted}."
+    
+    # Tambahkan indikator jika ini analisis extended
+    if extended and len(track_names) > 10:
+        return f"Diving deeper into your collection, shades of {formatted}."
+    else:
+        return f"Shades of {formatted}."

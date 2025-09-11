@@ -91,8 +91,6 @@ function customTooltip(tooltipModel) {
         return;
     }
 
-    // INI BAGIAN YANG DIPERBAIKI:
-    // Pengecekan sekarang lebih lengkap
     if (tooltipModel.body || (tooltipModel.title && tooltipModel.title.length > 0) || (tooltipModel.footer && tooltipModel.footer.length > 0)) {
         const titleLines = tooltipModel.title || [];
         const footerLines = tooltipModel.footer || [];
@@ -126,7 +124,6 @@ function customTooltip(tooltipModel) {
     tooltipEl.style.pointerEvents = 'none';
 }
 
-// Ganti hanya isi fungsi generateImage ini
 function generateImage(selectedCategory) {
     hideSaveOptions();
     document.body.classList.add('force-desktop-view');
@@ -173,18 +170,16 @@ function generateImage(selectedCategory) {
     container.style.color = "#fff";
     container.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
     container.style.overflow = 'hidden';
-    // ▼▼▼ PERBAIKAN #1: Container luar menjadi acuan posisi ▼▼▼
     container.style.position = 'relative';
 
     const contentWrapper = document.createElement("div");
     contentWrapper.style.padding = "80px 40px 40px 40px";
     contentWrapper.style.boxSizing = "border-box";
     contentWrapper.style.width = '100%';
-    // ▼▼▼ PERBAIKAN #2: Terapkan trik absolute centering ▼▼▼
     contentWrapper.style.position = 'absolute';
     contentWrapper.style.top = '50%';
     contentWrapper.style.left = '50%';
-    contentWrapper.style.transform = 'translate(-50%, -50%)'; // Ini kuncinya
+    contentWrapper.style.transform = 'translate(-50%, -50%)';
 
     const pageHeader = document.querySelector('header');
     const headerClone = pageHeader.cloneNode(true);
@@ -207,11 +202,9 @@ function generateImage(selectedCategory) {
     function renderCanvas() {
         document.body.appendChild(container);
 
-        // ▼▼▼ PERBAIKAN #3: Gabungkan scale dengan transform yang sudah ada ▼▼▼
         const contentHeight = contentWrapper.offsetHeight;
         if (contentHeight > STORY_HEIGHT) {
             const scale = STORY_HEIGHT / contentHeight;
-            // Gabungkan centering dan scaling dalam satu perintah transform
             contentWrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
         }
 
@@ -265,14 +258,18 @@ modal.addEventListener('click', (event) => {
 });
 
 // Function untuk load analisis emosi di background
-async function loadEmotionAnalysis() {
+async function loadEmotionAnalysis(isExtended = false) {
     const emotionElement = document.querySelector('.emotion-recap');
     const currentText = emotionElement.textContent;
     
-    // Cek apakah masih menggunakan teks placeholder
-    if (currentText.includes("being analyzed") || currentText.includes("getting ready")) {
-        // Tambahkan loading indicator
-        emotionElement.innerHTML = 'Your music vibe is being analyzed... <span class="loading-dots">⚡</span>';
+    // Cek apakah masih menggunakan teks placeholder ATAU jika diminta extended analysis
+    if (currentText.includes("being analyzed") || currentText.includes("getting ready") || isExtended) {
+        // Tambahkan loading indicator hanya jika bukan extended
+        if (!isExtended) {
+            emotionElement.innerHTML = 'Your music vibe is being analyzed... <span class="loading-dots">⚡</span>';
+        } else {
+            emotionElement.innerHTML = 'Analyzing extended music collection... <span class="loading-dots">⚡</span>';
+        }
         
         try {
             // Ambil spotify_id dari URL
@@ -283,7 +280,7 @@ async function loadEmotionAnalysis() {
             const urlParams = new URLSearchParams(window.location.search);
             const timeRange = urlParams.get('time_range') || 'short_term';
             
-            // Panggil endpoint analisis emosi
+            // Panggil endpoint analisis emosi dengan parameter extended
             const response = await fetch('/analyze-emotions-background', {
                 method: 'POST',
                 headers: {
@@ -291,7 +288,8 @@ async function loadEmotionAnalysis() {
                 },
                 body: JSON.stringify({
                     spotify_id: spotifyId,
-                    time_range: timeRange
+                    time_range: timeRange,
+                    extended: isExtended  // Parameter baru untuk analisis extended
                 })
             });
             
@@ -412,7 +410,7 @@ window.onload = function() {
 
     checkScreenSize();
 
-    // 4. FUNGSI "HIDDEN GEM" SEKARANG LEBIH SIMPEL
+    // 4. FUNGSI "HIDDEN GEM" DENGAN ANALISIS EMOSI EXTENDED
     let easterEggClicked = false;
     document.querySelectorAll('.footer-toggler').forEach(toggler => {
         toggler.addEventListener('click', function() {
@@ -427,6 +425,9 @@ window.onload = function() {
                 slice.hidden = false;
             });
             genreChartInstance.update();
+            
+            // TAMBAHAN: Trigger analisis emosi untuk 20 lagu
+            loadEmotionAnalysis(true); // Parameter true untuk extended analysis
             
             easterEggClicked = true;
         });

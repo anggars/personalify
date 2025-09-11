@@ -153,12 +153,12 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     frontend_url = f"{request.url.scheme}://{original_host}"
     return RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
 
-
 # TAMBAHAN: Buat endpoint baru untuk analisis emosi yang berjalan di background
 @router.post("/analyze-emotions-background", tags=["Background"])
 async def analyze_emotions_background(
     spotify_id: str = Body(..., embed=True, description="Spotify ID"),
-    time_range: str = Body("short_term", embed=True, description="Time range")
+    time_range: str = Body("short_term", embed=True, description="Time range"),
+    extended: bool = Body(False, embed=True, description="Use extended track list (20 tracks)")
 ):
     """
     Endpoint terpisah untuk analisis emosi yang bisa dipanggil dari frontend
@@ -170,8 +170,15 @@ async def analyze_emotions_background(
         if not cached_data:
             return {"error": "No data found for analysis"}
         
-        # Lakukan analisis emosi
-        track_names = [track['name'] for track in cached_data.get("tracks", [])]
+        # Lakukan analisis emosi dengan jumlah track yang berbeda
+        tracks_to_analyze = cached_data.get("tracks", [])
+        if extended:
+            # Gunakan semua track yang tersedia (biasanya 20)
+            track_names = [track['name'] for track in tracks_to_analyze]
+        else:
+            # Gunakan hanya 10 track pertama
+            track_names = [track['name'] for track in tracks_to_analyze[:10]]
+        
         emotion_paragraph = generate_emotion_paragraph(track_names)
         
         # Update data di cache dengan hasil analisis
