@@ -153,7 +153,6 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     frontend_url = f"{request.url.scheme}://{original_host}"
     return RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
 
-# TAMBAHAN: Buat endpoint baru untuk analisis emosi yang berjalan di background
 @router.post("/analyze-emotions-background", tags=["Background"])
 async def analyze_emotions_background(
     spotify_id: str = Body(..., embed=True, description="Spotify ID"),
@@ -172,19 +171,29 @@ async def analyze_emotions_background(
         
         # Lakukan analisis emosi dengan jumlah track yang berbeda
         tracks_to_analyze = cached_data.get("tracks", [])
+        
+        # --- PERBAIKAN LOGIKA UTAMA ADA DI SINI ---
         if extended:
-            # Gunakan semua track yang tersedia (biasanya 20)
+            # Jika ini permintaan 'extended' (dari easter egg), gunakan semua track
             track_names = [track['name'] for track in tracks_to_analyze]
         else:
-            # Gunakan hanya 10 track pertama
+            # Jika ini analisis standar, gunakan hanya 10 track pertama
             track_names = [track['name'] for track in tracks_to_analyze[:10]]
         
         emotion_paragraph = generate_emotion_paragraph(track_names)
         
-        # Update data di cache dengan hasil analisis
-        cached_data['emotion_paragraph'] = emotion_paragraph
-        cache_top_data("top", spotify_id, time_range, cached_data)
-        save_user_sync(spotify_id, time_range, cached_data)
+        # --- LOGIKA PENYIMPANAN YANG DIPERBAIKI ---
+        if extended:
+            # Jika ini permintaan 'extended', JANGAN simpan hasilnya. 
+            # Cukup kembalikan untuk ditampilkan sementara di browser.
+            print("Extended analysis requested. Returning temporary result without caching.")
+        else:
+            # Jika ini analisis standar (Top 10 saat halaman dibuka),
+            # baru simpan hasilnya ke cache dan database.
+            print("Standard analysis. Updating cache and database.")
+            cached_data['emotion_paragraph'] = emotion_paragraph
+            cache_top_data("top", spotify_id, time_range, cached_data)
+            save_user_sync(spotify_id, time_range, cached_data)
         
         return {"emotion_paragraph": emotion_paragraph}
         
