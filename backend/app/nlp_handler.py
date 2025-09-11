@@ -128,7 +128,6 @@ def generate_emotion_paragraph(track_names, extended=False):
         for e in top_emotions
     )
     
-    # Tambahkan indikator jika ini analisis extended
     if extended and len(track_names) > 10:
         return f"Diving deeper into your collection, shades of {formatted}."
     else:
