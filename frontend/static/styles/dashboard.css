@@ -106,10 +106,15 @@ h1 {
 }
 #genres-section li { /* Aturan spesifik untuk genre list */
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease; /* Transisi tetap dibutuhkan untuk animasi */
+    /* Padding, margin, dan border-radius dihapus dari sini agar tidak merusak layout asli */
 }
 #genres-section li:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(29, 185, 84, 0.1);
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
+    /* Tambahkan border-radius di sini agar sudutnya melengkung HANYA saat di-hover */
+    border-radius: 8px;
 }
 li {
     padding: 0.75rem 0;
@@ -276,6 +281,177 @@ footer {
 #genres-section li.disabled .genre-color-label {
     background-color: #888 !important;
 }
+
+/* ========================================= */
+/* === NEW SPOTIFY INTEGRATION STYLES === */
+/* ========================================= */
+
+/* Artist Item Styles */
+.artist-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    position: relative;
+    padding: 0.5rem;
+    margin: -0.5rem;
+}
+
+.artist-item:hover {
+    background-color: rgba(29, 185, 84, 0.1);
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
+}
+
+.artist-item:hover::before {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1DB954;
+    color: black;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Track Item Styles */
+.track-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    position: relative;
+    padding: 0.5rem;
+    margin: -0.5rem;
+}
+
+.track-item:hover {
+    background-color: rgba(29, 185, 84, 0.1);
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
+}
+
+.track-item:hover::before {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1DB954;
+    color: black;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.track-item.track-active {
+    background-color: rgba(29, 185, 84, 0.15);
+    border: 1px solid #1DB954;
+    transform: translateX(4px);
+}
+
+.track-item.track-active::before {
+    background: #1ed760;
+}
+
+/* Spotify Embed Container Styles */
+.spotify-embed-container {
+    background: #1e1e1e;
+    border: 1px solid #1DB954;
+    border-radius: 12px;
+    margin: 15px 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(29, 185, 84, 0.2);
+}
+
+/* Tambahkan ini untuk wrapper li baru */
+.embed-list-item {
+    list-style: none !important; /* Hilangkan bullet/nomor dari list */
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.spotify-embed-container.embed-show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.spotify-embed-container.embed-hide {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.embed-header {
+    background: linear-gradient(135deg, #1DB954, #1ed760);
+    color: black;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.embed-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.embed-title::before {
+    content: "♪";
+    font-size: 1.1rem;
+    animation: musicNote 2s ease-in-out infinite;
+}
+
+@keyframes musicNote {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-2px); }
+}
+
+.embed-close {
+    background: none;
+    border: none;
+    color: black;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.embed-close:hover {
+    background-color: rgba(0, 0, 0, 0.15);
+    transform: scale(1.1);
+}
+
+/* Loading dots animation */
+.loading-dots {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
 /* === ATURAN UNTUK MOBILE === */
 @media (max-width: 768px) {
     body {
@@ -314,6 +490,28 @@ footer {
     .section.active {
         display: block;
     }
+
+    /* Mobile Spotify Integration Adjustments */
+    .artist-item:hover::before,
+    .track-item:hover::before {
+        display: none; /* Hide hover tooltips on mobile */
+    }
+    
+    .embed-header {
+        padding: 10px 15px;
+        font-size: 0.8rem;
+    }
+
+    .artist-item,
+    .track-item {
+        margin: -0.25rem;
+        padding: 0.25rem;
+    }
+
+    .artist-item:hover,
+    .track-item:hover {
+        transform: translateX(2px); /* Reduced movement on mobile */
+    }
 }
 
 /* === KELAS KHUSUS UNTUK MEMAKSA TAMPILAN DESKTOP SAAT DOWNLOAD === */
@@ -340,6 +538,20 @@ footer {
 
 .force-desktop-view .section {
     display: block !important; /* Tampilkan semua section */
+}
+
+.force-desktop-view .spotify-embed-container {
+    display: none !important; /* Hide embeds in screenshots */
+}
+
+.force-desktop-view .artist-item,
+.force-desktop-view .track-item {
+    cursor: default !important;
+}
+
+.force-desktop-view .artist-item:hover::before,
+.force-desktop-view .track-item:hover::before {
+    display: none !important;
 }
 
 #chartjs-tooltip {
