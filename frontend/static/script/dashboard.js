@@ -1,4 +1,6 @@
 let genreChartInstance = null;
+let currentlyPlayingTrackId = null;
+let currentEmbedContainer = null;
 
 const categoryFilterSelect = document.getElementById("category-filter");
 const categoryFilterWrapper = document.getElementById("category-filter-wrapper");
@@ -68,6 +70,98 @@ function toggleMore(index, el) {
     el.textContent = isVisible ? "+ more" : "− less";
 }
 
+// =================== NEW SPOTIFY INTEGRATION FUNCTIONS ===================
+
+function openArtistProfile(artistId) {
+    const spotifyUrl = `https://open.spotify.com/artist/${artistId}`;
+    window.open(spotifyUrl, '_blank');
+}
+
+function toggleTrackEmbed(trackId, clickedElement) {
+    const listItem = clickedElement.closest('li');
+
+    // Jika track yang sama diklik lagi, tutup embed
+    if (currentlyPlayingTrackId === trackId) {
+        closeCurrentEmbed();
+        return;
+    }
+
+    // Tutup embed yang sedang terbuka (jika ada)
+    const oldEmbedContainer = currentEmbedContainer;
+    if (oldEmbedContainer) {
+        closeCurrentEmbed(oldEmbedContainer);
+    }
+
+    // Buat container untuk embed
+    const embedContainer = document.createElement('div');
+    embedContainer.className = 'spotify-embed-container';
+    embedContainer.innerHTML = `
+        <div class="embed-header">
+            <span class="embed-title">Now Playing Preview</span>
+            <button class="embed-close" onclick="closeCurrentEmbed(this.closest('.embed-list-item'))">×</button>
+        </div>
+        <iframe 
+            src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0"  // <-- SUDAH DIPERBAIKI
+            width="100%" 
+            height="152" 
+            frameborder="0" 
+            allowfullscreen="" 
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+            loading="lazy">
+        </iframe>
+    `;
+    
+    // BUNGKUS embedContainer di dalam <li> baru agar sejajar
+    const listItemWrapper = document.createElement('li');
+    listItemWrapper.className = 'embed-list-item';
+    listItemWrapper.appendChild(embedContainer);
+
+    // Masukkan wrapper <li> setelah list item yang diklik
+    listItem.insertAdjacentElement('afterend', listItemWrapper);
+
+    // Animate embed masuk
+    setTimeout(() => {
+        embedContainer.classList.add('embed-show');
+    }, 10);
+
+    // Update state
+    currentlyPlayingTrackId = trackId;
+    currentEmbedContainer = listItemWrapper;
+
+    // Tambahkan class active ke track item
+    document.querySelectorAll('.track-item').forEach(item => {
+        item.classList.remove('track-active');
+    });
+    listItem.classList.add('track-active');
+}
+
+function closeCurrentEmbed(elementToClose = null) {
+    // Gunakan elemen yang spesifik, atau fallback ke variabel global
+    const embedToClose = elementToClose || currentEmbedContainer;
+
+    if (embedToClose) {
+        const containerDiv = embedToClose.querySelector('.spotify-embed-container') || embedToClose;
+        containerDiv.classList.add('embed-hide');
+        
+        setTimeout(() => {
+            if (embedToClose && embedToClose.parentNode) {
+                embedToClose.parentNode.removeChild(embedToClose);
+            }
+        }, 300); // Waktu harus sama dengan transisi CSS
+    }
+
+    // Hanya reset state jika elemen yang ditutup adalah yang sedang aktif
+    if (!elementToClose || embedToClose === currentEmbedContainer) {
+        currentEmbedContainer = null;
+        currentlyPlayingTrackId = null;
+    }
+    
+    // Remove active class dari semua track items
+    document.querySelectorAll('.track-item').forEach(item => {
+        item.classList.remove('track-active');
+    });
+}
+
 function showSaveOptions() {
     modal.style.display = 'flex';
 }
@@ -126,6 +220,10 @@ function customTooltip(tooltipModel) {
 
 function generateImage(selectedCategory) {
     hideSaveOptions();
+    
+    // IMPORTANT: Tutup embed yang terbuka sebelum screenshot
+    closeCurrentEmbed();
+    
     document.body.classList.add('force-desktop-view');
 
     // Sembunyikan semua section
@@ -319,6 +417,132 @@ style.textContent = `
 @keyframes pulse {
     0%, 100% { opacity: 0.3; }
     50% { opacity: 1; }
+}
+
+/* === SPOTIFY INTEGRATION STYLES === */
+.artist-item {
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    border-radius: 8px;
+    position: relative;
+}
+
+.artist-item:hover {
+    background-color: rgba(29, 185, 84, 0.1);
+    transform: translateX(2px);
+}
+
+.artist-item:hover::before {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1DB954;
+    color: black;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.track-item {
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    border-radius: 8px;
+    position: relative;
+}
+
+.track-item:hover {
+    background-color: rgba(29, 185, 84, 0.1);
+    transform: translateX(2px);
+}
+
+.track-item:hover::before {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1DB954;
+    color: black;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.track-item.track-active {
+    background-color: rgba(29, 185, 84, 0.15);
+    border: 1px solid #1DB954;
+}
+
+.track-item.track-active::before {
+    background: #1ed760;
+}
+
+/* Spotify Embed Container Styles */
+.spotify-embed-container {
+    background: #1e1e1e;
+    border: 1px solid #1DB954;
+    border-radius: 12px;
+    margin: 10px 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease;
+}
+
+.spotify-embed-container.embed-show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.spotify-embed-container.embed-hide {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.embed-header {
+    background: #1DB954;
+    color: black;
+    padding: 8px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.embed-close {
+    background: none;
+    border: none;
+    color: black;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.embed-close:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile responsive untuk embed */
+@media (max-width: 768px) {
+    .embed-header {
+        padding: 10px 15px;
+        font-size: 0.8rem;
+    }
 }
 `;
 document.head.appendChild(style);
