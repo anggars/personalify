@@ -12,8 +12,8 @@ h1 {
     font-size: 2.5rem;
     font-weight: 800;
     text-align: center;
-    margin-top: 1rem;      /* Tambahkan jarak dari atas */
-    margin-bottom: 1rem;   /* Jarak ke subtitle */
+    margin-top: 1rem;
+    margin-bottom: 1rem;
 }
 
 .subtitle {
@@ -22,7 +22,7 @@ h1 {
     font-weight: 500;
     color: #B3B3B3;
     margin-top: 0;
-    margin-bottom: 1rem;   /* Jarak ke emotion recap (SAMA DENGAN DI ATAS) */
+    margin-bottom: 1rem; 
 }
 
 .emotion-recap {
@@ -30,7 +30,7 @@ h1 {
     font-size: 1rem;
     color: #ddd;
     max-width: 600px;
-    margin: 0 auto 2.5rem auto; /* margin-top direset ke 0 */
+    margin: 0 auto 2.5rem auto;
     line-height: 1.6;
     font-style: italic;
 }
