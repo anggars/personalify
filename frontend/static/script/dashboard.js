@@ -92,16 +92,25 @@ function toggleTrackEmbed(trackId, clickedElement) {
         closeCurrentEmbed(oldEmbedContainer);
     }
 
+    // Deteksi mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     // Buat container untuk embed
     const embedContainer = document.createElement('div');
     embedContainer.className = 'spotify-embed-container';
+    
+    // Kasih info beda buat mobile vs desktop
+    const headerTitle = isMobile ? 'Preview (30s)' : 'Now Playing';
+    const headerInfo = isMobile ? 'Tap to open in Spotify app for full song' : '';
+    
     embedContainer.innerHTML = `
         <div class="embed-header">
-            <span class="embed-title">Now Playing Preview</span>
+            <span class="embed-title">${headerTitle}</span>
+            ${headerInfo ? `<span class="embed-info">${headerInfo}</span>` : ''}
             <button class="embed-close" onclick="closeCurrentEmbed(this.closest('.embed-list-item'))">×</button>
         </div>
         <iframe 
-            src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator"
+            src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0"
             width="100%" 
             height="152" 
             frameborder="0" 
@@ -109,6 +118,13 @@ function toggleTrackEmbed(trackId, clickedElement) {
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
             loading="lazy">
         </iframe>
+        ${isMobile ? `
+        <div class="mobile-tip">
+            <a href="https://open.spotify.com/track/${trackId}" target="_blank" class="open-spotify-btn">
+                Open in Spotify App
+            </a>
+        </div>
+        ` : ''}
     `;
     
     // BUNGKUS embedContainer di dalam <li> baru agar sejajar
