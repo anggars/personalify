@@ -101,7 +101,7 @@ function toggleTrackEmbed(trackId, clickedElement) {
             <button class="embed-close" onclick="closeCurrentEmbed(this.closest('.embed-list-item'))">×</button>
         </div>
         <iframe 
-            src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0"  // <-- SUDAH DIPERBAIKI
+            src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator"
             width="100%" 
             height="152" 
             frameborder="0" 
