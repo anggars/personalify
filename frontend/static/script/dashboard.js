@@ -80,59 +80,51 @@ function openArtistProfile(artistId) {
 function toggleTrackEmbed(trackId, clickedElement) {
     const listItem = clickedElement.closest('li');
 
-    // Jika track yang sama diklik lagi, tutup embed
+    // Jika track yang sama diklik lagi → balikin tracklist
     if (currentlyPlayingTrackId === trackId) {
-        closeCurrentEmbed();
+        restoreTrackList();
         return;
     }
 
-    // Tutup embed yang sedang terbuka (jika ada)
-    const oldEmbedContainer = currentEmbedContainer;
-    if (oldEmbedContainer) {
-        closeCurrentEmbed(oldEmbedContainer);
-    }
+    // Restore list kalau ada embed sebelumnya
+    restoreTrackList();
 
-    // Buat container untuk embed
-    const embedContainer = document.createElement('div');
-    embedContainer.className = 'spotify-embed-container';
-    embedContainer.innerHTML = `
-        <div class="embed-header">
-            <span class="embed-title">Now Playing Preview</span>
-            <button class="embed-close" onclick="closeCurrentEmbed(this.closest('.embed-list-item'))">×</button>
+    // Simpan konten asli biar bisa dikembalikan nanti
+    listItem.dataset.originalContent = listItem.innerHTML;
+
+    // Ganti isi <li> dengan embed
+    listItem.innerHTML = `
+        <div class="spotify-embed-container embed-show">
+            <div class="embed-header">
+                <span class="embed-title">Now Playing Preview</span>
+                <button class="embed-close" onclick="restoreTrackList()">×</button>
+            </div>
+            <iframe 
+                src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0"
+                width="100%" 
+                height="152" 
+                frameborder="0" 
+                allowfullscreen="" 
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                loading="lazy">
+            </iframe>
         </div>
-        <iframe 
-            src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0"
-            width="100%" 
-            height="152" 
-            frameborder="0" 
-            allowfullscreen="" 
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-            loading="lazy">
-        </iframe>
     `;
-    
-    // BUNGKUS embedContainer di dalam <li> baru agar sejajar
-    const listItemWrapper = document.createElement('li');
-    listItemWrapper.className = 'embed-list-item';
-    listItemWrapper.appendChild(embedContainer);
 
-    // Masukkan wrapper <li> setelah list item yang diklik
-    listItem.insertAdjacentElement('afterend', listItemWrapper);
-
-    // Animate embed masuk
-    setTimeout(() => {
-        embedContainer.classList.add('embed-show');
-    }, 10);
-
-    // Update state
     currentlyPlayingTrackId = trackId;
-    currentEmbedContainer = listItemWrapper;
+    currentEmbedContainer = listItem;
+}
 
-    // Tambahkan class active ke track item
-    document.querySelectorAll('.track-item').forEach(item => {
-        item.classList.remove('track-active');
-    });
-    listItem.classList.add('track-active');
+function restoreTrackList() {
+    if (currentEmbedContainer) {
+        const originalContent = currentEmbedContainer.dataset.originalContent;
+        if (originalContent) {
+            currentEmbedContainer.innerHTML = originalContent;
+            delete currentEmbedContainer.dataset.originalContent;
+        }
+        currentEmbedContainer = null;
+        currentlyPlayingTrackId = null;
+    }
 }
 
 function closeCurrentEmbed(elementToClose = null) {
