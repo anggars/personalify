@@ -425,11 +425,14 @@ style.textContent = `
     transition: background-color 0.2s ease, transform 0.1s ease;
     border-radius: 8px;
     position: relative;
+    padding: 0.5rem;
+    margin: -0.5rem;
 }
 
 .artist-item:hover {
     background-color: rgba(29, 185, 84, 0.1);
     transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
 }
 
 .artist-item:hover::before {
@@ -445,18 +448,24 @@ style.textContent = `
     font-weight: 600;
     pointer-events: none;
     z-index: 10;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
+/* Track Item Styles */
 .track-item {
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.1s ease;
     border-radius: 8px;
     position: relative;
+    padding: 0.5rem;
+    margin: -0.5rem;
 }
 
 .track-item:hover {
     background-color: rgba(29, 185, 84, 0.1);
     transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
 }
 
 .track-item:hover::before {
@@ -472,11 +481,14 @@ style.textContent = `
     font-weight: 600;
     pointer-events: none;
     z-index: 10;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .track-item.track-active {
     background-color: rgba(29, 185, 84, 0.15);
     border: 1px solid #1DB954;
+    transform: translateX(4px);
 }
 
 .track-item.track-active::before {
@@ -493,6 +505,14 @@ style.textContent = `
     opacity: 0;
     transform: translateY(-20px);
     transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(29, 185, 84, 0.2);
+}
+
+/* Tambahkan ini untuk wrapper li baru */
+.embed-list-item {
+    list-style: none !important; /* Hilangkan bullet/nomor dari list */
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .spotify-embed-container.embed-show {
@@ -516,6 +536,23 @@ style.textContent = `
     font-size: 0.85rem;
 }
 
+.embed-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.embed-title::before {
+    content: "♪";
+    font-size: 1.1rem;
+    animation: musicNote 2s ease-in-out infinite;
+}
+
+@keyframes musicNote {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-2px); }
+}
+
 .embed-close {
     background: none;
     border: none;
@@ -535,6 +572,17 @@ style.textContent = `
 
 .embed-close:hover {
     background-color: rgba(0, 0, 0, 0.1);
+    transform: scale(1.1);
+}
+
+/* Loading dots animation */
+.loading-dots {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
 }
 
 /* Mobile responsive untuk embed */
