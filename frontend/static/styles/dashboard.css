@@ -255,6 +255,7 @@ footer {
 #genreChart {
     max-height: 250px;
     margin: 1.25rem 0; /* Memberi jarak atas & bawah yang simetris */
+    margin-bottom: 0.5rem;
 }
 #genres-section {
     overflow: visible;
