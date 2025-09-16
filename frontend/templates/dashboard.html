@@ -85,7 +85,7 @@
                             <img src="{{ track.image }}" alt="{{ track.name }}">
                             <div class="info">
                                 <div class="name">{{ track.name }}</div>
-                                <div class="meta">Artist(s): {{ track.artists | join(', ') }}</div>
+                                <div class="meta">{{ track.artists | join(', ') }}</div>
                                 <div class="meta">Album: {{ track.album }}</div>
                                 <div class="meta">Popularity: {{ track.popularity }}</div>
                             </div>
