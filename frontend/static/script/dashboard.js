@@ -702,6 +702,22 @@ style.textContent = `
         margin-left: -0.5rem;
     }
 }
+
+/* Fix untuk "Sticky Hover" di HP/Tablet */
+@media (hover: none) {
+    .track-item:hover,
+    .artist-item:hover {
+        background-color: initial;
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* Bonus: menonaktifkan hover di rank number juga */
+    .list-item.embed-shown .rank:hover {
+        color: #1DB954; /* Kembali ke warna aktif, bukan warna hover */
+        text-shadow: none;
+    }
+}
 `;
 document.head.appendChild(style);
 
