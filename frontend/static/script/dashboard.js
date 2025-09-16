@@ -614,7 +614,6 @@ style.textContent = `
 #tracks-section li:hover,
 #artists-section li:hover {
     background-color: rgba(29, 185, 84, 0.1);
-    transform: translateX(2px);
     box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
     border-radius: 8px; /* Pastikan radius juga diaplikasikan */
 }
