@@ -749,6 +749,10 @@ style.textContent = `
         color: #1DB954; /* Kembali ke warna aktif, bukan warna hover */
         text-shadow: none;
     }
+
+    #tracks-section li:hover .embed-placeholder::after {
+        opacity: 0;
+    }
 }
 `;
 document.head.appendChild(style);
