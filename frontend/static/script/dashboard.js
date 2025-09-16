@@ -736,8 +736,8 @@ style.textContent = `
 
 /* Fix untuk "Sticky Hover" di HP/Tablet */
 @media (hover: none) {
-    .track-item:hover,
-    .artist-item:hover,
+    #tracks-section li:hover,
+    #artists-section li:hover,
     #genres-section li:hover {
         background-color: initial;
         transform: none;
