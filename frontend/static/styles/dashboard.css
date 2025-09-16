@@ -81,6 +81,7 @@ h1 {
     position: relative;
     z-index: 1;
     transition: transform 0.3s ease, box-shadow 0.3s ease; /* Transisi yang lebih smooth */
+    overflow: hidden;
 }
 
 .section:hover {
