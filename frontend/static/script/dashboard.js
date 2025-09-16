@@ -420,12 +420,6 @@ style.textContent = `
     margin: -0.5rem;
 }
 
-.artist-item:hover {
-    background-color: rgba(29, 185, 84, 0.1);
-    transform: translateX(2px);
-    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
-}
-
 .artist-item:hover::before {
     position: absolute;
     right: 15px;
@@ -451,12 +445,6 @@ style.textContent = `
     position: relative;
     padding: 0.5rem;
     margin: -0.5rem;
-}
-
-.track-item:hover {
-    background-color: rgba(29, 185, 84, 0.1);
-    transform: translateX(2px);
-    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
 }
 
 .track-item:hover::before {
@@ -608,14 +596,57 @@ style.textContent = `
 /* 2. Tampilkan wadah embed */
 .track-item.embed-shown .embed-placeholder {
     display: block; /* atau flex, jika perlu alignment lebih lanjut */
+    font-size: 0;
+    margin-top: -0.2rem;
+    margin-bottom: -0.3rem;
 }
 
 /* Aturan styling untuk iframe agar pas */
 .embed-placeholder iframe {
     width: 100%;
-    height: 80px; /* Tinggi ideal untuk pemutar Spotify yang compact */
-    border-radius: 8px; /* Sudut sedikit melengkung agar lebih modern */
+    height: 80px; 
+    border-radius: 8px; 
     border: none;
+    display: block;
+    vertical-align: bottom;
+}
+
+#tracks-section li:hover,
+#artists-section li:hover {
+    background-color: rgba(29, 185, 84, 0.1);
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
+    border-radius: 8px; /* Pastikan radius juga diaplikasikan */
+}
+
+/* === EFEK HOVER BARU UNTUK EMBED === */
+
+/* Wadah embed perlu posisi relative untuk menampung overlay */
+.embed-placeholder {
+    position: relative;
+}
+
+/* Membuat lapisan overlay hijau transparan */
+.embed-placeholder::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    background-color: rgba(29, 185, 84, 0.1); /* Warna hijau Spotify transparan */
+    border-radius: 8px; /* Menyesuaikan sudut iframe */
+    
+    /* Awalnya tidak terlihat dan tidak bisa diklik */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+/* Saat baris <li> di-hover, tampilkan overlay-nya */
+#tracks-section li:hover .embed-placeholder::after {
+    opacity: 1;
 }
 
 /* === STYLING TOMBOL CLOSE EMBED === */
