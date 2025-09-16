@@ -1,6 +1,7 @@
 let genreChartInstance = null;
 let currentlyPlayingTrackId = null;
 let currentEmbedContainer = null;
+let currentlyActiveListItem = null;
 
 const categoryFilterSelect = document.getElementById("category-filter");
 const categoryFilterWrapper = document.getElementById("category-filter-wrapper");
@@ -77,82 +78,80 @@ function openArtistProfile(artistId) {
     window.open(spotifyUrl, '_blank');
 }
 
-function toggleTrackEmbed(trackId, clickedElement) {
-    const listItem = clickedElement.closest('li');
 
-    // Jika track yang sama diklik lagi → balikin tracklist
-    if (currentlyPlayingTrackId === trackId) {
-        restoreTrackList();
-        return;
-    }
+function toggleTrackEmbed(trackId, clickedDiv) {
+    const isAlreadyActive = clickedDiv.classList.contains('embed-shown');
 
-    // Restore list kalau ada embed sebelumnya
-    restoreTrackList();
-
-    // Simpan konten asli biar bisa dikembalikan nanti
-    listItem.dataset.originalContent = listItem.innerHTML;
-
-    // Ganti isi <li> dengan embed
-    listItem.innerHTML = `
-        <div class="spotify-embed-container embed-show">
-            <div class="embed-header">
-                <span class="embed-title">Now Playing Preview</span>
-                <button class="embed-close" onclick="restoreTrackList()">×</button>
-            </div>
-            <iframe 
-                src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0"
-                width="100%" 
-                height="152" 
-                frameborder="0" 
-                allowfullscreen="" 
-                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-                loading="lazy">
-            </iframe>
-        </div>
-    `;
-
-    currentlyPlayingTrackId = trackId;
-    currentEmbedContainer = listItem;
-}
-
-function restoreTrackList() {
-    if (currentEmbedContainer) {
-        const originalContent = currentEmbedContainer.dataset.originalContent;
-        if (originalContent) {
-            currentEmbedContainer.innerHTML = originalContent;
-            delete currentEmbedContainer.dataset.originalContent;
+    if (currentlyActiveListItem && currentlyActiveListItem !== clickedDiv) {
+        currentlyActiveListItem.classList.remove('embed-shown');
+        const oldPlaceholder = currentlyActiveListItem.querySelector('.embed-placeholder');
+        if (oldPlaceholder) {
+            oldPlaceholder.innerHTML = '';
         }
-        currentEmbedContainer = null;
-        currentlyPlayingTrackId = null;
+    }
+
+    if (isAlreadyActive) {
+        clickedDiv.classList.remove('embed-shown');
+        const placeholder = clickedDiv.querySelector('.embed-placeholder');
+        if (placeholder) {
+            placeholder.innerHTML = '';
+        }
+        currentlyActiveListItem = null;
+    } else {
+        const placeholder = clickedDiv.querySelector('.embed-placeholder');
+        if (placeholder) {
+            placeholder.innerHTML = `
+                <iframe
+                    src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0"
+                    width="100%"
+                    height="80"
+                    frameborder="0"
+                    allowfullscreen=""
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    loading="lazy">
+                </iframe>
+            `;
+        }
+        clickedDiv.classList.add('embed-shown');
+        currentlyActiveListItem = clickedDiv;
     }
 }
 
-function closeCurrentEmbed(elementToClose = null) {
-    // Gunakan elemen yang spesifik, atau fallback ke variabel global
-    const embedToClose = elementToClose || currentEmbedContainer;
+function closeParentEmbed(event, rankElement) {
+    const listItem = rankElement.closest('.list-item.track-item');
 
-    if (embedToClose) {
-        const containerDiv = embedToClose.querySelector('.spotify-embed-container') || embedToClose;
-        containerDiv.classList.add('embed-hide');
-        
-        setTimeout(() => {
-            if (embedToClose && embedToClose.parentNode) {
-                embedToClose.parentNode.removeChild(embedToClose);
-            }
-        }, 300); // Waktu harus sama dengan transisi CSS
-    }
+    // Hanya jalankan fungsi jika embed sedang terbuka
+    if (listItem && listItem.classList.contains('embed-shown')) {
+        // Ini SANGAT PENTING untuk mencegah embed terbuka lagi
+        event.stopPropagation();
 
-    // Hanya reset state jika elemen yang ditutup adalah yang sedang aktif
-    if (!elementToClose || embedToClose === currentEmbedContainer) {
-        currentEmbedContainer = null;
-        currentlyPlayingTrackId = null;
+        // Logika untuk menutup embed
+        listItem.classList.remove('embed-shown');
+        const placeholder = listItem.querySelector('.embed-placeholder');
+        if (placeholder) {
+            placeholder.innerHTML = '';
+        }
+        if (currentlyActiveListItem === listItem) {
+            currentlyActiveListItem = null;
+        }
     }
-    
-    // Remove active class dari semua track items
-    document.querySelectorAll('.track-item').forEach(item => {
-        item.classList.remove('track-active');
-    });
 }
+
+// Fungsi ini untuk memastikan fitur "Save as Image" tetap bekerja
+function closeCurrentEmbed() {
+    if (currentlyActiveListItem) {
+        currentlyActiveListItem.classList.remove('embed-shown');
+        const placeholder = currentlyActiveListItem.querySelector('.embed-placeholder');
+        if (placeholder) {
+            placeholder.innerHTML = '';
+        }
+        currentlyActiveListItem = null;
+    }
+}
+
+// Fungsi lama 'restoreTrackList' sudah tidak diperlukan lagi,
+// karena logikanya sudah terintegrasi di dalam 'toggleTrackEmbed' yang baru.
+// Anda bisa menghapusnya jika ada.
 
 function showSaveOptions() {
     modal.style.display = 'flex';
@@ -577,11 +576,130 @@ style.textContent = `
     50% { opacity: 1; }
 }
 
+/* === SOLUSI BARU UNTUK EMBED SPOTIFY === */
+
+/* Wrapper untuk konten asli (artwork + info) */
+.track-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;      /* Jarak antar elemen sama seperti sebelumnya */
+    flex-grow: 1;   /* Memastikan ia mengisi sisa ruang */
+    min-width: 0;   /* Mencegah overflow pada teks panjang */
+}
+
+/* Wadah untuk embed, tersembunyi secara default */
+.embed-placeholder {
+    display: none;
+    flex-grow: 1;   /* Mengisi ruang yang sama dengan .track-content */
+    min-width: 0;
+    margin-left: -0.5rem;
+}
+
+/*
+ * INI BAGIAN UTAMANYA:
+ * Saat sebuah .track-item memiliki class 'embed-shown'...
+ */
+
+/* 1. Sembunyikan konten asli lagu */
+.track-item.embed-shown .track-content {
+    display: none;
+}
+
+/* 2. Tampilkan wadah embed */
+.track-item.embed-shown .embed-placeholder {
+    display: block; /* atau flex, jika perlu alignment lebih lanjut */
+}
+
+/* Aturan styling untuk iframe agar pas */
+.embed-placeholder iframe {
+    width: 100%;
+    height: 80px; /* Tinggi ideal untuk pemutar Spotify yang compact */
+    border-radius: 8px; /* Sudut sedikit melengkung agar lebih modern */
+    border: none;
+}
+
+/* === STYLING TOMBOL CLOSE EMBED === */
+
+/* Wrapper ini diperlukan untuk positioning tombol */
+.embed-wrapper {
+    position: relative;
+    /* Pastikan iframe tidak menutupi tombol */
+    line-height: 0; 
+}
+
+/* Tombol close itu sendiri */
+.embed-close-btn {
+    /* Positioning */
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 5;
+    background-color: #333;
+
+    /* Tampilan Tombol */
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%; /* Bulat sempurna */
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    
+    /* Menengahkan simbol '×' */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding-bottom: 2px; /* Koreksi posisi vertikal simbol */
+
+    /* Efek Transisi dan Visibilitas Awal */
+    opacity: 0; /* Tersembunyi secara default */
+    transform: scale(0.8);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none; /* Tidak bisa diklik saat tersembunyi */
+}
+
+/*
+ * INI BAGIAN UTAMANYA:
+ * Saat kursor hover di atas list item yang sedang aktif...
+ */
+.list-item.embed-shown:hover .embed-close-btn {
+    opacity: 1; /* ...tampilkan tombol close */
+    transform: scale(1);
+    pointer-events: auto; /* ...dan buat bisa diklik */
+}
+
+/* Efek hover kecil pada tombolnya sendiri */
+.embed-close-btn:hover {
+    background-color: #333;
+    transform: scale(1.1);
+}
+
+/* Feedback visual saat angka menjadi tombol close */
+.list-item.embed-shown .rank {
+    cursor: pointer;
+    color: #1DB954; /* Warna hijau Spotify */
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.list-item.embed-shown .rank:hover {
+    color: #ffffff; /* Jadi putih saat disentuh */
+    text-shadow: 0 0 8px rgba(29, 185, 84, 0.7);
+}
+
 /* Mobile responsive untuk embed */
 @media (max-width: 768px) {
+    .list-item, .track-content {
+        gap: 0.5rem;
+    }
     .embed-header {
         padding: 10px 15px;
         font-size: 0.8rem;
+    }
+    .embed-placeholder {
+        margin-left: -0.5rem;
     }
 }
 `;

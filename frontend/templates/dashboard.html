@@ -52,7 +52,7 @@
                 {% for artist in artists %}
                 <li {% if loop.index > 10 %}class="hidden-item"{% endif %}>
                     <div class="list-item artist-item" onclick="openArtistProfile('{{ artist.id }}')">
-                        <span class="rank">{{ loop.index }}</span>
+                        <span class="rank" onclick="closeParentEmbed(event, this)">{{ loop.index }}</span>
                         <img src="{{ artist.image }}" alt="{{ artist.name }}">
                         <div class="info">
                             <div class="name">{{ artist.name }}</div>
@@ -80,13 +80,18 @@
                 <li {% if loop.index > 10 %}class="hidden-item"{% endif %}>
                     <div class="list-item track-item" onclick="toggleTrackEmbed('{{ track.id }}', this)">
                         <span class="rank">{{ loop.index }}</span>
-                        <img src="{{ track.image }}" alt="{{ track.name }}">
-                        <div class="info">
-                            <div class="name">{{ track.name }}</div>
-                            <div class="meta">Artist(s): {{ track.artists | join(', ') }}</div>
-                            <div class="meta">Album: {{ track.album }}</div>
-                            <div class="meta">Popularity: {{ track.popularity }}</div>
+
+                        <div class="track-content">
+                            <img src="{{ track.image }}" alt="{{ track.name }}">
+                            <div class="info">
+                                <div class="name">{{ track.name }}</div>
+                                <div class="meta">Artist(s): {{ track.artists | join(', ') }}</div>
+                                <div class="meta">Album: {{ track.album }}</div>
+                                <div class="meta">Popularity: {{ track.popularity }}</div>
+                            </div>
                         </div>
+
+                        <div class="embed-placeholder"></div>
                     </div>
                 </li>
                 {% endfor %}
