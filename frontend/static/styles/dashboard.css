@@ -103,16 +103,14 @@ h1 {
     padding: 0;
     margin: 0;
 }
-#genres-section li { /* Aturan spesifik untuk genre list */
+#genres-section li {
     cursor: pointer;
-    transition: all 0.2s ease; /* Transisi tetap dibutuhkan untuk animasi */
-    /* Padding, margin, dan border-radius dihapus dari sini agar tidak merusak layout asli */
+    transition: all 0.2s ease;
 }
 #genres-section li:hover {
     background-color: rgba(29, 185, 84, 0.1);
     transform: translateX(4px);
     box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
-    /* Tambahkan border-radius di sini agar sudutnya melengkung HANYA saat di-hover */
     border-radius: 8px;
 }
 li {
