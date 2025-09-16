@@ -90,7 +90,7 @@ h1 {
 }
 .section h2 {
     text-align: center;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: #1DB954;
     border-bottom: 1px solid #333;
@@ -145,22 +145,22 @@ li {
 }
 .info .name {
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     overflow-wrap: break-word;
     display: flex;
     align-items: center;
 }
 .info .meta {
-    font-size: 0.8rem;
-    color: #bbb;
+    font-size: 0.68rem;
+    color: #908f8fff;
     margin-top: 0.25rem;
 }
 .genre-pills .genre-label {
     display: inline-flex;
-    padding: 0.25rem 0.4rem 0.2rem;
+    padding: 0.2rem 0.4rem 0.2rem;
     background-color: #1DB954;
     color: black;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     border-radius: 9999px;
     margin: 0.1rem 0.2rem 0 0;
 }
