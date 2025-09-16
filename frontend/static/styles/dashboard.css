@@ -145,7 +145,7 @@ li {
 }
 .info .name {
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     overflow-wrap: break-word;
     display: flex;
     align-items: center;
@@ -266,8 +266,8 @@ footer {
 }
 .genre-color-label {
     display: inline-block;
-    width: 11px;
-    height: 11px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
     margin-right: 0.5rem;
