@@ -335,11 +335,6 @@ footer {
         margin: -0.25rem;
         padding: 0.25rem;
     }
-
-    .artist-item:hover,
-    .track-item:hover {
-        transform: translateX(2px); /* Reduced movement on mobile */
-    }
 }
 
 /* === KELAS KHUSUS UNTUK MEMAKSA TAMPILAN DESKTOP SAAT DOWNLOAD === */
