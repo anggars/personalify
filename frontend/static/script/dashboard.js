@@ -765,7 +765,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 window.onload = function() {
-    // Perintah global untuk memastikan legenda TIDAK PERNAH muncul
     Chart.defaults.global.legend.display = false;
     
     const ctx = document.getElementById('genreChart');
@@ -777,13 +776,21 @@ window.onload = function() {
             '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
         ];
 
-        // 1. BUAT CHART DENGAN SEMUA DATA (TOP 20)
+        // Data default (top 10)
+        let currentGenreData = {
+            labels: genreData.labels,
+            counts: genreData.counts
+        };
+        
+        let currentGenreArtistsMap = genreArtistsMap;
+
+        // 1. BUAT CHART DENGAN DATA TOP 10
         genreChartInstance = new Chart(ctx, {
             type: 'pie',
             data: {
-                labels: genreData.labels,
+                labels: currentGenreData.labels,
                 datasets: [{
-                    data: genreData.counts,
+                    data: currentGenreData.counts,
                     backgroundColor: chartColors
                 }]
             },
@@ -796,7 +803,7 @@ window.onload = function() {
                             const tooltipItem = tooltipItems[0];
                             if (!tooltipItem) return '';
                             const genre = data.labels[tooltipItem.index];
-                            const artists = genreArtistsMap[genre] || [];
+                            const artists = currentGenreArtistsMap[genre] || [];
                             
                             if (artists.length > 0) {
                                 const maxArtistsToShow = 6;
@@ -813,15 +820,15 @@ window.onload = function() {
             }
         });
 
-        // 2. SEMBUNYIKAN SLICE DI ATAS 10 SECARA MANUAL
+        // 2. SEMBUNYIKAN SLICE DI ATAS 10
         genreChartInstance.getDatasetMeta(0).data.forEach((slice, index) => {
             if (index >= 10) {
                 slice.hidden = true;
             }
         });
-        genreChartInstance.update(); // Terapkan perubahan
+        genreChartInstance.update();
 
-        // 3. SINKRONISASI WARNA DAN INTERAKTIVITAS LEGENDA KUSTOM
+        // 3. SINKRONISASI WARNA DAN INTERAKTIVITAS LEGENDA
         const genreListItems = document.querySelectorAll('#genres-section li');
         genreListItems.forEach((item) => {
             const itemIndex = parseInt(item.getAttribute('data-index'));
@@ -831,7 +838,6 @@ window.onload = function() {
                 colorLabel.style.backgroundColor = chartColors[itemIndex % chartColors.length];
             }
 
-            // Fungsi klik sekarang akan bekerja untuk semua item
             item.addEventListener('click', function() {
                 const meta = genreChartInstance.getDatasetMeta(0);
                 if (meta.data[itemIndex]) {
@@ -845,26 +851,90 @@ window.onload = function() {
 
     checkScreenSize();
 
-    // 4. FUNGSI "HIDDEN GEM" DENGAN ANALISIS EMOSI EXTENDED
+    // 4. EASTER EGG DENGAN UPGRADE GENRE DATA
     let easterEggClicked = false;
     document.querySelectorAll('.footer-toggler').forEach(toggler => {
         toggler.addEventListener('click', function() {
             if (easterEggClicked) return;
 
+            // Tampilkan hidden items
             document.querySelectorAll('.hidden-item').forEach(item => {
                 item.style.display = 'list-item';
             });
             
-            // Kita hanya perlu memunculkan kembali semua slice yang tersembunyi
-            genreChartInstance.getDatasetMeta(0).data.forEach((slice) => {
-                slice.hidden = false;
-            });
-            genreChartInstance.update();
+            // Update chart dengan data extended (top 20)
+            if (genreChartInstance && genreDataExtended) {
+                currentGenreData = genreDataExtended;
+                currentGenreArtistsMap = genreArtistsMapExtended;
+                
+                // Update chart data
+                genreChartInstance.data.labels = genreDataExtended.labels;
+                genreChartInstance.data.datasets[0].data = genreDataExtended.counts;
+                
+                // Tampilkan semua slice
+                genreChartInstance.getDatasetMeta(0).data.forEach((slice) => {
+                    slice.hidden = false;
+                });
+                
+                genreChartInstance.update();
+                
+                // Update genre list dengan data baru
+                updateGenreList(genreDataExtended.labels, genreDataExtended.counts);
+            }
             
-            // TAMBAHAN: Trigger analisis emosi untuk 20 lagu
-            loadEmotionAnalysis(true); // Parameter true untuk extended analysis
+            // Trigger analisis emosi extended
+            loadEmotionAnalysis(true);
             
             easterEggClicked = true;
         });
     });
 };
+
+// Fungsi helper untuk update genre list
+function updateGenreList(labels, counts) {
+    const genreList = document.querySelector('#genres-section .list-container');
+    if (!genreList) return;
+    
+    // Rebuild list items dengan data baru
+    const chartColors = [
+        '#1DB954', '#F28E2B', '#E15759', '#76B7B2', '#9AA067',
+        '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC',
+        '#4D4D4D', '#6B5B95', '#88B04B', '#F7CAC9', '#92A8D1',
+        '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
+    ];
+    
+    genreList.innerHTML = labels.map((label, index) => {
+        const artists = genreArtistsMapExtended[label] || [];
+        const artistText = artists.length > 0 ? `: ${artists.join(', ')}` : '';
+        
+        return `
+            <li data-index="${index}">
+                <div class="list-item">
+                    <span class="rank">${index + 1}</span>
+                    <div class="info">
+                        <div class="name-container">
+                            <span class="genre-color-label" style="background-color: ${chartColors[index % chartColors.length]}"></span> 
+                            <span class="name">${label}</span>
+                        </div>
+                        <div class="meta">
+                            Mentioned ${counts[index]} times${artistText}
+                        </div>
+                    </div>
+                </div>
+            </li>
+        `;
+    }).join('');
+    
+    // Re-attach click handlers
+    document.querySelectorAll('#genres-section li').forEach((item) => {
+        const itemIndex = parseInt(item.getAttribute('data-index'));
+        item.addEventListener('click', function() {
+            const meta = genreChartInstance.getDatasetMeta(0);
+            if (meta.data[itemIndex]) {
+                meta.data[itemIndex].hidden = !meta.data[itemIndex].hidden;
+                this.classList.toggle('disabled');
+                genreChartInstance.update();
+            }
+        });
+    });
+}

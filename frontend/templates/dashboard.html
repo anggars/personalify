@@ -147,11 +147,19 @@
 
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
+        // Data default (top 10)
         const genreData = {
             labels: [{% for genre in genres %}'{{ genre.name | safe }}'{% if not loop.last %},{% endif %}{% endfor %}],
             counts: [{% for genre in genres %}{{ genre.count }}{% if not loop.last %},{% endif %}{% endfor %}]
         };
         const genreArtistsMap = {{ genre_artists_map | tojson | safe }};
+
+        // Data extended (top 20) untuk easter egg
+        const genreDataExtended = {
+            labels: [{% for genre in genres_extended %}'{{ genre.name | safe }}'{% if not loop.last %},{% endif %}{% endfor %}],
+            counts: [{% for genre in genres_extended %}{{ genre.count }}{% if not loop.last %},{% endif %}{% endfor %}]
+        };
+        const genreArtistsMapExtended = {{ genre_artists_map_extended | tojson | safe }};
     </script>    
     <script src="{{ url_for('static', path='script/dashboard.js') }}"></script>
 </body>
