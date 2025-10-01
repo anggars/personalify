@@ -324,36 +324,49 @@ def get_sync_history(spotify_id: str = Query(..., description="Spotify ID")):
 def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request = None):
     data = get_cached_top_data("top", spotify_id, time_range)
     if not data:
-        # Jika data belum siap (mungkin saat login pertama kali), tampilkan loading
         return templates.TemplateResponse("loading.html", {"request": request})
 
-    # Ambil paragraf emosi dari data cache. Beri teks default jika tidak ada.
     emotion_paragraph = data.get("emotion_paragraph", "Vibe analysis is getting ready...")
     
-    # --- BLOK DATA TOOLTIP & GENRE (TIDAK BERUBAH) ---
-    genre_artists_map = {}
-    for artist in data.get("artists", []):
-        for genre in artist.get("genres", []):
-            if genre not in genre_artists_map:
-                genre_artists_map[genre] = []
-            genre_artists_map[genre].append(artist["name"])
+    # --- PERHITUNGAN GENRE UNTUK TOP 10 (DEFAULT) ---
+    genre_count_top10 = {}
+    genre_artists_map_top10 = {}
     
-    genre_count = {}
-    for artist in data.get("artists", []):
+    for artist in data.get("artists", [])[:10]:  # Hanya 10 artis pertama
         for genre in artist.get("genres", []):
-            genre_count[genre] = genre_count.get(genre, 0) + 1
-    sorted_genres = sorted(genre_count.items(), key=lambda x: x[1], reverse=True)
-    genre_list = [{"name": name, "count": count} for name, count in sorted_genres]
+            genre_count_top10[genre] = genre_count_top10.get(genre, 0) + 1
+            if genre not in genre_artists_map_top10:
+                genre_artists_map_top10[genre] = []
+            genre_artists_map_top10[genre].append(artist["name"])
+    
+    sorted_genres_top10 = sorted(genre_count_top10.items(), key=lambda x: x[1], reverse=True)
+    genre_list_top10 = [{"name": name, "count": count} for name, count in sorted_genres_top10]
+
+    # --- PERHITUNGAN GENRE UNTUK TOP 20 (EASTER EGG) ---
+    genre_count_top20 = {}
+    genre_artists_map_top20 = {}
+    
+    for artist in data.get("artists", []):  # Semua 20 artis
+        for genre in artist.get("genres", []):
+            genre_count_top20[genre] = genre_count_top20.get(genre, 0) + 1
+            if genre not in genre_artists_map_top20:
+                genre_artists_map_top20[genre] = []
+            genre_artists_map_top20[genre].append(artist["name"])
+    
+    sorted_genres_top20 = sorted(genre_count_top20.items(), key=lambda x: x[1], reverse=True)
+    genre_list_top20 = [{"name": name, "count": count} for name, count in sorted_genres_top20]
 
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "user": data["user"],
         "artists": data["artists"],
         "tracks": data["tracks"],
-        "genres": genre_list,
+        "genres": genre_list_top10,  # Default: top 10
+        "genres_extended": genre_list_top20,  # Extended: top 20
         "time_range": time_range,
-        "genre_artists_map": genre_artists_map,
-        "emotion_paragraph": emotion_paragraph  # <-- Kirim data emosi ke template
+        "genre_artists_map": genre_artists_map_top10,  # Default: top 10
+        "genre_artists_map_extended": genre_artists_map_top20,  # Extended: top 20
+        "emotion_paragraph": emotion_paragraph
     })
 
 # Ganti endpoint agar sesuai dengan frontend (POST /analyze-lyrics)
