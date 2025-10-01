@@ -346,7 +346,7 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
     genre_count_top20 = {}
     genre_artists_map_top20 = {}
     
-    for artist in data.get("artists", []):  # Semua 20 artis
+    for artist in data.get("artists", []):
         for genre in artist.get("genres", []):
             genre_count_top20[genre] = genre_count_top20.get(genre, 0) + 1
             if genre not in genre_artists_map_top20:
