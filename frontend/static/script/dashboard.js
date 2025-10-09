@@ -297,79 +297,24 @@ function generateImage(selectedCategory) {
             contentWrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
         }
 
-        // <-- Perubahan: pastikan font sudah ter-load dan paksa styling pada cloned header
-        try {
-            const clonedEmotion = container.querySelector('.emotion-recap');
-            if (clonedEmotion) {
-                // Tetap gunakan ukuran seperti web sebagai baseline
-                clonedEmotion.style.fontSize = '1rem';
-                clonedEmotion.style.lineHeight = '1.6';
-                clonedEmotion.style.maxWidth = '600px';
-                clonedEmotion.style.whiteSpace = 'normal'; // biarkan wrap dulu saat mengukur
-                clonedEmotion.style.overflow = 'visible';
-                clonedEmotion.style.textOverflow = 'unset';
-                clonedEmotion.style.display = 'block';
-                clonedEmotion.style.margin = '0 auto 2.5rem auto';
+        html2canvas(container, {
+            scale: 2, useCORS: true, backgroundColor: '#121212'
+        }).then(canvas => {
+            const link = document.createElement("a");
+            link.download = `personalify-${selectedCategory}-${new Date().getTime()}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            document.body.classList.remove('force-desktop-view');
+            document.body.removeChild(container);
+            checkScreenSize();
+        }).catch(err => {
+            console.error("html2canvas failed:", err);
+            document.body.classList.remove('force-desktop-view');
+            if (document.body.contains(container)) {
+                 document.body.removeChild(container);
             }
-        } catch (err) {
-            console.warn('Could not apply emotion-recap style override:', err);
-        }
-
-        const doCapture = () => {
-            // --- NEW: sesuaikan font agar muat satu baris sebelum capture ---
-            try {
-                const clonedEmotion = container.querySelector('.emotion-recap');
-                if (clonedEmotion) {
-                    // Pastikan element ter-render dan punya lebar yang benar
-                    clonedEmotion.style.whiteSpace = 'nowrap';
-                    clonedEmotion.style.overflow = 'hidden';
-                    clonedEmotion.style.textOverflow = 'ellipsis';
-                    // Batasi lebar agar konsisten dengan tampilan web
-                    const avail = Math.max( (contentWrapper.clientWidth || STORY_WIDTH) - 40, 100 );
-                    clonedEmotion.style.maxWidth = avail + 'px';
-
-                    // Mulai dari font-size saat ini, turunkan hingga muat (atau sampai batas minimum)
-                    let computed = window.getComputedStyle(clonedEmotion);
-                    let fontPx = parseFloat(computed.fontSize) || 16;
-                    const minFont = 12; // px
-                    // Loop defensif: kurangi 0.5px tiap iterasi untuk akurasi halus
-                    let iterations = 0;
-                    while (clonedEmotion.scrollWidth > clonedEmotion.clientWidth && fontPx > minFont && iterations < 40) {
-                        fontPx = Math.max(minFont, fontPx - 0.5);
-                        clonedEmotion.style.fontSize = fontPx + 'px';
-                        iterations++;
-                    }
-                }
-            } catch (err) {
-                console.warn('Could not auto-fit emotion-recap:', err);
-            }
-
-            html2canvas(container, {
-                scale: 2, useCORS: true, backgroundColor: '#121212'
-            }).then(canvas => {
-                const link = document.createElement("a");
-                link.download = `personalify-${selectedCategory}-${new Date().getTime()}.png`;
-                link.href = canvas.toDataURL("image/png");
-                link.click();
-                document.body.classList.remove('force-desktop-view');
-                document.body.removeChild(container);
-                checkScreenSize();
-            }).catch(err => {
-                console.error("html2canvas failed:", err);
-                document.body.classList.remove('force-desktop-view');
-                if (document.body.contains(container)) {
-                     document.body.removeChild(container);
-                }
-                checkScreenSize();
-            });
-        };
-
-        // Tunggu WebFonts siap (jika tersedia), baru render
-        if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(doCapture).catch(() => doCapture());
-        } else {
-            doCapture();
-        }
+            checkScreenSize();
+        });
     }
 
     const imgs = clone.querySelectorAll('img');
@@ -872,7 +817,8 @@ window.onload = function() {
                         }
                     }
                 }
-            });
+            }
+        });
 
         // 2. SEMBUNYIKAN SLICE DI ATAS 10
         genreChartInstance.getDatasetMeta(0).data.forEach((slice, index) => {
