@@ -91,7 +91,7 @@ def generate_emotion_paragraph(track_names, extended=False):
     except (IndexError, KeyError):
         return "Could not parse emotion."
 
-    Emotion_texts = {
+    emotion_texts = {
         "admiration": "inspiring <b>admiration</b>",
         "amusement": "playful <b>amusement</b>",
         "anger": "intense <b>anger</b>",
