@@ -149,7 +149,7 @@ li {
     align-items: center;
 }
 .info .meta {
-    font-size: 0.68rem;
+    font-size: 11px;
     color: #908f8fff;
     margin-top: 0.25rem;
 }
@@ -347,9 +347,14 @@ footer {
     font-size: 2.5rem !important;
 }
 
+/* Ubah di sini: pastikan emotion-recap TIDAK membesar saat force-desktop-view */
 .force-desktop-view .subtitle,
 .force-desktop-view .emotion-recap {
-    font-size: 1.2rem !important;
+    font-size: 1rem !important; /* kembali ke ukuran web normal untuk emotion text */
+    line-height: 1.6 !important; /* pertahankan line-height seperti di web */
+    max-width: 600px !important; /* pastikan lebar teks serupa dengan tampilan web */
+    white-space: normal !important; /* biarkan browser memutus baris secara natural */
+    margin: 0 auto !important;
 }
 
 /* Aturan tambahan untuk memastikan layout grid desktop */
@@ -426,4 +431,12 @@ footer {
     text-decoration: none;
     display: inline-block;
     transition: background-color 0.2s ease;
+}
+
+/* Perbaikan untuk daftar artis di Top Genres yang meluap */
+#genres-section .info .meta {
+    white-space: nowrap;      /* 1. Paksa teks untuk tetap di satu baris */
+    overflow: hidden;         /* 2. Sembunyikan teks yang keluar dari kotak */
+    text-overflow: ellipsis;  /* 3. Tampilkan "..." di akhir teks yang terpotong */
+    display: block;           /* Pastikan aturan di atas bekerja */
 }
