@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request, Query, HTTPException, Body
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from typing import Optional
-from app.nlp_handler import generate_emotion_paragraph, analyze_lyrics_emotion
+from app.nlp_handler import generate_emotion_paragraph
 
 from app.db_handler import (
     save_user,
@@ -85,7 +85,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     display_name = user_profile.get("display_name", "Unknown")
     save_user(spotify_id, display_name)
 
-    # Step 3: Sync untuk semua time_range dengan metode BATCH (TANPA ANALISIS EMOSI)
+    # Step 3: Sync untuk semua time_range
     time_ranges = ["short_term", "medium_term", "long_term"]
     for time_range in time_ranges:
         artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
