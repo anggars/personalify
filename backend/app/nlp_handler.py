@@ -91,7 +91,7 @@ def generate_emotion_paragraph(track_names, extended=False):
     except (IndexError, KeyError):
         return "Could not parse emotion."
 
-    emotion_texts = {
+    Emotion_texts = {
         "admiration": "inspiring <b>admiration</b>",
         "amusement": "playful <b>amusement</b>",
         "anger": "intense <b>anger</b>",
@@ -101,25 +101,25 @@ def generate_emotion_paragraph(track_names, extended=False):
         "confusion": "a touch of <b>confusion</b>",
         "curiosity": "sparked <b>curiosity</b>",
         "desire": "yearning <b>desire</b>",
-        "disappointment": "quiet <b>disappointment</b>",
-        "disapproval": "firm <b>disapproval</b>",
+        "disappointment": "quiet <b>letdown</b>",
+        "disapproval": "firm <b>dislike</b>",
         "disgust": "raw <b>disgust</b>",
-        "embarrassment": "awkward <b>embarrassment</b>",
+        "embarrassment": "awkward <b>unease</b>",
         "excitement": "bright <b>excitement</b>",
         "fear": "whispers of <b>fear</b>",
         "gratitude": "warm <b>gratitude</b>",
         "grief": "heavy <b>grief</b>",
         "joy": "radiant <b>joy</b>",
         "love": "tender <b>love</b>",
-        "nervousness": "tense <b>nervousness</b>",
+        "nervousness": "tense <b>anxiety</b>",
         "optimism": "hopeful <b>optimism</b>",
         "pride": "bold <b>pride</b>",
-        "realization": "sudden <b>realization</b>",
+        "realization": "sudden <b>insight</b>",
         "relief": "soothing <b>relief</b>",
-        "remorse": "deep <b>remorse</b>",
+        "remorse": "deep <b>regret</b>",
         "sadness": "soft <b>sadness</b>",
         "surprise": "unexpected <b>surprise</b>",
-        "neutral": "<b>neutral</b> balance"
+        "neutral": "a <b>neutral</b> state"
     }
 
     formatted = ", ".join(
