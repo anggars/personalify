@@ -297,6 +297,16 @@ function generateImage(selectedCategory) {
             contentWrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
         }
 
+        // Pastikan ukuran font .emotion-recap sama persis dengan web (1rem)
+        try {
+            const clonedEmotion = container.querySelector('.emotion-recap');
+            if (clonedEmotion) {
+                clonedEmotion.style.fontSize = '1rem';
+            }
+        } catch (err) {
+            // safe-fail
+        }
+
         html2canvas(container, {
             scale: 2, useCORS: true, backgroundColor: '#121212'
         }).then(canvas => {
@@ -888,6 +898,15 @@ window.onload = function() {
             easterEggClicked = true;
         });
     });
+
+    // Saat load dashboard, ambil data dari endpoint yang sudah include emotion_paragraph
+    fetch(`/top-data?spotify_id=${spotifyId}&time_range=${timeRange}`)
+      .then(res => res.json())
+      .then(data => {
+          // Render artists, tracks, genres, dan emotion_paragraph langsung
+          document.querySelector('.emotion-recap').innerHTML = data.emotion_paragraph;
+          // ...render lainnya...
+      });
 };
 
 // Fungsi helper untuk update genre list
