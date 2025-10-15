@@ -240,10 +240,19 @@ function generateImage(selectedCategory) {
         if (originalCanvas && clonedCanvas) {
             const chartImage = new Image();
             chartImage.src = originalCanvas.toDataURL('image/png');
-            chartImage.style.width = '100%';
-            chartImage.style.height = 'auto';
-            chartImage.style.display = 'block';
-            chartImage.style.margin = clonedCanvas.style.margin;
+            
+            // --- INI PERBAIKAN UTAMANYA ---
+            // Menggunakan lebar DAN tinggi absolut dari elemen canvas asli.
+            // Ini akan mengunci aspek rasio gambar agar tidak gepeng.
+            chartImage.style.width = `${originalCanvas.offsetWidth}px`;
+            chartImage.style.height = `${originalCanvas.offsetHeight}px`;
+            // --- AKHIR PERBAIKAN ---
+
+            // Salin juga margin untuk menjaga jarak
+            const computedStyle = window.getComputedStyle(originalCanvas);
+            chartImage.style.marginTop = computedStyle.marginTop;
+            chartImage.style.marginBottom = computedStyle.marginBottom;
+
             clonedCanvas.parentNode.replaceChild(chartImage, clonedCanvas);
         }
     }
@@ -297,7 +306,6 @@ function generateImage(selectedCategory) {
             contentWrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
         }
 
-        // Pastikan ukuran font .emotion-recap sama persis dengan web (1rem)
         try {
             const clonedEmotion = container.querySelector('.emotion-recap');
             if (clonedEmotion) {
