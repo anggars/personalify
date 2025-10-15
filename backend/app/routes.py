@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request, Query, HTTPException, Body
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from typing import Optional
-from app.nlp_handler import generate_emotion_paragraph
+from app.nlp_handler import generate_emotion_paragraph, analyze_lyrics_emotion
 
 from app.db_handler import (
     save_user,
