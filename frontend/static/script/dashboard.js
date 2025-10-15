@@ -235,9 +235,6 @@ function generateImage(selectedCategory) {
     const clone = sectionToCapture.cloneNode(true);
 
     if (selectedCategory === 'genres') {
-        clone.style.marginTop = '2rem';
-
-    if (selectedCategory === 'genres') {
         const originalCanvas = document.getElementById('genreChart');
         const clonedCanvas = clone.querySelector('#genreChart');
         if (originalCanvas && clonedCanvas) {
