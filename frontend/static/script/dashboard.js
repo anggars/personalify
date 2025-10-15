@@ -242,16 +242,22 @@ function generateImage(selectedCategory) {
             chartImage.src = originalCanvas.toDataURL('image/png');
             
             // --- INI PERBAIKAN UTAMANYA ---
-            // Menggunakan lebar DAN tinggi absolut dari elemen canvas asli.
-            // Ini akan mengunci aspek rasio gambar agar tidak gepeng.
+            // 1. Pastikan gambar diperlakukan sebagai elemen block.
+            chartImage.style.display = 'block';
+
+            // 2. Kunci aspek rasio agar tidak gepeng.
             chartImage.style.width = `${originalCanvas.offsetWidth}px`;
             chartImage.style.height = `${originalCanvas.offsetHeight}px`;
-            // --- AKHIR PERBAIKAN ---
 
-            // Salin juga margin untuk menjaga jarak
+            // 3. Salin margin vertikal (atas & bawah) untuk menjaga jarak.
             const computedStyle = window.getComputedStyle(originalCanvas);
             chartImage.style.marginTop = computedStyle.marginTop;
             chartImage.style.marginBottom = computedStyle.marginBottom;
+
+            // 4. Paksa margin horizontal menjadi 'auto' untuk memusatkan gambar.
+            chartImage.style.marginLeft = 'auto';
+            chartImage.style.marginRight = 'auto';
+            // --- AKHIR PERBAIKAN ---
 
             clonedCanvas.parentNode.replaceChild(chartImage, clonedCanvas);
         }
