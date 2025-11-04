@@ -35,8 +35,8 @@ def prepare_text_for_analysis(text: str) -> str:
 def get_emotion_from_text(text):
     if not HF_API_KEY: return None
     try:
-        payload = {"inputs": text}
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+        payload = {"inputs": text, "options": {"wait_for_model": True}}
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=90)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
