@@ -25,13 +25,15 @@ services:
         sync: false
       - key: SPOTIFY_REDIRECT_URI
         sync: false
+      - key: HUGGING_FACE_API_KEY
+        sync: false
 
   # 2. Servis untuk Cache Redis
   - type: redis
     name: personalify-cache
     region: oregon
     plan: free
-    ipAllowList: # <-- TAMBAHKAN BLOK INI
+    ipAllowList:
       - source: 0.0.0.0/0
         description: everywhere
 
