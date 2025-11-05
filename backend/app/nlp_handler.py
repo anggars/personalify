@@ -59,6 +59,7 @@ def prepare_text_for_analysis(text: str) -> str:
     """
     Menerjemahkan teks ke Inggris menggunakan deep-translator.
     Library ini lebih tangguh dalam menangani koneksi di environment yang sulit.
+    (Fungsi ini sekarang HANYA dipakai oleh Lyrics Analyzer)
     """
     if not text or not text.strip():
         return ""
@@ -150,8 +151,8 @@ def get_emotion_from_text(text: str):
 	# If we get here, try existing HTTP API first (keeps older behavior)
 	try:
 		payload = {"inputs": text}
-		# include small parameter to request more candidates if supported
-		params = {"parameters": {"top_k": 20}} if "models" in API_URL else {}
+		# include small parameter to request *all* candidates if supported
+		params = {"parameters": {"top_k": None}} if "models" in API_URL else {}
 		if params:
 			payload.update(params)
 		print("🔄 Calling HF API:", API_URL[:200])
@@ -282,10 +283,12 @@ def analyze_lyrics_emotion(lyrics: str):
 	"""
 	Analisis emosi dari lirik lagu: return up to 5 labels exactly (label+score).
 	If HF/Router unavailable, return deterministic fallback (5 labels).
+	(Fungsi ini memanggil prepare_text_for_analysis untuk menerjemahkan lirik)
 	"""
 	if not lyrics or not lyrics.strip():
 		return {"error": "Lyrics input cannot be empty."}
 
+	# TETAP GUNAKAN TRANSLATOR DI SINI, untuk lirik custom
 	text = prepare_text_for_analysis(lyrics.strip())
 	emotions = None
 	if HF_API_KEY:
@@ -297,12 +300,15 @@ def analyze_lyrics_emotion(lyrics: str):
 		return {"emotions": fb}
 
 	try:
-		# ensure floats and order
+		# Pastikan float dan urutkan berdasarkan skor (tertinggi dulu)
 		sorted_emotions = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
+		
+		# Ambil 5 teratas
 		top5 = sorted_emotions[:5]
-		# normalize scores so they sum to 1 (optional but keeps UI stable)
-		total = sum(float(e.get("score", 0)) for e in top5) or 1.0
-		out = [{"label": e["label"], "score": float(e.get("score", 0)) / total} for e in top5]
+		
+		# Skor asli dari model HF dikembalikan apa adanya (INI SUDAH BENAR)
+		out = [{"label": e["label"], "score": float(e.get("score", 0))} for e in top5]
+		
 		return {"emotions": out}
 	except Exception as e:
 		print(f"Error parsing HF emotions: {e}")
@@ -313,17 +319,27 @@ def analyze_lyrics_emotion(lyrics: str):
 def generate_emotion_paragraph(track_names, extended=False):
 	"""
 	Dashboard paragraph generator: uses top 3 labels from HF if available, else fallback (3 labels).
+	(Fungsi ini TIDAK LAGI memanggil prepare_text_for_analysis)
 	"""
 	if not track_names:
 		return "Couldn't analyze music mood."
 
 	tracks_to_analyze = track_names[:20]
-	combined = ". ".join(tracks_to_analyze)
-	text = prepare_text_for_analysis(combined)
+	
+	# Gabungkan dengan baris baru (ini sudah benar)
+	combined = "\n".join(tracks_to_analyze)
+ 
+	# --- ▼▼▼ INI PERBAIKAN UTAMANYA ▼▼▼ ---
+	# HAPUS panggila ke 'prepare_text_for_analysis(combined)'.
+	# Kita langsung gunakan 'combined' sebagai 'text' untuk dikirim ke HF.
+	# Ini memastikan "Gracias" tetap "Gracias" dan tidak menjadi "Thank you".
+	text = combined
+	# --- ▲▲▲ AKHIR PERBAIKAN ▲▲▲ ---
 
 	emotions = None
 	if HF_API_KEY:
-		emotions = get_emotion_from_text(text)
+		# Kirim teks mentah (tanpa terjemahan) ke model
+		emotions = get_emotion_from_text(text) 
 
 	if not emotions:
 		fb = _fallback_emotions_from_text(text, max_labels=3)
