@@ -142,9 +142,19 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                 "preview_url": track.get("preview_url"), "image": album_image_url
             })
 
-        # 4. SKIP ANALISIS EMOSI DI CALLBACK - Berikan teks default saja
-        result['emotion_paragraph'] = "Your music vibe is being analyzed..."
-
+        # 4. LAKUKAN ANALISIS EMOSI LANGSUNG DI SINI (JANGAN SKIP)
+        print(f"Callback: Running initial emotion analysis for {spotify_id} ({time_range})...")
+        
+        # Ambil nama track (hanya top 10 untuk analisis standar)
+        track_names = [track['name'] for track in result.get("tracks", [])[:10]]
+        
+        # Panggil fungsi nlp_handler (yang kodenya udah bener)
+        emotion_paragraph = generate_emotion_paragraph(track_names)
+        
+        # Simpan hasil yang SUDAH BENAR ke cache
+        result['emotion_paragraph'] = emotion_paragraph
+        
+        print(f"Callback: Analysis complete. Result: {emotion_paragraph}")
         cache_top_data("top", spotify_id, time_range, result)
         save_user_sync(spotify_id, time_range, result)
 
