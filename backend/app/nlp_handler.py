@@ -317,81 +317,89 @@ def analyze_lyrics_emotion(lyrics: str):
 		return {"emotions": fb}
 
 def generate_emotion_paragraph(track_names, extended=False):
-	"""
-	Dashboard paragraph generator: uses top 3 labels from HF if available, else fallback (3 labels).
-	(Fungsi ini TIDAK LAGI memanggil prepare_text_for_analysis)
-	"""
-	if not track_names:
-		return "Couldn't analyze music mood."
+    """
+    Dashboard paragraph generator: uses top 3 labels from HF if available, else fallback (3 labels).
+    (Fungsi ini SEKARANG memanggil prepare_text_for_analysis untuk akurasi)
+    """
+    if not track_names:
+        return "Couldn't analyze music mood."
 
-	tracks_to_analyze = track_names[:20]
-	
-	# Gabungkan dengan baris baru (ini sudah benar)
-	combined = "\n".join(tracks_to_analyze)
+    tracks_to_analyze = track_names[:20]
+    
+    # Gabungkan dengan baris baru (ini sudah benar)
+    combined = "\n".join(tracks_to_analyze)
  
-	# --- ▼▼▼ INI PERBAIKAN UTAMANYA ▼▼▼ ---
-	# HAPUS panggila ke 'prepare_text_for_analysis(combined)'.
-	# Kita langsung gunakan 'combined' sebagai 'text' untuk dikirim ke HF.
-	# Ini memastikan "Gracias" tetap "Gracias" dan tidak menjadi "Thank you".
-	text = combined
-	# --- ▲▲▲ AKHIR PERBAIKAN ▲▲▲ ---
+    # --- ▼▼▼ INI PERBAIKAN UTAMANYA ▼▼▼ ---
+    # Model 'go_emotions' HANYA mengerti Bahasa Inggris.
+    # Teks gabungan (termasuk judul lagu non-Inggris) HARUS diterjemahkan
+    # ke Bahasa Inggris dulu agar hasilnya akurat.
+    print("Translating combined track names for dashboard analysis...")
+    text = prepare_text_for_analysis(combined)
+    # --- ▲▲▲ AKHIR PERBAIKAN ▲▲▲ ---
 
-	emotions = None
-	if HF_API_KEY:
-		# Kirim teks mentah (tanpa terjemahan) ke model
-		emotions = get_emotion_from_text(text) 
+    # Jika text kosong setelah translasi (jarang terjadi), fallback
+    if not text:
+        print("Translation resulted in empty text, using fallback.")
+        emotions = None
+    else:
+        emotions = None
+        if HF_API_KEY:
+            # Kirim teks yang SUDAH DITERJEMAHKAN ke model
+            emotions = get_emotion_from_text(text) 
 
-	if not emotions:
-		fb = _fallback_emotions_from_text(text, max_labels=3)
-		em_list = fb
-	else:
-		try:
-			em_list = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
-		except Exception:
-			em_list = _fallback_emotions_from_text(text, max_labels=3)
+    if not emotions:
+        # Jika API gagal ATAU teks kosong, gunakan fallback
+        # Fallback juga menggunakan 'text' yang sudah diterjemahkan (jika ada)
+        fb = _fallback_emotions_from_text(text, max_labels=3)
+        em_list = fb
+    else:
+        try:
+            em_list = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
+        except Exception:
+            em_list = _fallback_emotions_from_text(text, max_labels=3)
 
-	# Deduplicate labels while preserving order
-	unique = []
-	seen = set()
-	for e in em_list:
-		lbl = e.get("label")
-		if not lbl:
-			continue
-		if lbl not in seen:
-			seen.add(lbl)
-			unique.append(e)
-		if len(unique) >= 3:
-			break
+    # Deduplicate labels while preserving order
+    unique = []
+    seen = set()
+    for e in em_list:
+        lbl = e.get("label")
+        if not lbl:
+            continue
+        if lbl not in seen:
+            seen.add(lbl)
+            unique.append(e)
+        if len(unique) >= 3:
+            break
 
-	# If still less than 3, try to pull additional unique labels from remaining em_list
-	if len(unique) < 3:
-		for e in em_list:
-			lbl = e.get("label")
-			if not lbl or lbl in seen:
-				continue
-			seen.add(lbl)
-			unique.append(e)
-			if len(unique) >= 3:
-				break
+    # If still less than 3, try to pull additional unique labels from remaining em_list
+    if len(unique) < 3:
+        for e in em_list:
+            lbl = e.get("label")
+            if not lbl or lbl in seen:
+                continue
+            seen.add(lbl)
+            unique.append(e)
+            if len(unique) >= 3:
+                break
 
-	# Final pad with sensible defaults (avoid duplicates)
-	if len(unique) < 3:
-		pad_defaults = [
-			{"label": "neutral", "score": 0.5},
-			{"label": "optimism", "score": 0.3},
-			{"label": "joy", "score": 0.2}
-		]
-		for p in pad_defaults:
-			if p["label"] not in seen:
-				unique.append(p)
-				seen.add(p["label"])
-			if len(unique) >= 3:
-				break
+    # Final pad with sensible defaults (avoid duplicates)
+    if len(unique) < 3:
+        pad_defaults = [
+            {"label": "neutral", "score": 0.5},
+            {"label": "optimism", "score": 0.3},
+            {"label": "joy", "score": 0.2}
+        ]
+        for p in pad_defaults:
+            if p["label"] not in seen:
+                unique.append(p)
+                seen.add(p["label"])
+            if len(unique) >= 3:
+                break
 
-	top3 = unique[:3]
+    top3 = unique[:3]
 
-	# format using emotion_texts (already defined earlier)
-	formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
-	if extended and len(track_names) > 10:
-		return f"Diving deeper into your collection, shades of {formatted}."
-	return f"Shades of {formatted}."
+    # format using emotion_texts (already defined earlier)
+    formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
+    if extended and len(track_names) > 10:
+        return f"Diving deeper into your collection, shades of {formatted}."
+    return f"Shades of {formatted}."
