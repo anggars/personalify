@@ -180,7 +180,7 @@ async def analyze_emotions_background(
             # Jika ini analisis standar, gunakan hanya 10 track pertama
             track_names = [track['name'] for track in tracks_to_analyze[:10]]
 
-        emotion_paragraph = generate_emotion_paragraph(track_names)
+        emotion_paragraph = generate_emotion_paragraph(track_names, extended=extended)
 
         # --- LOGIKA PENYIMPANAN YANG DIPERBAIKI ---
         if extended:

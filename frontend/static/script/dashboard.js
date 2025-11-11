@@ -785,7 +785,7 @@ document.head.appendChild(style);
 // Panggil function setelah halaman dimuat dengan delay kecil
 document.addEventListener('DOMContentLoaded', function() {
     // Delay 1 detik agar user bisa lihat dashboard dulu
-    setTimeout(loadEmotionAnalysis, 1000);
+    setTimeout(() => loadEmotionAnalysis(false), 1000);
 });
 
 window.onload = function() {
