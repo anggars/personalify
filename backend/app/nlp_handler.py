@@ -3,34 +3,28 @@ import requests
 import time
 import re
 from deep_translator import GoogleTranslator
-from huggingface_hub import InferenceClient # Kita akan pakai ini
+from huggingface_hub import InferenceClient
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# --- 1. KONFIGURASI API (WAJIB) ---
 HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
 HF_MODEL = "SamLowe/roberta-base-go_emotions"
 
-# Cek apakah API Key ada
 if not HF_API_KEY:
     print("="*50)
     print("WARNING: HUGGING_FACE_API_KEY tidak ditemukan di .env")
     print("Analisis emosi TIDAK AKAN JALAN TANPA API KEY.")
     print("="*50)
-    # Kita tetap inisialisasi client, tapi dia akan gagal jika dipanggil
     hf_client = None
 else:
     try:
-        # Inisialisasi client API (cara modern)
         hf_client = InferenceClient(model=HF_MODEL, token=HF_API_KEY)
         print("NLP Handler: Hugging Face InferenceClient siap.")
     except Exception as e:
         print(f"NLP Handler: GAGAL inisialisasi InferenceClient. Error: {e}")
         hf_client = None
 
-# --- 2. EMOTION TEXTS (TETAP DIPAKAI) ---
 emotion_texts = {
     "admiration": "inspiring <b>admiration</b>",
     "amusement": "playful <b>amusement</b>",
@@ -62,158 +56,172 @@ emotion_texts = {
     "neutral": "a <b>neutral</b> state"
 }
 
-# Simple in-memory cache
 _analysis_cache = {}
 
-# --- 3. FUNGSI TRANSLATOR (TETAP DIPAKAI) ---
 def prepare_text_for_analysis(text: str) -> str:
     """
     Menerjemahkan teks non-Inggris ke Inggris menggunakan deep-translator.
+    FIXED: Error handling yang lebih robust.
     """
     if not text or not text.strip():
+        print("NLP Handler: Teks kosong, tidak ada yang diterjemahkan.")
         return ""
+    
     try:
-        # Cek bahasa dulu
-        lang = GoogleTranslator().detect(text[:100]) # Deteksi dari 100 char pertama
+        # Cek apakah teks sudah bahasa Inggris
+        # Gunakan sample text yang lebih panjang untuk deteksi yang akurat
+        sample_text = text[:200] if len(text) > 200 else text
         
-        if lang == 'en':
+        try:
+            detected_lang = GoogleTranslator().detect(sample_text)
+            print(f"NLP Handler: Bahasa terdeteksi: [{detected_lang}]")
+        except Exception as detect_error:
+            print(f"NLP Handler: Error deteksi bahasa: {detect_error}. Asumsikan bukan Inggris.")
+            detected_lang = 'unknown'
+        
+        # Jika sudah Inggris, langsung return
+        if detected_lang == 'en':
             print("NLP Handler: Teks sudah Bahasa Inggris, tidak perlu translate.")
-            return text # Langsung kembalikan jika sudah Inggris
+            return text
+        
+        # Jika bukan Inggris, coba terjemahkan
+        print(f"NLP Handler: Menerjemahkan dari [{detected_lang}] ke [en]...")
+        
+        try:
+            translator = GoogleTranslator(source='auto', target='en')
+            translated_text = translator.translate(text)
             
-        print(f"NLP Handler: Menerjemahkan teks dari [{lang}] ke [en]...")
-        # (Ini butuh 'pip install deep-translator')
-        translated_text = GoogleTranslator(source='auto', target='en').translate(text)
-        
-        if translated_text:
-            print(f"NLP Handler: Hasil translasi: '{translated_text[:100]}...'")
-            return translated_text
-        
-        print("NLP Handler: Translasi gagal, menggunakan teks asli.")
-        return text
+            if translated_text and len(translated_text.strip()) > 0:
+                print(f"NLP Handler: Berhasil menerjemahkan. Preview: '{translated_text[:100]}...'")
+                return translated_text
+            else:
+                print("NLP Handler: Hasil translasi kosong. Gunakan teks asli.")
+                return text
+                
+        except Exception as translate_error:
+            print(f"NLP Handler: Error saat translasi: {translate_error}. Gunakan teks asli.")
+            return text
+            
     except Exception as e:
-        print(f"NLP Handler: Error saat translasi: {e}. Menggunakan teks asli.")
+        print(f"NLP Handler: Error umum pada prepare_text_for_analysis: {e}")
+        print("NLP Handler: Menggunakan teks asli sebagai fallback.")
         return text
 
-# --- 4. FUNGSI ANALISIS (DIBENERIN & DISIMPLIFY) ---
 def get_emotion_from_text(text: str):
     """
     Menganalisis teks menggunakan InferenceClient API.
-    Fungsi ini MENGGANTIKAN semua logic API call yang rumit dan error.
     """
     if not hf_client:
-        print("NLP Handler: HF Client tidak siap (API Key hilang?). Analisis dibatalkan.")
+        print("NLP Handler: HF Client tidak siap. Analisis dibatalkan.")
         return None
     if not text or not text.strip():
         print("NLP Handler: Teks input kosong. Analisis dibatalkan.")
         return None
 
-    # Cek cache dulu
+    # Cek cache
     if text in _analysis_cache:
         print("NLP Handler: Mengambil hasil dari cache.")
         return _analysis_cache[text]
 
     try:
-        print(f"NLP Handler: Memanggil HF InferenceClient untuk model {HF_MODEL}...")
+        print(f"NLP Handler: Memanggil HF API untuk analisis...")
         
-        # 'text_classification' mengembalikan list of dicts [[...]]
-        # Kita minta 'top_k=28' untuk dapet semua skor
-        results = hf_client.text_classification(text[:510], top_k=28) 
+        # Batasi panjang teks ke 510 karakter untuk model
+        text_to_analyze = text[:510]
         
-        # 'results' adalah list of dicts (sudah benar)
+        results = hf_client.text_classification(text_to_analyze, top_k=28)
+        
         if results and isinstance(results, list):
-            _analysis_cache[text] = results # Simpan ke cache
+            print(f"NLP Handler: Berhasil. Top emotion: {results[0]['label']} ({results[0]['score']:.3f})")
+            _analysis_cache[text] = results
             return results
         else:
-            print(f"NLP Handler: Hasil prediksi API tidak terduga: {results}")
+            print(f"NLP Handler: Format hasil tidak terduga: {results}")
             return None
 
     except Exception as e:
-        print(f"NLP Handler: Error saat prediksi API: {e}")
-        # Ini bisa jadi karena API key salah atau server HF down
+        print(f"NLP Handler: Error API call: {e}")
         return None
 
-# --- 5. FUNGSI ANALISIS LIRIK (TETAP DIPAKAI) ---
 def analyze_lyrics_emotion(lyrics: str):
     """
-    Analisis emosi dari lirik lagu (dipanggil dari /analyze-lyrics).
+    Analisis emosi dari lirik lagu.
     """
     if not lyrics or not lyrics.strip():
         return {"error": "Lyrics input cannot be empty."}
 
-    # 1. Terjemahkan lirik (jika perlu)
+    # Terjemahkan jika perlu
     text = prepare_text_for_analysis(lyrics.strip())
-    if not text:
-         return {"error": "Translated text is empty."}
-         
-    # 2. Analisis teks yang sudah diterjemahkan
+    
+    if not text or len(text.strip()) == 0:
+        print("NLP Handler: Teks hasil translasi kosong.")
+        return {"error": "Translation resulted in empty text."}
+    
+    # Analisis
     emotions = get_emotion_from_text(text)
 
     if not emotions:
-        # Jika API GAGAL (misal API key salah)
-        print("NLP Handler: API Gagal, kirim error ke frontend.")
+        print("NLP Handler: API gagal atau tidak ada hasil.")
         return {"error": "Emotion analysis is currently unavailable. Check server logs."}
 
     try:
-        # 'emotions' sudah jadi list of dicts
         sorted_emotions = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
         top5 = sorted_emotions[:5]
         out = [{"label": e["label"], "score": float(e.get("score", 0))} for e in top5]
         return {"emotions": out}
     except Exception as e:
-        print(f"NLP Handler: Error parsing LOKAL emotions: {e}")
+        print(f"NLP Handler: Error parsing results: {e}")
         return {"error": "Error parsing analysis results."}
 
-# --- 6. FUNGSI PARAGRAF DASHBOARD (DIBENERIN BIAR AKURAT) ---
 def generate_emotion_paragraph(track_names, extended=False):
     """
-    Membuat paragraf "puitis" untuk dashboard.
-    INI LOGIKA AKURAT DARI COMMIT LAMA + FIX TRANSLASI.
+    Membuat paragraf emosi dari daftar judul lagu.
+    FIXED: Sekarang support parameter 'extended'.
     """
     if not track_names:
         return "Couldn't analyze music mood."
 
-    # Tentukan jumlah track
-    tracks_to_analyze = track_names[:20] if extended else track_names[:10]
+    # Gunakan jumlah yang sesuai
+    num_tracks = len(track_names) if extended else min(10, len(track_names))
+    tracks_to_analyze = track_names[:num_tracks]
     
-    # --- INI LOGIKA YANG BENAR (dari commit lama lu) ---
-    # Gabungkan semua judul jadi SATU BLOK TEKS
+    print(f"NLP Handler: Menganalisis {num_tracks} lagu (extended={extended})")
+    
+    # Gabungkan judul
     combined_text = "\n".join(tracks_to_analyze)
-
-    # --- INI BUG FIX PALING PENTING ---
-    # 1. Terjemahkan blok teks gabungan (jika perlu)
-    # Model 'go_emotions' HANYA ngerti B.Inggris. 
-    # Judul "ELEGI" atau "Jauh" harus di-translate!
+    
+    # CRITICAL: Terjemahkan dulu
     text = prepare_text_for_analysis(combined_text)
-    if not text:
-        return "Vibe analysis failed (empty text)."
-    # --- AKHIR BUG FIX ---
-
-    # 2. Analisis teks yang sudah diterjemahkan
-    emotions = get_emotion_from_text(text) 
+    
+    if not text or len(text.strip()) == 0:
+        print("NLP Handler: Teks untuk analisis kosong setelah translasi.")
+        return "Vibe analysis failed (empty text after translation)."
+    
+    # Analisis
+    emotions = get_emotion_from_text(text)
 
     if not emotions:
-        # Jika model LOKAL gagal (atau API Key salah)
         return "Vibe analysis is currently unavailable."
 
-    # --- Bagian format "puitis" (dari file baru lu, udah bener) ---
     try:
         em_list = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
     except Exception:
         return "Vibe analysis failed (parsing error)."
 
-    # Deduplikasi label
+    # Deduplikasi dan ambil top 3
     unique = []
     seen = set()
     for e in em_list:
         lbl = e.get("label")
-        if not lbl: continue
+        if not lbl:
+            continue
         if lbl not in seen:
             seen.add(lbl)
             unique.append(e)
             if len(unique) >= 3:
                 break
     
-    # Padding
+    # Padding jika kurang dari 3
     if len(unique) < 3:
         pad_defaults = [
             {"label": "neutral", "score": 0.5},
@@ -222,18 +230,16 @@ def generate_emotion_paragraph(track_names, extended=False):
         ]
         for p in pad_defaults:
             if p["label"] not in seen:
-                unique.append(p); seen.add(p["label"])
+                unique.append(p)
+                seen.add(p["label"])
                 if len(unique) >= 3:
                     break
     
     top3 = unique[:3]
-
-    # Format string (logika ini sudah bagus)
     formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
     
-    # Harusnya sekarang hasilnya 'sadness', 'disappointment', 'neutral'
-    # Bukan 'neutral', 'joy', 'sadness'
-    
-    if extended and len(track_names) > 10:
+    # Pesan berbeda untuk extended
+    if extended and num_tracks > 10:
         return f"Diving deeper into your collection, shades of {formatted}."
+    
     return f"Shades of {formatted}."
