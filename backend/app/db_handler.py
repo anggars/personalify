@@ -2,10 +2,11 @@ import os
 import psycopg2
 from psycopg2.extras import execute_values
 from urllib.parse import urlparse
-from dotenv import load_dotenv
 
-# Memuat .env agar tetap berfungsi di lokal
-load_dotenv()
+# Load .env hanya jika DATABASE_URL belum ada (biar di Render tidak override)
+if not os.getenv("DATABASE_URL"):
+    from dotenv import load_dotenv
+    load_dotenv()
 
 def get_conn():
     """

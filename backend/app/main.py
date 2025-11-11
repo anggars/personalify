@@ -2,12 +2,13 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
+# Load .env hanya jika DATABASE_URL belum ada
+if not os.getenv("DATABASE_URL"):
+    from dotenv import load_dotenv
+    load_dotenv()
 from app.routes import router
 from app.db_handler import init_db
 from fastapi.responses import RedirectResponse
-
-load_dotenv()
 
 app = FastAPI()
 
