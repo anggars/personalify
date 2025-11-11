@@ -6,4 +6,6 @@ psycopg2-binary
 redis
 pymongo[srv]
 jinja2
+transformers
+huggingface_hub
 deep-translator
