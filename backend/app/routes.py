@@ -94,7 +94,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         tracks = track_resp.json().get("items", [])
 
         # --- PROSES BATCH DIMULAI ---
-        
+
         # 1. Kumpulkan semua data ke dalam list terlebih dahulu
         artists_to_save = []
         artist_ids = []
@@ -117,7 +117,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                 track["popularity"],
                 track.get("preview_url")
             ))
-        
+
         # 2. Kirim data sekaligus ke database dalam beberapa panggilan saja
         save_artists_batch(artists_to_save)
         save_tracks_batch(tracks_to_save)
@@ -142,19 +142,9 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                 "preview_url": track.get("preview_url"), "image": album_image_url
             })
 
-        # 4. LAKUKAN ANALISIS EMOSI LANGSUNG DI SINI (JANGAN SKIP)
-        print(f"Callback: Running initial emotion analysis for {spotify_id} ({time_range})...")
-        
-        # Ambil nama track (hanya top 10 untuk analisis standar)
-        track_names = [track['name'] for track in result.get("tracks", [])[:10]]
-        
-        # Panggil fungsi nlp_handler (yang kodenya udah bener)
-        emotion_paragraph = generate_emotion_paragraph(track_names)
-        
-        # Simpan hasil yang SUDAH BENAR ke cache
-        result['emotion_paragraph'] = emotion_paragraph
-        
-        print(f"Callback: Analysis complete. Result: {emotion_paragraph}")
+        # 4. SKIP ANALISIS EMOSI DI CALLBACK - Berikan teks default saja
+        result['emotion_paragraph'] = "Your music vibe is being analyzed..."
+
         cache_top_data("top", spotify_id, time_range, result)
         save_user_sync(spotify_id, time_range, result)
 
@@ -178,10 +168,10 @@ async def analyze_emotions_background(
         cached_data = get_cached_top_data("top", spotify_id, time_range)
         if not cached_data:
             return {"error": "No data found for analysis"}
-        
+
         # Lakukan analisis emosi dengan jumlah track yang berbeda
         tracks_to_analyze = cached_data.get("tracks", [])
-        
+
         # --- PERBAIKAN LOGIKA UTAMA ADA DI SINI ---
         if extended:
             # Jika ini permintaan 'extended' (dari easter egg), gunakan semua track
@@ -189,12 +179,12 @@ async def analyze_emotions_background(
         else:
             # Jika ini analisis standar, gunakan hanya 10 track pertama
             track_names = [track['name'] for track in tracks_to_analyze[:10]]
-        
+
         emotion_paragraph = generate_emotion_paragraph(track_names)
-        
+
         # --- LOGIKA PENYIMPANAN YANG DIPERBAIKI ---
         if extended:
-            # Jika ini permintaan 'extended', JANGAN simpan hasilnya. 
+            # Jika ini permintaan 'extended', JANGAN simpan hasilnya.
             # Cukup kembalikan untuk ditampilkan sementara di browser.
             print("Extended analysis requested. Returning temporary result without caching.")
         else:
@@ -204,9 +194,9 @@ async def analyze_emotions_background(
             cached_data['emotion_paragraph'] = emotion_paragraph
             cache_top_data("top", spotify_id, time_range, cached_data)
             save_user_sync(spotify_id, time_range, cached_data)
-        
+
         return {"emotion_paragraph": emotion_paragraph}
-        
+
     except Exception as e:
         print(f"Background emotion analysis failed: {e}")
         return {"emotion_paragraph": "Vibe analysis is currently unavailable."}
@@ -218,10 +208,10 @@ def sync_top_data(
 ):
     headers = {"Authorization": f"Bearer {access_token}"}
     res = requests.get("https://api.spotify.com/v1/me", headers=headers)
-    
+
     if res.status_code != 200:
         raise HTTPException(status_code=res.status_code, detail=res.json())
-        
+
     user_profile = res.json()
     spotify_id = user_profile["id"]
     display_name = user_profile.get("display_name", "Unknown")
@@ -281,14 +271,14 @@ def sync_top_data(
             "album": track["album"]["name"], "popularity": track["popularity"],
             "preview_url": track.get("preview_url"), "image": album_image_url
         })
-        
+
     track_names = [track['name'] for track in result.get("tracks", [])]
     emotion_paragraph = generate_emotion_paragraph(track_names)
     result['emotion_paragraph'] = emotion_paragraph
 
     cache_top_data("top", spotify_id, time_range, result)
     save_user_sync(spotify_id, time_range, result)
-    
+
     return result
 
 @router.get("/top-data", tags=["Query"])
@@ -337,32 +327,32 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         return templates.TemplateResponse("loading.html", {"request": request})
 
     emotion_paragraph = data.get("emotion_paragraph", "Vibe analysis is getting ready...")
-    
+
     # --- PERHITUNGAN GENRE UNTUK TOP 10 (DEFAULT) ---
     genre_count_top10 = {}
     genre_artists_map_top10 = {}
-    
+
     for artist in data.get("artists", [])[:10]:  # Hanya 10 artis pertama
         for genre in artist.get("genres", []):
             genre_count_top10[genre] = genre_count_top10.get(genre, 0) + 1
             if genre not in genre_artists_map_top10:
                 genre_artists_map_top10[genre] = []
             genre_artists_map_top10[genre].append(artist["name"])
-    
+
     sorted_genres_top10 = sorted(genre_count_top10.items(), key=lambda x: x[1], reverse=True)
     genre_list_top10 = [{"name": name, "count": count} for name, count in sorted_genres_top10]
 
     # --- PERHITUNGAN GENRE UNTUK TOP 20 (EASTER EGG) ---
     genre_count_top20 = {}
     genre_artists_map_top20 = {}
-    
+
     for artist in data.get("artists", []):  # Semua 20 artis
         for genre in artist.get("genres", []):
             genre_count_top20[genre] = genre_count_top20.get(genre, 0) + 1
             if genre not in genre_artists_map_top20:
                 genre_artists_map_top20[genre] = []
             genre_artists_map_top20[genre].append(artist["name"])
-    
+
     sorted_genres_top20 = sorted(genre_count_top20.items(), key=lambda x: x[1], reverse=True)
     genre_list_top20 = [{"name": name, "count": count} for name, count in sorted_genres_top20]
 

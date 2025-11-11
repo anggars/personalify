@@ -1,388 +1,219 @@
 import os
 import requests
 import time
-import random
+import re
 from deep_translator import GoogleTranslator
+from huggingface_hub import InferenceClient # Kita akan pakai ini
+from dotenv import load_dotenv
 
-# coba import huggingface_hub.InferenceClient (opsional)
-try:
-    from huggingface_hub import InferenceClient
-    HAS_HF_HUB = True
-except Exception:
-    InferenceClient = None
-    HAS_HF_HUB = False
+# Load environment variables
+load_dotenv()
 
-# Tambahkan ability override URL via env var
-API_URL = os.getenv("HUGGING_FACE_API_URL", "https://api-inference.huggingface.co/models/SamLowe/roberta-base-go_emotions")
+# --- 1. KONFIGURASI API (WAJIB) ---
 HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
-# Optional: explicit model id and router url via env
-HF_MODEL = os.getenv("HUGGING_FACE_MODEL", "SamLowe/roberta-base-go_emotions")
-HF_ROUTER = os.getenv("HUGGING_FACE_ROUTER_URL", "https://router.huggingface.co/hf-inference")
-headers = {"Authorization": f"Bearer {HF_API_KEY}"} if HF_API_KEY else {}
+HF_MODEL = "SamLowe/roberta-base-go_emotions"
 
-# Add back the full emotion_texts mapping used by the dashboard and formatting
+# Cek apakah API Key ada
+if not HF_API_KEY:
+    print("="*50)
+    print("WARNING: HUGGING_FACE_API_KEY tidak ditemukan di .env")
+    print("Analisis emosi TIDAK AKAN JALAN TANPA API KEY.")
+    print("="*50)
+    # Kita tetap inisialisasi client, tapi dia akan gagal jika dipanggil
+    hf_client = None
+else:
+    try:
+        # Inisialisasi client API (cara modern)
+        hf_client = InferenceClient(model=HF_MODEL, token=HF_API_KEY)
+        print("NLP Handler: Hugging Face InferenceClient siap.")
+    except Exception as e:
+        print(f"NLP Handler: GAGAL inisialisasi InferenceClient. Error: {e}")
+        hf_client = None
+
+# --- 2. EMOTION TEXTS (TETAP DIPAKAI) ---
 emotion_texts = {
-	"admiration": "inspiring <b>admiration</b>",
-	"amusement": "playful <b>amusement</b>",
-	"anger": "intense <b>anger</b>",
-	"annoyance": "subtle <b>annoyance</b>",
-	"approval": "positive <b>approval</b>",
-	"caring": "gentle <b>caring</b>",
-	"confusion": "a touch of <b>confusion</b>",
-	"curiosity": "sparked <b>curiosity</b>",
-	"desire": "yearning <b>desire</b>",
-	"disappointment": "quiet <b>letdown</b>",
-	"disapproval": "firm <b>dislike</b>",
-	"disgust": "raw <b>disgust</b>",
-	"embarrassment": "awkward <b>unease</b>",
-	"excitement": "bright <b>excitement</b>",
-	"fear": "whispers of <b>fear</b>",
-	"gratitude": "warm <b>gratitude</b>",
-	"grief": "heavy <b>grief</b>",
-	"joy": "radiant <b>joy</b>",
-	"love": "tender <b>love</b>",
-	"nervousness": "tense <b>anxiety</b>",
-	"optimism": "hopeful <b>optimism</b>",
-	"pride": "bold <b>pride</b>",
-	"realization": "sudden <b>insight</b>",
-	"relief": "soothing <b>relief</b>",
-	"remorse": "deep <b>regret</b>",
-	"sadness": "soft <b>sadness</b>",
-	"surprise": "unexpected <b>surprise</b>",
-	"neutral": "a <b>neutral</b> state"
+    "admiration": "inspiring <b>admiration</b>",
+    "amusement": "playful <b>amusement</b>",
+    "anger": "intense <b>anger</b>",
+    "annoyance": "subtle <b>annoyance</b>",
+    "approval": "positive <b>approval</b>",
+    "caring": "gentle <b>caring</b>",
+    "confusion": "a touch of <b>confusion</b>",
+    "curiosity": "sparked <b>curiosity</b>",
+    "desire": "yearning <b>desire</b>",
+    "disappointment": "quiet <b>letdown</b>",
+    "disapproval": "firm <b>dislike</b>",
+    "disgust": "raw <b>disgust</b>",
+    "embarrassment": "awkward <b>unease</b>",
+    "excitement": "bright <b>excitement</b>",
+    "fear": "whispers of <b>fear</b>",
+    "gratitude": "warm <b>gratitude</b>",
+    "grief": "heavy <b>grief</b>",
+    "joy": "radiant <b>joy</b>",
+    "love": "tender <b>love</b>",
+    "nervousness": "tense <b>anxiety</b>",
+    "optimism": "hopeful <b>optimism</b>",
+    "pride": "bold <b>pride</b>",
+    "realization": "sudden <b>insight</b>",
+    "relief": "soothing <b>relief</b>",
+    "remorse": "deep <b>regret</b>",
+    "sadness": "soft <b>sadness</b>",
+    "surprise": "unexpected <b>surprise</b>",
+    "neutral": "a <b>neutral</b> state"
 }
 
-# Simple in-memory cache to avoid reprocessing same text repeatedly
+# Simple in-memory cache
 _analysis_cache = {}
 
+# --- 3. FUNGSI TRANSLATOR (TETAP DIPAKAI) ---
 def prepare_text_for_analysis(text: str) -> str:
     """
-    Menerjemahkan teks ke Inggris menggunakan deep-translator.
-    Library ini lebih tangguh dalam menangani koneksi di environment yang sulit.
-    (Fungsi ini sekarang HANYA dipakai oleh Lyrics Analyzer)
+    Menerjemahkan teks non-Inggris ke Inggris menggunakan deep-translator.
     """
     if not text or not text.strip():
         return ""
-
     try:
-        print("Checking language and translating with deep-translator...")
-        # Library ini otomatis mendeteksi bahasa sumber (source='auto')
-        # dan menerjemahkan ke Inggris (target='en')
+        # Cek bahasa dulu
+        lang = GoogleTranslator().detect(text[:100]) # Deteksi dari 100 char pertama
+        
+        if lang == 'en':
+            print("NLP Handler: Teks sudah Bahasa Inggris, tidak perlu translate.")
+            return text # Langsung kembalikan jika sudah Inggris
+            
+        print(f"NLP Handler: Menerjemahkan teks dari [{lang}] ke [en]...")
+        # (Ini butuh 'pip install deep-translator')
         translated_text = GoogleTranslator(source='auto', target='en').translate(text)
         
         if translated_text:
-            print(f"Translated text: '{translated_text[:100]}...'")
+            print(f"NLP Handler: Hasil translasi: '{translated_text[:100]}...'")
             return translated_text
         
-        # Fallback jika hasil terjemahan kosong
-        print("Translation returned empty. Using original text.")
+        print("NLP Handler: Translasi gagal, menggunakan teks asli.")
         return text
-        
     except Exception as e:
-        print(f"An error occurred during translation with deep-translator: {e}. Analyzing original text.")
+        print(f"NLP Handler: Error saat translasi: {e}. Menggunakan teks asli.")
         return text
 
-def _normalize_response(result):
-	# Normalize various HF/Router shapes into list[dict{label,score}]
-	if not result:
-		return None
-	# direct list of dicts
-	if isinstance(result, list) and all(isinstance(i, dict) for i in result):
-		return result
-	# nested [[{...},...]]
-	if isinstance(result, list) and result and isinstance(result[0], list):
-		inner = result[0]
-		if all(isinstance(i, dict) for i in inner):
-			return inner
-	# some router variants return {'error':...} or dict with labels/scores
-	if isinstance(result, dict):
-		# { "labels": [...], "scores": [...] }
-		labels = result.get("labels")
-		scores = result.get("scores")
-		if labels and scores and len(labels) == len(scores):
-			return [{"label": l, "score": s} for l, s in zip(labels, scores)]
-		# router sometimes wraps in "outputs"
-		if "outputs" in result and isinstance(result["outputs"], list):
-			return _normalize_response(result["outputs"])
-	return None
-
-def _call_hf_api(url, payload, req_headers):
-	# wrapper to call HF-like endpoints and return parsed json or raise
-	resp = requests.post(url, headers=req_headers, json=payload, timeout=30)
-	resp.raise_for_status()
-	return resp.json(), resp.status_code
-
+# --- 4. FUNGSI ANALISIS (DIBENERIN & DISIMPLIFY) ---
 def get_emotion_from_text(text: str):
-	"""
-	Try huggingface_hub.InferenceClient first (matches HF example).
-	If unavailable or fails, fall back to existing HTTP/router logic.
-	Returns list of {label,score} or None.
-	"""
-	if not text:
-		return None
+    """
+    Menganalisis teks menggunakan InferenceClient API.
+    Fungsi ini MENGGANTIKAN semua logic API call yang rumit dan error.
+    """
+    if not hf_client:
+        print("NLP Handler: HF Client tidak siap (API Key hilang?). Analisis dibatalkan.")
+        return None
+    if not text or not text.strip():
+        print("NLP Handler: Teks input kosong. Analisis dibatalkan.")
+        return None
 
-	# If no API key, skip HF hub call
-	if not HF_API_KEY:
-		print("Hugging Face API key missing; skipping HF hub call.")
-	else:
-		# Try preferred HF InferenceClient (matches HF docs)
-		if HAS_HF_HUB and InferenceClient is not None:
-			try:
-				print("Using huggingface_hub.InferenceClient (provider=hf-inference)...")
-				client = InferenceClient(provider="hf-inference", api_key=HF_API_KEY)
-				# text_classification returns list of {label, score}
-				hf_result = client.text_classification(text, model=HF_MODEL)
-				# Normalize: some clients return list or dict — ensure list of dicts
-				if isinstance(hf_result, list) and hf_result:
-					# ensure dicts have label/score
-					if all(isinstance(i, dict) and "label" in i and "score" in i for i in hf_result):
-						return hf_result
-					# If HF returns wrapped elements, try to normalize
-					normalized = _normalize_response(hf_result)
-					if normalized:
-						return normalized
-				# if we got a dict with labels/scores
-				norm = _normalize_response(hf_result)
-				if norm:
-					return norm
-			except Exception as e:
-				print(f"HF hub client error: {type(e).__name__}: {e}. Falling back to HTTP/router method.")
+    # Cek cache dulu
+    if text in _analysis_cache:
+        print("NLP Handler: Mengambil hasil dari cache.")
+        return _analysis_cache[text]
 
-	# If we get here, try existing HTTP API first (keeps older behavior)
-	try:
-		payload = {"inputs": text}
-		# include small parameter to request *all* candidates if supported
-		params = {"parameters": {"top_k": None}} if "models" in API_URL else {}
-		if params:
-			payload.update(params)
-		print("🔄 Calling HF API:", API_URL[:200])
-		result, status = _call_hf_api(API_URL, payload, req_headers={"Accept": "application/json", **(headers or {})})
-		norm = _normalize_response(result)
-		if norm:
-			return norm
-		# if HF returns an informative error payload (e.g., 410), we fallthrough
-	except requests.exceptions.HTTPError as he:
-		# handle 410 specially (deprecated api-inference host)
-		msg = str(he)
-		print(f"Hugging Face HTTP error: {msg}")
-		# fall through to try router
-	except Exception as e:
-		print(f"Hugging Face request error: {type(e).__name__}: {e}")
+    try:
+        print(f"NLP Handler: Memanggil HF InferenceClient untuk model {HF_MODEL}...")
+        
+        # 'text_classification' mengembalikan list of dicts [[...]]
+        # Kita minta 'top_k=28' untuk dapet semua skor
+        results = hf_client.text_classification(text[:510], top_k=28) 
+        
+        # 'results' adalah list of dicts (sudah benar)
+        if results and isinstance(results, list):
+            _analysis_cache[text] = results # Simpan ke cache
+            return results
+        else:
+            print(f"NLP Handler: Hasil prediksi API tidak terduga: {results}")
+            return None
 
-	# If we get here, try router endpoint if configured
-	try:
-		router_url = HF_ROUTER.rstrip("/")  # e.g. https://router.huggingface.co/hf-inference
-		router_payloads = [
-			{"model": HF_MODEL, "inputs": text},
-			{"model": HF_MODEL, "input": text},
-			{"model": HF_MODEL, "data": [text]}
-		]
-		for rp in router_payloads:
-			try:
-				print("🔁 Trying HF router:", router_url, "with payload keys:", list(rp.keys()))
-				result, _ = _call_hf_api(router_url, rp, req_headers={"Accept": "application/json", **(headers or {})})
-				norm = _normalize_response(result)
-				if norm:
-					return norm
-			except requests.exceptions.HTTPError as he:
-				# router may respond 404 if path wrong; try next payload
-				print(f"Router HTTP error for payload {list(rp.keys())}: {he}")
-				continue
-			except Exception as e:
-				print(f"Router request error for payload {list(rp.keys())}: {type(e).__name__}: {e}")
-				continue
-	except Exception as e:
-		print(f"Router attempt failed: {type(e).__name__}: {e}")
+    except Exception as e:
+        print(f"NLP Handler: Error saat prediksi API: {e}")
+        # Ini bisa jadi karena API key salah atau server HF down
+        return None
 
-	# All external calls failed
-	print("⚠️ Emotion API call failed — will use local fallback.")
-	return None
-
-def _fallback_emotions_from_text(text: str, max_labels=5):
-	"""
-	Improved deterministic fallback:
-	- Detect common phrases (e.g. "i dont care") that map to annoyance.
-	- Use keyword counts otherwise.
-	- Return up to max_labels labels, scores normalized, avoid duplicate labels.
-	"""
-	if not text:
-		return [{"label": "neutral", "score": 1.0}][:max_labels]
-
-	t = text.lower().strip()
-
-	# Phrase-level heuristics (catch short idiomatic inputs)
-	phrase_map = [
-		(["i dont care", "i don't care", "dont care", "don't care"], [{"label":"annoyance","score":0.6},{"label":"neutral","score":0.2},{"label":"disapproval","score":0.2}]),
-		(["i hate you","i hate"], [{"label":"anger","score":0.6},{"label":"disgust","score":0.25},{"label":"sadness","score":0.15}]),
-		(["i love you","i love"], [{"label":"love","score":0.7},{"label":"joy","score":0.2},{"label":"gratitude","score":0.1}]),
-		(["i'm so excited","im so excited","so excited"], [{"label":"excitement","score":0.7},{"label":"joy","score":0.2},{"label":"optimism","score":0.1}]),
-		(["im sad","i am sad","so sad","sadness"], [{"label":"sadness","score":0.8},{"label":"remorse","score":0.1},{"label":"neutral","score":0.1}]),
-		(["i miss you","missing you","i miss"], [{"label":"love","score":0.5},{"label":"sadness","score":0.3},{"label":"longing","score":0.2}]),
-	]
-
-	for keys, mapped in phrase_map:
-		for k in keys:
-			if k in t:
-				# ensure we return only upto max_labels and normalized
-				res = mapped[:max_labels]
-				# normalize
-				total = sum(item["score"] for item in res) or 1.0
-				return [{"label": item["label"], "score": item["score"]/total} for item in res]
-
-	# token-level heuristics (as before, but improved)
-	keyword_map = {
-		"anger": {"angry", "hate", "fuck", "shit", "bastard", "asshole", "pissed", "hateyou"},
-		"sadness": {"sad", "cry", "lonely", "depress", "sedih", "missing"},
-		"joy": {"happy", "joy", "glad", "gembira", "bahagia"},
-		"love": {"love", "cinta", "rindu", "miss"},
-		"fear": {"scared", "afraid", "fear", "takut", "panic"},
-		"excitement": {"excite", "excited", "thrill", "hype"},
-		"surprise": {"surprise", "shocked", "wow"},
-		"nervousness": {"nervous", "anxiety", "anxious"},
-		"disgust": {"disgust", "disgusting", "gross"},
-		"annoyance": {"dont", "don't", "care", "meh", "whatever", "idc", "dontcare"},
-		"neutral": {"okay", "fine", "neutral"}
-	}
-
-	words = [w.strip(".,!?:;()\"'") for w in t.split()]
-	counts = {}
-	for w in words:
-		for label, bucket in keyword_map.items():
-			if w in bucket:
-				counts[label] = counts.get(label, 0) + 1
-
-	# profanity special-case: stronger anger/disgust
-	if any(p in t for p in ["fuck", "shit", "bastard", "asshole"]):
-		res = [{"label": "anger", "score": 0.75}, {"label": "disgust", "score": 0.25}]
-		return res[:max_labels]
-
-	# If we found token matches, build ranked list
-	if counts:
-		items = sorted([{"label": k, "score": v} for k, v in counts.items()], key=lambda x: -x["score"])
-		# convert counts to probabilistic scores
-		total = sum(i["score"] for i in items) or 1.0
-		items = [{"label": i["label"], "score": i["score"] / total} for i in items]
-		# pad with reasonable distinct defaults (avoid duplicate 'neutral' inflation)
-		pad_candidates = [{"label":"neutral","score":0.05},{"label":"optimism","score":0.03},{"label":"joy","score":0.02},{"label":"sadness","score":0.02}]
-		idx = 0
-		while len(items) < max_labels and idx < len(pad_candidates):
-			if pad_candidates[idx]["label"] not in [x["label"] for x in items]:
-				items.append(pad_candidates[idx])
-			idx += 1
-		# renormalize
-		total = sum(i["score"] for i in items) or 1.0
-		for i in items:
-			i["score"] = i["score"] / total
-		return items[:max_labels]
-
-	# fallback neutral+small variety (avoid repeating neutral twice)
-	default = [{"label":"neutral","score":0.6},{"label":"joy","score":0.2},{"label":"sadness","score":0.2}]
-	return default[:max_labels]
-
+# --- 5. FUNGSI ANALISIS LIRIK (TETAP DIPAKAI) ---
 def analyze_lyrics_emotion(lyrics: str):
-	"""
-	Analisis emosi dari lirik lagu: return up to 5 labels exactly (label+score).
-	If HF/Router unavailable, return deterministic fallback (5 labels).
-	(Fungsi ini memanggil prepare_text_for_analysis untuk menerjemahkan lirik)
-	"""
-	if not lyrics or not lyrics.strip():
-		return {"error": "Lyrics input cannot be empty."}
+    """
+    Analisis emosi dari lirik lagu (dipanggil dari /analyze-lyrics).
+    """
+    if not lyrics or not lyrics.strip():
+        return {"error": "Lyrics input cannot be empty."}
 
-	# TETAP GUNAKAN TRANSLATOR DI SINI, untuk lirik custom
-	text = prepare_text_for_analysis(lyrics.strip())
-	emotions = None
-	if HF_API_KEY:
-		emotions = get_emotion_from_text(text)
+    # 1. Terjemahkan lirik (jika perlu)
+    text = prepare_text_for_analysis(lyrics.strip())
+    if not text:
+         return {"error": "Translated text is empty."}
+         
+    # 2. Analisis teks yang sudah diterjemahkan
+    emotions = get_emotion_from_text(text)
 
-	if not emotions:
-		# fallback to local but ensure 5 labels
-		fb = _fallback_emotions_from_text(text, max_labels=5)
-		return {"emotions": fb}
+    if not emotions:
+        # Jika API GAGAL (misal API key salah)
+        print("NLP Handler: API Gagal, kirim error ke frontend.")
+        return {"error": "Emotion analysis is currently unavailable. Check server logs."}
 
-	try:
-		# Pastikan float dan urutkan berdasarkan skor (tertinggi dulu)
-		sorted_emotions = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
-		
-		# Ambil 5 teratas
-		top5 = sorted_emotions[:5]
-		
-		# Skor asli dari model HF dikembalikan apa adanya (INI SUDAH BENAR)
-		out = [{"label": e["label"], "score": float(e.get("score", 0))} for e in top5]
-		
-		return {"emotions": out}
-	except Exception as e:
-		print(f"Error parsing HF emotions: {e}")
-		# fallback
-		fb = _fallback_emotions_from_text(text, max_labels=5)
-		return {"emotions": fb}
+    try:
+        # 'emotions' sudah jadi list of dicts
+        sorted_emotions = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
+        top5 = sorted_emotions[:5]
+        out = [{"label": e["label"], "score": float(e.get("score", 0))} for e in top5]
+        return {"emotions": out}
+    except Exception as e:
+        print(f"NLP Handler: Error parsing LOKAL emotions: {e}")
+        return {"error": "Error parsing analysis results."}
 
+# --- 6. FUNGSI PARAGRAF DASHBOARD (DIBENERIN BIAR AKURAT) ---
 def generate_emotion_paragraph(track_names, extended=False):
     """
-    Dashboard paragraph generator: uses top 3 labels from HF if available, else fallback (3 labels).
-    (Fungsi ini SEKARANG memanggil prepare_text_for_analysis untuk akurasi)
+    Membuat paragraf "puitis" untuk dashboard.
+    INI LOGIKA AKURAT DARI COMMIT LAMA + FIX TRANSLASI.
     """
     if not track_names:
         return "Couldn't analyze music mood."
 
-    tracks_to_analyze = track_names[:20]
+    # Tentukan jumlah track
+    tracks_to_analyze = track_names[:20] if extended else track_names[:10]
     
-    # Gabungkan dengan baris baru (ini sudah benar)
-    combined = "\n".join(tracks_to_analyze)
- 
-    # --- ▼▼▼ INI PERBAIKAN UTAMANYA ▼▼▼ ---
-    # Model 'go_emotions' HANYA mengerti Bahasa Inggris.
-    # Teks gabungan (termasuk judul lagu non-Inggris) HARUS diterjemahkan
-    # ke Bahasa Inggris dulu agar hasilnya akurat.
-    print("Translating combined track names for dashboard analysis...")
-    text = prepare_text_for_analysis(combined)
-    # --- ▲▲▲ AKHIR PERBAIKAN ▲▲▲ ---
+    # --- INI LOGIKA YANG BENAR (dari commit lama lu) ---
+    # Gabungkan semua judul jadi SATU BLOK TEKS
+    combined_text = "\n".join(tracks_to_analyze)
 
-    # Jika text kosong setelah translasi (jarang terjadi), fallback
+    # --- INI BUG FIX PALING PENTING ---
+    # 1. Terjemahkan blok teks gabungan (jika perlu)
+    # Model 'go_emotions' HANYA ngerti B.Inggris. 
+    # Judul "ELEGI" atau "Jauh" harus di-translate!
+    text = prepare_text_for_analysis(combined_text)
     if not text:
-        print("Translation resulted in empty text, using fallback.")
-        emotions = None
-    else:
-        emotions = None
-        if HF_API_KEY:
-            # Kirim teks yang SUDAH DITERJEMAHKAN ke model
-            emotions = get_emotion_from_text(text) 
+        return "Vibe analysis failed (empty text)."
+    # --- AKHIR BUG FIX ---
+
+    # 2. Analisis teks yang sudah diterjemahkan
+    emotions = get_emotion_from_text(text) 
 
     if not emotions:
-        # Jika API gagal ATAU teks kosong, gunakan fallback
-        # Fallback juga menggunakan 'text' yang sudah diterjemahkan (jika ada)
-        fb = _fallback_emotions_from_text(text, max_labels=3)
-        em_list = fb
-    else:
-        try:
-            em_list = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
-        except Exception:
-            em_list = _fallback_emotions_from_text(text, max_labels=3)
+        # Jika model LOKAL gagal (atau API Key salah)
+        return "Vibe analysis is currently unavailable."
 
-    # Deduplicate labels while preserving order
+    # --- Bagian format "puitis" (dari file baru lu, udah bener) ---
+    try:
+        em_list = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
+    except Exception:
+        return "Vibe analysis failed (parsing error)."
+
+    # Deduplikasi label
     unique = []
     seen = set()
     for e in em_list:
         lbl = e.get("label")
-        if not lbl:
-            continue
+        if not lbl: continue
         if lbl not in seen:
-            seen.add(lbl)
-            unique.append(e)
-        if len(unique) >= 3:
-            break
-
-    # If still less than 3, try to pull additional unique labels from remaining em_list
-    if len(unique) < 3:
-        for e in em_list:
-            lbl = e.get("label")
-            if not lbl or lbl in seen:
-                continue
             seen.add(lbl)
             unique.append(e)
             if len(unique) >= 3:
                 break
-
-    # Final pad with sensible defaults (avoid duplicates)
+    
+    # Padding
     if len(unique) < 3:
         pad_defaults = [
             {"label": "neutral", "score": 0.5},
@@ -391,15 +222,18 @@ def generate_emotion_paragraph(track_names, extended=False):
         ]
         for p in pad_defaults:
             if p["label"] not in seen:
-                unique.append(p)
-                seen.add(p["label"])
-            if len(unique) >= 3:
-                break
-
+                unique.append(p); seen.add(p["label"])
+                if len(unique) >= 3:
+                    break
+    
     top3 = unique[:3]
 
-    # format using emotion_texts (already defined earlier)
+    # Format string (logika ini sudah bagus)
     formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
+    
+    # Harusnya sekarang hasilnya 'sadness', 'disappointment', 'neutral'
+    # Bukan 'neutral', 'joy', 'sadness'
+    
     if extended and len(track_names) > 10:
         return f"Diving deeper into your collection, shades of {formatted}."
     return f"Shades of {formatted}."
