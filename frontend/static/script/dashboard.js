@@ -25,7 +25,7 @@ function updateGenreChart(newLabels, newCounts) {
     genreChartInstance.data.labels = newLabels;
     genreChartInstance.data.datasets[0].data = newCounts;
     genreChartInstance.data.datasets[0].backgroundColor = fullColorList;
-    
+
     genreChartInstance.update();
 }
 
@@ -196,8 +196,8 @@ function customTooltip(tooltipModel) {
         tableRoot.innerHTML = innerHtml;
     }
 
-    const position = tooltipModel._chart.canvas.getBoundingClientRect(); 
-    
+    const position = tooltipModel._chart.canvas.getBoundingClientRect();
+
     tooltipEl.style.opacity = 1;
     tooltipEl.style.position = 'absolute';
     tooltipEl.style.left = position.left + window.pageXOffset + tooltipModel.caretX + 'px';
@@ -211,10 +211,10 @@ function customTooltip(tooltipModel) {
 
 function generateImage(selectedCategory) {
     hideSaveOptions();
-    
+
     // IMPORTANT: Tutup embed yang terbuka sebelum screenshot
     closeCurrentEmbed();
-    
+
     document.body.classList.add('force-desktop-view');
 
     // Sembunyikan semua section
@@ -240,7 +240,7 @@ function generateImage(selectedCategory) {
         if (originalCanvas && clonedCanvas) {
             const chartImage = new Image();
             chartImage.src = originalCanvas.toDataURL('image/png');
-            
+
             // --- INI PERBAIKAN UTAMANYA ---
             // 1. Pastikan gambar diperlakukan sebagai elemen block.
             chartImage.style.display = 'block';
@@ -291,7 +291,7 @@ function generateImage(selectedCategory) {
     headerClone.style.marginBottom = '1.5rem';
     contentWrapper.appendChild(headerClone);
     contentWrapper.appendChild(clone);
-    
+
     const footer = document.createElement("div");
     footer.innerHTML = `Personalify © 2025 • <a href="https://developer.spotify.com/" target="_blank" style="color: #888; text-decoration: none;">Powered by Spotify API</a>`;
     footer.style.paddingTop = "2rem";
@@ -375,9 +375,9 @@ async function loadEmotionAnalysis(isExtended = false) {
     const emotionElement = document.querySelector('.emotion-recap');
     const currentText = emotionElement.textContent;
 
-    // Selalu analisis sesuai mode (default: top 10, extended: top 20)
+    // Cek apakah masih menggunakan teks placeholder ATAU jika diminta extended analysis
     if (currentText.includes("being analyzed") || currentText.includes("getting ready") || isExtended) {
-        // Loading indicator
+        // Tambahkan loading indicator hanya jika bukan extended
         if (!isExtended) {
             emotionElement.innerHTML = 'Your music vibe is being analyzed... <span class="loading-dots">⚡</span>';
         } else {
@@ -402,13 +402,14 @@ async function loadEmotionAnalysis(isExtended = false) {
                 body: JSON.stringify({
                     spotify_id: spotifyId,
                     time_range: timeRange,
-                    extended: isExtended // Parameter dinamis
+                    extended: isExtended  // Parameter baru untuk analisis extended
                 })
             });
 
             const data = await response.json();
 
             if (data.emotion_paragraph) {
+                // Ganti teks dengan hasil analisis
                 emotionElement.innerHTML = data.emotion_paragraph;
             } else {
                 emotionElement.textContent = "Vibe analysis is currently unavailable.";
@@ -627,8 +628,8 @@ style.textContent = `
 /* Aturan styling untuk iframe agar pas */
 .embed-placeholder iframe {
     width: 100%;
-    height: 80px; 
-    border-radius: 8px; 
+    height: 80px;
+    border-radius: 8px;
     border: none;
     display: block;
     vertical-align: bottom;
@@ -656,10 +657,10 @@ style.textContent = `
     left: 0;
     width: 100%;
     height: 100%;
-    
+
     background-color: rgba(29, 185, 84, 0.1); /* Warna hijau Spotify transparan */
     border-radius: 8px; /* Menyesuaikan sudut iframe */
-    
+
     /* Awalnya tidak terlihat dan tidak bisa diklik */
     opacity: 0;
     pointer-events: none;
@@ -677,7 +678,7 @@ style.textContent = `
 .embed-wrapper {
     position: relative;
     /* Pastikan iframe tidak menutupi tombol */
-    line-height: 0; 
+    line-height: 0;
 }
 
 /* Tombol close itu sendiri */
@@ -699,7 +700,7 @@ style.textContent = `
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    
+
     /* Menengahkan simbol '×' */
     display: flex;
     align-items: center;
@@ -784,12 +785,12 @@ document.head.appendChild(style);
 // Panggil function setelah halaman dimuat dengan delay kecil
 document.addEventListener('DOMContentLoaded', function() {
     // Delay 1 detik agar user bisa lihat dashboard dulu
-    setTimeout(() => loadEmotionAnalysis(false), 1000); // Default: top 10
+    setTimeout(loadEmotionAnalysis, 1000);
 });
 
 window.onload = function() {
     Chart.defaults.global.legend.display = false;
-    
+
     const ctx = document.getElementById('genreChart');
     if (ctx) {
         const chartColors = [
@@ -804,7 +805,7 @@ window.onload = function() {
             labels: genreData.labels,
             counts: genreData.counts
         };
-        
+
         let currentGenreArtistsMap = genreArtistsMap;
 
         // 1. BUAT CHART DENGAN DATA TOP 10
@@ -827,7 +828,7 @@ window.onload = function() {
                             if (!tooltipItem) return '';
                             const genre = data.labels[tooltipItem.index];
                             const artists = currentGenreArtistsMap[genre] || [];
-                            
+
                             if (artists.length > 0) {
                                 const maxArtistsToShow = 6;
                                 let artistList = artists.slice(0, maxArtistsToShow).map(artist => `• ${artist}`);
@@ -840,7 +841,8 @@ window.onload = function() {
                         }
                     }
                 }
-            });
+            }
+        });
 
         // 2. SEMBUNYIKAN SLICE DI ATAS 10
         genreChartInstance.getDatasetMeta(0).data.forEach((slice, index) => {
@@ -883,30 +885,30 @@ window.onload = function() {
             document.querySelectorAll('.hidden-item').forEach(item => {
                 item.style.display = 'list-item';
             });
-            
+
             // Update chart dengan data extended (top 20)
             if (genreChartInstance && genreDataExtended) {
                 currentGenreData = genreDataExtended;
                 currentGenreArtistsMap = genreArtistsMapExtended;
-                
+
                 // Update chart data
                 genreChartInstance.data.labels = genreDataExtended.labels;
                 genreChartInstance.data.datasets[0].data = genreDataExtended.counts;
-                
+
                 // Tampilkan semua slice
                 genreChartInstance.getDatasetMeta(0).data.forEach((slice) => {
                     slice.hidden = false;
                 });
-                
+
                 genreChartInstance.update();
-                
+
                 // Update genre list dengan data baru
                 updateGenreList(genreDataExtended.labels, genreDataExtended.counts);
             }
-            
+
             // Trigger analisis emosi extended
-            loadEmotionAnalysis(true); // Extended: top 20
-            
+            loadEmotionAnalysis(true);
+
             easterEggClicked = true;
         });
     });
@@ -925,7 +927,7 @@ window.onload = function() {
 function updateGenreList(labels, counts) {
     const genreList = document.querySelector('#genres-section .list-container');
     if (!genreList) return;
-    
+
     // Rebuild list items dengan data baru
     const chartColors = [
         '#1DB954', '#F28E2B', '#E15759', '#76B7B2', '#9AA067',
@@ -933,18 +935,18 @@ function updateGenreList(labels, counts) {
         '#4D4D4D', '#6B5B95', '#88B04B', '#F7CAC9', '#92A8D1',
         '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
     ];
-    
+
     genreList.innerHTML = labels.map((label, index) => {
         const artists = genreArtistsMapExtended[label] || [];
         const artistText = artists.length > 0 ? `: ${artists.join(', ')}` : '';
-        
+
         return `
             <li data-index="${index}">
                 <div class="list-item">
                     <span class="rank">${index + 1}</span>
                     <div class="info">
                         <div class="name-container">
-                            <span class="genre-color-label" style="background-color: ${chartColors[index % chartColors.length]}"></span> 
+                            <span class="genre-color-label" style="background-color: ${chartColors[index % chartColors.length]}"></span>
                             <span class="name">${label}</span>
                         </div>
                         <div class="meta">
@@ -955,7 +957,7 @@ function updateGenreList(labels, counts) {
             </li>
         `;
     }).join('');
-    
+
     // Re-attach click handlers
     document.querySelectorAll('#genres-section li').forEach((item) => {
         const itemIndex = parseInt(item.getAttribute('data-index'));

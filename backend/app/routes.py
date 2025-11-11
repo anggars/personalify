@@ -169,6 +169,7 @@ async def analyze_emotions_background(
         if not cached_data:
             return {"error": "No data found for analysis"}
 
+        # Lakukan analisis emosi dengan jumlah track yang berbeda
         tracks_to_analyze = cached_data.get("tracks", [])
 
         # --- PERBAIKAN LOGIKA UTAMA ADA DI SINI ---
@@ -179,15 +180,16 @@ async def analyze_emotions_background(
             # Jika ini analisis standar, gunakan hanya 10 track pertama
             track_names = [track['name'] for track in tracks_to_analyze[:10]]
 
-        # Pastikan parameter extended diteruskan ke generate_emotion_paragraph
-        emotion_paragraph = generate_emotion_paragraph(track_names, extended=extended)
+        emotion_paragraph = generate_emotion_paragraph(track_names)
 
         # --- LOGIKA PENYIMPANAN YANG DIPERBAIKI ---
         if extended:
             # Jika ini permintaan 'extended', JANGAN simpan hasilnya.
+            # Cukup kembalikan untuk ditampilkan sementara di browser.
             print("Extended analysis requested. Returning temporary result without caching.")
         else:
             # Jika ini analisis standar (Top 10 saat halaman dibuka),
+            # baru simpan hasilnya ke cache dan database.
             print("Standard analysis. Updating cache and database.")
             cached_data['emotion_paragraph'] = emotion_paragraph
             cache_top_data("top", spotify_id, time_range, cached_data)

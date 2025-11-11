@@ -66,42 +66,42 @@ def prepare_text_for_analysis(text: str) -> str:
     if not text or not text.strip():
         print("NLP Handler: Teks kosong, tidak ada yang diterjemahkan.")
         return ""
-    
+
     try:
         # Cek apakah teks sudah bahasa Inggris
         # Gunakan sample text yang lebih panjang untuk deteksi yang akurat
         sample_text = text[:200] if len(text) > 200 else text
-        
+
         try:
             detected_lang = GoogleTranslator().detect(sample_text)
             print(f"NLP Handler: Bahasa terdeteksi: [{detected_lang}]")
         except Exception as detect_error:
             print(f"NLP Handler: Error deteksi bahasa: {detect_error}. Asumsikan bukan Inggris.")
             detected_lang = 'unknown'
-        
+
         # Jika sudah Inggris, langsung return
         if detected_lang == 'en':
             print("NLP Handler: Teks sudah Bahasa Inggris, tidak perlu translate.")
             return text
-        
+
         # Jika bukan Inggris, coba terjemahkan
         print(f"NLP Handler: Menerjemahkan dari [{detected_lang}] ke [en]...")
-        
+
         try:
             translator = GoogleTranslator(source='auto', target='en')
             translated_text = translator.translate(text)
-            
+
             if translated_text and len(translated_text.strip()) > 0:
                 print(f"NLP Handler: Berhasil menerjemahkan. Preview: '{translated_text[:100]}...'")
                 return translated_text
             else:
                 print("NLP Handler: Hasil translasi kosong. Gunakan teks asli.")
                 return text
-                
+
         except Exception as translate_error:
             print(f"NLP Handler: Error saat translasi: {translate_error}. Gunakan teks asli.")
             return text
-            
+
     except Exception as e:
         print(f"NLP Handler: Error umum pada prepare_text_for_analysis: {e}")
         print("NLP Handler: Menggunakan teks asli sebagai fallback.")
@@ -125,12 +125,12 @@ def get_emotion_from_text(text: str):
 
     try:
         print(f"NLP Handler: Memanggil HF API untuk analisis...")
-        
+
         # Batasi panjang teks ke 510 karakter untuk model
         text_to_analyze = text[:510]
-        
+
         results = hf_client.text_classification(text_to_analyze, top_k=28)
-        
+
         if results and isinstance(results, list):
             print(f"NLP Handler: Berhasil. Top emotion: {results[0]['label']} ({results[0]['score']:.3f})")
             _analysis_cache[text] = results
@@ -152,11 +152,11 @@ def analyze_lyrics_emotion(lyrics: str):
 
     # Terjemahkan jika perlu
     text = prepare_text_for_analysis(lyrics.strip())
-    
+
     if not text or len(text.strip()) == 0:
         print("NLP Handler: Teks hasil translasi kosong.")
         return {"error": "Translation resulted in empty text."}
-    
+
     # Analisis
     emotions = get_emotion_from_text(text)
 
@@ -238,7 +238,6 @@ def generate_emotion_paragraph(track_names, extended=False):
     top3 = unique[:3]
     formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
 
-    # Pesan berbeda untuk extended
     if extended and num_tracks > 10:
         return f"Shades of {formatted}."
 
