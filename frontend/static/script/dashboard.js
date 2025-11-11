@@ -43,14 +43,22 @@ categoryFilterSelect.addEventListener("change", updateCategoryDisplay);
 
 function checkScreenSize() {
     if (window.innerWidth <= 768) {
+        // --- MODE MOBILE ---
         categoryFilterWrapper.style.display = "inline-block";
-        updateCategoryDisplay();
-    } else {
+        
+        // HAPUS style inline dari mode desktop agar CSS mobile bisa bekerja
         for (const key in sections) {
-            sections[key].style.display = "block";
+            sections[key].style.display = ""; 
+        }
+        
+        updateCategoryDisplay(); // Jalankan filter mobile
+    } else {
+        // --- MODE DESKTOP ---
+        categoryFilterWrapper.style.display = "none";
+        for (const key in sections) {
+            sections[key].style.display = "block"; // Paksa tampil semua
             sections[key].classList.remove("active");
         }
-        categoryFilterWrapper.style.display = "none";
     }
 }
 
@@ -903,7 +911,7 @@ window.onload = function() {
                 genreChartInstance.update();
 
                 // Update genre list dengan data baru
-                updateGenreList(genreDataExtended.labels, genreDataExtended.counts);
+                // updateGenreList(genreDataExtended.labels, genreDataExtended.counts);
             }
 
             // Trigger analisis emosi extended
