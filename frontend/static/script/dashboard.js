@@ -374,25 +374,25 @@ modal.addEventListener('click', (event) => {
 async function loadEmotionAnalysis(isExtended = false) {
     const emotionElement = document.querySelector('.emotion-recap');
     const currentText = emotionElement.textContent;
-    
-    // Cek apakah masih menggunakan teks placeholder ATAU jika diminta extended analysis
+
+    // Selalu analisis sesuai mode (default: top 10, extended: top 20)
     if (currentText.includes("being analyzed") || currentText.includes("getting ready") || isExtended) {
-        // Tambahkan loading indicator hanya jika bukan extended
+        // Loading indicator
         if (!isExtended) {
             emotionElement.innerHTML = 'Your music vibe is being analyzed... <span class="loading-dots">⚡</span>';
         } else {
             emotionElement.innerHTML = 'Analyzing extended music collection... <span class="loading-dots">⚡</span>';
         }
-        
+
         try {
             // Ambil spotify_id dari URL
             const urlParts = window.location.pathname.split('/');
             const spotifyId = urlParts[urlParts.length - 1];
-            
+
             // Ambil time_range dari URL parameter
             const urlParams = new URLSearchParams(window.location.search);
             const timeRange = urlParams.get('time_range') || 'short_term';
-            
+
             // Panggil endpoint analisis emosi dengan parameter extended
             const response = await fetch('/analyze-emotions-background', {
                 method: 'POST',
@@ -402,19 +402,18 @@ async function loadEmotionAnalysis(isExtended = false) {
                 body: JSON.stringify({
                     spotify_id: spotifyId,
                     time_range: timeRange,
-                    extended: isExtended  // Parameter baru untuk analisis extended
+                    extended: isExtended // Parameter dinamis
                 })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.emotion_paragraph) {
-                // Ganti teks dengan hasil analisis
                 emotionElement.innerHTML = data.emotion_paragraph;
             } else {
                 emotionElement.textContent = "Vibe analysis is currently unavailable.";
             }
-            
+
         } catch (error) {
             console.warn("Could not load emotion analysis:", error);
             emotionElement.textContent = "Vibe analysis is currently unavailable.";
@@ -785,7 +784,7 @@ document.head.appendChild(style);
 // Panggil function setelah halaman dimuat dengan delay kecil
 document.addEventListener('DOMContentLoaded', function() {
     // Delay 1 detik agar user bisa lihat dashboard dulu
-    setTimeout(loadEmotionAnalysis, 1000);
+    setTimeout(() => loadEmotionAnalysis(false), 1000); // Default: top 10
 });
 
 window.onload = function() {
@@ -841,8 +840,7 @@ window.onload = function() {
                         }
                     }
                 }
-            }
-        });
+            });
 
         // 2. SEMBUNYIKAN SLICE DI ATAS 10
         genreChartInstance.getDatasetMeta(0).data.forEach((slice, index) => {
@@ -907,7 +905,7 @@ window.onload = function() {
             }
             
             // Trigger analisis emosi extended
-            loadEmotionAnalysis(true);
+            loadEmotionAnalysis(true); // Extended: top 20
             
             easterEggClicked = true;
         });

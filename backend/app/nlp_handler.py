@@ -184,19 +184,19 @@ def generate_emotion_paragraph(track_names, extended=False):
     # Gunakan jumlah yang sesuai
     num_tracks = len(track_names) if extended else min(10, len(track_names))
     tracks_to_analyze = track_names[:num_tracks]
-    
+
     print(f"NLP Handler: Menganalisis {num_tracks} lagu (extended={extended})")
-    
+
     # Gabungkan judul
     combined_text = "\n".join(tracks_to_analyze)
-    
+
     # CRITICAL: Terjemahkan dulu
     text = prepare_text_for_analysis(combined_text)
-    
+
     if not text or len(text.strip()) == 0:
         print("NLP Handler: Teks untuk analisis kosong setelah translasi.")
         return "Vibe analysis failed (empty text after translation)."
-    
+
     # Analisis
     emotions = get_emotion_from_text(text)
 
@@ -220,7 +220,7 @@ def generate_emotion_paragraph(track_names, extended=False):
             unique.append(e)
             if len(unique) >= 3:
                 break
-    
+
     # Padding jika kurang dari 3
     if len(unique) < 3:
         pad_defaults = [
@@ -234,12 +234,12 @@ def generate_emotion_paragraph(track_names, extended=False):
                 seen.add(p["label"])
                 if len(unique) >= 3:
                     break
-    
+
     top3 = unique[:3]
     formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
-    
+
     # Pesan berbeda untuk extended
     if extended and num_tracks > 10:
-        return f"Diving deeper into your collection, shades of {formatted}."
-    
+        return f"Shades of {formatted}."
+
     return f"Shades of {formatted}."
