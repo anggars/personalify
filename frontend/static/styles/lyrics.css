@@ -503,3 +503,36 @@ footer {
         transform: translateX(250%);
     }
 }
+
+/* 1. Definisikan kursor (akan dipakai oleh JS) */
+.typing-cursor {
+  display: inline-block;
+  width: 10px;
+  height: 1em;
+  background-color: #1DB954; /* Warna hijau */
+  margin-left: 3px;
+  vertical-align: middle;
+  animation: blink-caret 0.75s step-end infinite;
+}
+
+@keyframes blink-caret {
+  from, to { background-color: transparent; }
+  50% { background-color: var(--primary); }
+}
+
+/* 2. Sembunyikan elemen yang mau diketik */
+header h1, header p.subtitle, .container {
+    visibility: hidden;
+}
+
+/* 3. Definisikan animasi fade-in (untuk form) */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -76,3 +76,66 @@ lyricsInput.addEventListener('keydown', function(event) {
         analyzeLyrics();
     }
 });
+
+function typeEffect(element, text, speed = 30) {
+    return new Promise((resolve) => {
+        let index = 0;
+        let currentHtml = '';
+        
+        element.style.visibility = 'visible';
+
+        function typeWriter() {
+            if (index < text.length) {
+                let char = text.charAt(index);
+
+                if (char === '<') {
+                    let tagEnd = text.indexOf('>', index);
+                    if (tagEnd !== -1) {
+                        currentHtml += text.substring(index, tagEnd + 1);
+                        index = tagEnd + 1;
+                    } else {
+                        currentHtml += char;
+                        index++;
+                    }
+                } else {
+                    currentHtml += char;
+                    index++;
+                }
+
+                element.innerHTML = currentHtml + '<span class="typing-cursor"></span>';
+                setTimeout(typeWriter, speed);
+            } else {
+                element.innerHTML = currentHtml;
+                resolve();
+            }
+        }
+        typeWriter();
+    });
+}
+
+// Jalankan animasi setelah halaman dimuat
+document.addEventListener('DOMContentLoaded', async function() {
+    // 1. Temukan elemen
+    const titleEl = document.querySelector('header h1');
+    const subtitleEl = document.querySelector('header p.subtitle');
+    const containerEl = document.querySelector('.container');
+
+    if (!titleEl || !subtitleEl || !containerEl) return;
+
+    // 2. Simpan teks aslinya
+    const titleText = titleEl.textContent;
+    const subtitleText = subtitleEl.textContent;
+
+    // 3. Kosongkan
+    titleEl.innerHTML = '';
+    subtitleEl.innerHTML = '';
+
+    // 4. Jalankan sekuens
+    await typeEffect(titleEl, titleText, 50);
+    await typeEffect(subtitleEl, subtitleText, 30);
+
+    // 5. Tampilkan form container dengan animasi fade-in
+    containerEl.style.visibility = 'visible';
+    containerEl.style.opacity = '0'; // Mulai dari 0 untuk fade-in
+    containerEl.style.animation = 'fadeInUp 1s ease-out forwards';
+});

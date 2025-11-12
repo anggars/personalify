@@ -12,6 +12,69 @@ const sections = {
 };
 const modal = document.getElementById("save-modal-overlay");
 
+/**
+ * FUNGSI BARU: Efek Ketik (Typing Effect)
+ * Menampilkan teks satu per satu, dan bisa menangani tag HTML (seperti <b>)
+ * * @param {HTMLElement} element - Elemen HTML (misal: <p>) untuk diisi teks.
+ * @param {string} text - Teks lengkap yang ingin ditampilkan (termasuk HTML).
+ * @param {number} speed - Kecepatan mengetik dalam milidetik (opsional).
+ */
+function typeEffect(element, text, speed = 30) {
+    // 1. Fungsi ini sekarang mengembalikan Promise
+    return new Promise((resolve) => {
+        let index = 0;
+        let currentHtml = '';
+        
+        // Hapus kursor lama jika ada
+        const oldCursor = element.querySelector('.typing-cursor');
+        if (oldCursor) {
+            oldCursor.remove();
+        }
+        
+        // Bersihkan teks sebelumnya
+        element.innerHTML = '';
+
+        function typeWriter() {
+            if (index < text.length) {
+                let char = text.charAt(index);
+
+                if (char === '<') {
+                    // Jika ini adalah tag HTML, temukan akhirnya
+                    let tagEnd = text.indexOf('>', index);
+                    if (tagEnd !== -1) {
+                        // Ambil seluruh tag dan tambahkan sekaligus
+                        let tag = text.substring(index, tagEnd + 1);
+                        currentHtml += tag;
+                        index = tagEnd + 1; // Lompat ke setelah tag
+                    } else {
+                        // Tag tidak lengkap, anggap sebagai teks biasa
+                        currentHtml += char;
+                        index++;
+                    }
+                } else {
+                    // Teks biasa, tambahkan per karakter
+                    currentHtml += char;
+                    index++;
+                }
+
+                // Tampilkan HTML saat ini + kursor
+                element.innerHTML = currentHtml + '<span class="typing-cursor"></span>';
+                
+                // Lanjutkan ke karakter berikutnya
+                setTimeout(typeWriter, speed);
+            } else {
+                // Selesai mengetik, hapus kursor
+                element.innerHTML = currentHtml;
+                // 2. Beri tahu Promise-nya bahwa kita sudah selesai
+                resolve();
+            }
+        }
+
+        // Mulai efek ketik
+        typeWriter();
+    });
+}
+
 function updateGenreChart(newLabels, newCounts) {
     if (!genreChartInstance) return;
 
@@ -409,15 +472,17 @@ async function loadEmotionAnalysis(isExtended = false) {
             const data = await response.json();
 
             if (data.emotion_paragraph) {
-                // Ganti teks dengan hasil analisis
-                emotionElement.innerHTML = data.emotion_paragraph;
+                // Ganti teks dengan hasil analisis MENGGUNAKAN EFEK KETIK
+                typeEffect(emotionElement, data.emotion_paragraph);
             } else {
-                emotionElement.textContent = "Vibe analysis is currently unavailable.";
+                // Tampilkan pesan error juga dengan efek ketik
+                typeEffect(emotionElement, "Vibe analysis is currently unavailable.");
             }
 
         } catch (error) {
             console.warn("Could not load emotion analysis:", error);
-            emotionElement.textContent = "Vibe analysis is currently unavailable.";
+            // Tampilkan pesan error juga dengan efek ketik
+            typeEffect(emotionElement, "Vibe analysis is currently unavailable.");
         }
     }
 }
@@ -782,9 +847,39 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Panggil function setelah halaman dimuat dengan delay kecil
-document.addEventListener('DOMContentLoaded', function() {
-    // Delay 1 detik agar user bisa lihat dashboard dulu
+// Panggil function setelah halaman dimuat
+document.addEventListener('DOMContentLoaded', async function() {
+    // 1. Temukan semua elemen header
+    const titleEl = document.querySelector('header h1');
+    const subtitleEl = document.querySelector('header .subtitle');
+    const emotionEl = document.querySelector('header .emotion-recap');
+
+    // 2. Cek apakah elemen-elemen itu ada
+    if (!titleEl || !subtitleEl || !emotionEl) {
+        console.warn("Elemen header untuk efek ketik tidak ditemukan.");
+        // Jika tidak ada, jalankan saja fungsi utamanya
+        setTimeout(() => loadEmotionAnalysis(false), 1000);
+        return;
+    }
+
+    // 3. Simpan teks asli yang dikirim dari server
+    const originalTitle = titleEl.textContent;
+    const originalSubtitle = subtitleEl.textContent;
+    const originalEmotion = emotionEl.innerHTML; // (Teks placeholder)
+
+    // 4. Kosongkan teksnya agar tidak "flash" (muncul sekejap)
+    titleEl.textContent = '';
+    subtitleEl.textContent = '';
+    emotionEl.innerHTML = '';
+
+    // 5. Jalankan sekuens mengetik satu per satu
+    // (await) akan menunggu satu fungsi selesai sebelum lanjut
+    await typeEffect(titleEl, originalTitle, 50);     // Kecepatan 50ms (lebih cepat)
+    await typeEffect(subtitleEl, originalSubtitle, 30); // Kecepatan 30ms (normal)
+    await typeEffect(emotionEl, originalEmotion, 30);   // Kecepatan 30ms (normal)
+
+    // 6. Setelah semua teks placeholder diketik, baru kita panggil 
+    //    analisis emosi yang sebenarnya (sesuai delay asli 1 detik)
     setTimeout(() => loadEmotionAnalysis(false), 1000);
 });
 

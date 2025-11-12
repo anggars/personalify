@@ -32,5 +32,76 @@
         <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>
     </footer>
 
+    <script>
+        function typeEffect(element, text, speed = 30) {
+            return new Promise((resolve) => {
+                let index = 0;
+                let currentHtml = '';
+                
+                // Pastikan elemennya terlihat saat mulai
+                element.style.visibility = 'visible';
+
+                function typeWriter() {
+                    if (index < text.length) {
+                        let char = text.charAt(index);
+
+                        if (char === '<') {
+                            // Handle tag HTML (misal: <a> di paragraf)
+                            let tagEnd = text.indexOf('>', index);
+                            if (tagEnd !== -1) {
+                                currentHtml += text.substring(index, tagEnd + 1);
+                                index = tagEnd + 1;
+                            } else {
+                                currentHtml += char;
+                                index++;
+                            }
+                        } else {
+                            // Teks biasa
+                            currentHtml += char;
+                            index++;
+                        }
+
+                        element.innerHTML = currentHtml + '<span class="typing-cursor"></span>';
+                        setTimeout(typeWriter, speed);
+                    } else {
+                        // Selesai: Hapus kursor dan resolve promise
+                        element.innerHTML = currentHtml;
+                        resolve();
+                    }
+                }
+                typeWriter();
+            });
+        }
+
+        // Jalankan animasi setelah halaman dimuat
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 1. Temukan elemen
+            const titleEl = document.querySelector('.hero h1');
+            const pEl = document.querySelector('.hero p');
+            const buttonEl = document.querySelector('.hero .button');
+
+            if (!titleEl || !pEl || !buttonEl) return;
+
+            // 2. Simpan teks aslinya
+            const titleText = "Welcome to Personalify!";
+            const pText = pEl.innerHTML; // Ambil HTML aslinya (biar link <a> tetap jalan)
+
+            // 3. Kosongkan (CSS sudah menyembunyikan, tapi ini double-check)
+            titleEl.innerHTML = '';
+            pEl.innerHTML = '';
+
+            // 4. TUNGGU logo selesai fade-in (0.8s + 0.2s delay = 1000ms)
+            setTimeout(async () => {
+                // 5. Jalankan sekuens
+                await typeEffect(titleEl, titleText, 50);
+                await typeEffect(pEl, pText, 20); // Paragraf lebih cepat
+
+                // 6. Tampilkan tombol
+                buttonEl.style.visibility = 'visible';
+                buttonEl.style.opacity = '0'; // Mulai dari 0 untuk fade-in
+                buttonEl.style.animation = 'fadeInUp 1s ease-out forwards';
+            }, 1000); // <-- Delay 1 detik
+        });
+    </script>
 </body>
 </html>
