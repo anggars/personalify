@@ -354,6 +354,14 @@ function generateImage(selectedCategory) {
     headerClone.style.marginBottom = '1.5rem';
     contentWrapper.appendChild(headerClone);
     contentWrapper.appendChild(clone);
+    const styleFix = document.createElement('style');
+    styleFix.innerHTML = `
+        .list-container li {
+            opacity: 1 !important;
+            animation: none !important;
+        }
+    `;
+    contentWrapper.appendChild(styleFix);
 
     const footer = document.createElement("div");
     footer.innerHTML = `Personalify © 2025 • <a href="https://developer.spotify.com/" target="_blank" style="color: #888; text-decoration: none;">Powered by Spotify API</a>`;
