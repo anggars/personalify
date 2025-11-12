@@ -61,44 +61,33 @@ _analysis_cache = {}
 def prepare_text_for_analysis(text: str) -> str:
     """
     Menerjemahkan teks non-Inggris ke Inggris menggunakan deep-translator.
-    FIXED: Error handling yang lebih robust.
+    FIXED: Menghapus blok .detect() yang error, langsung pakai source='auto'.
     """
     if not text or not text.strip():
         print("NLP Handler: Teks kosong, tidak ada yang diterjemahkan.")
         return ""
 
     try:
-        # Cek apakah teks sudah bahasa Inggris
-        # Gunakan sample text yang lebih panjang untuk deteksi yang akurat
-        sample_text = text[:200] if len(text) > 200 else text
+        # Kita HAPUS blok .detect() yang error.
+        # Kita HAPUS juga cek 'if detected_lang == 'en''.
+        # Kita langsung serahkan ke 'source=auto' karena dia lebih pintar.
 
-        try:
-            detected_lang = GoogleTranslator().detect(sample_text)
-            print(f"NLP Handler: Bahasa terdeteksi: [{detected_lang}]")
-        except Exception as detect_error:
-            print(f"NLP Handler: Error deteksi bahasa: {detect_error}. Asumsikan bukan Inggris.")
-            detected_lang = 'unknown'
-
-        # Jika sudah Inggris, langsung return
-        if detected_lang == 'en':
-            print("NLP Handler: Teks sudah Bahasa Inggris, tidak perlu translate.")
-            return text
-
-        # Jika bukan Inggris, coba terjemahkan
-        print(f"NLP Handler: Menerjemahkan dari [{detected_lang}] ke [en]...")
+        print(f"NLP Handler: Memastikan teks dalam Bahasa Inggris (translasi jika perlu)...")
 
         try:
             translator = GoogleTranslator(source='auto', target='en')
             translated_text = translator.translate(text)
 
             if translated_text and len(translated_text.strip()) > 0:
-                print(f"NLP Handler: Berhasil menerjemahkan. Preview: '{translated_text[:100]}...'")
+                # Kita ubah log-nya jadi lebih generik
+                print(f"NLP Handler: Teks siap untuk dianalisis. Preview: '{translated_text[:100]}...'")
                 return translated_text
             else:
                 print("NLP Handler: Hasil translasi kosong. Gunakan teks asli.")
                 return text
 
         except Exception as translate_error:
+            # Jika 'source=auto' pun gagal, kita tangkap di sini
             print(f"NLP Handler: Error saat translasi: {translate_error}. Gunakan teks asli.")
             return text
 
