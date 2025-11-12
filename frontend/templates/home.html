@@ -100,6 +100,10 @@
                 buttonEl.style.visibility = 'visible';
                 buttonEl.style.opacity = '0'; // Mulai dari 0 untuk fade-in
                 buttonEl.style.animation = 'fadeInUp 1s ease-out forwards';
+
+                // 7. Tampilkan footer
+                const footerEl = document.querySelector('footer');
+                if (footerEl) footerEl.classList.add('fade-in');
             }, 1000); // <-- Delay 1 detik
         });
     </script>

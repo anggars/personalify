@@ -138,4 +138,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     containerEl.style.visibility = 'visible';
     containerEl.style.opacity = '0'; // Mulai dari 0 untuk fade-in
     containerEl.style.animation = 'fadeInUp 1s ease-out forwards';
+
+    // 6. Tampilkan footer
+    const footerEl = document.querySelector('footer');
+    if (footerEl) footerEl.classList.add('fade-in');
 });

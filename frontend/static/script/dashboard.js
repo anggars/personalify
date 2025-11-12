@@ -886,7 +886,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     await typeEffect(subtitleEl, originalSubtitle, 30); // Kecepatan 30ms (normal)
     await typeEffect(emotionEl, originalEmotion, 30);   // Kecepatan 30ms (normal)
 
-    // 6. Setelah semua teks placeholder diketik, baru kita panggil 
+    // 6. Tampilkan footer
+    const footerEl = document.querySelector('footer');
+    if (footerEl) footerEl.classList.add('fade-in');
+
+    // 7. Setelah semua teks placeholder diketik, baru kita panggil
     //    analisis emosi yang sebenarnya (sesuai delay asli 1 detik)
     setTimeout(() => loadEmotionAnalysis(false), 1000);
 });

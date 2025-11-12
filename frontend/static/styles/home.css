@@ -123,6 +123,12 @@ footer {
     text-align: center;
     font-size: 0.75rem;
     color: #888;
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+}
+
+footer.fade-in {
+    opacity: 1;
 }
 
 .footer-link {

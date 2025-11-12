@@ -262,6 +262,12 @@ footer {
     border-top: none;
     box-shadow: none;
     z-index: 100;
+    opacity: 0;
+    transition: opacity 0.5s ease-out 0.5s; /* Kasih delay dikit */
+}
+
+footer.fade-in {
+    opacity: 1;
 }
 
 .footer-link {
