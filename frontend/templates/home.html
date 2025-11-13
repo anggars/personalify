@@ -75,36 +75,30 @@
 
         // Jalankan animasi setelah halaman dimuat
         document.addEventListener('DOMContentLoaded', async function() {
-            // 1. Temukan elemen
             const titleEl = document.querySelector('.hero h1');
             const pEl = document.querySelector('.hero p');
             const buttonEl = document.querySelector('.hero .button');
+            const footerEl = document.querySelector('footer');
 
             if (!titleEl || !pEl || !buttonEl) return;
 
-            // 2. Simpan teks aslinya
-            const titleText = "Welcome to Personalify!";
-            const pText = pEl.innerHTML; // Ambil HTML aslinya (biar link <a> tetap jalan)
+            // 1. Simpan teks paragraf & kosongkan (H1 JANGAN dikosongkan)
+            const pText = pEl.innerHTML;
+            pEl.innerHTML = ''; 
 
-            // 3. Kosongkan (CSS sudah menyembunyikan, tapi ini double-check)
-            titleEl.innerHTML = '';
-            pEl.innerHTML = '';
+            // 2. Tunggu Logo muncul sebentar (misal 500ms)
+            setTimeout(() => {
+                // A. FADE IN: Judul, Tombol, Footer muncul barengan
+                titleEl.classList.add('visible');
+                buttonEl.classList.add('visible');
+                if (footerEl) footerEl.classList.add('visible');
 
-            // 4. TUNGGU logo selesai fade-in (0.8s + 0.2s delay = 1000ms)
-            setTimeout(async () => {
-                // 5. Jalankan sekuens
-                await typeEffect(titleEl, titleText, 50);
-                await typeEffect(pEl, pText, 20); // Paragraf lebih cepat
+                // B. TYPING: Tunggu fade in selesai (1000ms), baru ketik paragraf
+                setTimeout(async () => {
+                    await typeEffect(pEl, pText, 20);
+                }, 1000);
 
-                // 6. Tampilkan tombol
-                buttonEl.style.visibility = 'visible';
-                buttonEl.style.opacity = '0'; // Mulai dari 0 untuk fade-in
-                buttonEl.style.animation = 'fadeInUp 1s ease-out forwards';
-
-                // 7. Tampilkan footer
-                const footerEl = document.querySelector('footer');
-                if (footerEl) footerEl.classList.add('fade-in');
-            }, 1000); // <-- Delay 1 detik
+            }, 500); 
         });
     </script>
 </body>
