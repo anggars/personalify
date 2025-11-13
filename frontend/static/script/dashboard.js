@@ -898,6 +898,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 window.onload = function() {
     Chart.defaults.global.legend.display = false;
 
+    // --- 1. SETUP CHART GENRE ---
     const ctx = document.getElementById('genreChart');
     if (ctx) {
         const chartColors = [
@@ -907,7 +908,6 @@ window.onload = function() {
             '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
         ];
 
-        // Data default (top 10)
         let currentGenreData = {
             labels: genreData.labels,
             counts: genreData.counts
@@ -915,7 +915,7 @@ window.onload = function() {
 
         let currentGenreArtistsMap = genreArtistsMap;
 
-        // 1. BUAT CHART DENGAN DATA TOP 10
+        // Buat Chart
         genreChartInstance = new Chart(ctx, {
             type: 'pie',
             data: {
@@ -951,7 +951,7 @@ window.onload = function() {
             }
         });
 
-        // 2. SEMBUNYIKAN SLICE DI ATAS 10
+        // Sembunyikan slice > 10 di awal
         genreChartInstance.getDatasetMeta(0).data.forEach((slice, index) => {
             if (index >= 10) {
                 slice.hidden = true;
@@ -959,11 +959,10 @@ window.onload = function() {
         });
         genreChartInstance.update();
 
-        // 3. SINKRONISASI WARNA DAN INTERAKTIVITAS LEGENDA
+        // Setup interaktivitas list genre
         const genreListItems = document.querySelectorAll('#genres-section li');
         genreListItems.forEach((item) => {
             const itemIndex = parseInt(item.getAttribute('data-index'));
-
             const colorLabel = item.querySelector('.genre-color-label');
             if (colorLabel) {
                 colorLabel.style.backgroundColor = chartColors[itemIndex % chartColors.length];
@@ -982,52 +981,61 @@ window.onload = function() {
 
     checkScreenSize();
 
-    // 4. EASTER EGG DENGAN UPGRADE GENRE DATA
+    // --- 2. EASTER EGG LOGIC (FIXED) ---
     let easterEggClicked = false;
     document.querySelectorAll('.footer-toggler').forEach(toggler => {
         toggler.addEventListener('click', function() {
             if (easterEggClicked) return;
 
-            // Tampilkan hidden items
-            document.querySelectorAll('.hidden-item').forEach(item => {
-                item.style.display = 'list-item';
+            // Tampilkan item Artists & Tracks yang tersembunyi
+            ['artists-section', 'tracks-section'].forEach(sectionId => {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    const hiddenItems = section.querySelectorAll('.hidden-item');
+                    hiddenItems.forEach((item, idx) => {
+                        item.style.animationDelay = `${idx * 0.1}s`;
+                        item.style.display = 'list-item';
+                    });
+                }
             });
 
-            // Update chart dengan data extended (top 20)
+            // Update Genre Chart & List (Top 20)
             if (genreChartInstance && genreDataExtended) {
                 currentGenreData = genreDataExtended;
                 currentGenreArtistsMap = genreArtistsMapExtended;
 
-                // Update chart data
                 genreChartInstance.data.labels = genreDataExtended.labels;
                 genreChartInstance.data.datasets[0].data = genreDataExtended.counts;
 
-                // Tampilkan semua slice
                 genreChartInstance.getDatasetMeta(0).data.forEach((slice) => {
                     slice.hidden = false;
                 });
-
                 genreChartInstance.update();
 
-                // Update genre list dengan data baru
                 updateGenreList(genreDataExtended.labels, genreDataExtended.counts);
             }
 
-            // Trigger analisis emosi extended
             loadEmotionAnalysis(true);
-
             easterEggClicked = true;
         });
     });
 
-    // Saat load dashboard, ambil data dari endpoint yang sudah include emotion_paragraph
+    // --- 3. FETCH DATA (SUDAH DIPERBAIKI) ---
+    // Bagian ini sebelumnya yang bikin error (nongol duluan).
+    // Sekarang kita fetch datanya tapi JANGAN update teks emosi secara paksa.
+    const urlParts = window.location.pathname.split('/');
+    const spotifyId = urlParts[urlParts.length - 1];
+    const urlParams = new URLSearchParams(window.location.search);
+    const timeRange = urlParams.get('time_range') || 'short_term';
+
     fetch(`/top-data?spotify_id=${spotifyId}&time_range=${timeRange}`)
       .then(res => res.json())
       .then(data => {
-          // Render artists, tracks, genres, dan emotion_paragraph langsung
-          document.querySelector('.emotion-recap').innerHTML = data.emotion_paragraph;
-          // ...render lainnya...
-      });
+          // KITA KOSONGKAN BAGIAN INI.
+          // Biarkan animasi typing di DOMContentLoaded yang menangani teksnya.
+          // Jangan ada kode: document.querySelector(...).innerHTML = ...
+      })
+      .catch(err => console.error("Error fetching top data:", err));
 };
 
 // Fungsi helper untuk update genre list
@@ -1035,7 +1043,7 @@ function updateGenreList(labels, counts) {
     const genreList = document.querySelector('#genres-section .list-container');
     if (!genreList) return;
 
-    // Rebuild list items dengan data baru
+    // Warna chart untuk label
     const chartColors = [
         '#1DB954', '#F28E2B', '#E15759', '#76B7B2', '#9AA067',
         '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC',
@@ -1043,12 +1051,25 @@ function updateGenreList(labels, counts) {
         '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
     ];
 
+    // Render ulang list dengan logika animasi baru
     genreList.innerHTML = labels.map((label, index) => {
         const artists = genreArtistsMapExtended[label] || [];
         const artistText = artists.length > 0 ? `: ${artists.join(', ')}` : '';
 
+        // === LOGIKA ANIMASI (FIXED) ===
+        let animStyle = '';
+        if (index < 10) {
+            // Item 1-10: JANGAN ANIMASI ULANG (Set opacity 1, matikan animasi)
+            animStyle = 'style="animation: none; opacity: 1;"';
+        } else {
+            // Item 11-20: ANIMASI STAGGER (Kasih delay bertahap)
+            // index 10 (item ke-11) delay 0s, index 11 delay 0.1s, dst.
+            const delay = (index - 10) * 0.1;
+            animStyle = `style="animation-delay: ${delay}s;"`;
+        }
+
         return `
-            <li data-index="${index}">
+            <li data-index="${index}" ${animStyle}>
                 <div class="list-item">
                     <span class="rank">${index + 1}</span>
                     <div class="info">
@@ -1065,7 +1086,7 @@ function updateGenreList(labels, counts) {
         `;
     }).join('');
 
-    // Re-attach click handlers
+    // Pasang ulang event listener klik (biar chart bisa di-toggle lewat list)
     document.querySelectorAll('#genres-section li').forEach((item) => {
         const itemIndex = parseInt(item.getAttribute('data-index'));
         item.addEventListener('click', function() {

@@ -152,40 +152,22 @@ footer.fade-in {
     }
 }
 
-/* =================================== */
-/* ====== EFEK KETIK (v4 - JS) ====== */
-/* =================================== */
-
-/* 1. Definisikan kursor (akan dipakai oleh JS) */
-.typing-cursor {
-  display: inline-block;
-  width: 10px;
-  height: 1em;
-  background-color: var(--primary); /* Warna hijau */
-  margin-left: 3px;
-  vertical-align: middle;
-  animation: blink-caret 0.75s step-end infinite;
+/* 1. Initial State: H1, Tombol, Footer siap-siap Fade In (Opacity 0) */
+.hero h1, 
+.hero .button, 
+footer {
+    opacity: 0;
+    transform: translateY(20px); /* Sedikit turun biar ada efek naik */
+    transition: opacity 1s ease-out, transform 1s ease-out;
 }
 
-@keyframes blink-caret {
-  from, to { background-color: transparent; }
-  50% { background-color: var(--primary); }
-}
-
-/* 2. Sembunyikan elemen yang mau diketik (agar JS bisa ambil alih) */
-/* Penting: 'visibility' lebih mulus daripada 'opacity: 0' */
-.hero h1, .hero p, .hero .button {
+/* 2. Initial State: Paragraf hidden total (karena mau diketik) */
+.hero p {
     visibility: hidden;
 }
 
-/* 3. Kita tetap pakai animasi 'fadeInUp' untuk logo di awal */
-.logo {
-    opacity: 0;
-    animation: fadeInUp 0.8s ease-out 0.2s forwards;
-}
-
-/* Hapus animasi 'fadeInUp' dari .hero (karena kita pakai JS) */
-.hero {
-    animation: none;
-    opacity: 1;
+/* 3. Class Pemicu Muncul (dipanggil JS) */
+.visible {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
 }
