@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import datetime
 from urllib.parse import urlencode
 from fastapi import APIRouter, Request, Query, HTTPException, Body
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Response
@@ -376,27 +377,72 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
 def get_stats():
     """
     Endpoint admin tersembunyi untuk melihat statistik
-    keseluruhan sistem di semua database.
-    (DIPERBARUI: Mengembalikan 'text/plain' yang diformat)
+    ala struk dot matrix.
     """
     try:
         stats = get_system_wide_stats()
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        # Format JSON menjadi string yang 'cantik'
-        # Ini adalah 100% logika Python
-        report_string = "=====================================\n"
-        report_string += "  PERSONALIFY - SYSTEM ADMIN STATS\n"
-        report_string += "=====================================\n\n"
+        # Lebar struk total 40 karakter
+        RECEIPT_WIDTH = 40
         
-        # Format JSON-nya pakai json.dumps
-        # indent=4 akan membuatnya cantik seperti di screenshot Anda
-        formatted_stats = json.dumps(stats, indent=4)
+        # Helper untuk padding
+        def format_line(key, value):
+            key_str = str(key)
+            value_str = str(value)
+            # 2 spasi untuk padding (1 di awal, 1 di akhir)
+            # 2 spasi pemisah
+            padding = RECEIPT_WIDTH - len(key_str) - len(value_str) - 2 - 2
+            if padding < 1: padding = 1
+            return f" {key_str}{'.' * padding}{value_str} "
+
+        # Mulai membangun struk
+        receipt_lines = []
+        receipt_lines.append("*" * RECEIPT_WIDTH)
+        receipt_lines.append("      PERSONALIFY SYSTEM AUDIT      ")
+        receipt_lines.append("*" * RECEIPT_WIDTH)
+        receipt_lines.append(f" DATE: {now}")
+        receipt_lines.append("=" * RECEIPT_WIDTH)
+
+        # --- Bagian PostgreSQL ---
+        receipt_lines.append("\n--- POSTGRESQL (MAIN DB) ---")
+        receipt_lines.append(format_line("Total Users", stats.get('total_users', 'N/A')))
+        receipt_lines.append(format_line("Total Artists", stats.get('total_unique_artists', 'N/A')))
+        receipt_lines.append(format_line("Total Tracks", stats.get('total_unique_tracks', 'N/A')))
         
-        report_string += formatted_stats
+        receipt_lines.append("\n  Top 5 Artists (All Users):")
+        for item in stats.get('most_popular_artists', ["N/A"]):
+            receipt_lines.append(f"    - {item}")
+            
+        receipt_lines.append("\n  Top 5 Tracks (All Users):")
+        for item in stats.get('most_popular_tracks', ["N/A"]):
+            receipt_lines.append(f"    - {item}")
+
+        # --- Bagian MongoDB ---
+        receipt_lines.append("\n" + "=" * RECEIPT_WIDTH)
+        receipt_lines.append("--- MONGODB (SYNC HISTORY) ---")
+        receipt_lines.append(format_line("Synced Users Count", stats.get('mongo_synced_users_count', 'N/A')))
         
-        report_string += "\n\n=====================================\n"
-        report_string += "          END OF REPORT\n"
-        report_string += "=====================================\n"
+        receipt_lines.append("\n  Synced User List:")
+        for item in stats.get('mongo_synced_user_list', ["N/A"]):
+            receipt_lines.append(f"    - {item}")
+
+        # --- Bagian Redis ---
+        receipt_lines.append("\n" + "=" * RECEIPT_WIDTH)
+        receipt_lines.append("--- REDIS (CACHE) ---")
+        receipt_lines.append(format_line("Cached Keys Count", stats.get('redis_cached_keys_count', 'N/A')))
+        
+        receipt_lines.append("\n  Sample Cached Keys:")
+        for item in stats.get('redis_sample_keys', ["N/A"]):
+            receipt_lines.append(f"    - {item}")
+
+        # --- Footer ---
+        receipt_lines.append("\n" + "*" * RECEIPT_WIDTH)
+        receipt_lines.append("         THANK YOU - ADMIN        ")
+        receipt_lines.append("*" * RECEIPT_WIDTH)
+
+        # Gabungkan semua baris
+        report_string = "\n".join(receipt_lines)
         
         # Kembalikan sebagai 'text/plain'
         return Response(content=report_string, media_type="text/plain")
@@ -413,17 +459,33 @@ def get_stats():
 def clear_cache():
     """
     Endpoint admin tersembunyi untuk menghapus
-    semua cache 'top:*:*' dari Redis.
+    semua cache 'top:*:*' dari Redis, ala struk.
     """
     try:
         deleted_count = clear_top_data_cache()
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        RECEIPT_WIDTH = 40
         
-        report_string = "=====================================\n"
-        report_string += "  PERSONALIFY - CACHE CLEAR\n"
-        report_string += "=====================================\n\n"
-        report_string += f"  Status: SUCCESS\n"
-        report_string += f"  Total keys deleted: {deleted_count}\n"
-        report_string += "\n=====================================\n"
+        def format_line(key, value):
+            key_str = str(key)
+            value_str = str(value)
+            padding = RECEIPT_WIDTH - len(key_str) - len(value_str) - 2 - 2
+            if padding < 1: padding = 1
+            return f" {key_str}{'.' * padding}{value_str} "
+
+        receipt_lines = []
+        receipt_lines.append("*" * RECEIPT_WIDTH)
+        receipt_lines.append("      PERSONALIFY CACHE FLUSH     ")
+        receipt_lines.append("*" * RECEIPT_WIDTH)
+        receipt_lines.append(f" DATE: {now}")
+        receipt_lines.append("=" * RECEIPT_WIDTH)
+        receipt_lines.append("\n  STATUS: SUCCESS\n")
+        receipt_lines.append(format_line("TOTAL KEYS DELETED", deleted_count))
+        receipt_lines.append("\n\n" + "=" * RECEIPT_WIDTH)
+        receipt_lines.append("        CACHE IS NOW EMPTY        ")
+        receipt_lines.append("=" * RECEIPT_WIDTH)
+
+        report_string = "\n".join(receipt_lines)
         
         return Response(content=report_string, media_type="text/plain")
         
