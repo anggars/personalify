@@ -1,5 +1,5 @@
 import os
-from app.db_handler import get_aggregate_stats # (Ini fungsi baru, kita buat di Langkah 2)
+from app.db_handler import get_aggregate_stats, get_user_db_details # (Ini fungsi baru, kita buat di Langkah 2)
 from app.mongo_handler import get_all_synced_user_ids # (Ini fungsi baru, kita buat di Langkah 3)
 from app.cache_handler import r as redis_client # Import koneksi Redis yang ada
 
@@ -52,3 +52,22 @@ def get_system_wide_stats():
 
     print("ADMIN_STATS: Selesai mengumpulkan data.")
     return db_stats
+
+def get_user_report(spotify_id: str):
+    """
+    Mengambil data laporan untuk satu user spesifik.
+    """
+    print(f"ADMIN_STATS: Mengambil laporan untuk user: {spotify_id}")
+    try:
+        user_details = get_user_db_details(spotify_id)
+        print(f"ADMIN_STATS: Berhasil mendapat data user {spotify_id} from PostgreSQL.")
+        return user_details
+    except Exception as e:
+        print(f"ADMIN_STATS: Gagal mengambil data user {spotify_id}: {e}")
+        return {
+            "error": str(e),
+            "spotify_id": spotify_id,
+            "display_name": "N/A",
+            "db_top_artists": [],
+            "db_top_tracks": []
+        }
