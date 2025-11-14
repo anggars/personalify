@@ -121,7 +121,7 @@ function checkScreenSize() {
     } else {
         for (const key in sections) {
             sections[key].style.display = "block";
-            sections[key].classList.remove("active");
+            sections[key].classList.add("active");
         }
         categoryFilterWrapper.style.display = "none";
     }
