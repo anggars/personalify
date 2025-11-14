@@ -918,12 +918,12 @@ window.onload = function() {
             '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
         ];
 
-        let currentGenreData = {
+        currentGenreData = {
             labels: genreData.labels,
             counts: genreData.counts
         };
 
-        let currentGenreArtistsMap = genreArtistsMap;
+        currentGenreArtistsMap = genreArtistsMap;
 
         // Buat Chart
         genreChartInstance = new Chart(ctx, {

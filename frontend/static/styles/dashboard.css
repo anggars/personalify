@@ -487,8 +487,6 @@ footer.fade-in {
   background-color: #B3B3B3; /* Warna kursor (abu-abu) */
   margin-left: 3px;
   vertical-align: middle; /* Sejajarkan dengan teks */
-  
-  /* Animasi berkedip */
   animation: blink-caret 0.75s step-end infinite;
 }
 
