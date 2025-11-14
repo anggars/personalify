@@ -181,3 +181,33 @@ def save_user_associations_batch(table_name, column_name, spotify_id, item_ids):
                 ON CONFLICT DO NOTHING
             """, data_to_insert)
             conn.commit()
+
+def get_aggregate_stats():
+    """
+    Fungsi Python baru untuk mengambil statistik dari database PostgreSQL.
+    """
+    stats = {}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            
+            # Hitung total users
+            cur.execute("SELECT COUNT(*) FROM users")
+            stats["total_users"] = cur.fetchone()[0]
+            
+            # Hitung total artists
+            cur.execute("SELECT COUNT(*) FROM artists")
+            stats["total_unique_artists"] = cur.fetchone()[0]
+            
+            # Hitung total tracks
+            cur.execute("SELECT COUNT(*) FROM tracks")
+            stats["total_unique_tracks"] = cur.fetchone()[0]
+            
+            # Ambil 5 artis terpopuler di seluruh database
+            cur.execute("SELECT name, popularity FROM artists ORDER BY popularity DESC LIMIT 5")
+            stats["most_popular_artists"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
+            
+            # Ambil 5 track terpopuler di seluruh database
+            cur.execute("SELECT name, popularity FROM tracks ORDER BY popularity DESC LIMIT 5")
+            stats["most_popular_tracks"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
+            
+    return stats

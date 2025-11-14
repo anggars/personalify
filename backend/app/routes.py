@@ -1,11 +1,13 @@
 import os
 import requests
+import json
 from urllib.parse import urlencode
 from fastapi import APIRouter, Request, Query, HTTPException, Body
-from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from typing import Optional
 from app.nlp_handler import generate_emotion_paragraph, analyze_lyrics_emotion
+from app.admin import get_system_wide_stats
 
 from app.db_handler import (
     save_user,
@@ -13,8 +15,9 @@ from app.db_handler import (
     save_tracks_batch,
     save_user_associations_batch
 )
-from app.cache_handler import cache_top_data, get_cached_top_data
+from app.cache_handler import cache_top_data, get_cached_top_data, clear_top_data_cache
 from app.mongo_handler import save_user_sync, get_user_history
+
 
 router = APIRouter()
 # --- Perbaikan Path Template ---
@@ -368,6 +371,69 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         "genre_artists_map_extended": genre_artists_map_top20,  # Extended: top 20
         "emotion_paragraph": emotion_paragraph
     })
+
+@router.get("/admin/system-stats", tags=["Admin"])
+def get_stats():
+    """
+    Endpoint admin tersembunyi untuk melihat statistik
+    keseluruhan sistem di semua database.
+    (DIPERBARUI: Mengembalikan 'text/plain' yang diformat)
+    """
+    try:
+        stats = get_system_wide_stats()
+        
+        # Format JSON menjadi string yang 'cantik'
+        # Ini adalah 100% logika Python
+        report_string = "=====================================\n"
+        report_string += "  PERSONALIFY - SYSTEM ADMIN STATS\n"
+        report_string += "=====================================\n\n"
+        
+        # Format JSON-nya pakai json.dumps
+        # indent=4 akan membuatnya cantik seperti di screenshot Anda
+        formatted_stats = json.dumps(stats, indent=4)
+        
+        report_string += formatted_stats
+        
+        report_string += "\n\n=====================================\n"
+        report_string += "          END OF REPORT\n"
+        report_string += "=====================================\n"
+        
+        # Kembalikan sebagai 'text/plain'
+        return Response(content=report_string, media_type="text/plain")
+        
+    except Exception as e:
+        print(f"ADMIN_STATS: Gagal total di endpoint: {e}")
+        return Response(
+            content=f"Gagal mengambil statistik sistem: {str(e)}", 
+            media_type="text/plain", 
+            status_code=500
+        )
+
+@router.get("/admin/clear-cache", tags=["Admin"])
+def clear_cache():
+    """
+    Endpoint admin tersembunyi untuk menghapus
+    semua cache 'top:*:*' dari Redis.
+    """
+    try:
+        deleted_count = clear_top_data_cache()
+        
+        report_string = "=====================================\n"
+        report_string += "  PERSONALIFY - CACHE CLEAR\n"
+        report_string += "=====================================\n\n"
+        report_string += f"  Status: SUCCESS\n"
+        report_string += f"  Total keys deleted: {deleted_count}\n"
+        report_string += "\n=====================================\n"
+        
+        return Response(content=report_string, media_type="text/plain")
+        
+    except Exception as e:
+        print(f"ADMIN_STATS: Gagal menghapus cache: {e}")
+        return Response(
+            content=f"Gagal menghapus cache: {str(e)}", 
+            media_type="text/plain", 
+            status_code=500
+        )
 
 # Ganti endpoint agar sesuai dengan frontend (POST /analyze-lyrics)
 @router.post("/analyze-lyrics", tags=["NLP"])
