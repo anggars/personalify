@@ -45,3 +45,12 @@ def get_user_history(spotify_id):
 def get_user_sync(spotify_id, time_range):
     collection = db[spotify_id]
     return collection.find_one({"time_range": time_range}, {"_id": 0})
+
+def get_all_synced_user_ids():
+    """
+    Fungsi Python baru untuk mengambil daftar semua user yang
+    datanya tersimpan di MongoDB.
+    """
+    # Di arsitektur Anda, setiap user adalah nama koleksi,
+    # jadi kita cukup panggil list_collection_names()
+    return db.list_collection_names()
