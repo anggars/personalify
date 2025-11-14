@@ -560,11 +560,6 @@ def get_user_stats(spotify_id: str):
             status_code=500
         )
 
-#
-# PASTIKAN SISA FILE ANDA (MULAI DARI @router.post("/analyze-lyrics"...)
-# TETAP ADA DI BAWAH SINI
-#
-
 # Ganti endpoint agar sesuai dengan frontend (POST /analyze-lyrics)
 @router.post("/analyze-lyrics", tags=["NLP"])
 def analyze_lyrics_emotion_endpoint(
