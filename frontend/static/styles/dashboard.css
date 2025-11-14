@@ -447,12 +447,14 @@ footer.fade-in {
 
 /* 2. Buat kelas untuk menerapkannya */
 .list-container li {
-  /* Mulai dalam keadaan transparan */
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #333;
+    /* Pastikan tidak ada properti 'animation' atau 'opacity' di sini */
+}
+
+.section.active .list-container li {
   opacity: 0;
-  
-  /* Terapkan animasi */
   animation: fadeInSlideUp 0.5s ease-out forwards;
-  /* 'forwards' berarti animasi akan diam di frame terakhir (tetap terlihat) */
 }
 
 /* 3. (OPSIONAL) Efek "Stagger" Keren */
@@ -467,6 +469,16 @@ footer.fade-in {
 .list-container li:nth-child(8) { animation-delay: 0.8s; }
 .list-container li:nth-child(9) { animation-delay: 0.9s; }
 .list-container li:nth-child(10) { animation-delay: 1.0s; }
+
+.no-animation {
+    animation: none !important;
+    opacity: 1 !important;
+}
+
+.section.active .list-container li.no-animation {
+    animation: none !important;
+    opacity: 1 !important;
+}
 
 .emotion-recap .typing-cursor {
   display: inline-block;
