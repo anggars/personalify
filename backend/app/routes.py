@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Resp
 from fastapi.templating import Jinja2Templates
 from typing import Optional
 from app.nlp_handler import generate_emotion_paragraph, analyze_lyrics_emotion
-from app.admin import get_system_wide_stats
+from app.admin import get_system_wide_stats, get_user_report
 
 from app.db_handler import (
     save_user,
@@ -496,6 +496,74 @@ def clear_cache():
             media_type="text/plain", 
             status_code=500
         )
+
+# ... (tepat setelah fungsi clear_cache()) ...
+
+@router.get("/admin/user-report/{spotify_id}", tags=["Admin"])
+def get_user_stats(spotify_id: str):
+    """
+    Endpoint admin tersembunyi untuk melihat laporan
+    database untuk user tertentu, ala struk.
+    """
+    try:
+        details = get_user_report(spotify_id)
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        RECEIPT_WIDTH = 40
+        
+        def format_line(key, value):
+            key_str = str(key)
+            value_str = str(value)
+            padding = RECEIPT_WIDTH - len(key_str) - len(value_str) - 2 - 2
+            if padding < 1: padding = 1
+            return f" {key_str}{'.' * padding}{value_str} "
+
+        receipt_lines = []
+        receipt_lines.append("*" * RECEIPT_WIDTH)
+        receipt_lines.append("       PERSONALIFY USER REPORT      ")
+        receipt_lines.append("*" * RECEIPT_WIDTH)
+        receipt_lines.append(f" DATE: {now}")
+        receipt_lines.append("=" * RECEIPT_WIDTH)
+
+        if "error" in details:
+             receipt_lines.append(f"\n  ERROR: {details['error']}\n")
+        
+        receipt_lines.append(format_line("User", details.get('display_name', 'N/A')))
+        receipt_lines.append(format_line("Spotify ID", details.get('spotify_id', 'N/A')))
+        
+        receipt_lines.append("\n  Top 5 Artists (from DB):")
+        artists = details.get('db_top_artists', [])
+        if not artists:
+            receipt_lines.append("    - No artists found in DB -")
+        for item in artists:
+            receipt_lines.append(f"    - {item}")
+            
+        receipt_lines.append("\n  Top 5 Tracks (from DB):")
+        tracks = details.get('db_top_tracks', [])
+        if not tracks:
+            receipt_lines.append("    - No tracks found in DB -")
+        for item in tracks:
+            receipt_lines.append(f"    - {item}")
+
+        receipt_lines.append("\n" + "*" * RECEIPT_WIDTH)
+        receipt_lines.append("         END OF REPORT        ")
+        receipt_lines.append("*" * RECEIPT_WIDTH)
+
+        report_string = "\n".join(receipt_lines)
+        
+        return Response(content=report_string, media_type="text/plain")
+        
+    except Exception as e:
+        print(f"ADMIN_STATS: Gagal total di endpoint user-report: {e}")
+        return Response(
+            content=f"Gagal mengambil laporan user: {str(e)}", 
+            media_type="text/plain", 
+            status_code=500
+        )
+
+#
+# PASTIKAN SISA FILE ANDA (MULAI DARI @router.post("/analyze-lyrics"...)
+# TETAP ADA DI BAWAH SINI
+#
 
 # Ganti endpoint agar sesuai dengan frontend (POST /analyze-lyrics)
 @router.post("/analyze-lyrics", tags=["NLP"])

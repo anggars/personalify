@@ -211,3 +211,44 @@ def get_aggregate_stats():
             stats["most_popular_tracks"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
             
     return stats
+
+def get_user_db_details(spotify_id: str):
+    """
+    Mengambil detail spesifik user dari database PostgreSQL.
+    Ini adalah query JOIN murni.
+    """
+    details = {}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            
+            # 1. Ambil info user
+            cur.execute("SELECT display_name FROM users WHERE spotify_id = %s", (spotify_id,))
+            user_result = cur.fetchone()
+            if not user_result:
+                raise Exception(f"User with spotify_id '{spotify_id}' not found in database.")
+            details["display_name"] = user_result[0]
+            details["spotify_id"] = spotify_id
+            
+            # 2. Ambil top 5 artists (contoh: berdasarkan popularity)
+            cur.execute("""
+                SELECT a.name, a.popularity
+                FROM artists a
+                JOIN user_artists ua ON a.id = ua.artist_id
+                WHERE ua.spotify_id = %s
+                ORDER BY a.popularity DESC
+                LIMIT 5
+            """, (spotify_id,))
+            details["db_top_artists"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
+
+            # 3. Ambil top 5 tracks (contoh: berdasarkan popularity)
+            cur.execute("""
+                SELECT t.name, t.popularity
+                FROM tracks t
+                JOIN user_tracks ut ON t.id = ut.track_id
+                WHERE ut.spotify_id = %s
+                ORDER BY t.popularity DESC
+                LIMIT 5
+            """, (spotify_id,))
+            details["db_top_tracks"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
+            
+    return details
