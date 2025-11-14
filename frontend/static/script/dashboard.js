@@ -94,9 +94,19 @@ function updateGenreChart(newLabels, newCounts) {
 
 function updateCategoryDisplay() {
     const value = categoryFilterSelect.value;
+    
+    // (PERBAIKAN) Reset class 'no-animation' di genres DULU
+    const genreItems = sections.genres.querySelectorAll('li.no-animation');
+    genreItems.forEach(item => {
+        item.classList.remove('no-animation');
+    });
+
+    // Sembunyikan semua section
     for (const key in sections) {
         sections[key].classList.remove("active");
     }
+
+    // Tampilkan section yang dipilih
     if (sections[value]) {
         sections[value].classList.add("active");
     }
@@ -1043,7 +1053,6 @@ function updateGenreList(labels, counts) {
     const genreList = document.querySelector('#genres-section .list-container');
     if (!genreList) return;
 
-    // Warna chart untuk label
     const chartColors = [
         '#1DB954', '#F28E2B', '#E15759', '#76B7B2', '#9AA067',
         '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC',
@@ -1051,25 +1060,26 @@ function updateGenreList(labels, counts) {
         '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
     ];
 
-    // Render ulang list dengan logika animasi baru
     genreList.innerHTML = labels.map((label, index) => {
         const artists = genreArtistsMapExtended[label] || [];
         const artistText = artists.length > 0 ? `: ${artists.join(', ')}` : '';
 
-        // === LOGIKA ANIMASI (FIXED) ===
-        let animStyle = '';
+        // === PERBAIKAN DI BLOK INI ===
+        let animStyle = ''; // Untuk delay
+        let animClass = ''; // Untuk mematikan animasi
+
         if (index < 10) {
-            // Item 1-10: JANGAN ANIMASI ULANG (Set opacity 1, matikan animasi)
-            animStyle = 'style="animation: none; opacity: 1;"';
+            // Pakai CLASS, bukan style (biar 1-10 gak fade in ulang pas easter egg)
+            animClass = 'no-animation';
         } else {
-            // Item 11-20: ANIMASI STAGGER (Kasih delay bertahap)
-            // index 10 (item ke-11) delay 0s, index 11 delay 0.1s, dst.
+            // Item 11-20 tetap pakai inline style untuk delay
             const delay = (index - 10) * 0.1;
-            animStyle = `style="animation-delay: ${delay}s;"`;
+            animStyle = `animation-delay: ${delay}s;`;
         }
+        // === AKHIR PERBAIKAN ===
 
         return `
-            <li data-index="${index}" ${animStyle}>
+            <li data-index="${index}" class="${animClass}" style="${animStyle}">
                 <div class="list-item">
                     <span class="rank">${index + 1}</span>
                     <div class="info">
@@ -1086,7 +1096,7 @@ function updateGenreList(labels, counts) {
         `;
     }).join('');
 
-    // Pasang ulang event listener klik (biar chart bisa di-toggle lewat list)
+    // Pasang ulang event listener
     document.querySelectorAll('#genres-section li').forEach((item) => {
         const itemIndex = parseInt(item.getAttribute('data-index'));
         item.addEventListener('click', function() {
