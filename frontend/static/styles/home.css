@@ -71,7 +71,7 @@ p {
 /* === ATURAN UNTUK MOBILE === */
 @media (max-width: 768px) {
     body {
-        padding: 1.5rem; /* Jarak tepi disesuaikan */
+        padding: 2rem; /* Jarak tepi disesuaikan */
     }
 
     .logo {

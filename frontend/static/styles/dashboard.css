@@ -201,7 +201,7 @@ li {
 }
 footer {
     width: 100%;
-    margin-top: 2rem;
+    margin-top: 1.75rem;
     text-align: center;
     font-size: 0.75rem;
     color: #888;
@@ -303,7 +303,7 @@ footer.fade-in {
 /* === ATURAN UNTUK MOBILE === */
 @media (max-width: 768px) {
     body {
-        padding: 1rem;
+        padding: 1.5rem;
     }
     header h1 {
         font-size: 2rem;
