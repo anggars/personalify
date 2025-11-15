@@ -175,14 +175,28 @@ li {
     bottom: 1.5rem;
     right: 1.5rem;
     padding: 0.75rem 1.25rem;
-    background-color: #1DB954;
-    color: black;
-    border: none;
+    background-color: rgba(30, 30, 30, 0.7); /* Latar belakang gelap transparan */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* Untuk Safari */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Border tipis */
+    color: #ffffff; /* Teks jadi putih */
     border-radius: 9999px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Shadow lebih kuat */
     z-index: 1000;
+    transition: background-color 0.3s ease, 
+                opacity 0.4s ease, 
+                transform 0.4s ease, 
+                bottom 0.4s ease;
+}
+.download-btn:hover {
+    background-color: rgba(45, 45, 45, 0.85);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+.download-btn.hide-on-scroll {
+    opacity: 0;
+    pointer-events: none; /* Biar tidak bisa diklik saat hilang */
 }
 footer {
     width: 100%;
@@ -289,7 +303,6 @@ footer.fade-in {
 @media (max-width: 768px) {
     body {
         padding: 1rem;
-        padding-bottom: 100px;
     }
     header h1 {
         font-size: 2rem;
@@ -307,8 +320,16 @@ footer.fade-in {
         max-width: 95%;
         line-height: 1.5;
     }
+    footer {
+        padding: 0.54rem 0;
+    }
     .container {
         grid-template-columns: 1fr;
+        padding-bottom: 100px; /* Ruang untuk tombol save */
+        transition: padding-bottom 0.4s ease; /* Transisi smooth */
+    }
+    .container.footer-visible {
+        padding-bottom: 0; /* Hilangkan padding saat footer terekspos */
     }
     .download-btn {
         width: calc(100% - 40px);
@@ -316,6 +337,10 @@ footer.fade-in {
         right: 20px;
         bottom: 20px;
         padding: 1rem;
+        transform: translateY(0);
+    }
+    .download-btn.hide-on-scroll {
+        transform: translateY(150px);
     }
     .section {
         display: none;
