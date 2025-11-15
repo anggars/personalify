@@ -254,6 +254,6 @@ footer.fade-in {
     /* Perbaiki jarak footer di mobile */
     footer {
         padding-bottom: 0; /* Hapus padding ganda */
-        margin-top: 1.25rem;
+        margin-top: 1.5rem;
     }
 }
