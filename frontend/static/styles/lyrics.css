@@ -61,7 +61,9 @@ header p.subtitle {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    align-items: center;
+    
+    /* ▼▼▼ PERBAIKAN 1 (ANTI-MENCIUT) ▼▼▼ */
+    align-items: stretch; /* Semula: align-items: center; */
 }
 
 .lyrics-form textarea {
@@ -109,23 +111,14 @@ header p.subtitle {
 }
 
 .lyrics-form textarea::-webkit-resizer {
-    /* Menghilangkan gaya default browser */
     -webkit-appearance: none;
     appearance: none;
-    
-    /* KUNCI: Samakan warna dengan background textarea untuk menutupi teks di belakangnya */
     background-color: transparent;
-    
-    /* Hapus semua elemen visual lainnya (border, gambar, dll) */
     border: none;
     outline: none;
     background-image: none;
-
-    /* Tentukan area klik yang tak terlihat */
     width: 16px;
     height: 16px;
-    
-    /* Kursor tetap berubah sebagai satu-satunya petunjuk */
     cursor: se-resize;
 }
 
@@ -179,20 +172,16 @@ header p.subtitle {
 }
 
 .emotion-label {
-    /* biarkan label panjang, tidak di-ellipsis */
     font-weight: 700;
     color: #fff;
     text-transform: capitalize;
     letter-spacing: 0.5px;
     white-space: nowrap;
-    /* hilangkan overflow/ellipsis agar teks tidak terpotong */
     overflow: visible;
     text-overflow: unset;
-    /* JANGAN pakai flex-basis/fixed width di sini */
 }
 
 .emotion-bar-bg {
-    /* Bar akan menyesuaikan sisa ruang, tapi... */
     flex: 1 1 0;
     background: #282828;
     border-radius: 50px;
@@ -203,7 +192,6 @@ header p.subtitle {
     display: block;
 }
 
-/* Agar semua bar sejajar mengikuti label terpanjang */
 .emotion-bars-group {
     display: flex;
     flex-direction: column;
@@ -288,7 +276,7 @@ footer.fade-in {
 /* =================================== */
 @media (max-width: 768px) {
     body {
-        padding: 1rem;
+        padding: 1.5rem;
         padding-bottom: 100px;
     }
 
@@ -329,7 +317,7 @@ footer.fade-in {
         width: 100%;
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: center; /* Di mobile, kita kembalikan ke center */
         justify-content: center;
     }
 
@@ -345,7 +333,6 @@ footer.fade-in {
         background: #181818;
     }
 
-    /* Hasil emosi tetap lebar seperti desktop, tidak dipaksa ke tengah */
     #results-section {
         margin-top: 1.5rem;
         width: 100%;
@@ -355,7 +342,6 @@ footer.fade-in {
         box-sizing: border-box;
     }
 
-    /* Kembalikan tombol ke posisi desktop (kanan) */
     .analysis-controls {
         flex-direction: row;
         gap: 1.5rem;
@@ -446,7 +432,7 @@ footer.fade-in {
         padding: 1.5rem 0;
         position: absolute;
         left: 0;
-        bottom: 0;
+        bottom: 0.5rem;
         width: 100%;
         background: #121212;
         border-top: none;
@@ -458,9 +444,7 @@ footer.fade-in {
 /* ====== PENYEMPURNAAN FINAL: ANIMASI & JARAK ====== */
 /* ================================================== */
 
-/* 1. PERBAIKAN: EFEK "GERAK" (HOVER) PADA TEXTBOX */
 .lyrics-form textarea {
-    /* Menambahkan 'transform' ke transisi agar gerakan mulus */
     transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s ease;
 }
 
@@ -469,14 +453,10 @@ footer.fade-in {
     box-shadow: 0 0 0 2px rgba(85, 85, 85, 0.2);
 }
 
-/* 2. PERBAIKAN: JARAK BAWAH YANG SIMETRIS */
-/* Aturan ini menimpa aturan lama yang salah */
 .emotion-bar-row:last-child {
-    margin-bottom: 1rem; /* Mengembalikan jarak bawah agar tidak menempel */
+    margin-bottom: 1rem; 
 }
 
-/* 3. PERBAIKAN: ANIMASI KILAU (SHIMMER) DI SELURUH BAR */
-/* Siapkan bar background untuk menampung animasi */
 .emotion-bar-bg {
     position: relative;
     overflow: hidden;
@@ -510,7 +490,6 @@ footer.fade-in {
     }
 }
 
-/* 1. Definisikan kursor (akan dipakai oleh JS) */
 .typing-cursor {
   display: inline-block;
   width: 10px;
@@ -526,12 +505,10 @@ footer.fade-in {
   50% { background-color: var(--primary); }
 }
 
-/* 2. Sembunyikan elemen yang mau diketik */
 header h1, header p.subtitle, .container {
     visibility: hidden;
 }
 
-/* 3. Definisikan animasi fade-in (untuk form) */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -540,5 +517,41 @@ header h1, header p.subtitle, .container {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+
+/* ================================================== */
+/* ====== PERBAIKAN LAYOUT DESKTOP (Sticky Footer) ====== */
+/* ================================================== */
+
+@media (min-width: 769px) {
+
+    /* 1. Paksa body untuk jadi full-height flex container */
+    body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        box-sizing: border-box; /* Agar padding 2rem tidak merusak */
+    }
+
+    /* 2. Paksa <main> untuk mengisi sisa ruang & center konten */
+    main.main-content {
+        flex-grow: 1;
+        
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Tetap center horizontal */
+        justify-content: center; /* Center vertikal */
+        width: 100%;
+    }
+
+    /* 3. Pastikan .container tidak merusak layout */
+    .container {
+        /*
+         * Kita biarkan style asli .container (termasuk justify-content: center)
+         * agar box-nya tetap di tengah.
+         */
+         width: 100%; /* Pastikan .container mengisi .main-content */
     }
 }
