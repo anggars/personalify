@@ -1,21 +1,116 @@
-/* === STYLING HALAMAN ABOUT (VERSI BARU & LENGKAP) === */
+/* === STYLING HALAMAN ABOUT (VERSI FINAL & BERDIRI SENDIRI) === */
 
-/*
- * Kita tidak perlu override .hero, .footer, .h1, atau .subtitle
- * karena semua style itu sudah di-load dari lyrics.css
- */
+/* Style Dasar (dari home.css) */
+body {
+    background-color: #121212;
+    color: #ffffff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    margin: 0;
+    padding: 2rem;
+    text-align: center;
+    overflow-x: hidden;
+}
+
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Jarak Header (agar sama dengan lyrics/dashboard) */
+header.hero {
+    text-align: center;
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+    /* Hapus referensi .hero dari h1 dan p */
+}
+header.hero h1 {
+    font-size: 2.5rem; /* Ukuran sama dengan Lyrics/Dashboard */
+    font-weight: 800;
+    color: #1DB954; /* Warna hijau */
+    margin-bottom: 1rem;
+    visibility: hidden; /* Sembunyikan untuk animasi ketik */
+}
+header.hero p {
+    font-size: 1.2rem; /* Ukuran sama dengan Lyrics/Dashboard */
+    color: #B3B3B3;
+    max-width: 600px;
+    margin-top: -0.25rem;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: 500;
+    visibility: hidden; /* Sembunyikan untuk animasi ketik */
+}
+
+header.hero h1.visible,
+header.hero p.visible {
+    visibility: visible;
+}
+
+/* Kursor typing */
+.typing-cursor {
+  display: inline-block;
+  width: 10px;
+  height: 1em;
+  background-color: #1DB954; /* Warna hijau */
+  margin-left: 3px;
+  vertical-align: middle;
+  animation: blink-caret 0.75s step-end infinite;
+}
+@keyframes blink-caret {
+  from, to { background-color: transparent; }
+  50% { background-color: #1DB954; }
+}
+
+/* Animasi Fade In untuk Konten */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 /* Layout Konten (Container & Section) */
-/* Aturan .container dan .section sudah diambil dari lyrics.css */
-/* Kita hanya perlu menambahkan style spesifik di bawah */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    max-width: 700px;
+    margin: 0 auto;
+    width: 100%;
+    
+    /* Sembunyikan untuk animasi fade-in */
+    visibility: hidden;
+    opacity: 0;
+}
 
-header p.subtitle {
-    text-align: center;
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: #B3B3B3;
-    margin-top: 0.5rem;
-    margin-bottom: 3.5rem;
+.section {
+    width: 100%;
+    margin: 0 auto;
+    background: #1e1e1e;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid #282828;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box; 
+}
+
+.section:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+    z-index: 2;
 }
 
 /* Judul di dalam section (H2) */
@@ -23,19 +118,11 @@ header p.subtitle {
     color: #1DB954;
     font-size: 1.5rem;
     font-weight: 700;
-    margin-top: 0;
-    margin-bottom: 1.5rem;
+    margin-top: -0.75rem;
+    margin-bottom: 1rem;
     border-bottom: 1px solid #333;
     padding-bottom: 1rem;
     text-align: center;
-}
-
-/* Judul "The Stack" (H3) */
-.about-subtitle-stack {
-    font-size: 1.2rem;
-    color: #ffffff;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
 }
 
 /* Aturan Teks Paragraf */
@@ -43,20 +130,20 @@ header p.subtitle {
     color: #b3b3b3;
     font-size: 1.1rem;
     line-height: 1.7;
-    margin-bottom: 1rem;
+    margin-bottom: 0rem;
     text-align: justify; /* Rata Kiri-Kanan */
 }
 
-/* Link di dalam paragraf (pakai style .footer-link dari home.css) */
-.section p .footer-link {
+/* Link di dalam paragraf */
+.section p a.footer-link {
     color: #888;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.2s ease;
 }
 
-/* ▼▼▼ ATURAN WARNA HOVER BARU ▼▼▼ */
-.section p a.tech-fastapi:hover    { color: #009688; } /* Warna Teal FastAPI */
+/* Warna Hover Tech Stack */
+.section p a.tech-fastapi:hover    { color: #009688; } /* FastAPI Teal */
 .section p a.tech-spotify:hover    { color: #1DB954; }
 .section p a.tech-docker:hover     { color: #2496ED; }
 .section p a.tech-postgres:hover   { color: #336791; }
@@ -72,9 +159,9 @@ header p.subtitle {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.75rem; /* Jarak antar ikon */
+    gap: 0.75rem; 
     margin-top: 1rem;
-    text-align: center; /* Memastikan ikon di tengah */
+    text-align: center;
 }
 
 .icon-social-links a {
@@ -83,10 +170,10 @@ header p.subtitle {
     justify-content: center;
     width: 44px;
     height: 44px;
-    border-radius: 50%; /* Bulat */
-    background-color: #1e1e1e; /* Background abu-abu gelap */
+    border-radius: 50%; 
+    background-color: #1e1e1e; 
     border: 1px solid #282828;
-    color: #b3b3b3; /* Warna ikon abu-abu */
+    color: #b3b3b3; 
     font-size: 1.2rem;
     text-decoration: none;
     transition: all 0.2s ease;
@@ -94,41 +181,79 @@ header p.subtitle {
 
 .icon-social-links a:hover {
     background-color: #2a2a2a;
-    color: #ffffff; /* Ikon jadi putih */
+    color: #ffffff; 
     transform: scale(1.1);
     border-color: #444;
 }
 
+/* === FOOTER (dari home.css) === */
 footer {
     width: 100%;
-    margin-top: 2rem;
+    margin-top: 1.75rem;
     text-align: center;
     font-size: 0.75rem;
     color: #888;
-    background: #121212;
-    border-top: none;
-    box-shadow: none;
-    z-index: 100;
-    opacity: 0;
-    transition: opacity 0.5s 
-ease-out 0.5s;
+    opacity: 0; /* Untuk fade-in */
+    transition: opacity 0.5s ease-out;
+}
+
+footer.fade-in {
+    opacity: 1;
+}
+
+.footer-link {
+    color: #888;
+    text-decoration: none;
+    transition: color 0.2s ease;
 }
 
 .footer-link:hover {
-    color: #2496ED;
+    color: #2496ED; /* Docker Blue */
 }
 
-/* === MOBILE RESPONSIVE === */
+/* === MOBILE RESPONSIVE (FIX) === */
 @media (max-width: 768px) {
+    body {
+        padding: 1.5rem; /* Samakan dengan home.css */
+    }
+
+    header.hero h1 {
+        font-size: 2rem; /* Ukuran H1 di home.css mobile */
+        margin-top: 1rem;
+    }
+    header.hero p {
+        font-size: 1rem; /* Ukuran <p> di lyrics.css mobile */
+        margin-bottom: 1.25rem;
+    }
+
+    .section {
+        padding: 1.5rem; /* Padding box di mobile */
+    }
+    
     .section p {
         font-size: 1rem;
     }
-    .icon-social-links a {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
+    
+    .icon-social-links {
+        display: grid; /* Ganti dari flex ke grid */
+        grid-template-columns: repeat(5, 1fr); /* Paksa 5 kolom */
+        gap: 0.75rem; /* Jarak antar ikon (bisa di-tweak) */
     }
+
+    .icon-social-links a {
+        width: 44px; /* Semula: 40px (biar agak besar) */
+        height: 44px; /* Semula: 40px */
+        font-size: 1rem;
+        justify-self: center;
+    }
+    
     .about-title-section {
         font-size: 1.25rem;
+    }
+    
+    /* Perbaiki jarak footer di mobile */
+    footer {
+        padding-bottom: 0; /* Hapus padding ganda */
+        margin-top: 1.25rem;
     }
 }

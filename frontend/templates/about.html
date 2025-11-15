@@ -8,9 +8,8 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <link rel="stylesheet" href="{{ url_for('static', path='styles/lyrics.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <link rel="stylesheet" href="{{ url_for('static', path='styles/about.css') }}">
 </head>
@@ -18,9 +17,9 @@
 
     <main class="main-content">
         
-        <header>
+        <header class="hero">
             <h1>About This Project</h1>
-            <p class="subtitle">A quick look at the what, why, and who.</p>
+            <p>A quick look at the what, why, and who.</p>
         </header>
 
         <div class="container">
@@ -62,7 +61,7 @@
             </div>
 
             <div class="section">
-                <h2 class="about-title-section">Hit me up</h2>
+                <h2 class="about-title-section">Hit me up!</h2>
                 <div class="icon-social-links">
                     <a href="https://github.com/anggars" target="_blank" title="GitHub"><i class="fa-brands fa-github"></i></a>
                     <a href="http://linkedin.com/in/anggarnts" target="_blank" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
@@ -89,12 +88,12 @@
     </footer>
 
     <script>
-        // Fungsi typing (copy dari lyrics.js)
+        // Fungsi typing (copy dari home.html)
         function typeEffect(element, text, speed = 30) {
             return new Promise((resolve) => {
                 let index = 0;
                 let currentHtml = '';
-                element.style.visibility = 'visible';
+                // Hapus aturan 'visibility' dari sini, biarkan CSS yg atur
                 function typeWriter() {
                     if (index < text.length) {
                         let char = text.charAt(index);
@@ -122,18 +121,23 @@
 
         // Jalankan animasi setelah halaman dimuat
         document.addEventListener('DOMContentLoaded', async function() {
-            const titleEl = document.querySelector('header h1');
-            const subtitleEl = document.querySelector('header p.subtitle');
+            const titleEl = document.querySelector('header.hero h1');
+            const subtitleEl = document.querySelector('header.hero p');
             const containerEl = document.querySelector('.container');
             const footerEl = document.querySelector('footer');
 
             if (!titleEl || !subtitleEl || !containerEl) return;
 
+            // Simpan teks asli
             const titleText = titleEl.textContent;
             const subtitleText = subtitleEl.textContent;
             titleEl.innerHTML = '';
             subtitleEl.innerHTML = '';
 
+            // Tampilkan H1 & Subtitle (CSS akan handle 'visibility: hidden')
+            titleEl.classList.add('visible');
+            subtitleEl.classList.add('visible');
+            
             // 1. Ketik Judul
             await typeEffect(titleEl, titleText, 50);
             // 2. Ketik Subtitle
@@ -141,6 +145,7 @@
             
             // 3. Tampilkan Konten (Fade In)
             containerEl.style.visibility = 'visible';
+            containerEl.style.opacity = '0'; // Set ulang opacity untuk animasi
             containerEl.style.animation = 'fadeInUp 1s ease-out forwards';
 
             // 4. Tampilkan Footer
