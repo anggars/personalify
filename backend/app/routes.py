@@ -373,6 +373,13 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         "emotion_paragraph": emotion_paragraph
     })
 
+@router.get("/about", response_class=HTMLResponse, tags=["Pages"])
+def about_page(request: Request): # <-- TAMBAHKAN spotify_id
+    """
+    Menyajikan halaman "About" baru.
+    """
+    return templates.TemplateResponse("about.html", {"request": request})
+
 @router.get("/admin/system-stats", tags=["Admin"])
 def get_stats():
     """

@@ -1,0 +1,134 @@
+/* === STYLING HALAMAN ABOUT (VERSI BARU & LENGKAP) === */
+
+/*
+ * Kita tidak perlu override .hero, .footer, .h1, atau .subtitle
+ * karena semua style itu sudah di-load dari lyrics.css
+ */
+
+/* Layout Konten (Container & Section) */
+/* Aturan .container dan .section sudah diambil dari lyrics.css */
+/* Kita hanya perlu menambahkan style spesifik di bawah */
+
+header p.subtitle {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #B3B3B3;
+    margin-top: 0.5rem;
+    margin-bottom: 3.5rem;
+}
+
+/* Judul di dalam section (H2) */
+.about-title-section {
+    color: #1DB954;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 1rem;
+    text-align: center;
+}
+
+/* Judul "The Stack" (H3) */
+.about-subtitle-stack {
+    font-size: 1.2rem;
+    color: #ffffff;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+/* Aturan Teks Paragraf */
+.section p {
+    color: #b3b3b3;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    text-align: justify; /* Rata Kiri-Kanan */
+}
+
+/* Link di dalam paragraf (pakai style .footer-link dari home.css) */
+.section p .footer-link {
+    color: #888;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+/* ▼▼▼ ATURAN WARNA HOVER BARU ▼▼▼ */
+.section p a.tech-fastapi:hover    { color: #009688; } /* Warna Teal FastAPI */
+.section p a.tech-spotify:hover    { color: #1DB954; }
+.section p a.tech-docker:hover     { color: #2496ED; }
+.section p a.tech-postgres:hover   { color: #336791; }
+.section p a.tech-mongo:hover      { color: #4DB33D; }
+.section p a.tech-redis:hover      { color: #DC382D; }
+.section p a.tech-huggingface:hover{ color: #FFD21E; }
+.section p a.tech-vercel:hover     { color: #ffffff; }
+.section p a.tech-render:hover     { color: #4D9DE0; }
+
+
+/* === ATURAN IKON SOSMED (ALA CLARISSA) === */
+.icon-social-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem; /* Jarak antar ikon */
+    margin-top: 1rem;
+    text-align: center; /* Memastikan ikon di tengah */
+}
+
+.icon-social-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%; /* Bulat */
+    background-color: #1e1e1e; /* Background abu-abu gelap */
+    border: 1px solid #282828;
+    color: #b3b3b3; /* Warna ikon abu-abu */
+    font-size: 1.2rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.icon-social-links a:hover {
+    background-color: #2a2a2a;
+    color: #ffffff; /* Ikon jadi putih */
+    transform: scale(1.1);
+    border-color: #444;
+}
+
+footer {
+    width: 100%;
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #888;
+    background: #121212;
+    border-top: none;
+    box-shadow: none;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.5s 
+ease-out 0.5s;
+}
+
+.footer-link:hover {
+    color: #2496ED;
+}
+
+/* === MOBILE RESPONSIVE === */
+@media (max-width: 768px) {
+    .section p {
+        font-size: 1rem;
+    }
+    .icon-social-links a {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    .about-title-section {
+        font-size: 1.25rem;
+    }
+}

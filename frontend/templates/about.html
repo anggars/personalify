@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>About - Personalify</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='assets/Spotify_Primary_Logo_RGB_White.ico') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', path='styles/lyrics.css') }}">
+    
+    <link rel="stylesheet" href="{{ url_for('static', path='styles/about.css') }}">
+</head>
+<body>
+
+    <main class="main-content">
+        
+        <header>
+            <h1>About This Project</h1>
+            <p class="subtitle">A quick look at the what, why, and who.</p>
+        </header>
+
+        <div class="container">
+            
+            <div class="section">
+                <h2 class="about-title-section">What's under the hood?</h2>
+                <p>
+                    Personalify is basically a side-quest I built to check out my own Spotify stats. 
+                    It doesn't just show you what you've been listening to, it actually analyzes the <b>vibe</b> 
+                    of your tracks using some NLP magic. It's built on a distributed system mindset, 
+                    using different databases for different jobs.
+                </p>
+                
+                <p>
+                    This whole thing is built with <a href="https://fastapi.tiangolo.com/" target="_blank" class="footer-link tech-fastapi">Python (FastAPI)</a>
+                    on the backend, pulling data from the <a href="https://developer.spotify.com/" target="_blank" class="footer-link tech-spotify">Spotify Developer API</a>,
+                    and served up via <a href="https://docker.com/" target="_blank" class="footer-link tech-docker">Docker</a>.
+                    The main data lives in <a href="https://www.postgresql.org/" target="_blank" class="footer-link tech-postgres">PostgreSQL</a>,
+                    sync history gets tossed into <a href="https://www.mongodb.com/" target="_blank" class="footer-link tech-mongo">MongoDB</a>,
+                    and <a href="https://redis.io/" target="_blank" class="footer-link tech-redis">Redis</a> handles all the caching to keep things snappy.
+                    The vibe check? That's a <a href="https://huggingface.co/SamLowe/roberta-base-go_emotions" target="_blank" class="footer-link tech-huggingface">Hugging Face</a>
+                    NLP model. Finally, the whole setup is deployed with <a href="https://vercel.com/" target="_blank" class="footer-link tech-vercel">Vercel</a>
+                    acting as a proxy for the <a href="https://render.com/" target="_blank" class="footer-link tech-render">Render</a> backend.
+                </p>
+            </div>
+
+            <div class="section">
+                <h2 class="about-title-section">About Me</h2>
+                <p>
+                    I'm Angga, a CompSci student who's way too into software dev, data, and (obviously) music.
+                </p>
+                
+                <p>
+                    This project is pretty much my whole personality: coding (mostly Python & C#),
+                    NLP, and a deep obsession with <b>Math Rock</b> and <b>Midwest Emo</b>. 
+                    I'm currently trying to learn alternate guitar tunings like <b>FACGCE</b>, 
+                    even though it's pretty difficult. This app is the crossover episode I needed.
+                </p>
+            </div>
+
+            <div class="section">
+                <h2 class="about-title-section">Hit me up</h2>
+                <div class="icon-social-links">
+                    <a href="https://github.com/anggars" target="_blank" title="GitHub"><i class="fa-brands fa-github"></i></a>
+                    <a href="http://linkedin.com/in/anggarnts" target="_blank" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="http://www.instagram.com/anggarnts" target="_blank" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://open.spotify.com/user/31xon7qetimdnbmhkupbaszl52nu" target="_blank" title="Spotify"><i class="fa-brands fa-spotify"></i></a>
+                    <a href="http://x.com/anggarnts" target="_blank" title="X (Twitter)"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="http://youtube.com/channel/UCYJhPYVPUXnPFZEuEBav4yA/videos" target="_blank" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    <a href="http://soundcloud.com/anggarnts" target="_blank" title="SoundCloud"><i class="fa-brands fa-soundcloud"></i></a>
+                    <a href="https://medium.com/@anggarnts" target="_blank" title="Medium"><i class="fa-brands fa-medium"></i></a>
+                    <a href="http://t.me/anggarnts" target="_blank" title="Telegram"><i class="fa-brands fa-telegram"></i></a>
+                    <a href="http://bit.ly/anggariantosudrajat" target="_blank" title="Blog"><i class="fa-solid fa-blog"></i></a>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <a href="/" class="footer-link">Personalify</a>
+        <span> © 2025 • Powered by </span>
+        <a href="https://www.docker.com/" target="_blank" class="footer-link">Docker</a>
+        <br>
+        <span>Created by </span>
+        <a href="/about" class="footer-link">アリツ</a>
+    </footer>
+
+    <script>
+        // Fungsi typing (copy dari lyrics.js)
+        function typeEffect(element, text, speed = 30) {
+            return new Promise((resolve) => {
+                let index = 0;
+                let currentHtml = '';
+                element.style.visibility = 'visible';
+                function typeWriter() {
+                    if (index < text.length) {
+                        let char = text.charAt(index);
+                        if (char === '<') {
+                            let tagEnd = text.indexOf('>', index);
+                            if (tagEnd !== -1) {
+                                currentHtml += text.substring(index, tagEnd + 1);
+                                index = tagEnd + 1;
+                            } else {
+                                currentHtml += char; index++;
+                            }
+                        } else {
+                            currentHtml += char; index++;
+                        }
+                        element.innerHTML = currentHtml + '<span class="typing-cursor"></span>';
+                        setTimeout(typeWriter, speed);
+                    } else {
+                        element.innerHTML = currentHtml;
+                        resolve();
+                    }
+                }
+                typeWriter();
+            });
+        }
+
+        // Jalankan animasi setelah halaman dimuat
+        document.addEventListener('DOMContentLoaded', async function() {
+            const titleEl = document.querySelector('header h1');
+            const subtitleEl = document.querySelector('header p.subtitle');
+            const containerEl = document.querySelector('.container');
+            const footerEl = document.querySelector('footer');
+
+            if (!titleEl || !subtitleEl || !containerEl) return;
+
+            const titleText = titleEl.textContent;
+            const subtitleText = subtitleEl.textContent;
+            titleEl.innerHTML = '';
+            subtitleEl.innerHTML = '';
+
+            // 1. Ketik Judul
+            await typeEffect(titleEl, titleText, 50);
+            // 2. Ketik Subtitle
+            await typeEffect(subtitleEl, subtitleText, 30);
+            
+            // 3. Tampilkan Konten (Fade In)
+            containerEl.style.visibility = 'visible';
+            containerEl.style.animation = 'fadeInUp 1s ease-out forwards';
+
+            // 4. Tampilkan Footer
+            if (footerEl) footerEl.classList.add('fade-in');
+        });
+    </script>
+</body>
+</html>
