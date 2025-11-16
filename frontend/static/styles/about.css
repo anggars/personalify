@@ -1,5 +1,9 @@
 /* === STYLING HALAMAN ABOUT (VERSI FINAL & BERDIRI SENDIRI) === */
 
+@keyframes marquee {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
 /* Style Dasar (dari home.css) */
 body {
     background-color: #121212;
@@ -182,7 +186,7 @@ header.hero p.visible {
 .icon-social-links a:hover {
     background-color: #2a2a2a;
     color: #ffffff; 
-    transform: scale(1.1);
+    transform: scale(1.01);
     border-color: #444;
 }
 
@@ -256,5 +260,194 @@ footer.fade-in {
         padding-bottom: 0; /* Hapus padding ganda */
         margin-top: 1.75rem;
         margin-bottom: 0.5rem;
+    }
+}
+
+/* Styling untuk link audio easter egg */
+#tuning-link,
+#math-rock-link,
+#midwest-emo-link {
+    color: inherit; /* Ambil warna dari <b> (putih) */
+    text-decoration: none; /* Hapus underline */
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+#tuning-link:hover,
+#math-rock-link:hover,
+#midwest-emo-link:hover {
+    color: #1DB954; /* Jadi hijau pas di-hover */
+}
+
+/* === STYLING BUBBLE VIDEO (VERSI LIQUID GLASS + CENTERED) === */
+.video-bubble-toast {
+    position: fixed; 
+    bottom: 2rem;
+    
+    /* BARU: Posisi Desktop (Tengah Bawah) */
+    left: 50%;
+    
+    /* BARU: Auto-width (sesuai teks) */
+    width: auto; 
+    
+    /* === EFEK LIQUID GLASS === */
+    background: rgba(42, 42, 42, 0.65); /* #2a2a2a transparan */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    
+    /* === Layout Flexbox === */
+    display: flex;
+    align-items: center; 
+    gap: 0.75rem; 
+    padding: 0.75rem;
+    
+    z-index: 1000;
+    text-decoration: none; 
+    overflow: hidden; /* Untuk aurora effect */
+    
+    /* Sembunyikan by default (dengan transform baru) */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(20px); /* Mulai dari tengah & bawah */
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out, background 0.3s ease, border-color 0.3s ease;
+}
+
+.video-bubble-toast.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0); /* Muncul ke tengah */
+}
+
+/* === EFEK AURORA HOVER === */
+.video-bubble-toast::before {
+    content: '';
+    position: absolute;
+    z-index: -1; 
+    background: radial-gradient(circle at center, #1DB954 0%, transparent 60%);
+    width: 200px; 
+    height: 200px;
+    transform: translate(-100px, -100px);
+    opacity: 0;
+    border-radius: 12px;
+    transition: transform 0.5s ease, opacity 0.4s ease;
+}
+
+.video-bubble-toast:hover {
+    background: rgba(51, 51, 51, 0.75); /* #333 transparan */
+    border-color: #1DB954; 
+}
+
+.video-bubble-toast:hover::before {
+    opacity: 0.2; 
+    transform: translate(40px, 40px);
+}
+
+/* === STYLING ELEMEN DI DALAM BUBBLE === */
+.bubble-artwork {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.bubble-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    text-align: center; /* BARU: Default text-align center */
+}
+
+/* BARU: Override bubble YouTube agar text-align left */
+#video-bubble .bubble-content {
+    text-align: left;
+}
+
+.video-bubble-toast .bubble-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #ffffff;
+    white-space: nowrap; /* BARU: Semua judul jangan wrap */
+}
+
+/* PERBAIKAN: Styling untuk container "jendela" marquee */
+.bubble-title.marquee {
+    width: 162px; /* Lebar "jendela" (sesuai P. Channel di desktop) */
+    overflow: hidden;
+    display: block;
+    white-space: nowrap;
+}
+
+/* BARU: Styling untuk wrapper "konten" marquee */
+.marquee-content {
+    width: fit-content; /* Lebar = 2x span */
+    display: flex;
+    animation: marquee 12s linear infinite; /* Animasi di wrapper */
+}
+
+/* PERBAIKAN: Styling untuk teks di dalam marquee */
+.bubble-title.marquee span {
+    display: inline-block;
+    white-space: nowrap;
+    /* Hapus padding-left dan animasi dari sini */
+}
+
+.video-bubble-toast .bubble-channel {
+    display: block;
+    font-size: 0.8rem;
+    color: #b3b3b3;
+    margin-top: 2px;
+}
+
+/* === STYLING ELEMEN DI DALAM BUBBLE === */
+.bubble-artwork {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+/* ▼▼▼ TAMBAHKAN BLOK BARU INI ▼▼▼ */
+/* PERBAIKAN: Override khusus thumbnail YouTube (16:9) */
+#video-bubble .bubble-artwork {
+    width: 99.5px; /* Lebar 16:9 (dihitung dari tinggi 56px -> 56 * 1.777) */
+    height: 56px;
+    object-fit: cover;
+}
+
+@media (max-width: 768px) {
+    .video-bubble-toast {
+        /* PERBAIKAN: Hapus 'left', 'right', 'max-width' */
+        /* Bubble sekarang akan mewarisi 'left: 50%' & 'transform: translateX(-50%)' */
+        
+        bottom: 1.5rem; /* Atur ulang jarak bawah untuk mobile */
+        
+        /* Reset transform agar sesuai dengan desktop (tengah) */
+        transform: translateX(-50%) translateY(20px); /* Mulai dari tengah & bawah */
+    }
+
+    .video-bubble-toast.show {
+        transform: translateX(-50%) translateY(0); /* Muncul ke tengah */
+    }
+
+    /* Kecilkan 'jendela' marquee di mobile */
+    .bubble-title.marquee {
+        width: 162px; /* Lebar 'jendela' marquee di mobile */
+    }
+    
+    /* PERBAIKAN: Perkecil thumbnail 16:9 di mobile agar proporsional */
+    #video-bubble .bubble-artwork {
+        width: 80px; /* 16:9 (dihitung dari tinggi 45px) */
+        height: 45px;
+    }
+
+    /* PERBAIKAN: Samakan tinggi thumbnail 1:1 di mobile */
+    .bubble-artwork {
+        width: 45px;
+        height: 45px;
     }
 }
