@@ -334,10 +334,10 @@ footer.fade-in {
         padding-bottom: 0; /* Hilangkan padding saat footer terekspos */
     }
     .download-btn {
-        width: calc(100% - 40px);
-        left: 20px;
-        right: 20px;
-        bottom: 20px;
+        width: auto; /* Hapus 'calc' */
+        left: 1.5rem;  /* Samakan dengan padding body */
+        right: 1.5rem; /* Samakan dengan padding body */
+        bottom: 1.5rem;/* Samakan dengan padding body */
         padding: 1rem;
         transform: translateY(0);
     }
