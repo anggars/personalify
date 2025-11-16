@@ -90,28 +90,138 @@ p {
     }
 
     .button {
-        padding: 12px 28px; 
+        padding: 12px 24px; 
         font-size: 0.9rem;
     }
 }
 
+/* === STYLE BARU: LIQUID GLASS BUTTON === */
+
+/* (1) Keyframes untuk animasi spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* (2) Style tombol .button utama (Glassmorphism) */
 .button {
-    display: inline-block;
-    padding: 14px 32px;
-    background-color: var(--primary);
-    color: black;
+    /* Untuk positioning spinner */
+    position: relative;
+    overflow: hidden;
+    display: inline-flex; /* Penting untuk centering */
+    align-items: center;
+    justify-content: center;
+    
+    /* Style lama (padding, font, dll. kita pake lagi) */
+    padding: 12px 24px;
     text-decoration: none;
     font-weight: 700; 
     font-size: 1rem;
     border-radius: 50px;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(29, 185, 84, 0.2);
+    
+    /* --- EFEK LIQUID GLASS --- */
+    /* Ganti warna solid jadi transparan */
+    background: rgba(255, 255, 255, 0.1); 
+    
+    /* Efek blur (ini intinya) */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* Untuk Safari */
+    
+    /* Border tipis transparan */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    
+    /* Ganti warna teks jadi putih (karena BG gelap) */
+    color: var(--text); 
+    
+    /* Shadow lebih soft */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
 }
 
+.button::before {
+    content: '';
+    position: absolute;
+    z-index: -1; /* Taruh di BELAKANG teks "Login with Spotify" */
+    
+    /* Ini "cahaya"-nya: gradasi radial warna hijau Spotify.
+      Posisinya ngumpet di pojok kiri atas.
+    */
+    background: radial-gradient(
+        circle at center, 
+        var(--primary) 0%, /* Tengahnya hijau terang */
+        transparent 60%     /* Pinggirnya transparan */
+    );
+    
+    /* Ukuran cahaya (bikin lebih gede dari tombolnya) */
+    width: 200px; 
+    height: 200px;
+    
+    /* Posisi awal: ngumpet di kiri atas */
+    transform: translate(-100px, -100px);
+    
+    /* Sembunyiin dulu */
+    opacity: 0;
+    
+    /* Transisi biar gerakannya mulus */
+    transition: transform 0.5s ease, opacity 0.4s ease;
+}
+
+/* Pas tombolnya di-hover...
+*/
+.button:hover::before {
+    /* Munculkan cahayanya (bikin 20% aja biar subtle) */
+    opacity: 0.2;
+    
+    /* Gerakkan cahayanya ke pojok kanan bawah */
+    transform: translate(40px, 40px);
+}
+
+/* (3) Efek Hover */
 .button:hover {
-    background-color: #1ed760;
+    /* Kaca-nya jadi sedikit lebih terang */
+    background: rgba(255, 255, 255, 0.2); 
     transform: scale(1.05) translateY(-2px);
-    box-shadow: 0 8px 25px rgba(29, 185, 84, 0.3);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* (4) Style untuk Teks & Spinner di dalam tombol */
+.button .button-text {
+    /* Bikin transisi biar bisa fade-out */
+    transition: opacity 0.2s ease-out;
+}
+
+.button .spinner {
+    /* Sembunyiin spinner-nya dulu */
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff; /* Lingkaran putih */
+    border-top: 2px solid transparent; /* Bagian atas transparan (ini yg bikin muter) */
+    border-radius: 50%;
+    
+    /* Panggil animasi spin */
+    animation: spin 0.6s linear infinite;
+    
+    opacity: 0; /* Sembunyi */
+    transition: opacity 0.2s ease-out;
+}
+
+/* (5) EFEK PAS DIKLIK: Class .loading */
+.button.loading .button-text {
+    /* Sembunyikan teks */
+    opacity: 0;
+}
+
+.button.loading .spinner {
+    /* Munculkan spinner */
+    opacity: 1;
+}
+
+.button.loading {
+    /* Biar nggak bisa di-klik berkali-kali */
+    pointer-events: none;
+    /* Matikan efek hover pas lagi loading */
+    transform: scale(1) translateY(0);
 }
 
 footer {

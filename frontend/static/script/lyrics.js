@@ -17,6 +17,8 @@ async function analyzeLyrics() {
         return;
     }
 
+    // (Kode 'analyzeButton.classList.add('loading');' udah DIHAPUS dari sini)
+
     resultsSection.style.display = 'block';
     resultDiv.innerHTML = `
         <div class="loading-spinner"></div>
@@ -60,6 +62,7 @@ async function analyzeLyrics() {
         console.error("Fetch error:", err);
         resultDiv.innerHTML = '<p style="color:#ff6b6b; text-align:center;">Failed to contact the analysis server.</p>';
     }
+    // (Blok 'finally' juga udah DIHAPUS dari sini)
 }
 
 // Event listener untuk form, tidak ada perubahan

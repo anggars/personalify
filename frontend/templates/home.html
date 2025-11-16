@@ -21,7 +21,10 @@
         Go beyond the sound and <a href="/lyrics" class="footer-link">analyze the emotion hidden in the lyrics</a>.
         Let's explore your unique taste in music.
     </p>
-        <a class="button" href="/login">Login with Spotify</a>
+        <a class="button" href="/login">
+            <span class="button-text">Login with Spotify</span>
+            <div class="spinner"></div>
+        </a>
     </div>
     </main>
     
@@ -99,6 +102,33 @@
                 }, 1000);
 
             }, 500); 
+            buttonEl.addEventListener('click', function(event) {
+                // 1. Stop redirect bawaan HTML
+                event.preventDefault(); 
+                
+                // 2. Tambah class .loading (memicu CSS spinner)
+                this.classList.add('loading');
+                
+                // 3. Ambil URL tujuan dari tombolnya
+                const destinationUrl = this.href;
+
+                // 4. Tunggu 1 detik (buat pamer animasi), baru redirect
+                setTimeout(() => {
+                    window.location.href = destinationUrl;
+                }, 1000); 
+            });
+        });
+        // Listener ini nge-detect setiap kali halaman "ditampilkan"
+        window.addEventListener('pageshow', function(event) {
+            
+            // 'event.persisted' jadi 'true' kalo halaman diambil dari cache (pas lo klik 'Back')
+            if (event.persisted) {
+                const buttonEl = document.querySelector('.hero .button');
+                if (buttonEl) {
+                    // Paksa hapus kelas .loading biar tombolnya balik normal
+                    buttonEl.classList.remove('loading');
+                }
+            }
         });
     </script>
 </body>
