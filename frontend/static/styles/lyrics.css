@@ -461,6 +461,7 @@ footer.fade-in {
         align-items: center;
         gap: 0.5rem;
         margin-bottom: 1rem;
+        width: 100%;
     }
     .emotion-label {
         font-size: 0.9rem;
@@ -479,48 +480,18 @@ footer.fade-in {
         display: block;
     }
     .emotion-bar {
-        background: #1DB954;
+        background: #B3B3B3;
         height: 100%;
         border-radius: 50px;
         transition: width 0.5s ease-out;
         min-width: 0;
         display: block;
     }
-
     .emotion-bars-group {
         display: flex;
         flex-direction: column;
         align-items: stretch;
         width: 100%;
-    }
-    .emotion-bar-row {
-        width: 100%;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-    }
-    .emotion-label {
-        font-size: 0.9rem;
-        white-space: nowrap;
-        overflow: visible;
-        text-overflow: unset;
-    }
-    .emotion-bar-bg {
-        flex: 1 1 0;
-        background: #282828;
-        border-radius: 50px;
-        height: 10px;
-        min-width: 40px;
-        max-width: 100%;
-        overflow: hidden;
-        display: block;
-    }
-    .emotion-bar {
-        background: #1DB954;
-        height: 100%;
-        border-radius: 50px;
-        transition: width 0.5s ease-out;
-        min-width: 0;
-        display: block;
     }
     footer {
         font-size: 0.75rem;
