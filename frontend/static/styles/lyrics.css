@@ -1,4 +1,11 @@
 /* ====== LYRIC ANALYZER STYLES ====== */
+:root {
+    --primary: #1DB954;  /* <-- INI KUNCINYA */
+    --bg: #121212;
+    --text: #FFFFFF;
+    --muted: #B3B3B3;
+}
+
 body {
     margin: 0;
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -6,6 +13,7 @@ body {
     color: #ffffff;
     padding: 2rem;
     overflow-x: hidden;
+    overflow-y: scroll;
 }
 
 header h1 {
@@ -143,21 +151,109 @@ header p.subtitle {
 }
 
 .button-primary {
+    /* Untuk positioning spinner */
+    position: relative;
+    overflow: hidden;
+    display: inline-flex; 
+    align-items: center;
+    justify-content: center;
+    
+    /* Style lama (padding, font, dll. kita pake lagi) */
     padding: 12px 24px;
-    border-radius: 50px;
-    border: none;
-    background-color: #1DB954;
-    color: #121212;
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
     text-decoration: none;
-    display: inline-block;
-    transition: background-color 0.2s ease;
+    font-weight: 700; 
+    font-size: 1rem;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    
+    /* --- EFEK LIQUID GLASS --- */
+    background: rgba(255, 255, 255, 0.1); 
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text); /* Ganti jadi putih */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
+    
+    /* Tambahan dari .button-primary lama */
+    cursor: pointer;
 }
 
+/* (3) Efek Hover */
 .button-primary:hover {
-    background-color: #1ed760;
+    background: rgba(255, 255, 255, 0.2); 
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* (4) Efek Cahaya Hover (AURORA EFFECT - DARI HOME) */
+.button-primary::before {
+    content: '';
+    position: absolute;
+    z-index: -1; /* Taruh di BELAKANG teks "Login with Spotify" */
+    
+    /* Ini "cahaya"-nya: gradasi radial warna hijau Spotify.
+      Posisinya ngumpet di pojok kiri atas.
+    */
+    background: radial-gradient(
+        circle at center, 
+        var(--primary) 0%, /* Tengahnya hijau terang */
+        transparent 60%     /* Pinggirnya transparan */
+    );
+    
+    /* Ukuran cahaya (bikin lebih gede dari tombolnya) */
+    width: 200px; 
+    height: 200px;
+    
+    /* Posisi awal: ngumpet di kiri atas */
+    transform: translate(-100px, -100px);
+    
+    /* Sembunyiin dulu */
+    opacity: 0;
+    
+    /* Transisi biar gerakannya mulus */
+    transition: transform 0.5s ease, opacity 0.4s ease;
+}
+
+/* Pas tombolnya di-hover... */
+.button-primary:hover::before {
+    /* Munculkan cahayanya (samakan dgn home: 0.2) */
+    opacity: 0.2;
+    
+    /* Gerakkan cahayanya ke pojok kanan bawah */
+    transform: translate(40px, 40px);
+}
+
+/* (5) Style untuk Teks & Spinner di dalam tombol */
+.button-primary .button-text {
+    position: relative;
+    z-index: 2;
+    transition: opacity 0.2s ease-out;
+}
+
+.button-primary .spinner {
+    position: absolute;
+    z-index: 2;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff; 
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    opacity: 0; 
+    transition: opacity 0.2s ease-out;
+}
+
+/* (6) EFEK PAS DIKLIK: Class .loading */
+.button-primary.loading .button-text {
+    opacity: 0;
+}
+
+.button-primary.loading .spinner {
+    opacity: 1;
+}
+
+.button-primary.loading {
+    pointer-events: none;
+    transform: scale(1) translateY(0);
 }
 
 .emotion-bar-row {
@@ -204,7 +300,7 @@ header p.subtitle {
 }
 
 .emotion-bar {
-    background: #1DB954;
+    background: #B3B3B3; /* Semula: #1DB954 (hijau) */
     height: 100%;
     border-radius: 50px;
     transition: width 0.5s ease-out;
@@ -469,11 +565,15 @@ footer.fade-in {
     left: 0;
     width: 50%;
     height: 100%;
+    
+    /* ▼▼▼ UBAH WARNA GRADASI INI ▼▼▼ */
     background: linear-gradient(90deg, 
-        rgba(255, 255, 255, 0) 0%, 
-        rgba(255, 255, 255, 0.15) 50%, 
-        rgba(255, 255, 255, 0) 100%
+        rgba(29, 185, 84, 0) 0%,      /* Ganti jadi Hijau transparan */
+        rgba(60, 180, 102, 0.2) 50%,   /* Ganti jadi Hijau 30% */
+        rgba(29, 185, 84, 0) 100%     /* Ganti jadi Hijau transparan */
     );
+    /* ▲▲▲ BATAS PERUBAHAN ▲▲▲ */
+    
     transform: translateX(-100%);
     animation: shimmer 2.5s infinite;
     animation-delay: 1s;
