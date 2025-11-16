@@ -58,8 +58,8 @@
                 
                 <p>
                     This project is pretty much my whole personality: a bunch of coding (mostly Python & JavaScript),
-                    NLP, and a deep obsession with <b>Math Rock</b> and <b>Midwest Emo</b>.
-                    I'm down in the trenches geeking out trying to learn alternate guitar tunings like <b>FACGCE</b> right now,
+                    NLP, and a deep obsession with <b><a href="#" id="math-rock-link">Math Rock</a></b> and <b><a href="#" id="midwest-emo-link">Midwest Emo</a></b>.
+                    I'm down in the trenches geeking out trying to learn alternate guitar tunings like <b><a href="#" id="tuning-link">FACGCE</a></b> right now,
                     even though it’s tough as hell. This web is the crossover episode I didn’t know I needed.
                 </p>
             </div>
@@ -80,6 +80,47 @@
                 </div>
             </div>
         </div>
+        <audio id="tuning-sound" src="{{ url_for('static', path='assets/audio/facgce-strum.mp3') }}" preload="auto"></audio>
+        <audio id="math-rock-sound" src="{{ url_for('static', path='assets/audio/uchu-conbini-8films.mp3') }}" preload="auto"></audio>
+        <audio id="midwest-emo-sound" src="{{ url_for('static', path='assets/audio/the-polar-bears-good-enough.mp3') }}" preload="auto"></audio>
+
+        <a id="video-bubble" 
+           class="video-bubble-toast" 
+           href="https://youtu.be/oCI3fzZvKEo?si=dkjuFQOwWhY6TTx5" 
+           target="_blank">
+            <img src="{{ url_for('static', path='assets/facgce-strum.png') }}" alt="FACGCE Tuning" class="bubble-artwork">
+            <div class="bubble-content">
+                <span class="bubble-title marquee">
+                    <div class="marquee-content">
+                        <span>This Tuning = Automatically Dreamy Chords&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                        <span>This Tuning = Automatically Dreamy Chords&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                    </div>
+                </span>
+                <span class="bubble-channel">Let's Talk About Math Rock</span>
+            </div>
+        </a>
+
+        <a id="math-rock-bubble" 
+           class="video-bubble-toast" 
+           href="https://open.spotify.com/track/40TzrhKx3TZQ07mp5JEWMC?si=47faf11359fc4b94" 
+           target="_blank">
+            <img src="{{ url_for('static', path='assets/uchu-conbini-8films.png') }}" alt="uchu conbini" class="bubble-artwork">
+            <div class="bubble-content">
+                <span class="bubble-title">8films</span>
+                <span class="bubble-channel">uchu conbini</span>
+            </div>
+        </a>
+        
+        <a id="midwest-emo-bubble" 
+           class="video-bubble-toast" 
+           href="https://open.spotify.com/album/4v8wrVdL5MzelOln49yffP?si=MSUqhOv-R16mCt-0iDM0tg" 
+           target="_blank">
+            <img src="{{ url_for('static', path='assets/the-polar-bears-good-enough.png') }}" alt="The Polar Bears" class="bubble-artwork">
+            <div class="bubble-content">
+                <span class="bubble-title">Good Enough</span>
+                <span class="bubble-channel">The Polar Bears</span>
+            </div>
+        </a>
     </main>
     
     <footer>
@@ -129,6 +170,113 @@
             const subtitleEl = document.querySelector('header.hero p');
             const containerEl = document.querySelector('.container');
             const footerEl = document.querySelector('footer');
+
+            // --- Easter Egg Audio Logic (v2) ---
+            
+            // 1. Ambil semua Link
+            const tuningLink = document.getElementById('tuning-link');
+            const mathRockLink = document.getElementById('math-rock-link');
+            const midwestEmoLink = document.getElementById('midwest-emo-link');
+            
+            // 2. Ambil semua Audio (DAN MASUKKAN KE ARRAY)
+            const tuningSound = document.getElementById('tuning-sound');
+            const mathRockSound = document.getElementById('math-rock-sound');
+            const midwestEmoSound = document.getElementById('midwest-emo-sound');
+            // BARU: Buat array untuk melacak semua audio
+            const allSounds = [tuningSound, mathRockSound, midwestEmoSound];
+
+            // 3. Ambil semua Bubble (VERSI BARU)
+            const allBubbles = document.querySelectorAll('.video-bubble-toast');
+            const videoBubble = document.getElementById('video-bubble');
+            const mathRockBubble = document.getElementById('math-rock-bubble');
+            const midwestEmoBubble = document.getElementById('midwest-emo-bubble');
+
+            // 4. Siapkan SATU timer global
+            let activeBubbleTimer = null;
+
+            // 5. Helper function biar gak nulis ulang (Audio - Versi ini sudah benar)
+            function playSound(soundToPlay) {
+                allSounds.forEach(sound => {
+                    if (sound !== soundToPlay && !sound.paused) {
+                        sound.pause();
+                        sound.currentTime = 0;
+                    }
+                });
+                if (!soundToPlay.paused) {
+                    soundToPlay.pause();
+                    soundToPlay.currentTime = 0;
+                }
+                soundToPlay.play();
+            }
+
+            // 6. Helper function buat nampilin bubble (VERSI BARU - Anti Numpuk)
+            function showBubble(bubbleToShow) {
+                // 1. Hapus timer lama, APAPUN ITU.
+                if (activeBubbleTimer) clearTimeout(activeBubbleTimer);
+
+                // 2. Sembunyikan SEMUA bubble LAINNYA
+                allBubbles.forEach(bubble => {
+                    if (bubble !== bubbleToShow) {
+                        bubble.classList.remove('show');
+                    }
+                });
+                
+                // 3. (BARU) Tentukan durasi timeout
+                let bubbleDuration = 5000; // Default 5 detik
+                
+                // 4. Reset animasi marquee jika ini bubble video
+                if (bubbleToShow.id === 'video-bubble') {
+                    const marqueeWrapper = bubbleToShow.querySelector('.marquee-content');
+                    if (marqueeWrapper) {
+                        // SAMAKAN DENGAN CSS:
+                        const marqueeDurationSeconds = 7; 
+                        
+                        // (BARU) Set durasi bubble agar = 1x loop animasi
+                        bubbleDuration = marqueeDurationSeconds * 1000; 
+
+                        // Reset animasi
+                        marqueeWrapper.style.animation = 'none';
+                        void marqueeWrapper.offsetWidth; 
+                        marqueeWrapper.style.animation = `marquee ${marqueeDurationSeconds}s linear infinite`;
+                    }
+                }
+                
+                // 5. Tampilkan bubble yang diminta
+                bubbleToShow.classList.add('show');
+                
+                // 6. (BARU) Set timer BARU dengan durasi yang tepat
+                activeBubbleTimer = setTimeout(() => {
+                    bubbleToShow.classList.remove('show');
+                }, bubbleDuration); // Gunakan durasi yg sudah ditentukan (5s atau 10s)
+            }
+
+            // 7. Pasang Listener ke FACGCE (BARU: Panggil showBubble tanpa timer)
+            if (tuningLink && tuningSound && videoBubble) {
+                tuningLink.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    playSound(tuningSound);
+                    showBubble(videoBubble);
+                });
+            }
+
+            // 8. Pasang Listener ke Math Rock (BARU)
+            if (mathRockLink && mathRockSound && mathRockBubble) {
+                mathRockLink.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    playSound(mathRockSound);
+                    showBubble(mathRockBubble);
+                });
+            }
+
+            // 9. Pasang Listener ke Midwest Emo (BARU)
+            if (midwestEmoLink && midwestEmoSound && midwestEmoBubble) {
+                midwestEmoLink.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    playSound(midwestEmoSound);
+                    showBubble(midwestEmoBubble);
+                });
+            }
+            // --- End Easter Egg Logic ---
 
             if (!titleEl || !subtitleEl || !containerEl) return;
 
