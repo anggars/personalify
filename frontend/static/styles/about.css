@@ -223,7 +223,6 @@ footer.fade-in {
 
     header.hero h1 {
         font-size: 2rem; /* Ukuran H1 di home.css mobile */
-        margin-top: 1rem;
     }
     header.hero p {
         font-size: 1rem; /* Ukuran <p> di lyrics.css mobile */

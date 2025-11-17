@@ -181,6 +181,7 @@ li {
 }
 .download-btn {
     position: fixed;
+    overflow: hidden;
     bottom: 1.5rem;
     right: 2rem;
     padding: 0.75rem 1.25rem;
@@ -196,7 +197,6 @@ li {
     z-index: 1000;
     transition: background-color 0.3s ease, 
                 opacity 0.4s ease, 
-                transform 0.4s ease, 
                 bottom 0.4s ease;
 }
 .download-btn:hover {
@@ -220,17 +220,18 @@ li {
         transparent 60%
     );
 
-    width: 200px; 
-    height: 200px;
+    width: 100%; 
+    height: 100%;
+    top: 0;
+    left: 0;
 
-    /* Posisi awal: ngumpet di kiri atas */
-    transform: translate(-100px, -100px);
+    transform: scale(0); /* Mulai dari 0% */
     opacity: 0;
 
     /* Samakan radius tombolnya (biar gak kotak) */
     border-radius: 9999px;
 
-    transition: transform 0.5s ease, opacity 0.4s ease;
+    transition: transform 0.4s ease-out, opacity 0.4s ease-out;
 }
 /* Pas tombolnya di-hover... */
 .download-btn:hover::before {
@@ -238,7 +239,7 @@ li {
     opacity: 0.2;
 
     /* Gerakkan ke pojok kanan bawah */
-    transform: translate(40px, 40px);
+    transform: scale(1.5);
 }
 .download-btn.hide-on-scroll {
     opacity: 0;
@@ -385,6 +386,10 @@ footer.fade-in {
         bottom: 1.5rem;/* Samakan dengan padding body */
         padding: 1rem;
         transform: translateY(0);
+        transition: background-color 0.3s ease, 
+                    opacity 0.4s ease, 
+                    transform 0.4s ease,
+                    bottom 0.4s ease;
     }
     .download-btn.hide-on-scroll {
         transform: translateY(150px);
