@@ -318,6 +318,7 @@ footer.fade-in {
     /* Transisi dengan efek "bouncy" */
     transition: opacity 0.3s ease-in, 
                 transform 0.3s ease-in, 
+                visibility 0s ease-in 0.3s, /* <-- KUNCI 1 */
                 background 0.3s ease, 
                 border-color 0.3s ease;
 }
@@ -326,8 +327,9 @@ footer.fade-in {
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) scale(1); /* Mengembang ke ukuran normal */
-    transition: opacity 0.4s ease-out, 
+    transition: opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
                 transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                visibility 0s ease-out 0s, /* <-- KUNCI 2 */
                 background 0.3s ease, 
                 border-color 0.3s ease;
 }
