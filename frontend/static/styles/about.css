@@ -279,46 +279,57 @@ footer.fade-in {
     color: #1DB954; /* Jadi hijau pas di-hover */
 }
 
-/* === STYLING BUBBLE VIDEO (VERSI LIQUID GLASS + CENTERED) === */
+/* === STYLING BUBBLE VIDEO (VERSI DYNAMIC ISLAND) === */
 .video-bubble-toast {
     position: fixed; 
-    bottom: 2rem;
     
-    /* BARU: Posisi Desktop (Tengah Bawah) */
+    /* PERUBAHAN: Pindah ke T-O-P (Tengah Atas) */
+    top: 2rem; 
+    bottom: auto; /* Hapus setting 'bottom' */
     left: 50%;
-    
-    /* BARU: Auto-width (sesuai teks) */
     width: auto; 
     
-    /* === EFEK LIQUID GLASS === */
-    background: rgba(42, 42, 42, 0.65); /* #2a2a2a transparan */
+    /* === EFEK LIQUID GLASS (DIAMBIL DARI DASHBOARD.CSS) === */
+    background: rgba(255, 255, 255, 0.1); 
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); 
+    
+    /* PERUBAHAN: Bentuk "Pill" ala Dynamic Island */
+    border-radius: 12px; 
     
     /* === Layout Flexbox === */
     display: flex;
     align-items: center; 
     gap: 0.75rem; 
-    padding: 0.75rem;
+    padding: 0.75rem; 
     
     z-index: 1000;
     text-decoration: none; 
-    overflow: hidden; /* Untuk aurora effect */
+    overflow: hidden; 
     
-    /* Sembunyikan by default (dengan transform baru) */
+    /* PERUBAHAN: Animasi "Expand/Collapse" */
     opacity: 0;
     visibility: hidden;
-    transform: translateX(-50%) translateY(20px); /* Mulai dari tengah & bawah */
-    transition: opacity 0.4s ease-out, transform 0.4s ease-out, background 0.3s ease, border-color 0.3s ease;
+    transform: translateX(-50%) scale(0.2); /* Mulai dari kecil */
+    transform-origin: top center; /* Mengembang dari atas tengah */
+    
+    /* Transisi dengan efek "bouncy" */
+    transition: opacity 0.3s ease-in, 
+                transform 0.3s ease-in, 
+                background 0.3s ease, 
+                border-color 0.3s ease;
 }
 
 .video-bubble-toast.show {
     opacity: 1;
     visibility: visible;
-    transform: translateX(-50%) translateY(0); /* Muncul ke tengah */
+    transform: translateX(-50%) scale(1); /* Mengembang ke ukuran normal */
+    transition: opacity 0.4s ease-out, 
+                transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                background 0.3s ease, 
+                border-color 0.3s ease;
 }
 
 /* === EFEK AURORA HOVER === */
@@ -421,31 +432,31 @@ footer.fade-in {
 
 @media (max-width: 768px) {
     .video-bubble-toast {
-        /* PERBAIKAN: Hapus 'left', 'right', 'max-width' */
-        /* Bubble sekarang akan mewarisi 'left: 50%' & 'transform: translateX(-50%)' */
+        /* PERUBAHAN: Pindah ke atas di mobile */
+        top: 1rem; 
+        bottom: auto;
         
-        bottom: 1.5rem; /* Atur ulang jarak bawah untuk mobile */
-        
-        /* Reset transform agar sesuai dengan desktop (tengah) */
-        transform: translateX(-50%) translateY(20px); /* Mulai dari tengah & bawah */
+        /* Pastikan transform awal sama (kecil) */
+        transform: translateX(-50%) scale(0.2);
     }
 
     .video-bubble-toast.show {
-        transform: translateX(-50%) translateY(0); /* Muncul ke tengah */
+        /* Pastikan transform akhir sama (normal) */
+        transform: translateX(-50%) scale(1); 
     }
 
     /* Kecilkan 'jendela' marquee di mobile */
     .bubble-title.marquee {
-        width: 162px; /* Lebar 'jendela' marquee di mobile */
+        width: 162px; 
     }
     
-    /* PERBAIKAN: Perkecil thumbnail 16:9 di mobile agar proporsional */
+    /* Perkecil thumbnail 16:9 di mobile agar proporsional */
     #video-bubble .bubble-artwork {
-        width: 80px; /* 16:9 (dihitung dari tinggi 45px) */
+        width: 80px; 
         height: 45px;
     }
 
-    /* PERBAIKAN: Samakan tinggi thumbnail 1:1 di mobile */
+    /* Samakan tinggi thumbnail 1:1 di mobile */
     .bubble-artwork {
         width: 45px;
         height: 45px;
