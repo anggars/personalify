@@ -401,6 +401,50 @@ function generateImage(selectedCategory) {
             opacity: 1 !important;
             animation: none !important;
         }
+
+        /* ▼▼▼ GANTI DENGAN BLOK INI ▼▼▼ */
+        .genre-pills .genre-label {
+            /* 1. Paksa layout jadul */
+            display: inline-block !important;
+            
+            /* 2. HAPUS EFEK KACA (INI BIANG KEROKNYA) */
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            box-shadow: none !important; 
+            
+            /* 3. Ganti background jadi solid (biar gak aneh) */
+            background: #2a2a2a !important; 
+            
+            /* 4. Jaga border & radius-nya */
+            border-radius: 10px !important;
+            border: 1px solid var(--genre-color, #555);
+
+            /* 5. Jaga teks tetap putih & ukuran font */
+            color: #FFFFFF !important;
+            font-size: 0.6rem !important;
+
+            /* * 6. KUNCI PERBAIKAN: Trik 'line-height' == 'height'
+             * Ini adalah trik CSS kuno untuk vertical-align
+             * yang html2canvas seharusnya mengerti.
+             */
+            
+            /* Tentukan tinggi pill secara eksplisit */
+            height: 18px !important; 
+            
+            /* Set line-height SAMA PERSIS dengan height */
+            line-height: 18px !important; 
+            
+            /* HAPUS padding vertikal agar tidak mengganggu kalkulasi */
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            
+            /* Padding horizontal tetap ada */
+            padding-left: 8px !important;
+            padding-right: 8px !important;
+            
+            /* Jaga-jaga */
+            vertical-align: middle !important; 
+        }
     `;
     contentWrapper.appendChild(styleFix);
 
