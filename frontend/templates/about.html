@@ -222,14 +222,14 @@
                 });
                 
                 // 3. (BARU) Tentukan durasi timeout
-                let bubbleDuration = 6000;
+                let bubbleDuration = 10000;
                 
                 // 4. Reset animasi marquee jika ini bubble video
                 if (bubbleToShow.id === 'video-bubble') {
                     const marqueeWrapper = bubbleToShow.querySelector('.marquee-content');
                     if (marqueeWrapper) {
                         // SAMAKAN DENGAN CSS:
-                        const marqueeDurationSeconds = 5; 
+                        const marqueeDurationSeconds = 4; 
                         
                         // (BARU) Set durasi bubble agar = 1x loop animasi
                         bubbleDuration = marqueeDurationSeconds * 1000; 
