@@ -956,6 +956,26 @@ window.onload = function() {
 
         currentGenreArtistsMap = genreArtistsMap;
 
+        // 1. Buat Peta Warna (Genre -> Color) dari data chart
+        const genreColorMap = new Map();
+        genreDataExtended.labels.forEach((label, index) => { 
+            genreColorMap.set(label, chartColors[index % chartColors.length]);
+        });
+
+        // 2. Ambil SEMUA pills genre di halaman (termasuk di Top Artists)
+        const allGenrePills = document.querySelectorAll('.genre-label');
+        
+        // 3. Terapkan warna
+        allGenrePills.forEach(pill => {
+            const genreName = pill.textContent.trim();
+            const color = genreColorMap.get(genreName);
+            
+            if (color) {
+                // Terapkan warna ke Teks dan Border
+                pill.style.setProperty('--genre-color', color);
+            }
+        });
+
         // Buat Chart
         genreChartInstance = new Chart(ctx, {
             type: 'pie',
