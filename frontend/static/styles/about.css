@@ -158,7 +158,7 @@ header.hero p.visible {
 .section p a.tech-render:hover     { color: #4D9DE0; }
 
 
-/* === ATURAN IKON SOSMED (ALA CLARISSA) === */
+/* === ATURAN IKON SOSMED === */
 .icon-social-links {
     display: flex;
     flex-wrap: wrap;
@@ -180,14 +180,95 @@ header.hero p.visible {
     color: #b3b3b3; 
     font-size: 1.2rem;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efek Bouncy */
+    position: relative;
 }
 
+/* Efek Umum saat Hover (Naik sedikit) */
 .icon-social-links a:hover {
     background-color: #2a2a2a;
-    color: #ffffff; 
     transform: scale(1.01);
-    border-color: #444;
+}
+
+/* --- WARNA BRAND SPESIFIK (HOVER) - VERSI HALUS (SUBTLE) --- */
+
+/* GitHub (Putih Tulang) */
+.icon-social-links a.github:hover {
+    color: #f0f6fc;
+    border-color: #f0f6fc;
+    /* Shadow dikurangi: 10px spread, opacity 0.2 */
+    box-shadow: 0 0 10px rgba(240, 246, 252, 0.2); 
+}
+
+/* LinkedIn (Biru) */
+.icon-social-links a.linkedin:hover {
+    color: #0077b5;
+    border-color: #0077b5;
+    box-shadow: 0 0 10px rgba(0, 119, 181, 0.3);
+}
+
+/* Instagram (Pink Kemerahan) */
+.icon-social-links a.instagram:hover {
+    color: #E1306C;
+    border-color: #E1306C;
+    box-shadow: 0 0 10px rgba(225, 48, 108, 0.3);
+    /* 1. Pasang gradasi yang sama persis ke background ikon */
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+    /* 2. Potong background-nya mengikuti bentuk ikon (text) */
+    -webkit-background-clip: text;
+    background-clip: text;
+    
+    /* 3. Bikin fill ikon-nya transparan biar background gradasi kelihatan */
+    -webkit-text-fill-color: transparent;
+}
+
+/* Spotify (Hijau) */
+.icon-social-links a.spotify:hover {
+    color: #1DB954;
+    border-color: #1DB954;
+    box-shadow: 0 0 10px rgba(29, 185, 84, 0.3);
+}
+
+/* X (Twitter) - Putih Bersih */
+.icon-social-links a.x-twitter:hover {
+    color: #ffffff;
+    border-color: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+}
+
+/* YouTube (Merah) */
+.icon-social-links a.youtube:hover {
+    color: #FF0000;
+    border-color: #FF0000;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+/* SoundCloud (Oranye) */
+.icon-social-links a.soundcloud:hover {
+    color: #ff5500;
+    border-color: #ff5500;
+    box-shadow: 0 0 10px rgba(255, 85, 0, 0.3);
+}
+
+/* Medium (Hijau Teal) */
+.icon-social-links a.medium:hover {
+    color: #00ab6c;
+    border-color: #00ab6c;
+    box-shadow: 0 0 10px rgba(0, 171, 108, 0.3);
+}
+
+/* Telegram (Biru Langit) */
+.icon-social-links a.telegram:hover {
+    color: #0088cc;
+    border-color: #0088cc;
+    box-shadow: 0 0 10px rgba(0, 136, 204, 0.3);
+}
+
+/* Blog (Kuning Emas) */
+.icon-social-links a.blog:hover {
+    color: #FEE133;
+    border-color: #FEE133;
+    box-shadow: 0 0 10px rgba(254, 225, 51, 0.3);
 }
 
 /* === FOOTER (dari home.css) === */
