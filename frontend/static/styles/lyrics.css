@@ -1,9 +1,13 @@
 /* ====== LYRIC ANALYZER STYLES ====== */
 :root {
-    --primary: #1DB954;  /* <-- INI KUNCINYA */
+    --primary: #1DB954;
     --bg: #121212;
     --text: #FFFFFF;
     --muted: #B3B3B3;
+}
+
+button, input, textarea, select {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 
 body {
@@ -87,6 +91,7 @@ header p.subtitle {
     resize: vertical;
     box-sizing: border-box;
     transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .lyrics-form textarea:focus {
@@ -157,6 +162,7 @@ header p.subtitle {
     display: inline-flex; 
     align-items: center;
     justify-content: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     
     /* Style lama (padding, font, dll. kita pake lagi) */
     padding: 12px 24px;
@@ -227,6 +233,7 @@ header p.subtitle {
     position: relative;
     z-index: 2;
     transition: opacity 0.2s ease-out;
+    top: -2px;
 }
 
 .button-primary .spinner {
@@ -348,6 +355,7 @@ footer {
     z-index: 100;
     opacity: 0;
     transition: opacity 0.5s ease-out 0.5s; /* Kasih delay dikit */
+    line-height: 1.35;
 }
 
 footer.fade-in {
