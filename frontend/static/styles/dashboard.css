@@ -59,11 +59,11 @@ h1 {
 }
 .select-wrapper::after {
     content: '▼';
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: #aaa;
     position: absolute;
     right: 1rem;
-    top: 50%;
+    top: 46%;
     transform: translateY(-50%);
     pointer-events: none;
 }
@@ -71,11 +71,27 @@ h1 {
     appearance: none;
     background-color: #2a2a2a;
     border: none;
-    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    
+    /* ▼▼▼ PERBAIKAN POSISI TEKS & FONT ▼▼▼ */
+    /* 1. Paksa Font biar gak kena Comic Sans */
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    
+    /* 2. Trik Padding Asimetris (Atas lebih kecil, Bawah lebih gede) 
+       Asal: 0.5rem (8px). 
+       Baru: Atas 6px, Bawah 10px. 
+       Efek: Teks naik 2px secara visual. */
+    padding-top: 6px;
+    padding-bottom: 10px;
+    padding-left: 1rem;
+    padding-right: 2.5rem; /* Ruang buat panah */
+    
     font-size: 1rem;
     color: #ffffff;
     cursor: pointer;
     border-radius: 9999px;
+    
+    /* Pastikan line-height normal biar gak aneh */
+    line-height: 1.5; 
 }
 .container {
     display: grid;
@@ -221,16 +237,20 @@ li {
     overflow: hidden;
     bottom: 1.5rem;
     right: 2rem;
-    padding: 0.75rem 1.25rem;
+    display: flex;               /* 1. Pakai Flexbox biar alignment kuat */
+    align-items: center;         /* 2. Paksa konten ke tengah vertikal */
+    justify-content: center;     /* 3. Paksa ke tengah horizontal */
+    padding: 10px 20px;          /* 4. Kecilin padding (tadinya 0.75rem/12px) biar ga ketinggian */
     background-color: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px); /* Untuk Safari */
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #ffffff; /* Teks jadi putih */
+    color: #ffffff;
     border-radius: 9999px;
     font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Shadow lebih kuat */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     z-index: 1000;
     transition: background-color 0.3s ease, 
                 opacity 0.4s ease, 
@@ -242,7 +262,8 @@ li {
 }
 .download-btn .button-text {
     position: relative;
-    z-index: 1; /* Pastikan teks di atas z-index: 0 */
+    z-index: 1;
+    top: -2px;
 }
 /* === EFEK AURORA UNTUK TOMBOL SAVE === */
 .download-btn::before {
@@ -290,6 +311,7 @@ footer {
     color: #888;
     opacity: 0;
     transition: opacity 0.5s ease-out 0.5s; /* Kasih delay dikit */
+    line-height: 1.35;
 }
 footer.fade-in {
     opacity: 1;
@@ -333,6 +355,7 @@ footer.fade-in {
     color: #000;
     font-weight: 600;
     cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
 }
 .modal-close {
     background: none;

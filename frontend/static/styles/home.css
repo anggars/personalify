@@ -23,6 +23,7 @@ body {
     padding: 2rem;
     text-align: center;
     overflow-x: hidden;
+    overflow-y: scroll;
 }
 
 .main-content {
@@ -235,6 +236,7 @@ footer {
     color: #888;
     opacity: 0;
     transition: opacity 0.5s ease-out;
+    line-height: 1.35;
 }
 
 footer.fade-in {
