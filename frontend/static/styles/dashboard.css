@@ -263,7 +263,7 @@ li {
 .download-btn .button-text {
     position: relative;
     z-index: 1;
-    top: -2px;
+    top: -1.5px;
 }
 /* === EFEK AURORA UNTUK TOMBOL SAVE === */
 .download-btn::before {
