@@ -233,7 +233,7 @@ header p.subtitle {
     position: relative;
     z-index: 2;
     transition: opacity 0.2s ease-out;
-    top: -2px;
+    top: -1.85px;
 }
 
 .button-primary .spinner {
@@ -386,6 +386,7 @@ footer.fade-in {
 
     header h1 {
         font-size: 2rem;
+        margin-top: 0.85rem;
     }
 
     header p.subtitle {
