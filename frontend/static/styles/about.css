@@ -205,19 +205,34 @@ header.hero p.visible {
     box-shadow: 0 0 10px rgba(0, 119, 181, 0.3);
 }
 
-/* Instagram (Pink Kemerahan) */
+/* --- KHUSUS INSTAGRAM (FIXED: GERAKAN SAMA RATA) --- */
+
+/* 1. Bagian Tombol (Lingkaran Luar) */
 .icon-social-links a.instagram:hover {
-    color: #E1306C;
-    border-color: #E1306C;
-    box-shadow: 0 0 10px rgba(225, 48, 108, 0.3);
-    /* 1. Pasang gradasi yang sama persis ke background ikon */
+    /* Ganti border jadi 1px (biar sama dengan ikon lain & gak geser) */
+    border: 1px solid transparent;
+
+    /* TEKNIK LAPIS (LAYER): */
+    /* Layer 1 (Atas): Warna #2a2a2a */
+    /* Layer 2 (Bawah): Gradasi Instagram */
+    background: 
+        linear-gradient(#2a2a2a, #2a2a2a) padding-box,
+        radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%) border-box;
+    
+    /* Shadow soft */
+    box-shadow: 0 0 10px rgba(214, 36, 159, 0.3);
+    
+    /* HAPUS 'transform: scale(...)' dari sini */
+    /* Biarkan dia ikut aturan global .icon-social-links a:hover */
+}
+
+/* 2. Bagian Ikon (Logo di tengah) - Tetap Gradasi */
+.icon-social-links a.instagram:hover i {
     background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
-    /* 2. Potong background-nya mengikuti bentuk ikon (text) */
     -webkit-background-clip: text;
     background-clip: text;
-    
-    /* 3. Bikin fill ikon-nya transparan biar background gradasi kelihatan */
     -webkit-text-fill-color: transparent;
+    color: transparent;
 }
 
 /* Spotify (Hijau) */
