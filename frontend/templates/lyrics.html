@@ -36,9 +36,11 @@
 <footer>
     <a href="/" class="footer-link">Personalify</a>
     <span> © 2025 • Powered by </span>
-    <a href="https://huggingface.co/" target="_blank" class="footer-link">Hugging Face</a>
+    <a href="https://huggingface.co/" target="_blank" class="footer-link">Hugging Face</a> 
     <br>
-    <a href="/about" class="footer-link">About & Credits</a>
+    <span id="dynamic-footer-link">
+        <a href="/about" class="footer-link">About & Credits</a>
+    </span>
 </footer>
 
 <script src="{{ url_for('static', path='script/lyrics.js') }}"></script>

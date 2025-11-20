@@ -1204,3 +1204,101 @@ function updateGenreList(labels, counts) {
         });
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    /* =========================================
+       LOGIC 1: Typewriter (Spotify <-> HF)
+       ========================================= */
+    const providerLink = document.getElementById('provider-link');
+    const providerData = [
+        { text: 'Spotify API', url: 'https://developer.spotify.com/', type: 'spotify' },
+        { text: 'Hugging Face', url: 'https://huggingface.co/', type: 'huggingface' }
+    ];
+
+    let typeLoop = 0;
+    let isDeleting = false;
+    let txt = '';
+    
+    // Config Speed
+    const typingSpeed = 100; 
+    const deletingSpeed = 50;
+    const pauseTime = 2500; 
+
+    function typeWriter() {
+        const i = typeLoop % providerData.length;
+        const fullTxt = providerData[i].text;
+
+        if (isDeleting) {
+            txt = fullTxt.substring(0, txt.length - 1);
+        } else {
+            txt = fullTxt.substring(0, txt.length + 1);
+        }
+
+        providerLink.textContent = txt;
+
+        let delta = isDeleting ? deletingSpeed : typingSpeed;
+
+        if (!isDeleting && txt === fullTxt) {
+            delta = pauseTime; 
+            isDeleting = true;
+            updateProviderStyle(i); // Pastikan link benar saat teks utuh
+        } else if (isDeleting && txt === '') {
+            isDeleting = false;
+            typeLoop++;
+            delta = 500;
+            // Ganti link & warna saat teks kosong (sebelum ngetik baru)
+            updateProviderStyle(typeLoop % providerData.length);
+        }
+
+        setTimeout(typeWriter, delta);
+    }
+
+    function updateProviderStyle(index) {
+        const data = providerData[index];
+        providerLink.href = data.url;
+        if (data.type === 'huggingface') {
+            providerLink.classList.add('hf-mode');
+        } else {
+            providerLink.classList.remove('hf-mode');
+        }
+    }
+
+    // Jalankan Typewriter
+    if(providerLink) typeWriter();
+
+
+    /* =========================================
+       LOGIC 2: Fade (Lyrics <-> Aritsu)
+       ========================================= */
+    const dynamicContainer = document.getElementById('dynamic-footer-link');
+    let isLyricsState = false; // Kita mulai dari false biar logic di bawah langsung switch ke true
+
+    // Set tampilan awal
+    if(dynamicContainer) {
+        dynamicContainer.innerHTML = '<a href="/lyrics" class="footer-link">Lyrics Analyzer</a>';
+    
+        setInterval(() => {
+            // 1. Fade Out
+            dynamicContainer.classList.add('fading-out');
+
+            // 2. Ganti Konten
+            setTimeout(() => {
+                if (isLyricsState) {
+                    // Balik ke Lyrics (Semua jadi Link Hijau)
+                    dynamicContainer.innerHTML = '<a href="/lyrics" class="footer-link">Lyrics Analyzer</a>';
+                } else {
+                    // Ganti ke Aritsu (Teks biasa + Link Hijau di Nama)
+                    // Perhatikan: "Created by" diluar tag <a>
+                    dynamicContainer.innerHTML = 'Created by <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>';
+                }
+
+                isLyricsState = !isLyricsState;
+                
+                // 3. Fade In
+                dynamicContainer.classList.remove('fading-out');
+            }, 500); // Tunggu CSS transition selesai
+
+        }, 5000); // Ganti setiap 5 detik
+    }
+});

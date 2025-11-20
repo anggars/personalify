@@ -71,26 +71,15 @@ h1 {
     appearance: none;
     background-color: #2a2a2a;
     border: none;
-    
-    /* ▼▼▼ PERBAIKAN POSISI TEKS & FONT ▼▼▼ */
-    /* 1. Paksa Font biar gak kena Comic Sans */
     font-family: 'Plus Jakarta Sans', sans-serif !important;
-    
-    /* 2. Trik Padding Asimetris (Atas lebih kecil, Bawah lebih gede) 
-       Asal: 0.5rem (8px). 
-       Baru: Atas 6px, Bawah 10px. 
-       Efek: Teks naik 2px secara visual. */
-    padding-top: 6px;
+    padding-top: 8px; 
     padding-bottom: 10px;
     padding-left: 1rem;
-    padding-right: 2.5rem; /* Ruang buat panah */
-    
+    padding-right: 2.5rem;
     font-size: 1rem;
     color: #ffffff;
     cursor: pointer;
     border-radius: 9999px;
-    
-    /* Pastikan line-height normal biar gak aneh */
     line-height: 1.5; 
 }
 .container {
@@ -263,7 +252,7 @@ li {
 .download-btn .button-text {
     position: relative;
     z-index: 1;
-    top: -1.5px;
+    top: -1.25px;
 }
 /* === EFEK AURORA UNTUK TOMBOL SAVE === */
 .download-btn::before {
@@ -634,4 +623,34 @@ footer.fade-in {
   50% { 
     background-color: #B3B3B3; /* Warna kursor */
   }
+}
+
+/* --- Style Dasar Link --- */
+.footer-link {
+    text-decoration: none;
+    color: inherit; /* Ikut warna teks footer */
+    transition: color 0.3s ease;
+    cursor: pointer;
+}
+
+/* Hover Default (Hijau Spotify) */
+.footer-link:hover {
+    color: #1DB954 !important; 
+}
+
+/* --- Khusus Bagian Provider (Hugging Face) --- */
+/* Kalau ada class .hf-mode, hover jadi Kuning */
+#provider-link.hf-mode:hover {
+    color: #FFD21E !important; 
+}
+
+/* --- Khusus Bagian Bawah (Lyrics/Aritsu) --- */
+#dynamic-footer-link {
+    transition: opacity 0.5s ease-in-out; /* Efek fade */
+    opacity: 1;
+}
+
+/* Class untuk menyembunyikan elemen saat transisi */
+.fading-out {
+    opacity: 0 !important;
 }

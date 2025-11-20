@@ -558,3 +558,27 @@ footer.fade-in {
         height: 45px;
     }
 }
+
+/* === DYNAMIC FOOTER TECH STACK COLORS === */
+
+/* Default Transition */
+#tech-link {
+    text-decoration: none;
+    color: #888; /* Warna default */
+    transition: color 0.3s ease;
+    border-right: 2px solid transparent; /* Tempat kursor ngetik (opsional) */
+}
+
+/* Warna Hover Spesifik (sesuai brand) */
+#tech-link.tech-python:hover    { color: #009688 !important; } /* FastAPI Teal */
+#tech-link.tech-docker:hover    { color: #2496ED !important; } /* Docker Blue */
+#tech-link.tech-postgres:hover  { color: #336791 !important; } /* Postgres Blue */
+#tech-link.tech-mongo:hover     { color: #4DB33D !important; } /* MongoDB Green */
+#tech-link.tech-redis:hover     { color: #DC382D !important; } /* Redis Red */
+#tech-link.tech-vercel:hover    { color: #ffffff !important; } /* Vercel White */
+#tech-link.tech-render:hover    { color: #4D9DE0 !important; } /* Render Blue */
+
+/* Mencegah layout lompat saat ganti teks */
+#tech-prefix {
+    display: inline-block;
+}
