@@ -354,6 +354,7 @@ footer.fade-in {
         padding-bottom: 0; /* Hapus padding ganda */
         margin-top: 1.75rem;
         margin-bottom: 0.5rem;
+        line-height: 1.35;
     }
 }
 
