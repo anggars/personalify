@@ -29,106 +29,14 @@
     </main>
     
     <footer>
-        Personalify &copy; 2025 • Powered by <a href="https://developer.spotify.com/" target="_blank" class="footer-link">Spotify API</a>
+        Personalify © 2025 • Powered by 
+        <a href="https://developer.spotify.com/" target="_blank" class="footer-link">Spotify API</a>
         <br>
-        <a href="/about" class="footer-link">About & Credits</a>
+        <span id="dynamic-footer-link">
+            <a href="/about" class="footer-link">About & Credits</a>
+        </span>
     </footer>
 
-    <script>
-        function typeEffect(element, text, speed = 30) {
-            return new Promise((resolve) => {
-                let index = 0;
-                let currentHtml = '';
-                
-                // Pastikan elemennya terlihat saat mulai
-                element.style.visibility = 'visible';
-
-                function typeWriter() {
-                    if (index < text.length) {
-                        let char = text.charAt(index);
-
-                        if (char === '<') {
-                            // Handle tag HTML (misal: <a> di paragraf)
-                            let tagEnd = text.indexOf('>', index);
-                            if (tagEnd !== -1) {
-                                currentHtml += text.substring(index, tagEnd + 1);
-                                index = tagEnd + 1;
-                            } else {
-                                currentHtml += char;
-                                index++;
-                            }
-                        } else {
-                            // Teks biasa
-                            currentHtml += char;
-                            index++;
-                        }
-
-                        element.innerHTML = currentHtml + '<span class="typing-cursor"></span>';
-                        setTimeout(typeWriter, speed);
-                    } else {
-                        // Selesai: Hapus kursor dan resolve promise
-                        element.innerHTML = currentHtml;
-                        resolve();
-                    }
-                }
-                typeWriter();
-            });
-        }
-
-        // Jalankan animasi setelah halaman dimuat
-        document.addEventListener('DOMContentLoaded', async function() {
-            const titleEl = document.querySelector('.hero h1');
-            const pEl = document.querySelector('.hero p');
-            const buttonEl = document.querySelector('.hero .button');
-            const footerEl = document.querySelector('footer');
-
-            if (!titleEl || !pEl || !buttonEl) return;
-
-            // 1. Simpan teks paragraf & kosongkan (H1 JANGAN dikosongkan)
-            const pText = pEl.innerHTML;
-            pEl.innerHTML = ''; 
-
-            // 2. Tunggu Logo muncul sebentar (misal 500ms)
-            setTimeout(() => {
-                // A. FADE IN: Judul, Tombol, Footer muncul barengan
-                titleEl.classList.add('visible');
-                buttonEl.classList.add('visible');
-                if (footerEl) footerEl.classList.add('visible');
-
-                // B. TYPING: Tunggu fade in selesai (1000ms), baru ketik paragraf
-                setTimeout(async () => {
-                    await typeEffect(pEl, pText, 20);
-                }, 1000);
-
-            }, 500); 
-            buttonEl.addEventListener('click', function(event) {
-                // 1. Stop redirect bawaan HTML
-                event.preventDefault(); 
-                
-                // 2. Tambah class .loading (memicu CSS spinner)
-                this.classList.add('loading');
-                
-                // 3. Ambil URL tujuan dari tombolnya
-                const destinationUrl = this.href;
-
-                // 4. Tunggu 1 detik (buat pamer animasi), baru redirect
-                setTimeout(() => {
-                    window.location.href = destinationUrl;
-                }, 1000); 
-            });
-        });
-        // Listener ini nge-detect setiap kali halaman "ditampilkan"
-        window.addEventListener('pageshow', function(event) {
-            
-            // 'event.persisted' jadi 'true' kalo halaman diambil dari cache (pas lo klik 'Back')
-            if (event.persisted) {
-                const buttonEl = document.querySelector('.hero .button');
-                if (buttonEl) {
-                    // Paksa hapus kelas .loading biar tombolnya balik normal
-                    buttonEl.classList.remove('loading');
-                }
-            }
-        });
-    </script>
+    <script src="{{ url_for('static', path='script/home.js') }}"></script>
 </body>
 </html>

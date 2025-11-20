@@ -189,6 +189,9 @@ p {
 .button .button-text {
     /* Bikin transisi biar bisa fade-out */
     transition: opacity 0.2s ease-out;
+    position: relative; /* Diperlukan agar properti 'top' berfungsi */
+    top: -1.5px;          /* Geser naik 2 pixel (sesuaikan jika masih kurang pas) */
+    line-height: 1;     /* Pastikan tinggi baris rapat agar padding tombol akurat */
 }
 
 .button .spinner {
@@ -282,4 +285,30 @@ footer {
 .visible {
     opacity: 1 !important;
     transform: translateY(0) !important;
+}
+
+/* --- Footer Dynamic Styles --- */
+
+/* Transisi untuk efek menghilang/muncul */
+#dynamic-footer-link {
+    transition: opacity 0.5s ease-in-out;
+    opacity: 1;
+}
+
+/* Class helper untuk menyembunyikan elemen */
+.fading-out {
+    opacity: 0 !important;
+}
+
+/* Pastikan link di footer punya style yang benar */
+.footer-link {
+    color: #888; /* Abu-abu default */
+    text-decoration: none;
+    transition: color 0.3s ease;
+    cursor: pointer;
+}
+
+/* Hover jadi Hijau Spotify */
+.footer-link:hover {
+    color: #1DB954 !important;
 }

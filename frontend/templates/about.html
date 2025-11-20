@@ -20,13 +20,13 @@
         <header class="hero">
             <h1>About Personalify</h1>
             <p>The project scoop, from exam brief to deployment.</p>
-            </header>
+        </header>
 
         <div class="container">
             
             <div class="section">
                 <h2 class="about-title-section">Just a Side-Quest?</h2>
-<p>
+                <p>
                     Alright, so here's the plot twist. Personalify basically wasn't just a random side-quest I built for fun.
                     This whole project was actually my final exam for my <b>'Distributed Data Processing'</b> class back in semester 6.
                     The brief was to build a system that integrates several database technologies.
@@ -51,7 +51,7 @@
                 <h2 class="about-title-section">About Me</h2>
                 <p>
                     I'm Angga, an Informatics major who just genuinely enjoys building cool things.
-                    My world really balances on three core interests. They are software dev, language, and (obviously) music. 
+                    My world is a constant juggling act between computational linguistics, psychology, and (obviously) music. 
                     I'm always looking for creative ways these different fields can overlap,
                     and this project is truly the perfect example of that personal exploration.
                 </p>
@@ -102,6 +102,7 @@
                 </div>
             </div>
         </div>
+        
         <audio id="tuning-sound" src="{{ url_for('static', path='assets/audio/facgce-strum.mp3') }}" preload="auto"></audio>
         <audio id="math-rock-sound" src="{{ url_for('static', path='assets/audio/uchu-conbini-8films.mp3') }}" preload="auto"></audio>
         <audio id="midwest-emo-sound" src="{{ url_for('static', path='assets/audio/the-polar-bears-good-enough.mp3') }}" preload="auto"></audio>
@@ -114,8 +115,8 @@
             <div class="bubble-content">
                 <span class="bubble-title marquee">
                     <div class="marquee-content">
-                        <span>This Tuning = Automatically Dreamy Chords&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                        <span>This Tuning = Automatically Dreamy Chords&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                        <span>This Tuning = Automatically Dreamy Chords     </span>
+                        <span>This Tuning = Automatically Dreamy Chords     </span>
                     </div>
                 </span>
                 <span class="bubble-channel">Let's Talk About Math Rock</span>
@@ -146,185 +147,14 @@
     </main>
     
     <footer>
-        <a href="/" class="footer-link">Personalify</a>
-        <span> © 2025 • Powered by </span>
-        <a href="https://www.docker.com/" target="_blank" class="footer-link">Docker</a>
+        <a href="/" class="footer-link">Personalify</a> © 2025 • 
+        <span id="tech-prefix">Powered by</span> 
+        <a href="https://www.docker.com/" target="_blank" class="footer-link" id="tech-link">Docker</a>
         <br>
         <span>Created by </span>
         <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>
     </footer>
 
-    <script>
-        // Fungsi typing (copy dari home.html)
-        function typeEffect(element, text, speed = 30) {
-            return new Promise((resolve) => {
-                let index = 0;
-                let currentHtml = '';
-                // Hapus aturan 'visibility' dari sini, biarkan CSS yg atur
-                function typeWriter() {
-                    if (index < text.length) {
-                        let char = text.charAt(index);
-                        if (char === '<') {
-                            let tagEnd = text.indexOf('>', index);
-                            if (tagEnd !== -1) {
-                                currentHtml += text.substring(index, tagEnd + 1);
-                                index = tagEnd + 1;
-                            } else {
-                                currentHtml += char; index++;
-                            }
-                        } else {
-                            currentHtml += char; index++;
-                        }
-                        element.innerHTML = currentHtml + '<span class="typing-cursor"></span>';
-                        setTimeout(typeWriter, speed);
-                    } else {
-                        element.innerHTML = currentHtml;
-                        resolve();
-                    }
-                }
-                typeWriter();
-            });
-        }
-
-        // Jalankan animasi setelah halaman dimuat
-        document.addEventListener('DOMContentLoaded', async function() {
-            const titleEl = document.querySelector('header.hero h1');
-            const subtitleEl = document.querySelector('header.hero p');
-            const containerEl = document.querySelector('.container');
-            const footerEl = document.querySelector('footer');
-
-            // --- Easter Egg Audio Logic (v2) ---
-            
-            // 1. Ambil semua Link
-            const tuningLink = document.getElementById('tuning-link');
-            const mathRockLink = document.getElementById('math-rock-link');
-            const midwestEmoLink = document.getElementById('midwest-emo-link');
-            
-            // 2. Ambil semua Audio (DAN MASUKKAN KE ARRAY)
-            const tuningSound = document.getElementById('tuning-sound');
-            const mathRockSound = document.getElementById('math-rock-sound');
-            const midwestEmoSound = document.getElementById('midwest-emo-sound');
-            // BARU: Buat array untuk melacak semua audio
-            const allSounds = [tuningSound, mathRockSound, midwestEmoSound];
-
-            // 3. Ambil semua Bubble (VERSI BARU)
-            const allBubbles = document.querySelectorAll('.video-bubble-toast');
-            const videoBubble = document.getElementById('video-bubble');
-            const mathRockBubble = document.getElementById('math-rock-bubble');
-            const midwestEmoBubble = document.getElementById('midwest-emo-bubble');
-
-            // 4. Siapkan SATU timer global
-            let activeBubbleTimer = null;
-
-            // 5. Helper function biar gak nulis ulang (Audio - Versi ini sudah benar)
-            function playSound(soundToPlay) {
-                allSounds.forEach(sound => {
-                    if (sound !== soundToPlay && !sound.paused) {
-                        sound.pause();
-                        sound.currentTime = 0;
-                    }
-                });
-                if (!soundToPlay.paused) {
-                    soundToPlay.pause();
-                    soundToPlay.currentTime = 0;
-                }
-                soundToPlay.play();
-            }
-
-            // 6. Helper function buat nampilin bubble (VERSI BARU - Anti Numpuk)
-            function showBubble(bubbleToShow) {
-                // 1. Hapus timer lama, APAPUN ITU.
-                if (activeBubbleTimer) clearTimeout(activeBubbleTimer);
-
-                // 2. Sembunyikan SEMUA bubble LAINNYA
-                allBubbles.forEach(bubble => {
-                    if (bubble !== bubbleToShow) {
-                        bubble.classList.remove('show');
-                    }
-                });
-                
-                // 3. (BARU) Tentukan durasi timeout
-                let bubbleDuration = 10000;
-                
-                // 4. Reset animasi marquee jika ini bubble video
-                if (bubbleToShow.id === 'video-bubble') {
-                    const marqueeWrapper = bubbleToShow.querySelector('.marquee-content');
-                    if (marqueeWrapper) {
-                        // SAMAKAN DENGAN CSS:
-                        const marqueeDurationSeconds = 4; 
-                        
-                        // (BARU) Set durasi bubble agar = 1x loop animasi
-                        bubbleDuration = marqueeDurationSeconds * 1000; 
-
-                        // Reset animasi
-                        marqueeWrapper.style.animation = 'none';
-                        void marqueeWrapper.offsetWidth; 
-                        marqueeWrapper.style.animation = `marquee ${marqueeDurationSeconds}s linear infinite`;
-                    }
-                }
-                
-                // 5. Tampilkan bubble yang diminta
-                bubbleToShow.classList.add('show');
-                
-                // 6. (BARU) Set timer BARU dengan durasi yang tepat
-                activeBubbleTimer = setTimeout(() => {
-                    bubbleToShow.classList.remove('show');
-                }, bubbleDuration); // Gunakan durasi yg sudah ditentukan (5s atau 10s)
-            }
-
-            // 7. Pasang Listener ke FACGCE (BARU: Panggil showBubble tanpa timer)
-            if (tuningLink && tuningSound && videoBubble) {
-                tuningLink.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    playSound(tuningSound);
-                    showBubble(videoBubble);
-                });
-            }
-
-            // 8. Pasang Listener ke Math Rock (BARU)
-            if (mathRockLink && mathRockSound && mathRockBubble) {
-                mathRockLink.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    playSound(mathRockSound);
-                    showBubble(mathRockBubble);
-                });
-            }
-
-            // 9. Pasang Listener ke Midwest Emo (BARU)
-            if (midwestEmoLink && midwestEmoSound && midwestEmoBubble) {
-                midwestEmoLink.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    playSound(midwestEmoSound);
-                    showBubble(midwestEmoBubble);
-                });
-            }
-            // --- End Easter Egg Logic ---
-
-            if (!titleEl || !subtitleEl || !containerEl) return;
-
-            // Simpan teks asli
-            const titleText = titleEl.textContent;
-            const subtitleText = subtitleEl.textContent;
-            titleEl.innerHTML = '';
-            subtitleEl.innerHTML = '';
-
-            // Tampilkan H1 & Subtitle (CSS akan handle 'visibility: hidden')
-            titleEl.classList.add('visible');
-            subtitleEl.classList.add('visible');
-            
-            // 1. Ketik Judul
-            await typeEffect(titleEl, titleText, 50);
-            // 2. Ketik Subtitle
-            await typeEffect(subtitleEl, subtitleText, 30);
-            
-            // 3. Tampilkan Konten (Fade In)
-            containerEl.style.visibility = 'visible';
-            containerEl.style.opacity = '0'; // Set ulang opacity untuk animasi
-            containerEl.style.animation = 'fadeInUp 1s ease-out forwards';
-
-            // 4. Tampilkan Footer
-            if (footerEl) footerEl.classList.add('fade-in');
-        });
-    </script>
+    <script src="{{ url_for('static', path='script/about.js') }}"></script>
 </body>
 </html>

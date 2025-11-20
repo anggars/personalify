@@ -635,3 +635,21 @@ header h1, header p.subtitle, .container {
          width: 100%; /* Pastikan .container mengisi .main-content */
     }
 }
+
+/* --- Dynamic Footer Animation --- */
+
+/* Transisi untuk wrapper bawah */
+#dynamic-footer-link {
+    transition: opacity 0.5s ease-in-out;
+    opacity: 1;
+}
+
+/* Class helper untuk menyembunyikan elemen saat transisi */
+.fading-out {
+    opacity: 0 !important;
+}
+
+/* Pastikan hover link tetap konsisten */
+.footer-link:hover {
+    color: #FEE133 !important; /* Tetap Kuning (sesuai style lyrics kamu) atau ganti #1DB954 jika mau hijau */
+}

@@ -137,12 +137,42 @@ document.addEventListener('DOMContentLoaded', async function() {
     await typeEffect(titleEl, titleText, 50);
     await typeEffect(subtitleEl, subtitleText, 30);
 
-    // 5. Tampilkan form container dengan animasi fade-in
+    // 5. Tampilkan form container ...
     containerEl.style.visibility = 'visible';
-    containerEl.style.opacity = '0'; // Mulai dari 0 untuk fade-in
+    containerEl.style.opacity = '0'; 
     containerEl.style.animation = 'fadeInUp 1s ease-out forwards';
 
     // 6. Tampilkan footer
     const footerEl = document.querySelector('footer');
     if (footerEl) footerEl.classList.add('fade-in');
+
+    // ▼▼▼ TAMBAHAN: LOGIC DYNAMIC FOOTER (About <-> Aritsu) ▼▼▼
+    const dynamicLinkBottom = document.getElementById('dynamic-footer-link');
+    
+    if (dynamicLinkBottom) {
+        let isAboutState = true; // Mulai dari About
+
+        setInterval(() => {
+            // 1. Fade Out
+            dynamicLinkBottom.classList.add('fading-out');
+
+            // 2. Tunggu 500ms, lalu ganti konten
+            setTimeout(() => {
+                if (isAboutState) {
+                    // Ganti ke: Created by Aritsu
+                    // "Created by" teks biasa, "アリツ" link (hover kuning/hijau)
+                    dynamicLinkBottom.innerHTML = 'Created by <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>';
+                } else {
+                    // Balik ke: About & Credits
+                    dynamicLinkBottom.innerHTML = '<a href="/about" class="footer-link">About & Credits</a>';
+                }
+                
+                isAboutState = !isAboutState;
+
+                // 3. Fade In
+                dynamicLinkBottom.classList.remove('fading-out');
+            }, 500); 
+
+        }, 5000); // Ganti setiap 5 detik
+    }   
 });
