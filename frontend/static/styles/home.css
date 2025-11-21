@@ -190,8 +190,7 @@ p {
     /* Bikin transisi biar bisa fade-out */
     transition: opacity 0.2s ease-out;
     position: relative; /* Diperlukan agar properti 'top' berfungsi */
-    top: -1.5px;          /* Geser naik 2 pixel (sesuaikan jika masih kurang pas) */
-    line-height: 1;     /* Pastikan tinggi baris rapat agar padding tombol akurat */
+    top: -1.55px;          /* Geser naik 2 pixel (sesuaikan jika masih kurang pas) */
 }
 
 .button .spinner {

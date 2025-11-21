@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Resp
 from fastapi.templating import Jinja2Templates
 from typing import Optional
 from app.nlp_handler import generate_emotion_paragraph, analyze_lyrics_emotion
-from app.admin import get_system_wide_stats, get_user_report
+from app.admin import get_system_wide_stats, get_user_report, export_users_to_csv
 
 from app.db_handler import (
     save_user,
@@ -566,6 +566,23 @@ def get_user_stats(spotify_id: str):
             media_type="text/plain", 
             status_code=500
         )
+
+@router.get("/admin/export-users", tags=["Admin"])
+def download_user_export():
+    """
+    Endpoint untuk mendownload data user sebagai file CSV.
+    Menggunakan teknik streaming (tanpa pandas) agar ringan.
+    """
+    csv_content = export_users_to_csv()
+    
+    # Return sebagai file attachment
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=personalify_users_light.csv"
+        }
+    )
 
 # Ganti endpoint agar sesuai dengan frontend (POST /analyze-lyrics)
 @router.post("/analyze-lyrics", tags=["NLP"])
