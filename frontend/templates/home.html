@@ -15,43 +15,45 @@
         @keyframes slideDownFade {
             0% {
                 opacity: 0;
-                transform: translate(-50%, -20px); /* Mulai agak ke atas */
+                transform: translate(-50%, -20px); /* Mulai dari atas tengah */
             }
             100% {
                 opacity: 1;
-                transform: translate(-50%, 0); /* Posisi final */
+                transform: translate(-50%, 0); /* Diam di tengah */
             }
         }
 
         #error-toast {
-            /* Posisi Fixed (Melayang) di Atas */
-            position: fixed;
-            top: 2rem;          /* Jarak dari atap layar */
-            left: 50%;          /* Tengah horizontal */
-            transform: translateX(-50%); /* Koreksi tengah */
-            z-index: 9999;      /* Paling depan */
-
-            /* Visual Style (Mirip Bubble About) */
-            background: rgba(220, 53, 69, 0.2); 
-            border: 1px solid #ff6b6b;         /* Border Merah */
-            color: #ff6b6b;                    /* Teks Merah */
+            /* --- POSISI --- */
+            position: fixed;    /* Melayang bebas dari layout */
+            top: 30px;          /* Jarak dari atas */
+            left: 50%;          /* Titik awal di tengah layar */
             
-            /* Glassmorphism (Blur belakangnya) */
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            /* Rumus biar PRESISI TENGAH: Geser balik ke kiri sebesar 50% lebar objeknya sendiri */
+            transform: translateX(-50%); 
+            
+            /* Reset Margin (PENTING: Hapus margin auto yang lama biar ga konflik) */
+            margin: 0;          
+            z-index: 9999;      /* Pastikan paling depan */
 
-            /* Dimensi & Font */
+            /* --- TAMPILAN --- */
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+            
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+
             padding: 12px 24px;
-            border-radius: 12px; /* Radius normal (bukan kapsul) */
+            border-radius: 12px; 
             font-size: 0.9rem;
             font-weight: 600;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
             
-            /* Teks Rata Tengah & Tidak wrap */
-            text-align: center;
+            /* Biar teksnya gak maksa turun baris */
             white-space: nowrap;
+            text-align: center;
             
-            /* Default sembunyi */
             display: none;
         }
     </style>
