@@ -12,13 +12,12 @@ from fastapi.responses import RedirectResponse
 
 app = FastAPI()
 
-# --- Middleware 1: CORS (Izin untuk Vercel & Lokal) ---
-# Ini adalah daftar origin yang benar untuk setup Anda.
+# --- Middleware 1: CORS ---
 origins = [
-    "https://personalify.vercel.app", # Domain Vercel Anda
-    "http://127.0.0.1:8000",        # Alamat localhost Anda
-    "http://localhost:8000",         # Alamat localhost Anda
-    "null"                         # Untuk saat buka file .html langsung dari komputer
+    "https://personalify.vercel.app",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+    "null"
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -28,37 +27,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Middleware 2: Redirect Otomatis ke Vercel (Aman untuk Lokal) ---
+# --- Middleware 2: Redirect Otomatis ke Vercel ---
 @app.middleware("http")
 async def redirect_if_not_vercel_or_local(request: Request, call_next):
     host = request.headers.get("host", "")
-    # Header ini hanya ada jika request datang dari proxy Vercel
     vercel_host = request.headers.get("x-forwarded-host")
 
-    # KONDISI: Redirect HANYA JIKA pengunjung datang langsung ke domain Render
     if "onrender.com" in host and not vercel_host:
-        # Bangun URL Vercel yang lengkap
         vercel_url = f"https://personalify.vercel.app{request.url.path}"
         if request.url.query:
             vercel_url += f"?{request.url.query}"
-        
-        print(f"Redirecting direct Render traffic to: {vercel_url}")
         return RedirectResponse(url=vercel_url)
 
-    # Biarkan request lewat jika dari Vercel atau localhost
     response = await call_next(request)
     return response
 
+# --- NEW: GLOBAL ERROR HANDLER (Redirect ke Login jika Error/Expired) ---
+@app.exception_handler(401)
+async def unauthorized_handler(request: Request, exc):
+    # Kalau token expired (401), lempar ke home dengan pesan error
+    return RedirectResponse(url="/?error=session_expired")
+
+@app.exception_handler(500)
+async def internal_error_handler(request: Request, exc):
+    # Kalau server crash (500), lempar ke home juga
+    print(f"CRITICAL ERROR: {exc}")
+    return RedirectResponse(url="/?error=server_error")
+# -----------------------------------------------------------------------
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# Naik 2 level ke root project, lalu masuk ke frontend/static
 static_dir = os.path.join(current_dir, "..", "..", "frontend", "static")
-static_dir = os.path.abspath(static_dir)  # Normalize path
+static_dir = os.path.abspath(static_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Memasukkan semua endpoint dari routes.py
 app.include_router(router)
 
-# Menjalankan inisialisasi database saat startup
 @app.on_event("startup")
 def on_startup():
     init_db()

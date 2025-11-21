@@ -562,6 +562,11 @@ async function loadEmotionAnalysis(isExtended = false) {
                 })
             });
 
+            if (response.status === 401) {
+                window.location.href = "/?error=session_expired";
+                return;
+            }
+
             const data = await response.json();
 
             if (data.emotion_paragraph) {
@@ -1134,7 +1139,13 @@ window.onload = function() {
     const timeRange = urlParams.get('time_range') || 'short_term';
 
     fetch(`/top-data?spotify_id=${spotifyId}&time_range=${timeRange}`)
-      .then(res => res.json())
+      .then(res => {
+          if (res.status === 401) {
+              window.location.href = "/?error=session_expired";
+              return null; // Stop proses
+          }
+          return res.json();
+      })
       .then(data => {
           // KITA KOSONGKAN BAGIAN INI.
           // Biarkan animasi typing di DOMContentLoaded yang menangani teksnya.
