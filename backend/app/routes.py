@@ -210,26 +210,43 @@ def sync_top_data(
     access_token: str = Query(..., description="Spotify Access Token"),
     time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"], description="Time range")
 ):
+    # 1. Validasi Token dengan Cek Profil User Dulu
     headers = {"Authorization": f"Bearer {access_token}"}
     res = requests.get("https://api.spotify.com/v1/me", headers=headers)
 
+    # [FIX UTAMA] Tangani Token Expired (401) agar tidak jadi Internal Server Error
+    if res.status_code == 401:
+        print(f"SYNC ERROR: Token expired for access_token={access_token[:10]}...")
+        # Lempar 401 agar frontend tahu user harus login ulang
+        raise HTTPException(status_code=401, detail="Spotify token expired. Please login again.")
+    
     if res.status_code != 200:
+        print(f"SYNC ERROR: Failed to fetch user profile. Status: {res.status_code}")
         raise HTTPException(status_code=res.status_code, detail=res.json())
 
+    # Jika token aman, lanjut proses normal
     user_profile = res.json()
     spotify_id = user_profile["id"]
     display_name = user_profile.get("display_name", "Unknown")
-    save_user(spotify_id, display_name) # save_user masih dipakai
+    save_user(spotify_id, display_name)
 
-    # Mengambil data dari Spotify (tidak berubah)
-    artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
+    # 2. Ambil Data Artists & Tracks dari Spotify
+    artist_url = f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20"
+    track_url = f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20"
+
+    artist_resp = requests.get(artist_url, headers=headers)
+    track_resp = requests.get(track_url, headers=headers)
+
+    # Validasi lagi response dari Spotify
+    if artist_resp.status_code != 200 or track_resp.status_code != 200:
+        # Jika salah satu gagal (misal token mati di tengah jalan), lempar 401
+        raise HTTPException(status_code=401, detail="Failed to sync data. Token might be expired.")
+
     artists = artist_resp.json().get("items", [])
-    track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20", headers=headers)
     tracks = track_resp.json().get("items", [])
 
-    # --- ▼▼▼ PROSES BATCH DIMULAI ▼▼▼ ---
-
-    # 1. Kumpulkan semua data ke dalam list
+    # --- PROSES BATCH DATABASE (POSTGRESQL) ---
+    
     artists_to_save = []
     artist_ids = []
     for artist in artists:
@@ -252,34 +269,43 @@ def sync_top_data(
             track.get("preview_url")
         ))
 
-    # 2. Kirim data sekaligus ke database menggunakan fungsi batch
+    # Simpan ke DB
     save_artists_batch(artists_to_save)
     save_tracks_batch(tracks_to_save)
     save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
     save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
 
-    # --- ▲▲▲ PROSES BATCH SELESAI ▲▲▲ ---
+    # --- SIAPKAN DATA RESPONSE & CACHE (REDIS) ---
 
-    # 3. Siapkan data untuk response JSON dan cache
     result = {"user": display_name, "artists": [], "tracks": []}
+    
     for artist in artists:
          result["artists"].append({
-            "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
-            "popularity": artist["popularity"], "image": artist["images"][0]["url"] if artist.get("images") else ""
+            "id": artist["id"], 
+            "name": artist["name"], 
+            "genres": artist.get("genres", []),
+            "popularity": artist["popularity"], 
+            "image": artist["images"][0]["url"] if artist.get("images") else ""
         })
+        
     for track in tracks:
         album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
         result["tracks"].append({
-            "id": track["id"], "name": track["name"],
+            "id": track["id"], 
+            "name": track["name"],
             "artists": [a["name"] for a in track.get("artists", [])],
-            "album": track["album"]["name"], "popularity": track["popularity"],
-            "preview_url": track.get("preview_url"), "image": album_image_url
+            "album": track["album"]["name"], 
+            "popularity": track["popularity"],
+            "preview_url": track.get("preview_url"), 
+            "image": album_image_url
         })
 
+    # Generate Emotion Paragraph (NLP)
     track_names = [track['name'] for track in result.get("tracks", [])]
     emotion_paragraph = generate_emotion_paragraph(track_names)
     result['emotion_paragraph'] = emotion_paragraph
 
+    # Simpan ke Redis & MongoDB
     cache_top_data("top", spotify_id, time_range, result)
     save_user_sync(spotify_id, time_range, result)
 
@@ -326,52 +352,55 @@ def get_sync_history(spotify_id: str = Query(..., description="Spotify ID")):
 
 @router.get("/dashboard/{spotify_id}", response_class=HTMLResponse, tags=["Dashboard"])
 def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request = None):
-    data = get_cached_top_data("top", spotify_id, time_range)
-    if not data:
-        return templates.TemplateResponse("loading.html", {"request": request})
+    try:
+        data = get_cached_top_data("top", spotify_id, time_range)
+        if not data:
+            return RedirectResponse(url="/?error=session_expired")
 
-    emotion_paragraph = data.get("emotion_paragraph", "Vibe analysis is getting ready...")
+        emotion_paragraph = data.get("emotion_paragraph", "Vibe analysis is getting ready...")
+        analytics = data.get("analytics") # Ambil analytics jika ada
 
-    # --- PERHITUNGAN GENRE UNTUK TOP 10 (DEFAULT) ---
-    genre_count_top10 = {}
-    genre_artists_map_top10 = {}
+        # Logic Genre (Copy paste logic genre kamu yg lama)
+        genre_count_top10 = {}
+        genre_artists_map_top10 = {}
+        for artist in data.get("artists", [])[:10]:
+            for genre in artist.get("genres", []):
+                genre_count_top10[genre] = genre_count_top10.get(genre, 0) + 1
+                if genre not in genre_artists_map_top10:
+                    genre_artists_map_top10[genre] = []
+                genre_artists_map_top10[genre].append(artist["name"])
+        sorted_genres_top10 = sorted(genre_count_top10.items(), key=lambda x: x[1], reverse=True)
+        genre_list_top10 = [{"name": name, "count": count} for name, count in sorted_genres_top10]
 
-    for artist in data.get("artists", [])[:10]:  # Hanya 10 artis pertama
-        for genre in artist.get("genres", []):
-            genre_count_top10[genre] = genre_count_top10.get(genre, 0) + 1
-            if genre not in genre_artists_map_top10:
-                genre_artists_map_top10[genre] = []
-            genre_artists_map_top10[genre].append(artist["name"])
+        genre_count_top20 = {}
+        genre_artists_map_top20 = {}
+        for artist in data.get("artists", []):
+            for genre in artist.get("genres", []):
+                genre_count_top20[genre] = genre_count_top20.get(genre, 0) + 1
+                if genre not in genre_artists_map_top20:
+                    genre_artists_map_top20[genre] = []
+                genre_artists_map_top20[genre].append(artist["name"])
+        sorted_genres_top20 = sorted(genre_count_top20.items(), key=lambda x: x[1], reverse=True)
+        genre_list_top20 = [{"name": name, "count": count} for name, count in sorted_genres_top20]
 
-    sorted_genres_top10 = sorted(genre_count_top10.items(), key=lambda x: x[1], reverse=True)
-    genre_list_top10 = [{"name": name, "count": count} for name, count in sorted_genres_top10]
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request,
+            "user": data["user"],
+            "artists": data["artists"],
+            "tracks": data["tracks"],
+            "genres": genre_list_top10,
+            "genres_extended": genre_list_top20,
+            "time_range": time_range,
+            "genre_artists_map": genre_artists_map_top10,
+            "genre_artists_map_extended": genre_artists_map_top20,
+            "emotion_paragraph": emotion_paragraph,
+            "analytics": analytics
+        })
 
-    # --- PERHITUNGAN GENRE UNTUK TOP 20 (EASTER EGG) ---
-    genre_count_top20 = {}
-    genre_artists_map_top20 = {}
-
-    for artist in data.get("artists", []):  # Semua 20 artis
-        for genre in artist.get("genres", []):
-            genre_count_top20[genre] = genre_count_top20.get(genre, 0) + 1
-            if genre not in genre_artists_map_top20:
-                genre_artists_map_top20[genre] = []
-            genre_artists_map_top20[genre].append(artist["name"])
-
-    sorted_genres_top20 = sorted(genre_count_top20.items(), key=lambda x: x[1], reverse=True)
-    genre_list_top20 = [{"name": name, "count": count} for name, count in sorted_genres_top20]
-
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "user": data["user"],
-        "artists": data["artists"],
-        "tracks": data["tracks"],
-        "genres": genre_list_top10,  # Default: top 10
-        "genres_extended": genre_list_top20,  # Extended: top 20
-        "time_range": time_range,
-        "genre_artists_map": genre_artists_map_top10,  # Default: top 10
-        "genre_artists_map_extended": genre_artists_map_top20,  # Extended: top 20
-        "emotion_paragraph": emotion_paragraph
-    })
+    except Exception as e:
+        print(f"DASHBOARD CRASH: {e}")
+        # Jika ada error aneh di dashboard, lempar 500 (nanti ditangkap main.py -> Redirect Home)
+        raise HTTPException(status_code=500, detail="Internal Dashboard Error")
 
 @router.get("/about", response_class=HTMLResponse, tags=["Pages"])
 def about_page(request: Request): # <-- TAMBAHKAN spotify_id
