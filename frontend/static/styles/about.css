@@ -531,7 +531,7 @@ footer.fade-in {
 @media (max-width: 768px) {
     .video-bubble-toast {
         /* PERUBAHAN: Pindah ke atas di mobile */
-        top: 1rem; 
+        top: 1.5rem; 
         bottom: auto;
         
         /* Pastikan transform awal sama (kecil) */
