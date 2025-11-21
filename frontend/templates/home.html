@@ -9,17 +9,65 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='styles/home.css') }}">
+    
+    <style>
+        /* Animasi muncul dari atas */
+        @keyframes slideDownFade {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -20px); /* Mulai agak ke atas */
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, 0); /* Posisi final */
+            }
+        }
+
+        #error-toast {
+            /* Posisi Fixed (Melayang) di Atas */
+            position: fixed;
+            top: 2rem;          /* Jarak dari atap layar */
+            left: 50%;          /* Tengah horizontal */
+            transform: translateX(-50%); /* Koreksi tengah */
+            z-index: 9999;      /* Paling depan */
+
+            /* Visual Style (Mirip Bubble About) */
+            background: rgba(20, 20, 20, 0.8); /* Gelap transparan */
+            border: 1px solid #ff6b6b;         /* Border Merah */
+            color: #ff6b6b;                    /* Teks Merah */
+            
+            /* Glassmorphism (Blur belakangnya) */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+
+            /* Dimensi & Font */
+            padding: 12px 24px;
+            border-radius: 12px; /* Radius normal (bukan kapsul) */
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            
+            /* Teks Rata Tengah & Tidak wrap */
+            text-align: center;
+            white-space: nowrap;
+            
+            /* Default sembunyi */
+            display: none;
+        }
+    </style>
 </head>
 <body>
+    
+    <div id="error-toast">
+        Session expired. Please login again!
+    </div>
+
     <main class="main-content">
     <img src="{{ url_for('static', path='assets/Spotify_Primary_Logo_RGB_Green.ico') }}" alt="Personalify Logo" class="logo">
 
     <div class="hero">
         <h1>Welcome to Personalify!</h1>
 
-        <div id="error-toast" style="display: none; background: rgba(220, 53, 69, 0.2); color: #ff6b6b; border: 1px solid #ff6b6b; padding: 10px 20px; border-radius: 8px; margin: 0 auto 1.5rem auto; margin-top: -0.5rem; font-size: 0.9rem; font-weight: 600; width: fit-content; text-align: center;">
-            Session expired. Please login again.
-        </div>
         <p>
             Discover your most played artists, tracks, and genres through Spotify insights.
             Go beyond the sound and <a href="/lyrics" class="footer-link">analyze the emotion hidden in the lyrics</a>.
@@ -60,9 +108,13 @@
                     toast.textContent = "⚠️ " + errType;
                 }
                 
-                // Menggunakan 'block' agar properti margin: auto berfungsi sempurna
+                // Tampilkan dengan display block
                 toast.style.display = 'block';
                 
+                // Jalankan animasi slide down
+                toast.style.animation = 'slideDownFade 0.5s ease-out forwards';
+                
+                // Bersihkan URL
                 window.history.replaceState({}, document.title, "/");
             }
         });
