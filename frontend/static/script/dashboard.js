@@ -129,36 +129,6 @@ function checkScreenSize() {
 
 window.addEventListener("resize", checkScreenSize);
 
-window.addEventListener("scroll", function() {
-    const downloadBtn = document.querySelector('.download-btn');
-    const container = document.getElementById('dashboard');
-    if (!downloadBtn || !container) return;
-
-    // 1. Hanya jalankan di mobile
-    if (window.innerWidth <= 768) {
-        
-        // 2. Kalkulasi jarak scroll dari bawah
-        // (Tinggi total - scroll saat ini - tinggi layar)
-        let scrollFromBottom = document.documentElement.scrollHeight - window.scrollY - document.documentElement.clientHeight;
-
-        // 3. Jika jarak dari bawah kurang dari 100px (artinya footer terlihat)
-        if (scrollFromBottom < 100) {
-            // Tambah class untuk fade out (sesuai CSS tadi)
-            downloadBtn.classList.add('hide-on-scroll');
-            container.classList.add('footer-visible');
-        } else {
-            // Hapus class untuk fade in
-            downloadBtn.classList.remove('hide-on-scroll');
-            container.classList.remove('footer-visible');
-        }
-        
-    } else {
-        // 4. Di desktop, pastikan tombol selalu terlihat
-        downloadBtn.classList.remove('hide-on-scroll');
-        container.classList.remove('footer-visible');
-    }
-});
-
 document.addEventListener("DOMContentLoaded", checkScreenSize);
 
 document.getElementById("time-filter").addEventListener("change", function() {
@@ -1312,4 +1282,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
         }, 5000); // Ganti setiap 5 detik
     }
+    
+    const footerEl = document.querySelector('footer');
+    const downloadBtn = document.querySelector('.download-btn');
+    const container = document.getElementById('dashboard');
+
+    // Cek dulu elemennya ada gak
+    if (!footerEl || !downloadBtn) return;
+
+    const observer = new IntersectionObserver((entries) => {
+        // Hanya jalankan logic di layar HP
+        if (window.innerWidth > 768) {
+            downloadBtn.classList.remove('hide-on-scroll');
+            if (container) container.classList.remove('footer-visible');
+            return;
+        }
+
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Footer MULAI MUNCUL di layar -> Sembunyikan Tombol
+                downloadBtn.classList.add('hide-on-scroll');
+                if (container) container.classList.add('footer-visible');
+            } else {
+                // Footer KELUAR dari layar -> Munculkan Tombol
+                downloadBtn.classList.remove('hide-on-scroll');
+                if (container) container.classList.remove('footer-visible');
+            }
+        });
+    }, {
+        root: null,   // viewport browser
+        threshold: 0.1 // Trigger saat 10% footer nongol dikit aja
+    });
+
+    observer.observe(footerEl);
 });
