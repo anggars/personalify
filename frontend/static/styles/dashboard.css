@@ -158,9 +158,11 @@ li {
 .info .name {
     font-weight: 600;
     font-size: 0.85rem;
-    overflow-wrap: break-word;
-    display: flex;
-    align-items: center;
+    display: block; 
+    overflow-wrap: anywhere; 
+    word-break: break-word; 
+    line-height: 1.3;
+    padding-right: 4px; 
 }
 .info .meta {
     font-size: 0.68rem;
