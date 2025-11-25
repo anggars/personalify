@@ -185,46 +185,80 @@ p {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
-/* (4) Style untuk Teks & Spinner di dalam tombol */
+/* (4) Style untuk Teks & Spinner (Updated) */
 .button .button-text {
-    /* Bikin transisi biar bisa fade-out */
     transition: opacity 0.2s ease-out;
-    position: relative; /* Diperlukan agar properti 'top' berfungsi */
-    top: -1.55px;          /* Geser naik 2 pixel (sesuaikan jika masih kurang pas) */
+    position: relative;
+    top: -1.55px;
 }
 
+/* === DYNAMIC ELASTIC SPINNER (SVG) === */
 .button .spinner {
-    /* Sembunyiin spinner-nya dulu */
     position: absolute;
-    width: 16px;
-    height: 16px;
-    border: 2px solid #fff; /* Lingkaran putih */
-    border-top: 2px solid transparent; /* Bagian atas transparan (ini yg bikin muter) */
-    border-radius: 50%;
+    top: 50%;
+    left: 50%;
     
-    /* Panggil animasi spin */
-    animation: spin 0.6s linear infinite;
+    /* Ukuran pas: 18px */
+    width: 18px; 
+    height: 18px;
     
-    opacity: 0; /* Sembunyi */
+    /* Centering manual biar aman dari konflik transform rotate */
+    margin-top: -9px; 
+    margin-left: -9px;
+    
+    /* Animasi Muter Kanvas (Linear Constant) */
+    animation: rotate 2s linear infinite;
+    
+    opacity: 0; /* Sembunyi default */
     transition: opacity 0.2s ease-out;
+}
+
+/* Lingkaran di dalamnya */
+.button .spinner .path {
+    stroke: #ffffff; /* Warna Putih Bersih */
+    
+    /* Ketebalan: 5 (biar gak ketipisan, setara ~2px visual) */
+    stroke-width: 5; 
+    stroke-linecap: round; /* Ujung bulat modern */
+    
+    /* Animasi "Kejar-Kejaran" (Melar & Menyusut) */
+    animation: dash 1.5s ease-in-out infinite;
+}
+
+/* Keyframe 1: Muterin Wadahnya */
+@keyframes rotate {
+    100% { transform: rotate(360deg); }
+}
+
+/* Keyframe 2: Mainin Panjang Garisnya (Efek Liquid/Elastic) */
+@keyframes dash {
+    0% {
+        stroke-dasharray: 1, 150;  /* Mulai dari titik (pendek) */
+        stroke-dashoffset: 0;
+    }
+    50% {
+        stroke-dasharray: 90, 150; /* Melar jadi 7/8 lingkaran */
+        stroke-dashoffset: -35;    
+    }
+    100% {
+        stroke-dasharray: 90, 150; /* Tetap panjang... */
+        stroke-dashoffset: -124;   /* ...tapi 'buntut'nya ditarik (jadi memendek lagi) */
+    }
 }
 
 /* (5) EFEK PAS DIKLIK: Class .loading */
 .button.loading .button-text {
-    /* Sembunyikan teks */
-    opacity: 0;
+    opacity: 0; /* Teks hilang */
 }
 
 .button.loading .spinner {
-    /* Munculkan spinner */
-    opacity: 1;
+    opacity: 1; /* Spinner muncul */
 }
 
 .button.loading {
-    /* Biar nggak bisa di-klik berkali-kali */
     pointer-events: none;
-    /* Matikan efek hover pas lagi loading */
-    transform: scale(1) translateY(0);
+    /* Balikin ke style original: Cuma reset scale, background TETAP transparan */
+    transform: scale(1) translateY(0); 
 }
 
 footer {
