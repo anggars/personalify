@@ -25,6 +25,8 @@ services:
         sync: false
       - key: HUGGING_FACE_API_KEY
         sync: false
+      - key: GENIUS_ACCESS_TOKEN
+        sync: false
 
   # 2. Servis untuk Cache Redis
   - type: redis
