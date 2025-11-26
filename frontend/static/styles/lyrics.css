@@ -38,6 +38,21 @@ header p.subtitle {
     margin-bottom: 2.5rem;
 }
 
+/* === STYLE LINK DI SUBTITLE (REVISI: Polos & Tidak Bold) === */
+header p.subtitle a {
+    color: var(--muted); /* Abu-abu */
+    text-decoration: none;
+    font-weight: 500; /* Samakan dengan teks biasa (tidak bold) */
+    transition: color 0.2s ease;
+    border: none; /* Hapus garis */
+}
+
+header p.subtitle a:hover {
+    color: var(--primary); /* Jadi Hijau saat hover */
+    text-decoration: none;
+    border: none; /* Pastikan garis ijo hilang */
+}
+
 .container {
     display: flex;
     flex-direction: column;
@@ -121,6 +136,10 @@ header p.subtitle {
 /* Efek saat thumb di-hover */
 .lyrics-form textarea::-webkit-scrollbar-thumb:hover {
     background-color: #1ed760; /* Warna hijau yang lebih terang */
+}
+
+.lyrics-form textarea::-webkit-scrollbar-corner {
+    background-color: #181818; /* Samakan dengan warna background textarea */
 }
 
 .lyrics-form textarea::-webkit-resizer {
@@ -236,26 +255,72 @@ header p.subtitle {
     top: -1.85px;
 }
 
-.button-primary .spinner {
+.spinner {
     position: absolute;
-    z-index: 2;
-    width: 16px;
-    height: 16px;
-    border: 2px solid #fff; 
-    border-top: 2px solid transparent;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-    opacity: 0; 
-    transition: opacity 0.2s ease-out;
-}
-
-/* (6) EFEK PAS DIKLIK: Class .loading */
-.button-primary.loading .button-text {
+    top: 50%;
+    left: 50%;
+    margin-top: -10px; 
+    margin-left: -10px;
+    width: 20px; 
+    height: 20px;
+    animation: rotate 2s linear infinite;
     opacity: 0;
+    transition: opacity 0.2s ease-out;
+    z-index: 5;
 }
 
-.button-primary.loading .spinner {
-    opacity: 1;
+.spinner .path {
+    stroke: #ffffff;
+    stroke-width: 5; 
+    stroke-linecap: round;
+    animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes rotate {
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes dash {
+    0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+    50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+    100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+}
+
+/* Pastikan spinner muncul saat tombol loading */
+.button-primary.loading .button-text { opacity: 0; }
+.button-primary.loading .spinner { opacity: 1; }
+
+/* === CONTAINER LOADING UNTUK HASIL (Di Tengah) === */
+.loading-state-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    /* FIX: Padding kecil & Hapus min-height biar gak kegedean */
+    padding: 20px 0; 
+    min-height: auto;
+    
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Override Spinner di tengah halaman (Posisi Relative & Hijau) */
+.loading-state-container .spinner {
+    position: relative; 
+    top: auto; left: auto; 
+    
+    /* Margin bawah dikit ke teks */
+    margin: 0 0 12px 0; 
+    
+    /* Ukuran disesuaikan (mirip spinner lama) */
+    width: 32px; 
+    height: 32px;
+    opacity: 1; 
+}
+
+.loading-state-container .spinner .path {
+    stroke: var(--primary);
 }
 
 .button-primary.loading {

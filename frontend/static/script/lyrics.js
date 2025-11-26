@@ -7,6 +7,16 @@ const analyzeButton = document.getElementById('analyzeButton');
 // ▼▼▼ TAMBAHKAN DETEKSI PERANGKAT MOBILE DI SINI ▼▼▼
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
+// Helper: SVG Spinner HTML
+const getSpinnerHtml = (text) => `
+    <div class="loading-state-container">
+        <svg class="spinner" viewBox="0 0 50 50">
+            <circle class="path" cx="25" cy="25" r="20" fill="none"></circle>
+        </svg>
+        <span>${text}</span>
+    </div>
+`;
+
 // Fungsi untuk menangani submit
 async function analyzeLyrics() {
     const lyrics = lyricsInput.value;
@@ -20,10 +30,8 @@ async function analyzeLyrics() {
     // (Kode 'analyzeButton.classList.add('loading');' udah DIHAPUS dari sini)
 
     resultsSection.style.display = 'block';
-    resultDiv.innerHTML = `
-        <div class="loading-spinner"></div>
-        <p style="text-align: center;">Analyzing...</p>
-    `;
+    // Ganti loading lama dengan helper SVG baru
+    resultDiv.innerHTML = getSpinnerHtml("Analyzing...");
     
     try {
         const res = await fetch('/analyze-lyrics', {
@@ -125,17 +133,23 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     if (!titleEl || !subtitleEl || !containerEl) return;
 
-    // 2. Simpan teks aslinya
+    /// 2. Simpan konten
     const titleText = titleEl.textContent;
-    const subtitleText = subtitleEl.textContent;
+    const subtitleHtml = subtitleEl.innerHTML; // <--- Simpan HTML (biar link aman)
 
     // 3. Kosongkan
     titleEl.innerHTML = '';
     subtitleEl.innerHTML = '';
 
     // 4. Jalankan sekuens
+    // Judul diketik...
     await typeEffect(titleEl, titleText, 50);
-    await typeEffect(subtitleEl, subtitleText, 30);
+    
+    // ...Subtitle langsung muncul pelan (Fade In) biar link tetap bisa diklik
+    subtitleEl.innerHTML = subtitleHtml;
+    subtitleEl.style.visibility = 'visible';
+    subtitleEl.style.opacity = 0;
+    subtitleEl.style.animation = 'fadeInUp 0.5s ease forwards';
 
     // 5. Tampilkan form container ...
     containerEl.style.visibility = 'visible';

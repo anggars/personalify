@@ -18,6 +18,7 @@ from app.db_handler import (
 )
 from app.cache_handler import cache_top_data, get_cached_top_data, clear_top_data_cache
 from app.mongo_handler import save_user_sync, get_user_history
+from app.genius_lyrics import search_artist_id, get_songs_by_artist, get_lyrics_by_id
 
 
 router = APIRouter()
@@ -629,3 +630,32 @@ def lyrics_page(request: Request, spotify_id: str = None):
     Serves the lyric analyzer page.
     """
     return templates.TemplateResponse("lyrics.html", {"request": request, "spotify_id": spotify_id})
+
+# --- HALAMAN GENIUS (BARU) ---
+@router.get("/lyrics/genius", response_class=HTMLResponse, tags=["Pages"])
+async def read_genius_page(request: Request):
+    return templates.TemplateResponse("genius.html", {"request": request})
+
+# --- API ENDPOINTS GENIUS ---
+@router.get("/api/genius/search-artist")
+def api_search_artist(q: str):
+    return {"artists": search_artist_id(q)}
+
+@router.get("/api/genius/artist-songs/{artist_id}")
+def api_get_artist_songs(artist_id: int):
+    return {"songs": get_songs_by_artist(artist_id)}
+
+@router.get("/api/genius/lyrics/{song_id}")
+def api_get_lyrics_emotion(song_id: int):
+    data = get_lyrics_by_id(song_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Lirik tidak ditemukan")
+    
+    # Analisis Emosi
+    emotion = analyze_lyrics_emotion(data['lyrics'])
+    
+    return {
+        "track_info": data,
+        "lyrics": data['lyrics'],
+        "emotion_analysis": emotion
+    }
