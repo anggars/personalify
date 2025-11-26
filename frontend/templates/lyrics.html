@@ -13,7 +13,10 @@
 <main class="main-content">
 <header>
     <h1>Lyrics Analyzer</h1>
-    <p class="subtitle">Uncover the emotions hidden in any song</p>
+    <p class="subtitle">
+        Uncover the emotions or 
+        <a href="/lyrics/genius">search via Genius</a>.
+    </p>
 </header>
 
 <div class="container">
@@ -22,7 +25,9 @@
             <textarea id="lyricsInput" name="lyrics" required placeholder="Write or paste your lyrics here..."></textarea>
             <button type="submit" class="button-primary">
                 <span class="button-text">Analyze Emotions</span>
-                <div class="spinner"></div>
+                <svg class="spinner" viewBox="0 0 50 50">
+                    <circle class="path" cx="25" cy="25" r="20" fill="none"></circle>
+                </svg>
             </button>
         </form>
 
