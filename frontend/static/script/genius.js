@@ -31,10 +31,17 @@ function setLoading(isLoading) {
 // --- 2. Cari Artis ---
 async function searchArtist() {
     const query = artistInput.value.trim();
-    if (!query) return;
+    
+    // 1. VALIDASI: Jika kosong, kasih peringatan merah
+    if (!query) {
+        artistList.style.display = 'grid'; // Pastikan container muncul
+        artistList.innerHTML = '<p class="status-msg error">Please enter an artist name first!</p>';
+        return;
+    }
 
     songSection.style.display = 'none';
     analysisResult.style.display = 'none';
+    
     artistList.innerHTML = ''; 
     artistList.style.display = 'grid'; 
 
@@ -45,7 +52,8 @@ async function searchArtist() {
         const data = await res.json();
 
         if (data.artists.length === 0) {
-            artistList.innerHTML = '<p style="grid-column: 1/-1; text-align:center; width:100%; color:#ff6b6b;">No artist found.</p>';
+            // Gunakan class .status-msg error
+            artistList.innerHTML = '<p class="status-msg error">No artist found.</p>';
         } else {
             data.artists.forEach(artist => {
                 const card = document.createElement('div');
@@ -61,7 +69,7 @@ async function searchArtist() {
         }
     } catch (err) {
         console.error(err);
-        artistList.innerHTML = '<p style="grid-column: 1/-1; color:#ff6b6b; text-align:center; width:100%;">Error searching artist.</p>';
+        artistList.innerHTML = '<p class="status-msg error">Error searching artist.</p>';
     } finally {
         setLoading(false);
     }
@@ -75,6 +83,7 @@ async function loadSongs(artistId, artistName) {
     
     analysisResult.style.display = 'none';
     
+    // Gunakan class .status-msg neutral (bukan error) untuk loading container wrapper
     songList.innerHTML = '<div style="grid-column: 1/-1;">' + getSpinnerHtml("Loading songs...") + '</div>';
     
     try {
@@ -83,7 +92,7 @@ async function loadSongs(artistId, artistName) {
 
         songList.innerHTML = '';
         if (!data.songs || data.songs.length === 0) {
-             songList.innerHTML = '<div style="grid-column: 1/-1; text-align:center;">No songs found.</div>';
+             songList.innerHTML = '<div class="status-msg neutral">No songs found.</div>';
              return;
         }
 
@@ -105,7 +114,7 @@ async function loadSongs(artistId, artistName) {
             songList.appendChild(btn);
         });
     } catch (err) {
-        songList.innerHTML = '<p style="color:#ff6b6b; grid-column: 1/-1; text-align:center;">Error loading songs.</p>';
+        songList.innerHTML = '<p class="status-msg error">Error loading songs.</p>';
     }
 }
 
@@ -117,6 +126,8 @@ async function analyzeSong(songId, clickedElement) {
 
     analysisResult.style.display = 'block';
     
+    // Loading di sini sudah pakai class loading-state-container dari helper, 
+    // jadi otomatis padding-nya sudah mengecil sesuai CSS baru.
     resultContent.innerHTML = getSpinnerHtml("Fetching lyrics & analyzing vibe...");
     resultContent.scrollIntoView({behavior: 'smooth'});
 
@@ -124,6 +135,7 @@ async function analyzeSong(songId, clickedElement) {
         const res = await fetch(`/api/genius/lyrics/${songId}`);
         const data = await res.json();
 
+        // ... (Sisa kode di dalam try ini SAMA SAJA, tidak perlu diubah) ...
         let html = `
             <div class="track-header">
                 <h2 class="track-title">${data.track_info.title}</h2>
@@ -156,7 +168,8 @@ async function analyzeSong(songId, clickedElement) {
 
     } catch (err) {
         console.error(err);
-        resultContent.innerHTML = '<p style="color:#ff6b6b; text-align:center;">Failed to analyze lyrics.</p>';
+        // Update styling error message
+        resultContent.innerHTML = '<p class="status-msg error">Failed to analyze lyrics.</p>';
     }
 }
 
