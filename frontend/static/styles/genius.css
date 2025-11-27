@@ -411,7 +411,21 @@ footer.fade-in { opacity: 1; }
 @media (max-width: 768px) {
     body {
         padding: 1.5rem;
-        padding-bottom: 100px;
+        
+        /* FIX UTAMA 1: Gunakan dvh (Dynamic Viewport Height) */
+        /* Ini menyesuaikan tinggi layar HP asli meski ada address bar browser */
+        height: 100dvh; 
+        min-height: 100dvh;
+        
+        /* FIX UTAMA 2: Matikan scroll di body utama */
+        overflow: hidden; 
+        
+        /* Hapus padding bawah berlebih yang bikin space kosong */
+        padding-bottom: 0; 
+        
+        /* Pastikan layout flex kolom agar footer bisa di-anchor */
+        display: flex;
+        flex-direction: column;
     }
 
     header h1 {
