@@ -604,7 +604,7 @@ footer.fade-in {
         left: 0;
         bottom: 0.5rem;
         width: 100%;
-        background: #121212;
+        background: transparent;
         border-top: none;
         box-shadow: none;
         padding-bottom: 0;
