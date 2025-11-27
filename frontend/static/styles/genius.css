@@ -434,21 +434,6 @@ footer.fade-in { opacity: 1; }
         flex-direction: column;
         height: auto;
     }
-    
-    .container {
-        width: 100%;
-        margin: 0 auto;
-        
-        /* Container Input mengisi ruang kosong antara Header dan Footer */
-        flex-grow: 1; 
-        
-        /* Input Box di tengah-tengah area kosong tersebut */
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        
-        min-height: 0;
-    }
 
     /* Header Styling */
     header h1 { font-size: 2rem; margin-top: 0.85rem; }
