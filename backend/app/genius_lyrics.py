@@ -2,6 +2,7 @@ import os
 import requests
 import re
 from bs4 import BeautifulSoup
+from curl_cffi import requests as cffi_requests
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
@@ -9,15 +10,19 @@ GENIUS_API_URL = "https://api.genius.com"
 def get_headers():
     return {
         "Authorization": f"Bearer {GENIUS_TOKEN}",
+        # User agent default requests kadang diblokir, tapi untuk API biasanya aman.
+        # Untuk scraping nanti kita pakai impersonate.
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
 
 def clean_lyrics(text):
+    # Bersihkan tag bracket seperti [Verse 1], [Chorus]
     text = re.sub(r'\[.*?\]', '', text)
+    # Hapus baris kosong berlebih
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-# 1. CARI ARTIS
+# 1. CARI ARTIS (Aman pakai requests biasa karena ini Official API)
 def search_artist_id(query):
     if not GENIUS_TOKEN: return []
     try:
@@ -46,12 +51,10 @@ def search_artist_id(query):
         print(f"Error search artist: {e}")
     return []
 
-# 2. AMBIL LIST LAGU (LEBIH BANYAK - LOOPING)
+# 2. AMBIL LIST LAGU (Aman pakai requests biasa - API)
 def get_songs_by_artist(artist_id):
     songs = []
     page = 1
-    # Batasi maksimal 3 halaman (3 x 50 = 150 lagu) agar tidak timeout
-    # Genius API kadang lambat kalau ambil semua sekaligus
     MAX_PAGES = 3 
     
     try:
@@ -89,24 +92,39 @@ def get_songs_by_artist(artist_id):
 
     except Exception as e:
         print(f"Error get songs: {e}")
-        # Return lagu yang sudah berhasil diambil sejauh ini
         return songs
 
-# 3. SCRAPE LIRIK
+# 3. SCRAPE LIRIK (BAGIAN INI KITA UBAH TOTAL)
 def get_lyrics_by_id(song_id):
     try:
+        # Step A: Ambil URL dari API dulu (Pake requests biasa aman)
         response = requests.get(f"{GENIUS_API_URL}/songs/{song_id}", headers=get_headers(), timeout=10)
         if response.status_code != 200: return None
         
         song_data = response.json()['response']['song']
         song_url = song_data['url']
         
-        page_resp = requests.get(song_url, headers=get_headers(), timeout=15)
-        if page_resp.status_code != 200: return None
+        # Step B: Scrape Halaman HTML (INI YANG RAWAN DIBLOKIR DI RENDER)
+        # Kita pakai curl_cffi dengan mode 'impersonate="chrome"'
+        # Ini bikin request kita 99% mirip browser Chrome asli, bukan bot Python.
+        print(f"Scraping URL (Impersonating Chrome): {song_url}")
         
+        page_resp = cffi_requests.get(
+            song_url,
+            impersonate="chrome", # MAGIC WORD-NYA DISINI
+            timeout=15
+        )
+        
+        if page_resp.status_code != 200: 
+            print(f"Failed to fetch page: {page_resp.status_code}")
+            return None
+        
+        # Step C: Parsing HTML kayak biasa
         soup = BeautifulSoup(page_resp.text, 'html.parser')
         lyrics_text = ""
         
+        # Selector Genius sering berubah, kita cek 2 kemungkinan:
+        # 1. Container baru (data-lyrics-container)
         divs = soup.find_all('div', attrs={'data-lyrics-container': 'true'})
         if divs:
             for div in divs:
@@ -114,6 +132,7 @@ def get_lyrics_by_id(song_id):
                     br.replace_with("\n")
                 lyrics_text += div.get_text() + "\n\n"
         
+        # 2. Fallback ke class lama kalau container baru gak nemu
         if not lyrics_text:
             old_div = soup.find('div', class_='lyrics')
             if old_div: lyrics_text = old_div.get_text()
