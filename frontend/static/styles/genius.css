@@ -436,13 +436,14 @@ footer.fade-in { opacity: 1; }
 
     footer {
         font-size: 0.75rem;
-        position: relative;
-        left: auto;
-        bottom: auto;
-        margin-top: 2rem; /* Tetap dorong ke bawah */
-        padding: 1.5rem 0 0 0; /* Padding atas aja */
+        margin-top: 2rem;
+        padding: 1.5rem 0;
+        position: absolute;
+        left: 0;
+        bottom: 0.5rem;
         width: 100%;
-        background: transparent;
-        border: none;
+        background: #121212;
+        border-top: none;
+        box-shadow: none;
     }
 }
