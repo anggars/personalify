@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const techLink = document.getElementById('tech-link');
     
     const techStack = [
-        { name: "Genius API", url: "https://genius.com", class: "tech-genius" },
+        { name: "Genius API", url: "https://genius.com/developers", class: "tech-genius" },
         { name: "Hugging Face", url: "https://huggingface.co/", class: "tech-huggingface" }
     ];
 
