@@ -126,38 +126,45 @@ function typeEffect(element, text, speed = 30) {
 
 // Jalankan animasi setelah halaman dimuat
 document.addEventListener('DOMContentLoaded', async function() {
-    // 1. Temukan elemen
     const titleEl = document.querySelector('header h1');
     const subtitleEl = document.querySelector('header p.subtitle');
     const containerEl = document.querySelector('.container');
-
-    if (!titleEl || !subtitleEl || !containerEl) return;
-
-    /// 2. Simpan konten
-    const titleText = titleEl.textContent;
-    const subtitleHtml = subtitleEl.innerHTML; // <--- Simpan HTML (biar link aman)
-
-    // 3. Kosongkan
-    titleEl.innerHTML = '';
-    subtitleEl.innerHTML = '';
-
-    // 4. Jalankan sekuens
-    // Judul diketik...
-    await typeEffect(titleEl, titleText, 50);
-    
-    // ...Subtitle langsung muncul pelan (Fade In) biar link tetap bisa diklik
-    subtitleEl.innerHTML = subtitleHtml;
-    subtitleEl.style.visibility = 'visible';
-    subtitleEl.style.opacity = 0;
-    subtitleEl.style.animation = 'fadeInUp 0.5s ease forwards';
-
-    // 5. Tampilkan form container ...
-    containerEl.style.visibility = 'visible';
-    containerEl.style.opacity = '0'; 
-    containerEl.style.animation = 'fadeInUp 1s ease-out forwards';
-
-    // 6. Tampilkan footer
     const footerEl = document.querySelector('footer');
+
+    if (titleEl && subtitleEl && containerEl) {
+        const titleText = titleEl.textContent;
+        const subtitleText = subtitleEl.textContent; // Ambil teks biasa karena sudah tidak ada link
+
+        // 1. TAHAN DULU: Sembunyikan section & matikan animasi CSS bawaan
+        // Kita cari elemen .section di dalam container
+        const sectionEl = containerEl.querySelector('.section');
+        if (sectionEl) {
+            sectionEl.style.opacity = '0';
+            sectionEl.style.animation = 'none'; 
+        }
+
+        // 2. Bersihkan Header & Siapkan untuk diketik
+        titleEl.innerHTML = '';
+        subtitleEl.innerHTML = '';
+        titleEl.style.visibility = 'visible';
+        subtitleEl.style.visibility = 'visible';
+        
+        // Pastikan container terlihat (tapi isinya .section masih hidden opacity 0)
+        containerEl.style.visibility = 'visible';
+
+        // 3. Animasi Ketik Judul
+        await typeEffect(titleEl, titleText, 50);
+        
+        // 4. Animasi Ketik Subtitle (Typing Effect)
+        await typeEffect(subtitleEl, subtitleText, 30);
+
+        // 5. BARU MUNCULKAN BODY (Input Form)
+        if (sectionEl) {
+            sectionEl.style.animation = 'fadeInUp 1s ease-out forwards';
+        }
+    }
+
+    // 6. Footer muncul terakhir
     if (footerEl) footerEl.classList.add('fade-in');
 
     // ▼▼▼ TAMBAHAN: LOGIC DYNAMIC FOOTER (About <-> Aritsu) ▼▼▼
