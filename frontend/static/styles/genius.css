@@ -73,7 +73,7 @@ header p.subtitle a:hover {
     justify-content: center;
     
     /* 2. Container dikasih tinggi minimal biar search box-nya turun ke tengah visual */
-    min-height: 70vh; 
+    min-height: 60vh; 
 }
 
 .section {
