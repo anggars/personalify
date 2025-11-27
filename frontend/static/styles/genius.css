@@ -408,42 +408,66 @@ footer.fade-in { opacity: 1; }
 #tech-link.hf-mode:hover { color: #FFD21E !important; }
 
 /* === MOBILE RESPONSIVE (FIX SCROLL & LAYOUT) === */
+/* === MOBILE RESPONSIVE (FIX MENTOK 1 LAYAR) === */
 @media (max-width: 768px) {
     body {
-        /* Reset padding agar tidak aneh */
         padding: 1.5rem;
-        /* Pastikan body bisa discroll */
-        overflow-y: auto;
-        /* Tinggi minimal full layar */
-        min-height: 100vh;
-        /* Pastikan footer selalu di bawah konten */
+        /* HAPUS padding-bottom: 100px; INI YG BIKIN SCROLL */
+        padding-bottom: 0; 
+        
+        /* Paksa Body jadi Flex Column Full Height */
+        min-height: 100vh; 
         display: flex;
         flex-direction: column;
+        
+        /* Matikan scroll berlebih jika konten sedikit */
+        overflow: hidden; 
     }
 
     main.main-content {
-        /* KUNCI 1: Biarkan konten mengalir dari atas, jangan dipaksa ke tengah */
+        /* Header tetap di atas */
         justify-content: flex-start !important;
         
-        /* KUNCI 2: Biarkan dia mengambil sisa ruang, tapi jangan maksa tinggi */
-        flex-grow: 1;
+        /* Main ambil semua sisa ruang agar Footer kedorong ke bawah */
+        flex-grow: 1; 
+        display: flex;
+        flex-direction: column;
         height: auto;
-        min-height: 0;
     }
     
+    .container {
+        width: 100%;
+        margin: 0 auto;
+        
+        /* Container Input mengisi ruang kosong antara Header dan Footer */
+        flex-grow: 1; 
+        
+        /* Input Box di tengah-tengah area kosong tersebut */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        
+        min-height: 0;
+    }
+
+    /* Header Styling */
     header h1 { font-size: 2rem; margin-top: 0.85rem; }
     header p.subtitle { font-size: 1rem; margin-bottom: 1rem; }
 
     footer {
         font-size: 0.75rem;
-        margin-top: 2rem;
-        padding: 1.5rem 0;
-        position: absolute;
-        left: 0;
+        
+        /* Reset posisi absolute (biar gak ngambang aneh) */
+        position: relative;
+        left: auto;
         bottom: 0.5rem;
+        
+        /* Margin auto biar nendang ke paling bawah */
+        margin-top: auto; 
+        
+        padding: 1.5rem 0;
         width: 100%;
-        background: #121212;
-        border-top: none;
-        box-shadow: none;
+        background: transparent;
+        border: none;
     }
 }
