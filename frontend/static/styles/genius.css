@@ -8,6 +8,10 @@
 
 * { box-sizing: border-box; }
 
+header h1, header p.subtitle, .container {
+    visibility: hidden;
+}
+
 body {
     margin: 0;
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -82,6 +86,11 @@ header p.subtitle a:hover {
     border: 1px solid #282828;
     position: relative;
     z-index: 1;
+    
+    /* HAPUS baris opacity & animation di sini, biar container yang di-animasi oleh JS */
+    /* opacity: 0;  <-- Hapus */
+    /* animation: fadeInUp 1s ease-out forwards; <-- Hapus */
+    
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 

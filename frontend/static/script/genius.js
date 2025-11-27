@@ -199,15 +199,29 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     if (titleEl && subtitleEl) {
         const titleText = titleEl.textContent;
-        const subtitleHtml = subtitleEl.innerHTML; 
+        const subtitleHtml = subtitleEl.innerHTML; // PENTING: Ambil innerHTML biar link kebawa
         
+        // Kosongkan dulu
         titleEl.innerHTML = '';
         subtitleEl.innerHTML = ''; 
         
+        // Pastikan elemen visible sebelum ngetik
+        titleEl.style.visibility = 'visible';
+        subtitleEl.style.visibility = 'visible';
+
+        // 1. Ketik Judul
         await typeEffect(titleEl, titleText, 50);
-        subtitleEl.innerHTML = subtitleHtml; 
-        subtitleEl.style.opacity = 0;
-        subtitleEl.style.animation = 'fadeInUp 0.5s ease forwards';
+        
+        // 2. Ketik Subtitle (Link aman karena typeEffect skip tag HTML)
+        await typeEffect(subtitleEl, subtitleHtml, 30);
+        
+        // 3. (Opsional) Munculkan container search pelan-pelan setelah teks selesai
+        const containerEl = document.querySelector('.container');
+        if (containerEl) {
+            containerEl.style.visibility = 'visible';
+            containerEl.style.opacity = '0'; 
+            containerEl.style.animation = 'fadeInUp 1s ease-out forwards';
+        }
     }
 
     if (footerEl) footerEl.classList.add('fade-in');
