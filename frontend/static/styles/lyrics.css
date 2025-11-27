@@ -15,9 +15,32 @@ body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     background-color: #121212;
     color: #ffffff;
+    
+    /* UBAH LOGIKA LAYOUT BODY: */
+    /* Gunakan min-height: 100dvh agar minimal setinggi layar HP */
+    min-height: 100dvh; 
+    display: flex;
+    flex-direction: column;
+    
     padding: 2rem;
+    padding-bottom: 0; /* Hapus padding bawah body, biar footer yang ngatur */
+    box-sizing: border-box;
     overflow-x: hidden;
-    overflow-y: scroll;
+    overflow-y: scroll; /* Scroll diurus browser (native) */
+}
+
+main.main-content {
+    /* Main mengambil sisa ruang kosong, mendorong footer ke bawah */
+    flex: 1; 
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    /* Ubah ke flex-start agar saat konten panjang, dia mulai dari atas */
+    justify-content: flex-start; 
+    
+    width: 100%;
 }
 
 header h1 {
@@ -57,12 +80,15 @@ header p.subtitle a:hover {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    grid-template-columns: none;
-    gap: 1.5rem;
+    justify-content: center; /* Input tetap di tengah box container */
+    
+    width: 100%;
     max-width: 700px;
     margin: 0 auto;
-    min-height: 60vh;
+    
+    /* Biarkan container mengisi ruang di dalam main */
+    flex-grow: 1; 
+    min-height: auto; 
 }
 
 .section {
@@ -410,16 +436,20 @@ header p.subtitle a:hover {
 
 footer {
     width: 100%;
-    margin-top: 4rem;
+    
+    /* GANTI margin-top fix (4rem) menjadi auto */
+    /* Ini kuncinya: footer akan didorong ke paling bawah oleh 'flex: 1' di main */
+    margin-top: auto; 
+    
+    padding: 2rem 0; /* Padding atas bawah yang enak dilihat */
+    
     text-align: center;
     font-size: 0.75rem;
     color: #888;
-    background: #121212;
-    border-top: none;
-    box-shadow: none;
-    z-index: 100;
+    background: transparent; /* Atau #121212 */
+    
     opacity: 0;
-    transition: opacity 0.5s ease-out 0.5s; /* Kasih delay dikit */
+    transition: opacity 0.5s ease-out 0.5s;
     line-height: 1.35;
 }
 
@@ -446,7 +476,6 @@ footer.fade-in {
 @media (max-width: 768px) {
     body {
         padding: 1.5rem;
-        padding-bottom: 100px;
     }
 
     header h1 {
@@ -569,15 +598,16 @@ footer.fade-in {
     }
     footer {
         font-size: 0.75rem;
-        margin-top: 2rem;
+        margin-top: 1rem;
         padding: 1.5rem 0;
-        position: absolute;
+        position: relative;
         left: 0;
         bottom: 0.5rem;
         width: 100%;
         background: #121212;
         border-top: none;
         box-shadow: none;
+        padding-bottom: 0;
     }
 }
 
@@ -717,4 +747,23 @@ header h1, header p.subtitle, .container {
 /* Pastikan hover link tetap konsisten */
 .footer-link:hover {
     color: #FEE133 !important; /* Tetap Kuning (sesuai style lyrics kamu) atau ganti #1DB954 jika mau hijau */
+}
+
+/* === STATUS MESSAGE (Error & Loading Text) === */
+.status-msg {
+    text-align: center;
+    width: 100%;
+    margin: 5px 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 1.2rem;
+}
+
+.status-msg.error {
+    color: #ff6b6b; /* Merah soft */
+}
+
+/* Update jarak agar pesan error tidak terlalu mepet atau jauh */
+#results-section {
+    margin-top: 1.5rem !important; 
 }

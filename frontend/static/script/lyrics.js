@@ -23,8 +23,9 @@ async function analyzeLyrics() {
 
     if (!lyrics || lyrics.trim() === '') {
         resultsSection.style.display = 'block';
-        resultDiv.innerHTML = `<p style="color:#ff6b6b; text-align:center;">Please paste some lyrics first.</p>`;
-        return;
+        // Gunakan class .status-msg error yang baru dibuat
+        resultDiv.innerHTML = `<p class="status-msg error">Please paste some lyrics first!</p>`;
+        return; // Stop proses di sini
     }
 
     // (Kode 'analyzeButton.classList.add('loading');' udah DIHAPUS dari sini)

@@ -209,15 +209,15 @@ header p.subtitle a:hover {
 .button-primary.loading .spinner { opacity: 1; }
 .button-primary.loading { pointer-events: none; transform: scale(1); }
 
-/* === LOADING CONTAINER === */
+/* === UPDATE: LOADING STATE (Biar Lebih Rapat/Proporsional) === */
 .loading-state-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     
-    /* FIX: Kurangi padding dan hapus min-height agar tidak makan tempat */
-    padding: 25px 0; 
+    /* KURANGI PADDING: Dari 25px jadi 10px biar gak boros tempat */
+    padding: 10px 0; 
     min-height: auto; 
     
     color: var(--primary);
@@ -227,14 +227,35 @@ header p.subtitle a:hover {
 .loading-state-container .spinner {
     position: relative; 
     top: auto; left: auto; 
-    
-    /* Jarak kecil ke teks di bawahnya */
-    margin: 0 0 12px 0; 
-    
-    /* Ukuran spinner sedikit lebih besar dari tombol tapi proporsional */
+    /* Kurangi margin bawah spinner ke teks */
+    margin: 0 0 8px 0; 
     width: 32px; 
     height: 32px;
     opacity: 1; 
+}
+
+/* === BARU: CLASS UNTUK PESAN ERROR/STATUS (Biar Margin Gak Gede) === */
+.status-msg {
+    grid-column: 1 / -1; 
+    text-align: center; 
+    width: 100%; 
+    
+    /* Reset margin bawaan <p> yg biasanya 1em (16px) */
+    margin: 5px 0; 
+    font-size: 0.95rem;
+}
+
+.status-msg.error {
+    color: #ff6b6b;
+}
+
+.status-msg.neutral {
+    color: var(--muted);
+}
+
+/* Update margin container hasil agar tidak terlalu jauh dari input */
+#artistList, #songSection, #analysisResult {
+    margin-top: 1.25rem !important; /* Semula 30px, kita kunci di 1.5rem (sekitar 24px) */
 }
 
 .loading-state-container .spinner .path {
@@ -428,6 +449,15 @@ body {
         flex-direction: column;
     }
 
+    main.main-content {
+        /* Main mengambil sisa ruang, mendorong footer ke bawah */
+        flex: 1;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start; /* Mulai dari atas */
+    }
+
     header h1 {
         font-size: 2rem;
         margin-top: 0.85rem;
@@ -452,14 +482,15 @@ body {
 
     footer {
         font-size: 0.75rem;
-        margin-top: 2rem;
+        margin-top: 1rem;
         padding: 1.5rem 0;
-        position: absolute;
+        position: relative;
         left: 0;
         bottom: 0.5rem;
         width: 100%;
         background: #121212;
         border-top: none;
         box-shadow: none;
+        line-height: 1.35;
     }
 }
