@@ -73,7 +73,7 @@ header p.subtitle a:hover {
     justify-content: center;
     
     /* 2. Container dikasih tinggi minimal biar search box-nya turun ke tengah visual */
-    min-height: 55vh; 
+    min-height: 70vh; 
 }
 
 .section {
@@ -407,50 +407,40 @@ footer.fade-in { opacity: 1; }
 .fading-out { opacity: 0 !important; transition: opacity 0.5s ease-in-out; }
 #tech-link.hf-mode:hover { color: #FFD21E !important; }
 
-/* === MOBILE RESPONSIVE (FIX SCROLL & LAYOUT) === */
-/* === MOBILE RESPONSIVE (FIX MENTOK 1 LAYAR) === */
+/* === MOBILE RESPONSIVE (FIX FOOTER KEPOTONG) === */
 @media (max-width: 768px) {
     body {
         padding: 1.5rem;
-        /* HAPUS padding-bottom: 100px; INI YG BIKIN SCROLL */
-        padding-bottom: 0; 
         
-        /* Paksa Body jadi Flex Column Full Height */
+        /* FIX: Kasih padding bawah biar footer gak kepotong */
+        padding-bottom: 2rem; 
+        
         min-height: 100vh; 
         display: flex;
         flex-direction: column;
         
-        /* Matikan scroll berlebih jika konten sedikit */
-        overflow: hidden; 
+        /* Kembalikan scroll kalau konten panjang, tapi hidden kalau pas */
+        overflow-y: auto; 
     }
 
     main.main-content {
-        /* Header tetap di atas */
         justify-content: flex-start !important;
-        
-        /* Main ambil semua sisa ruang agar Footer kedorong ke bawah */
         flex-grow: 1; 
         display: flex;
         flex-direction: column;
         height: auto;
     }
 
-    /* Header Styling */
     header h1 { font-size: 2rem; margin-top: 0.85rem; }
     header p.subtitle { font-size: 1rem; margin-bottom: 1rem; }
 
     footer {
         font-size: 0.75rem;
-        
-        /* Reset posisi absolute (biar gak ngambang aneh) */
         position: relative;
         left: auto;
-        bottom: 0.5rem;
-        
-        /* Margin auto biar nendang ke paling bawah */
-        margin-top: auto; 
-        
-        padding: 1.5rem 0;
+        bottom: auto;
+        margin-top: auto; /* Tetap dorong ke bawah */
+        padding: 1.5rem 0 0 0; /* Padding atas aja */
         width: 100%;
         background: transparent;
         border: none;
