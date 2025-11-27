@@ -409,21 +409,21 @@ footer.fade-in { opacity: 1; }
 
 /* === MOBILE RESPONSIVE (FIX FOOTER KEPOTONG) === */
 @media (max-width: 768px) {
-    body {
+body {
         padding: 1.5rem;
         
-        /* FIX UTAMA 1: Gunakan dvh (Dynamic Viewport Height) */
-        /* Ini menyesuaikan tinggi layar HP asli meski ada address bar browser */
-        height: 100dvh; 
+        /* FIX REFRESH: Gunakan min-height, bukan height mati */
+        /* Ini membiarkan browser menangani scroll secara native (mengaktifkan pull-to-refresh) */
         min-height: 100dvh;
+        height: auto;
         
-        /* FIX UTAMA 2: Matikan scroll di body utama */
-        overflow: hidden; 
+        /* Aktifkan scroll di body */
+        overflow-y: auto; 
         
-        /* Hapus padding bawah berlebih yang bikin space kosong */
-        padding-bottom: 0; 
+        /* Hapus padding bawah yang bikin space kosong */
+        padding-bottom: 0;
         
-        /* Pastikan layout flex kolom agar footer bisa di-anchor */
+        /* Gunakan Flexbox untuk mendorong footer ke bawah */
         display: flex;
         flex-direction: column;
     }
