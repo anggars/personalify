@@ -1,8 +1,7 @@
 import os
-import requests # Tetap dipakai untuk API Search karena API jarang memblokir
+import requests
 import re
 from bs4 import BeautifulSoup
-from curl_cffi import requests as cffi_requests # Import library baru
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
@@ -10,7 +9,7 @@ GENIUS_API_URL = "https://api.genius.com"
 def get_headers():
     return {
         "Authorization": f"Bearer {GENIUS_TOKEN}",
-        # User agent akan diurus otomatis oleh curl_cffi nanti
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
 
 def clean_lyrics(text):
@@ -18,7 +17,7 @@ def clean_lyrics(text):
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-# 1. CARI ARTIS (Tetap pakai requests biasa karena ini OFFICIAL API)
+# 1. CARI ARTIS
 def search_artist_id(query):
     if not GENIUS_TOKEN: return []
     try:
@@ -47,10 +46,12 @@ def search_artist_id(query):
         print(f"Error search artist: {e}")
     return []
 
-# 2. AMBIL LIST LAGU (Tetap requests biasa - API)
+# 2. AMBIL LIST LAGU (LEBIH BANYAK - LOOPING)
 def get_songs_by_artist(artist_id):
     songs = []
     page = 1
+    # Batasi maksimal 3 halaman (3 x 50 = 150 lagu) agar tidak timeout
+    # Genius API kadang lambat kalau ambil semua sekaligus
     MAX_PAGES = 3 
     
     try:
@@ -88,31 +89,20 @@ def get_songs_by_artist(artist_id):
 
     except Exception as e:
         print(f"Error get songs: {e}")
+        # Return lagu yang sudah berhasil diambil sejauh ini
         return songs
 
-# 3. SCRAPE LIRIK (BAGIAN INI YANG KITA UBAH)
+# 3. SCRAPE LIRIK
 def get_lyrics_by_id(song_id):
     try:
-        # Step A: Ambil URL dari API (Aman pakai requests biasa)
         response = requests.get(f"{GENIUS_API_URL}/songs/{song_id}", headers=get_headers(), timeout=10)
         if response.status_code != 200: return None
         
         song_data = response.json()['response']['song']
         song_url = song_data['url']
         
-        # Step B: Scrape Halaman HTML (RAWAN DIBLOKIR -> PAKAI CURL_CFFI)
-        # impersonate="chrome" membuat request terlihat persis seperti browser Chrome asli
-        print(f"Scraping URL with impersonation: {song_url}")
-        
-        page_resp = cffi_requests.get(
-            song_url, 
-            impersonate="chrome", 
-            timeout=15
-        )
-        
-        if page_resp.status_code != 200: 
-            print(f"Failed to fetch page: {page_resp.status_code}")
-            return None
+        page_resp = requests.get(song_url, headers=get_headers(), timeout=15)
+        if page_resp.status_code != 200: return None
         
         soup = BeautifulSoup(page_resp.text, 'html.parser')
         lyrics_text = ""
