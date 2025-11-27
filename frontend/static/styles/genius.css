@@ -439,7 +439,7 @@ footer.fade-in { opacity: 1; }
         position: relative;
         left: auto;
         bottom: auto;
-        margin-top: auto; /* Tetap dorong ke bawah */
+        margin-top: 2rem; /* Tetap dorong ke bawah */
         padding: 1.5rem 0 0 0; /* Padding atas aja */
         width: 100%;
         background: transparent;
