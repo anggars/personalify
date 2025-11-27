@@ -26,7 +26,10 @@ main.main-content {
     display: flex;
     flex-direction: column;
     align-items: center;
+    
+    /* UBAH INI: Dari center jadi flex-start biar Header balik ke ATAS */
     justify-content: flex-start; 
+    
     width: 100%;
 }
 
@@ -52,17 +55,21 @@ header p.subtitle a:hover {
     color: #fff !important;
 }
 
-/* === CONTAINER === */
 .container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center; 
-    gap: 1.5rem;
     width: 100%;
     max-width: 700px;
     margin: 0 auto;
-    min-height: 60vh;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    /* LOGIKA BARU: */
+    /* 1. Isi container (input search) ditaruh di tengah container */
+    justify-content: center;
+    
+    /* 2. Container dikasih tinggi minimal biar search box-nya turun ke tengah visual */
+    min-height: 55vh; 
 }
 
 .section {
@@ -199,18 +206,25 @@ header p.subtitle a:hover {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
+    
+    /* FIX: Kurangi padding dan hapus min-height agar tidak makan tempat */
+    padding: 25px 0; 
+    min-height: auto; 
+    
     color: var(--primary);
     font-weight: 600;
-    min-height: 150px;
 }
 
 .loading-state-container .spinner {
     position: relative; 
     top: auto; left: auto; 
-    margin: 0 0 15px 0; 
-    width: 40px; 
-    height: 40px;
+    
+    /* Jarak kecil ke teks di bawahnya */
+    margin: 0 0 12px 0; 
+    
+    /* Ukuran spinner sedikit lebih besar dari tombol tapi proporsional */
+    width: 32px; 
+    height: 32px;
     opacity: 1; 
 }
 
@@ -368,7 +382,16 @@ header p.subtitle a:hover {
 @keyframes blink-caret { from, to { background-color: transparent; } 50% { background-color: var(--primary); } }
 
 /* Footer */
-footer { margin-top: 4rem; text-align: center; font-size: 0.75rem; color: #888; opacity: 0; transition: opacity 0.5s ease-out 0.5s; line-height: 1.35; }
+footer {
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #888;
+    opacity: 0; 
+    transition: opacity 0.5s ease-out 0.5s; 
+    line-height: 1.35;
+}
+
 footer.fade-in { opacity: 1; }
 .footer-link { color: #888; text-decoration: none; transition: 0.3s; cursor: pointer; }
 .footer-link:hover { color: var(--primary); }
@@ -379,5 +402,16 @@ footer.fade-in { opacity: 1; }
     body { padding: 1.5rem; }
     header h1 { font-size: 2rem; margin-top: 0.85rem; }
     header p.subtitle { font-size: 1rem; margin-bottom: 2rem; }
-    .container { min-height: 60vh; } 
+        footer {
+        font-size: 0.75rem;
+        margin-top: 2rem;
+        padding: 1.5rem 0;
+        position: absolute;
+        left: 0;
+        bottom: 0.5rem;
+        width: 100%;
+        background: #121212;
+        border-top: none;
+        box-shadow: none;
+    }
 }
