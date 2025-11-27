@@ -45,7 +45,7 @@ async function searchArtist() {
         const data = await res.json();
 
         if (data.artists.length === 0) {
-            artistList.innerHTML = '<p style="text-align:center; width:100%; color:#bbb;">No artist found.</p>';
+            artistList.innerHTML = '<p style="grid-column: 1/-1; text-align:center; width:100%; color:#ff6b6b;">No artist found.</p>';
         } else {
             data.artists.forEach(artist => {
                 const card = document.createElement('div');
@@ -61,7 +61,7 @@ async function searchArtist() {
         }
     } catch (err) {
         console.error(err);
-        artistList.innerHTML = '<p style="color:#ff6b6b; text-align:center;">Error searching artist.</p>';
+        artistList.innerHTML = '<p style="grid-column: 1/-1; color:#ff6b6b; text-align:center; width:100%;">Error searching artist.</p>';
     } finally {
         setLoading(false);
     }
