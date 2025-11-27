@@ -1,8 +1,8 @@
 import os
-import requests
 import re
 from bs4 import BeautifulSoup
-from curl_cffi import requests as cffi_requests
+# Kita pakai curl_cffi untuk SEMUA request, bukan cuma scraping
+from curl_cffi import requests as cffi_requests 
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
@@ -10,29 +10,42 @@ GENIUS_API_URL = "https://api.genius.com"
 def get_headers():
     return {
         "Authorization": f"Bearer {GENIUS_TOKEN}",
-        # User agent default requests kadang diblokir, tapi untuk API biasanya aman.
-        # Untuk scraping nanti kita pakai impersonate.
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        # User-Agent tidak perlu ditulis manual, curl_cffi akan mengurusnya
     }
 
 def clean_lyrics(text):
-    # Bersihkan tag bracket seperti [Verse 1], [Chorus]
     text = re.sub(r'\[.*?\]', '', text)
-    # Hapus baris kosong berlebih
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-# 1. CARI ARTIS (Aman pakai requests biasa karena ini Official API)
+# --- FUNGSI BANTUAN BARU ---
+def fetch_genius(url, params=None):
+    """
+    Fungsi tunggal untuk request ke Genius.
+    Menggunakan impersonate='chrome' agar dikira browser asli, bukan bot.
+    """
+    try:
+        print(f"Genius Request: {url}")
+        response = cffi_requests.get(
+            url,
+            params=params,
+            headers=get_headers(),
+            impersonate="chrome", # KUNCI ANTI BLOKIR
+            timeout=15
+        )
+        return response
+    except Exception as e:
+        print(f"Request Error: {e}")
+        return None
+
+# 1. CARI ARTIS (SEKARANG PAKAI CURL_CFFI)
 def search_artist_id(query):
     if not GENIUS_TOKEN: return []
-    try:
-        response = requests.get(
-            f"{GENIUS_API_URL}/search",
-            params={'q': query},
-            headers=get_headers(),
-            timeout=10
-        )
-        if response.status_code == 200:
+    
+    response = fetch_genius(f"{GENIUS_API_URL}/search", params={'q': query})
+    
+    if response and response.status_code == 200:
+        try:
             hits = response.json()['response']['hits']
             artists = []
             seen_ids = set()
@@ -47,11 +60,14 @@ def search_artist_id(query):
                         })
                         seen_ids.add(artist['id'])
             return artists
-    except Exception as e:
-        print(f"Error search artist: {e}")
+        except Exception as e:
+            print(f"Parse Error (Search): {e}")
+    else:
+        print(f"Search failed via Render. Status: {response.status_code if response else 'None'}")
+            
     return []
 
-# 2. AMBIL LIST LAGU (Aman pakai requests biasa - API)
+# 2. AMBIL LIST LAGU (SEKARANG PAKAI CURL_CFFI)
 def get_songs_by_artist(artist_id):
     songs = []
     page = 1
@@ -59,14 +75,12 @@ def get_songs_by_artist(artist_id):
     
     try:
         while page <= MAX_PAGES:
-            response = requests.get(
+            response = fetch_genius(
                 f"{GENIUS_API_URL}/artists/{artist_id}/songs",
-                params={'sort': 'popularity', 'per_page': 50, 'page': page},
-                headers=get_headers(),
-                timeout=10
+                params={'sort': 'popularity', 'per_page': 50, 'page': page}
             )
             
-            if response.status_code != 200:
+            if not response or response.status_code != 200:
                 break
                 
             data = response.json()['response']
@@ -94,37 +108,33 @@ def get_songs_by_artist(artist_id):
         print(f"Error get songs: {e}")
         return songs
 
-# 3. SCRAPE LIRIK (BAGIAN INI KITA UBAH TOTAL)
+# 3. SCRAPE LIRIK (SUDAH CURL_CFFI DARI TADI)
 def get_lyrics_by_id(song_id):
     try:
-        # Step A: Ambil URL dari API dulu (Pake requests biasa aman)
-        response = requests.get(f"{GENIUS_API_URL}/songs/{song_id}", headers=get_headers(), timeout=10)
-        if response.status_code != 200: return None
+        # A. Ambil Metadata Lagu
+        response = fetch_genius(f"{GENIUS_API_URL}/songs/{song_id}")
+        if not response or response.status_code != 200: return None
         
         song_data = response.json()['response']['song']
         song_url = song_data['url']
         
-        # Step B: Scrape Halaman HTML (INI YANG RAWAN DIBLOKIR DI RENDER)
-        # Kita pakai curl_cffi dengan mode 'impersonate="chrome"'
-        # Ini bikin request kita 99% mirip browser Chrome asli, bukan bot Python.
-        print(f"Scraping URL (Impersonating Chrome): {song_url}")
+        # B. Scrape HTML Halaman Lirik
+        print(f"Scraping Lyrics URL: {song_url}")
         
+        # Kita panggil cffi_requests langsung di sini karena butuh URL non-API
         page_resp = cffi_requests.get(
-            song_url,
-            impersonate="chrome", # MAGIC WORD-NYA DISINI
+            song_url, 
+            impersonate="chrome", 
             timeout=15
         )
         
         if page_resp.status_code != 200: 
-            print(f"Failed to fetch page: {page_resp.status_code}")
+            print(f"Failed to fetch lyrics page: {page_resp.status_code}")
             return None
         
-        # Step C: Parsing HTML kayak biasa
         soup = BeautifulSoup(page_resp.text, 'html.parser')
         lyrics_text = ""
         
-        # Selector Genius sering berubah, kita cek 2 kemungkinan:
-        # 1. Container baru (data-lyrics-container)
         divs = soup.find_all('div', attrs={'data-lyrics-container': 'true'})
         if divs:
             for div in divs:
@@ -132,7 +142,6 @@ def get_lyrics_by_id(song_id):
                     br.replace_with("\n")
                 lyrics_text += div.get_text() + "\n\n"
         
-        # 2. Fallback ke class lama kalau container baru gak nemu
         if not lyrics_text:
             old_div = soup.find('div', class_='lyrics')
             if old_div: lyrics_text = old_div.get_text()
