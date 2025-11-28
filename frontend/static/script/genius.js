@@ -133,6 +133,48 @@ async function loadSongs(artistId, artistName) {
             };
             
             songList.appendChild(btn);
+            setTimeout(() => {
+                const wrapper = btn.querySelector('.song-title-wrapper');
+                const titleEl = btn.querySelector('.song-title');
+
+                if (!wrapper || !titleEl) return;
+
+                const wrapperWidth = wrapper.clientWidth;
+                const textWidth = titleEl.scrollWidth;
+
+                // --- 1️⃣: Jika teks TIDAK overflow → ga usah running text & tanpa mask
+                if (textWidth <= wrapperWidth) {
+                    wrapper.classList.remove("masked");
+                    return;
+                }
+
+                // --- 2️⃣: Kalau overflow → aktifkan mask biar fade mulus di ujung
+                wrapper.classList.add("masked");
+
+                // Buat track container
+                const track = document.createElement("div");
+                track.classList.add("marquee-track");
+
+                const clone = titleEl.cloneNode(true);
+
+                // Spacer (jarak)
+                const spacer = document.createElement("span");
+                spacer.innerHTML = "&nbsp;&nbsp;&nbsp;";
+                spacer.style.display = "inline-block";
+
+                wrapper.innerHTML = "";
+                track.appendChild(titleEl);
+                track.appendChild(spacer);
+                track.appendChild(clone);
+                wrapper.appendChild(track);
+
+                // Hitung durasi animasi
+                const scrollWidth = track.scrollWidth / 2;
+                const duration = scrollWidth / 45;
+
+                track.style.setProperty("--duration", duration + "s");
+                track.style.setProperty("--scroll-width", scrollWidth + "px");
+            }, 50);
         });
     } catch (err) {
         songList.innerHTML = '<p class="status-msg error">Error loading songs.</p>';
