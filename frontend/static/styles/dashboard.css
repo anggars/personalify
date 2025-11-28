@@ -223,77 +223,106 @@ li {
     color: #1DB954;
     font-size: 0.75rem;
 }
+
 .download-btn {
     position: fixed;
-    overflow: hidden;
+    overflow: hidden; /* Wajib: biar aurora gak bocor keluar tombol */
     bottom: 1.5rem;
     right: 2rem;
-    display: flex;               /* 1. Pakai Flexbox biar alignment kuat */
-    align-items: center;         /* 2. Paksa konten ke tengah vertikal */
-    justify-content: center;     /* 3. Paksa ke tengah horizontal */
-    padding: 10px 20px;          /* 4. Kecilin padding (tadinya 0.75rem/12px) biar ga ketinggian */
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 24px; /* Padding pas */
+    
+    /* Base Glass Style */
     background-color: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: #ffffff;
-    border-radius: 9999px;
+    border-radius: 9999px; /* Pill shape */
+    
     font-weight: 600;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     cursor: pointer;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     z-index: 1000;
+    
+    /* Transisi standar */
     transition: background-color 0.3s ease, 
+                border-color 0.3s ease,
+                transform 0.2s ease, /* Tambahin ini buat efek klik */
                 opacity 0.4s ease, 
                 bottom 0.4s ease;
 }
-.download-btn:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.2);
-}
+
 .download-btn .button-text {
     position: relative;
     z-index: 1;
     top: -1.25px;
 }
-/* === EFEK AURORA UNTUK TOMBOL SAVE === */
+
 .download-btn::before {
     content: '';
     position: absolute;
-    z-index: 0; /* Di belakang teks "Save as Image" */
-
-    /* Cahaya hijau */
-    background: radial-gradient(
-        circle at center, 
-        var(--primary) 0%, /* Pakai var(--primary) */
-        transparent 60%
+    /* Posisikan di tengah, ukuran 2x lipat tombol biar cover semua sudut pas muter */
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    
+    /* GRADIEN AURORA (VERSI TIPIS / SUBTLE) */
+    /* Opacity diturunkan dari 0.5 ke 0.25 biar gak "menuhin" tombol */
+    background: conic-gradient(
+        from 90deg at 50% 50%,
+        rgba(29, 185, 84, 0.25),   /* Hijau Tipis */
+        rgba(59, 130, 246, 0.25),  /* Biru Tipis */
+        rgba(139, 92, 246, 0.25),  /* Ungu Tipis */
+        rgba(236, 72, 153, 0.25),  /* Pink Tipis */
+        rgba(29, 185, 84, 0.25)    /* Balik Hijau Tipis */
     );
-
-    width: 100%; 
-    height: 100%;
-    top: 0;
-    left: 0;
-
-    transform: scale(0); /* Mulai dari 0% */
-    opacity: 0;
-
-    /* Samakan radius tombolnya (biar gak kotak) */
-    border-radius: 9999px;
-
-    transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+    
+    filter: blur(20px); /* Blur biar warnanya nyatu */
+    opacity: 0;         /* Default sembunyi */
+    z-index: -1;        /* Di belakang teks */
+    transition: opacity 0.4s ease;
+    pointer-events: none;
 }
-/* Pas tombolnya di-hover... */
+
+/* Saat Hover: Muncul & Muter */
 .download-btn:hover::before {
-    /* Munculkan cahayanya (opacity 20%) */
-    opacity: 0.2;
-
-    /* Gerakkan ke pojok kanan bawah */
-    transform: scale(1.5);
+    opacity: 1;
+    /* Jalankan animasi muter */
+    animation: spinAurora 4s linear infinite; 
 }
+
+/* Saat Hover: Tombolnya sendiri jadi agak terang */
+.download-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Animasi Putaran (Pastikan ini ada di file CSS) */
+@keyframes spinAurora {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Layer teks di atas aurora */
+.download-btn .button-text {
+    position: relative;
+    z-index: 1;
+    top: -1px;
+}
+
+/* Helper Class untuk sembunyi pas scroll (Logic JS) */
 .download-btn.hide-on-scroll {
     opacity: 0;
-    pointer-events: none; /* Biar tidak bisa diklik saat hilang */
+    pointer-events: none;
+    transform: translateY(20px); /* Turun ke bawah pas ilang */
 }
+
 footer {
     width: 100%;
     margin-top: 1.75rem;
@@ -307,52 +336,162 @@ footer {
 footer.fade-in {
     opacity: 1;
 }
+/* =========================================================
+   REVISI FINAL: Pill Shape Buttons + Liquid Glass
+   Timpa bagian modal lama di dashboard.css dengan ini
+========================================================= */
+
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    
+    /* Background gelap blur */
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    
     display: none;
     justify-content: center;
     align-items: center;
-    z-index: 2000;
+    z-index: 9999;
+    
+    /* Kunci scroll & touch */
+    touch-action: none;
+    overscroll-behavior: contain;
 }
+
+/* Animasi Muncul */
+.modal-overlay[style*="display: flex"] {
+    animation: fadeInModal 0.3s ease-out;
+}
+
 .modal-content {
-    background-color: #2a2a2a;
-    padding: 2rem;
-    border-radius: 1rem;
+    background: rgba(30, 30, 30, 0.65);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    padding: 30px;
+    border-radius: 30px; /* Radius kontainer besar */
     text-align: center;
-    width: 400px;
-    max-width: 90%;
+    width: 350px;
+    max-width: 85%;
+    color: #fff;
+    transform: scale(1);
 }
+
 .modal-content h3 {
     margin-top: 0;
-    color: #1DB954;
+    margin-bottom: 25px;
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 700;
 }
+
 .modal-options {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    margin-top: 1.5rem;
+    gap: 15px;
 }
-.modal-options button {
-    padding: 0.75rem 1rem;
+
+/* === TOMBOL PILIHAN (Artist, Tracks, Genres) === */
+.modal-options button:not(.modal-close) {
+    position: relative;
+    padding: 14px 24px; /* Padding mirip tombol Save as Image */
     font-size: 1rem;
-    border-radius: 9999px;
-    border: none;
-    background-color: #1DB954;
-    color: #000;
-    font-weight: 600;
+    
+    /* PERUBAHAN: Radius 9999px biar sama kayak tombol lain (Pill Shape) */
+    border-radius: 9999px; 
+    
+    /* Efek Kaca */
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-weight: 700; /* Bold biar sama */
     cursor: pointer;
     font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow: hidden;
+    transition: transform 0.2s ease, background 0.2s;
 }
+
+/* Efek Aurora Hover */
+.modal-options button:not(.modal-close)::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    
+    /* Ubah opacity dari 0.4 jadi 0.25 */
+    background: conic-gradient(
+        from 90deg at 50% 50%,
+        rgba(29, 185, 84, 0.25),   /* Hijau */
+        rgba(59, 130, 246, 0.25),  /* Biru */
+        rgba(139, 92, 246, 0.25),  /* Ungu */
+        rgba(29, 185, 84, 0.25)    /* Balik Hijau */
+    );
+    
+    filter: blur(20px);
+    opacity: 0;
+    z-index: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-options button:not(.modal-close):hover::before {
+    opacity: 1;
+    animation: spinAurora 4s linear infinite;
+}
+
+.modal-options button:not(.modal-close):hover {
+    transform: scale(1.001);
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.modal-options button span, 
+.modal-options button {
+    z-index: 1; 
+}
+
+/* === TOMBOL CANCEL (Merah) === */
 .modal-close {
-    background: none;
-    border: 1px solid #555;
-    color: #aaa;
+    margin-top: 10px;
+    padding: 14px 24px;
+    
+    /* Radius Pill juga */
+    border-radius: 9999px;
+    
+    background: rgba(255, 59, 48, 0.15); /* Merah transparan */
+    border: 1px solid rgba(255, 59, 48, 0.2);
+    color: #ff453a; /* Merah terang */
+    
+    font-weight: 700;
+    font-size: 1rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
 }
+
+.modal-close:hover {
+    background: rgba(255, 59, 48, 0.25);
+    transform: scale(1.001);
+}
+
+@keyframes spinAurora {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeInModal {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
 .footer-link {
     color: #888;
     text-decoration: none;

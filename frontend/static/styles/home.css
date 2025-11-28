@@ -98,22 +98,15 @@ p {
 
 /* === STYLE BARU: LIQUID GLASS BUTTON === */
 
-/* (1) Keyframes untuk animasi spinner */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+/* === UPDATE TOMBOL LOGIN (Spinning Aurora) === */
 
-/* (2) Style tombol .button utama (Glassmorphism) */
 .button {
-    /* Untuk positioning spinner */
     position: relative;
-    overflow: hidden;
-    display: inline-flex; /* Penting untuk centering */
+    overflow: hidden; /* WAJIB: Biar aurora gak bocor */
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     
-    /* Style lama (padding, font, dll. kita pake lagi) */
     padding: 12px 24px;
     text-decoration: none;
     font-weight: 700; 
@@ -121,68 +114,61 @@ p {
     border-radius: 50px;
     transition: all 0.3s ease;
     
-    /* --- EFEK LIQUID GLASS --- */
-    /* Ganti warna solid jadi transparan */
+    /* Glass Style Base */
     background: rgba(255, 255, 255, 0.1); 
-    
-    /* Efek blur (ini intinya) */
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px); /* Untuk Safari */
-    
-    /* Border tipis transparan */
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    
-    /* Ganti warna teks jadi putih (karena BG gelap) */
     color: var(--text); 
-    
-    /* Shadow lebih soft */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
+    z-index: 1;
 }
 
+/* Pseudo-element Aurora */
 .button::before {
     content: '';
     position: absolute;
-    z-index: -1; /* Taruh di BELAKANG teks "Login with Spotify" */
+    /* Posisi tengah, ukuran 200% biar cover pas muter */
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
     
-    /* Ini "cahaya"-nya: gradasi radial warna hijau Spotify.
-      Posisinya ngumpet di pojok kiri atas.
-    */
-    background: radial-gradient(
-        circle at center, 
-        var(--primary) 0%, /* Tengahnya hijau terang */
-        transparent 60%     /* Pinggirnya transparan */
+    /* GRADIEN AURORA HALUS (Opacity 0.25) */
+    background: conic-gradient(
+        from 90deg at 50% 50%,
+        rgba(29, 185, 84, 0.25),
+        rgba(59, 130, 246, 0.25),
+        rgba(139, 92, 246, 0.25),
+        rgba(236, 72, 153, 0.25),
+        rgba(29, 185, 84, 0.25)
     );
     
-    /* Ukuran cahaya (bikin lebih gede dari tombolnya) */
-    width: 200px; 
-    height: 200px;
-    
-    /* Posisi awal: ngumpet di kiri atas */
-    transform: translate(-100px, -100px);
-    
-    /* Sembunyiin dulu */
+    filter: blur(20px);
     opacity: 0;
-    
-    /* Transisi biar gerakannya mulus */
-    transition: transform 0.5s ease, opacity 0.4s ease;
+    z-index: -1;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
 }
 
-/* Pas tombolnya di-hover...
-*/
+/* Efek Hover: Muncul & Muter */
 .button:hover::before {
-    /* Munculkan cahayanya (bikin 20% aja biar subtle) */
-    opacity: 0.2;
-    
-    /* Gerakkan cahayanya ke pojok kanan bawah */
-    transform: translate(40px, 40px);
+    opacity: 1;
+    animation: spinAurora 4s linear infinite;
 }
 
-/* (3) Efek Hover */
+/* Efek Hover Tombol */
 .button:hover {
-    /* Kaca-nya jadi sedikit lebih terang */
     background: rgba(255, 255, 255, 0.2); 
+    border-color: rgba(255, 255, 255, 0.3);
     transform: scale(1.05) translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Animasi Putar (Pastikan ini ada) */
+@keyframes spinAurora {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* (4) Style untuk Teks & Spinner (Updated) */

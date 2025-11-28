@@ -124,46 +124,82 @@ header p.subtitle a:hover {
     box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
 }
 
-/* === TOMBOL LIQUID GLASS === */
+/* === UPDATE TOMBOL SEARCH (Spinning Aurora) === */
+
 .button-primary {
     position: relative;
-    overflow: hidden;
-    display: flex;
+    overflow: hidden; /* WAJIB: Biar aurora gak bocor */
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
+    width: 100%; /* Tetap lebar penuh sesuai layout genius */
+    
     padding: 12px 24px;
     border-radius: 50px;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    
+    /* Base Glass Style */
     background: rgba(255, 255, 255, 0.1); 
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    
     color: #FFFFFF;
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    box-shadow: none;
+    text-decoration: none;
     transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1;
 }
 
+/* Pseudo-element Aurora */
 .button-primary::before {
     content: '';
     position: absolute;
-    z-index: -1;
-    background: radial-gradient(circle at center, var(--primary) 0%, transparent 60%);
-    width: 200px; height: 200px;
-    transform: translate(-100px, -100px);
+    /* Posisi tengah, ukuran 200% biar cover pas muter */
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    
+    /* GRADIEN AURORA HALUS (Opacity 0.25) */
+    background: conic-gradient(
+        from 90deg at 50% 50%,
+        rgba(29, 185, 84, 0.25),   /* Hijau */
+        rgba(59, 130, 246, 0.25),  /* Biru */
+        rgba(139, 92, 246, 0.25),  /* Ungu */
+        rgba(236, 72, 153, 0.25),  /* Pink */
+        rgba(29, 185, 84, 0.25)    /* Balik Hijau */
+    );
+    
+    filter: blur(20px);
     opacity: 0;
-    transition: transform 0.5s ease, opacity 0.4s ease;
+    z-index: -1;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    transform: none; /* Reset transform lama */
 }
 
-.button-primary:hover::before { opacity: 0.2; transform: translate(40px, 40px); }
+/* Efek Hover: Muncul & Muter */
+.button-primary:hover::before {
+    opacity: 1;
+    animation: spinAurora 4s linear infinite;
+}
+
+/* Efek Hover Tombol */
 .button-primary:hover {
     background: rgba(255, 255, 255, 0.2);
-    transform: none;
-    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    transform: none; /* Reset efek transform lama yg geser */
+}
+
+/* Animasi Putar */
+@keyframes spinAurora {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .button-primary .button-text { 
@@ -493,4 +529,24 @@ body {
         box-shadow: none;
         line-height: 1.35;
     }
+}
+
+/* === FIX: HILANGKAN BACKGROUND PUTIH SAAT AUTOFILL === */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    /* 1. Timpa background putih dengan warna gelap input asli (#181818) */
+    -webkit-box-shadow: 0 0 0 30px #181818 inset !important;
+    
+    /* 2. Ubah warna teks jadi putih */
+    -webkit-text-fill-color: #ffffff !important;
+    
+    /* 3. Pastikan font tetap sesuai desain */
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 1.05rem !important;
+    
+    /* 4. Pertahankan border radius (opsional, browser kadang mereset ini) */
+    transition: background-color 5000s ease-in-out 0s;
+    caret-color: white; /* Warna kursor ketik */
 }
