@@ -4,57 +4,31 @@ import re
 from bs4 import BeautifulSoup
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
-SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY") 
 GENIUS_API_URL = "https://api.genius.com"
+
+def get_headers():
+    return {
+        "Authorization": f"Bearer {GENIUS_TOKEN}",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
 
 def clean_lyrics(text):
     text = re.sub(r'\[.*?\]', '', text)
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-# --- REQUEST HELPER (STRATEGI BARU) ---
-def make_request(url, params=None, headers=None, use_proxy=False):
-    if params is None: params = {}
-    if headers is None: headers = {}
-
-    # Selalu sertakan Header Authorization (penting buat Direct Request)
-    if GENIUS_TOKEN:
-        headers["Authorization"] = f"Bearer {GENIUS_TOKEN}"
-    
-    # Tambahkan User-Agent biar gak dikira bot jahat
-    headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-
-    try:
-        if use_proxy and SCRAPER_API_KEY:
-            # --- METODE 1: HTTP PROXY (Lebih Stabil untuk Lirik) ---
-            # Kita pakai ScraperAPI sebagai "Standard Proxy"
-            # Format: http://scraperapi:APIKEY@proxy-server.scraperapi.com:8001
-            print(f"DEBUG: [Proxy] Requesting {url}...")
-            proxies = {
-                "http": f"http://scraperapi:{SCRAPER_API_KEY}@proxy-server.scraperapi.com:8001",
-                "https": f"http://scraperapi:{SCRAPER_API_KEY}@proxy-server.scraperapi.com:8001"
-            }
-            # Verify=False kadang perlu buat ScraperAPI biar gak error SSL
-            return requests.get(url, params=params, headers=headers, proxies=proxies, verify=False, timeout=50)
-        else:
-            # --- METODE 2: DIRECT REQUEST (Cepat untuk Search) ---
-            print(f"DEBUG: [Direct] Requesting {url}...")
-            return requests.get(url, params=params, headers=headers, timeout=15)
-            
-    except Exception as e:
-        print(f"Request Error ({url}): {e}")
-        return None
-
-# 1. CARI ARTIS -> WAJIB DIRECT (Biar Cepet & Gak Timeout Vercel)
+# 1. CARI ARTIS
 def search_artist_id(query):
     if not GENIUS_TOKEN: return []
-    
-    # Search ke API biasanya aman dari blokir IP, jadi Direct aja biar ngebut
-    response = make_request(f"{GENIUS_API_URL}/search", params={'q': query}, use_proxy=False)
-
-    if response and response.status_code == 200:
-        try:
-            hits = response.json().get('response', {}).get('hits', [])
+    try:
+        response = requests.get(
+            f"{GENIUS_API_URL}/search",
+            params={'q': query},
+            headers=get_headers(),
+            timeout=10
+        )
+        if response.status_code == 200:
+            hits = response.json()['response']['hits']
             artists = []
             seen_ids = set()
             for hit in hits:
@@ -68,79 +42,83 @@ def search_artist_id(query):
                         })
                         seen_ids.add(artist['id'])
             return artists
-        except:
-            pass
+    except Exception as e:
+        print(f"Error search artist: {e}")
     return []
 
-# 2. AMBIL LIST LAGU -> WAJIB DIRECT (Biar Cepet)
+# 2. AMBIL LIST LAGU (SORT BY RELEASE DATE - TERBARU)
 def get_songs_by_artist(artist_id):
     songs = []
     page = 1
-    MAX_PAGES = 2 
+    MAX_PAGES = 20 
     
     try:
         while page <= MAX_PAGES:
-            response = make_request(
+            print(f"Fetching songs page {page} (Sorted by Release Date)...")
+            
+            response = requests.get(
                 f"{GENIUS_API_URL}/artists/{artist_id}/songs",
-                params={'sort': 'popularity', 'per_page': 20, 'page': page},
-                use_proxy=False # Direct aja
+                params={'sort': 'release_date', 'per_page': 50, 'page': page},
+                headers=get_headers(),
+                timeout=20
             )
             
-            if not response or response.status_code != 200:
+            if response.status_code != 200:
                 break
                 
-            data = response.json().get('response', {})
-            songs_data = data.get('songs', [])
+            data = response.json()['response']
+            songs_data = data['songs']
             
             if not songs_data:
                 break
                 
             for song in songs_data:
+                # --- PERBAIKAN LOGIKA ALBUM ---
+                # Cek apakah ada objek primary_album
+                primary_album = song.get('primary_album')
+                
+                if primary_album:
+                    album_name = primary_album.get('name')
+                else:
+                    # Jika null (biasanya Single), kita kosongkan saja biar rapi
+                    # Atau bisa diganti "Single" jika mau
+                    album_name = None 
+
+                release_date = song.get('release_date_for_display')
+
                 songs.append({
                     'id': song['id'],
                     'title': song['title'],
-                    'image': song['song_art_image_thumbnail_url']
+                    'image': song['song_art_image_thumbnail_url'],
+                    'album': album_name,       # Bisa None sekarang
+                    'date': release_date
                 })
             
             next_page = data.get('next_page')
             if not next_page:
                 break
+                
             page = next_page
-    except:
-        pass
 
-    return songs
+        print(f"Total songs fetched: {len(songs)}")
+        return songs
 
-# 3. AMBIL LIRIK -> INI BARU PAKE PROXY SCRAPERAPI
+    except Exception as e:
+        print(f"Error get songs: {e}")
+        return songs
+
+# 3. SCRAPE LIRIK
 def get_lyrics_by_id(song_id):
-    # Step A: Ambil Metadata (API) - Direct (Cepat)
-    response = make_request(f"{GENIUS_API_URL}/songs/{song_id}", use_proxy=False)
-    
-    if not response or response.status_code != 200: 
-        return None
-    
     try:
-        song_data = response.json().get('response', {}).get('song', {})
-        song_url = song_data.get('url') # Ini URL website genius (HTML)
+        response = requests.get(f"{GENIUS_API_URL}/songs/{song_id}", headers=get_headers(), timeout=10)
+        if response.status_code != 200: return None
         
-        if not song_url: return None
-
-        # Step B: Ambil HTML Lirik - PROXY (Rawan Blokir)
-        # Kita coba Direct dulu (siapa tau lolos), kalau gagal baru Proxy
-        # (Opsional: Langsung Proxy kalau di Render biar pasti tembus)
+        song_data = response.json()['response']['song']
+        song_url = song_data['url']
         
-        # Coba Direct dulu (hemat credit & waktu)
-        page_resp = make_request(song_url, use_proxy=False)
+        page_resp = requests.get(song_url, headers=get_headers(), timeout=15)
+        if page_resp.status_code != 200: return None
         
-        # Kalau Direct gagal/diblokir (biasanya 403), baru nyalain ScraperAPI
-        if not page_resp or page_resp.status_code != 200:
-            print("DEBUG: Direct scrape failed, switching to ScraperAPI...")
-            page_resp = make_request(song_url, use_proxy=True) # <--- PAKE PROXY
-        
-        if not page_resp or page_resp.status_code != 200:
-            return None
-        
-        # Parsing HTML
         soup = BeautifulSoup(page_resp.text, 'html.parser')
         lyrics_text = ""
         
@@ -158,12 +136,11 @@ def get_lyrics_by_id(song_id):
         if lyrics_text:
             return {
                 "lyrics": clean_lyrics(lyrics_text),
-                "title": song_data.get('title'),
-                "artist": song_data.get('primary_artist', {}).get('name'),
+                "title": song_data['title'],
+                "artist": song_data['primary_artist']['name'],
                 "url": song_url
             }
     except Exception as e:
         print(f"Scrape error: {e}")
         return None
-
     return None

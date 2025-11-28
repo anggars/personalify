@@ -102,9 +102,30 @@ async function loadSongs(artistId, artistName) {
             btn.dataset.songId = song.id; 
             
             const imgUrl = song.image || 'https://via.placeholder.com/50?text=Music';
+            
+            // LOGIKA TAMPILAN ALBUM
+            // Kalau ada album, tampilkan "Album • Tanggal"
+            // Kalau gak ada album (null), tampilkan "Tanggal" aja (atau kosong kalau tanggal juga gak ada)
+            let metaText = '';
+            if (song.album && song.date) {
+                metaText = `${song.album} • ${song.date}`;
+            } else if (song.album) {
+                metaText = song.album;
+            } else if (song.date) {
+                metaText = song.date; // Cuma tanggal (biasanya Single)
+            }
+
+            // HTML STRUKTUR BARU (Support Marquee)
             btn.innerHTML = `
                 <img src="${imgUrl}" class="song-thumb">
-                <span class="song-title">${song.title}</span>
+                <div style="display:flex; flex-direction:column; justify-content:center; overflow:hidden; flex:1;">
+                    
+                    <div class="song-title-wrapper">
+                        <span class="song-title">${song.title}</span>
+                    </div>
+                    
+                    ${metaText ? `<div class="album-info">${metaText}</div>` : ''}
+                </div>
             `;
             
             btn.onclick = function() { 

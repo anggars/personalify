@@ -389,6 +389,53 @@ header p.subtitle a:hover {
     display: block;           /* Pastikan elemen bersifat blok */
 }
 
+/* === FIX: JUDUL LAGU MARQUEE (RUNNING TEXT) === */
+
+/* Wrapper untuk teks judul biar bisa di-masking */
+.song-title-wrapper {
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+}
+
+.song-title {
+    display: inline-block;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    
+    /* Animasi default: Diam dulu */
+    transform: translateX(0);
+    transition: transform 0.3s;
+}
+
+/* KELAS KHUSUS UNTUK YANG PANJANG */
+/* Kita buat dia jalan otomatis pelan-pelan */
+.song-btn:hover .song-title {
+    /* Animasi jalan saat di-hover cursor */
+    animation: marqueeScroll 8s linear infinite;
+}
+
+/* Atau kalau mau jalan terus tanpa hover, hapus ':hover' di atas */
+
+@keyframes marqueeScroll {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(0); } /* Delay dikit di awal */
+    100% { transform: translateX(-100%); }
+}
+
+/* Style untuk info Album & Tanggal biar rapi */
+.album-info {
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .text-btn { background: none; border: 1px solid #555; color: #aaa; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
 .text-btn:hover { color: #fff; border-color: #fff; }
 
