@@ -391,39 +391,39 @@ header p.subtitle a:hover {
 
 /* === FIX: JUDUL LAGU MARQUEE (RUNNING TEXT) === */
 
-/* Wrapper untuk teks judul biar bisa di-masking */
 .song-title-wrapper {
-    width: 100%;
     overflow: hidden;
     white-space: nowrap;
+    position: relative;
+}
+
+/* Mask hanya dipakai kalau overflow */
+.song-title-wrapper.masked {
     mask-image: linear-gradient(to right, black 90%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
 }
 
 .song-title {
     display: inline-block;
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #fff;
-    
-    /* Animasi default: Diam dulu */
-    transform: translateX(0);
-    transition: transform 0.3s;
+    white-space: nowrap;
 }
 
-/* KELAS KHUSUS UNTUK YANG PANJANG */
-/* Kita buat dia jalan otomatis pelan-pelan */
-.song-btn:hover .song-title {
-    /* Animasi jalan saat di-hover cursor */
-    animation: marqueeScroll 8s linear infinite;
+.song-btn:hover .marquee-track {
+    animation: marqueeScroll var(--duration, 12s) linear infinite;
 }
 
-/* Atau kalau mau jalan terus tanpa hover, hapus ':hover' di atas */
+.marquee-track {
+    display: inline-flex;
+    white-space: nowrap;
+    will-change: transform;
+    align-items: center;
+    gap: 0; /* jangan pakai gap karena clone diatur manual */
+    animation: marquee var(--duration) linear infinite;
+}
 
 @keyframes marqueeScroll {
-    0% { transform: translateX(0); }
-    20% { transform: translateX(0); } /* Delay dikit di awal */
-    100% { transform: translateX(-100%); }
+    from { transform: translateX(0); }
+    to   { transform: translateX(calc(-1 * var(--scroll-width))); }
 }
 
 /* Style untuk info Album & Tanggal biar rapi */
