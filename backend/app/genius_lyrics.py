@@ -2,6 +2,7 @@ import os
 import requests
 import re
 from bs4 import BeautifulSoup
+from urllib.parse import urlencode
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY") 
@@ -12,56 +13,59 @@ def clean_lyrics(text):
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-# --- FUNGSI REQUEST SAKTI (Revisi Stabil) ---
+# --- FUNGSI REQUEST SAKTI (Fixed Logic) ---
 def make_genius_request(endpoint, params=None):
     """
     Mengatur strategi request:
-    1. Jika ada SCRAPER_API_KEY (Render) -> Lewat Proxy ScraperAPI
-    2. Jika tidak ada (Lokal) -> Lewat Direct Request biasa
+    1. Jika ada SCRAPER_API_KEY (Render) -> Token masuk URL -> Lewat Proxy
+    2. Jika tidak ada (Lokal) -> Token masuk Header -> Direct Request
     """
     if params is None:
         params = {}
     
-    # URL Target Asli Genius
-    target_url = f"{GENIUS_API_URL}{endpoint}"
+    full_url = f"{GENIUS_API_URL}{endpoint}"
     
-    # Masukkan Token Genius ke params (Wajib untuk API Genius)
-    if GENIUS_TOKEN:
-        params['access_token'] = GENIUS_TOKEN
-
+    # --- JALUR 1: RENDER / PRODUCTION (ScraperAPI) ---
     if SCRAPER_API_KEY:
-        # [MODE RENDER/PREMIUM] - Pakai ScraperAPI
         print(f"DEBUG: Menggunakan ScraperAPI untuk {endpoint}")
         
-        # Trik: Kita tidak encode manual params ke string URL.
-        # Kita kirim params terpisah ke requests, tapi URL targetnya
-        # kita biarkan 'requests' yang menggabungkannya nanti.
-        # ScraperAPI butuh 'api_key' dan 'url' (target).
+        # Bikin salinan params biar yang asli gak kotor
+        proxy_params = params.copy()
         
-        # 1. Konstruksi URL target lengkap dengan query params secara manual
-        #    Ini lebih aman agar ScraperAPI menerima URL yang utuh.
-        from urllib.parse import urlencode
-        query_string = urlencode(params)
-        full_target_url = f"{target_url}?{query_string}"
+        # Di ScraperAPI, Header susah lewat, jadi Token KITA PAKSA MASUK URL
+        if GENIUS_TOKEN:
+            proxy_params['access_token'] = GENIUS_TOKEN
+            
+        # Encode manual URL targetnya
+        query_string = urlencode(proxy_params)
+        target_url = f"{full_url}?{query_string}"
         
         payload = {
             'api_key': SCRAPER_API_KEY,
-            'url': full_target_url
+            'url': target_url
         }
         
         try:
-            # Timeout 60 detik karena lewat proxy
-            return requests.get('http://api.scraperapi.com', params=payload, timeout=60)
+            response = requests.get('http://api.scraperapi.com', params=payload, timeout=60)
+            # Kalau sukses (200), langsung return. Kalau gagal, lanjut ke fallback.
+            if response.status_code == 200:
+                return response
+            print(f"DEBUG: ScraperAPI gagal ({response.status_code}), mencoba Direct...")
         except Exception as e:
-            print(f"ScraperAPI Error: {e}")
-            # Fallback darurat: coba direct request kalau scraper mati
-            return requests.get(target_url, params=params, timeout=15)
-            
-    else:
-        # [MODE LOKAL/GRATIS] - Direct Request
-        print(f"DEBUG: Direct Request ke {endpoint}")
-        headers = {"Authorization": f"Bearer {GENIUS_TOKEN}"} if GENIUS_TOKEN else {}
-        return requests.get(target_url, params=params, headers=headers, timeout=15)
+            print(f"DEBUG: ScraperAPI Error: {e}, mencoba Direct...")
+
+    # --- JALUR 2: LOKAL / FALLBACK (Direct Request) ---
+    # Di sini kita pakai cara STANDAR Genius (Token di Header)
+    # Params JANGAN ada access_token-nya biar gak konflik/double
+    
+    print(f"DEBUG: Direct Request ke {endpoint}")
+    
+    headers = {
+        "Authorization": f"Bearer {GENIUS_TOKEN}",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    
+    return requests.get(full_url, params=params, headers=headers, timeout=15)
 
 # 1. CARI ARTIS
 def search_artist_id(query):
@@ -85,7 +89,7 @@ def search_artist_id(query):
                         seen_ids.add(artist['id'])
             return artists
         else:
-            print(f"Search failed. Code: {response.status_code}. Response: {response.text[:200]}")
+            print(f"Search failed. Code: {response.status_code}")
             return []
     except Exception as e:
         print(f"Error search artist: {e}")
@@ -95,7 +99,9 @@ def search_artist_id(query):
 def get_songs_by_artist(artist_id):
     songs = []
     page = 1
-    MAX_PAGES = 2 
+    # Di lokal (Direct) aman mau 3 page. 
+    # Di Render (Scraper) ini akan makan 3 credit per search.
+    MAX_PAGES = 3 
     
     try:
         while page <= MAX_PAGES:
@@ -136,32 +142,31 @@ def get_songs_by_artist(artist_id):
 # 3. SCRAPE LIRIK
 def get_lyrics_by_id(song_id):
     try:
-        # STEP 1: Ambil Metadata (Pake Helper)
+        # STEP 1: Ambil Metadata (Lewat Helper API)
         response = make_genius_request(f"/songs/{song_id}")
         
         if response.status_code != 200: 
-            print(f"Metadata failed: {response.status_code}")
             return None
         
         song_data = response.json()['response']['song']
         song_url = song_data['url']
         
-        # STEP 2: Scrape HTML Liriknya (Untuk HTML, URL target beda)
+        # STEP 2: Scrape HTML Liriknya (Web Scraping, Bukan API)
         page_resp = None
+        
+        # Coba ScraperAPI dulu buat HTML-nya
         if SCRAPER_API_KEY:
-            # ScraperAPI Mode
             payload = {
                 'api_key': SCRAPER_API_KEY,
-                'url': song_url # URL halaman web genius, bukan API
+                'url': song_url
             }
             try:
                 page_resp = requests.get('http://api.scraperapi.com', params=payload, timeout=60)
             except:
                 pass
         
-        # Fallback jika ScraperAPI gagal atau tidak ada key
+        # Fallback ke Direct Scraping (Lokal)
         if not page_resp or page_resp.status_code != 200:
-            # Coba direct request dengan User-Agent browser
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
             }
