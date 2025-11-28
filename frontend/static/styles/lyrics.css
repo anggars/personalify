@@ -200,77 +200,71 @@ header p.subtitle a:hover {
     align-self: stretch; /* tombol ikut lebar container */
 }
 
+/* === UPDATE TOMBOL ANALYZE (Spinning Aurora) === */
+
 .button-primary {
-    /* Untuk positioning spinner */
     position: relative;
-    overflow: hidden;
+    overflow: hidden; /* WAJIB */
     display: inline-flex; 
     align-items: center;
     justify-content: center;
-    font-family: 'Plus Jakarta Sans', sans-serif;
     
-    /* Style lama (padding, font, dll. kita pake lagi) */
     padding: 12px 24px;
-    text-decoration: none;
-    font-weight: 700; 
-    font-size: 1rem;
     border-radius: 50px;
-    transition: all 0.3s ease;
-    
-    /* --- EFEK LIQUID GLASS --- */
+    border: 1px solid rgba(255, 255, 255, 0.2);
     background: rgba(255, 255, 255, 0.1); 
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: var(--text); /* Ganti jadi putih */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
     
-    /* Tambahan dari .button-primary lama */
+    color: #FFFFFF;
+    font-weight: 700; 
+    font-size: 1rem;
     cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1;
 }
 
-/* (3) Efek Hover */
-.button-primary:hover {
-    background: rgba(255, 255, 255, 0.2); 
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-/* (4) Efek Cahaya Hover (AURORA EFFECT - DARI HOME) */
 .button-primary::before {
     content: '';
     position: absolute;
-    z-index: -1; /* Taruh di BELAKANG teks "Login with Spotify" */
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
     
-    /* Ini "cahaya"-nya: gradasi radial warna hijau Spotify.
-      Posisinya ngumpet di pojok kiri atas.
-    */
-    background: radial-gradient(
-        circle at center, 
-        var(--primary) 0%, /* Tengahnya hijau terang */
-        transparent 60%     /* Pinggirnya transparan */
+    /* GRADIEN AURORA HALUS (0.25) */
+    background: conic-gradient(
+        from 90deg at 50% 50%,
+        rgba(29, 185, 84, 0.25),
+        rgba(59, 130, 246, 0.25),
+        rgba(139, 92, 246, 0.25),
+        rgba(236, 72, 153, 0.25),
+        rgba(29, 185, 84, 0.25)
     );
     
-    /* Ukuran cahaya (bikin lebih gede dari tombolnya) */
-    width: 200px; 
-    height: 200px;
-    
-    /* Posisi awal: ngumpet di kiri atas */
-    transform: translate(-100px, -100px);
-    
-    /* Sembunyiin dulu */
+    filter: blur(20px);
     opacity: 0;
-    
-    /* Transisi biar gerakannya mulus */
-    transition: transform 0.5s ease, opacity 0.4s ease;
+    z-index: -1;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
 }
 
-/* Pas tombolnya di-hover... */
 .button-primary:hover::before {
-    /* Munculkan cahayanya (samakan dgn home: 0.2) */
-    opacity: 0.2;
-    
-    /* Gerakkan cahayanya ke pojok kanan bawah */
-    transform: translate(40px, 40px);
+    opacity: 1;
+    animation: spinAurora 4s linear infinite;
+}
+
+.button-primary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes spinAurora {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* (5) Style untuk Teks & Spinner di dalam tombol */

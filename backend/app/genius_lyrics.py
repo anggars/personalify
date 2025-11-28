@@ -4,6 +4,7 @@ import re
 from bs4 import BeautifulSoup
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
+SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY") 
 GENIUS_API_URL = "https://api.genius.com"
 
 def get_headers():
@@ -95,18 +96,38 @@ def get_songs_by_artist(artist_id):
 # 3. SCRAPE LIRIK
 def get_lyrics_by_id(song_id):
     try:
+        # STEP 1: Ambil Metadata Lagu dari Genius API (Tetap pakai cara lama, hemat credit)
         response = requests.get(f"{GENIUS_API_URL}/songs/{song_id}", headers=get_headers(), timeout=10)
         if response.status_code != 200: return None
         
         song_data = response.json()['response']['song']
         song_url = song_data['url']
         
-        page_resp = requests.get(song_url, headers=get_headers(), timeout=15)
-        if page_resp.status_code != 200: return None
+        # STEP 2: Scrape HTML Liriknya (Gunakan ScraperAPI di sini!)
+        # Kita request ke ScraperAPI, lalu ScraperAPI yang request ke Genius
+        
+        if SCRAPER_API_KEY:
+            # Gunakan ScraperAPI jika key ada (Production/Render)
+            payload = {
+                'api_key': SCRAPER_API_KEY,
+                'url': song_url,
+                # 'render': 'true' # JANGAN NYALAIN INI KALO GA KEPEPET (1 req = 5 credits)
+            }
+            # Timeout digedein dikit karena lewat proxy butuh waktu
+            page_resp = requests.get('http://api.scraperapi.com', params=payload, timeout=60)
+        else:
+            # Fallback ke cara lama (Direct Request) jika di local ga ada key
+            # Tapi resiko kena blok 403
+            page_resp = requests.get(song_url, headers=get_headers(), timeout=15)
+
+        if page_resp.status_code != 200: 
+            print(f"Scrape failed. Status: {page_resp.status_code}")
+            return None
         
         soup = BeautifulSoup(page_resp.text, 'html.parser')
         lyrics_text = ""
         
+        # Logic parsing HTML Genius (Sama kayak sebelumnya)
         divs = soup.find_all('div', attrs={'data-lyrics-container': 'true'})
         if divs:
             for div in divs:

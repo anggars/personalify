@@ -490,12 +490,6 @@ document.getElementById('save-artists-btn').addEventListener('click', () => gene
 document.getElementById('save-tracks-btn').addEventListener('click', () => generateImage('tracks'));
 document.getElementById('save-genres-btn').addEventListener('click', () => generateImage('genres'));
 
-modal.addEventListener('click', (event) => {
-    if (event.target === modal) {
-        hideSaveOptions();
-    }
-});
-
 // Function untuk load analisis emosi di background
 async function loadEmotionAnalysis(isExtended = false) {
     const emotionElement = document.querySelector('.emotion-recap');
