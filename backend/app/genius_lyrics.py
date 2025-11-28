@@ -2,32 +2,56 @@ import os
 import requests
 import re
 from bs4 import BeautifulSoup
+from urllib.parse import urlencode
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY") 
 GENIUS_API_URL = "https://api.genius.com"
-
-def get_headers():
-    return {
-        "Authorization": f"Bearer {GENIUS_TOKEN}",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
 
 def clean_lyrics(text):
     text = re.sub(r'\[.*?\]', '', text)
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-# 1. CARI ARTIS
+# --- FUNGSI REQUEST SAKTI (Helper Baru) ---
+def make_genius_request(endpoint, params=None):
+    """
+    Mengatur strategi request:
+    1. Jika ada SCRAPER_API_KEY (Render) -> Lewat Proxy ScraperAPI
+    2. Jika tidak ada (Lokal) -> Lewat Direct Request biasa
+    """
+    if params is None:
+        params = {}
+    
+    full_url = f"{GENIUS_API_URL}{endpoint}"
+    
+    # Masukkan Token Genius ke params (biar aman lewat proxy URL)
+    if GENIUS_TOKEN:
+        params['access_token'] = GENIUS_TOKEN
+
+    if SCRAPER_API_KEY:
+        # [MODE RENDER/PREMIUM] - Pakai ScraperAPI
+        # Kita encode URL target + params genius jadi satu string url panjang
+        target_url_with_params = full_url + '?' + urlencode(params)
+        
+        payload = {
+            'api_key': SCRAPER_API_KEY,
+            'url': target_url_with_params
+        }
+        # Timeout digedein karena lewat proxy butuh waktu
+        return requests.get('http://api.scraperapi.com', params=payload, timeout=60)
+    else:
+        # [MODE LOKAL/GRATIS] - Direct Request
+        headers = {"Authorization": f"Bearer {GENIUS_TOKEN}"} if GENIUS_TOKEN else {}
+        return requests.get(full_url, params=params, headers=headers, timeout=15)
+
+# 1. CARI ARTIS (Sekarang Pake ScraperAPI juga)
 def search_artist_id(query):
     if not GENIUS_TOKEN: return []
     try:
-        response = requests.get(
-            f"{GENIUS_API_URL}/search",
-            params={'q': query},
-            headers=get_headers(),
-            timeout=10
-        )
+        # Panggil helper function kita
+        response = make_genius_request("/search", {'q': query})
+        
         if response.status_code == 200:
             hits = response.json()['response']['hits']
             artists = []
@@ -43,28 +67,28 @@ def search_artist_id(query):
                         })
                         seen_ids.add(artist['id'])
             return artists
+        else:
+            print(f"Search failed. Status: {response.status_code} | Text: {response.text[:100]}")
     except Exception as e:
         print(f"Error search artist: {e}")
     return []
 
-# 2. AMBIL LIST LAGU (LEBIH BANYAK - LOOPING)
+# 2. AMBIL LIST LAGU (Sekarang Pake ScraperAPI juga)
 def get_songs_by_artist(artist_id):
     songs = []
     page = 1
-    # Batasi maksimal 3 halaman (3 x 50 = 150 lagu) agar tidak timeout
-    # Genius API kadang lambat kalau ambil semua sekaligus
-    MAX_PAGES = 3 
+    MAX_PAGES = 2 # Kurangi jadi 2 page biar hemat credit & gak timeout
     
     try:
         while page <= MAX_PAGES:
-            response = requests.get(
-                f"{GENIUS_API_URL}/artists/{artist_id}/songs",
-                params={'sort': 'popularity', 'per_page': 50, 'page': page},
-                headers=get_headers(),
-                timeout=10
+            # Panggil helper function kita
+            response = make_genius_request(
+                f"/artists/{artist_id}/songs",
+                {'sort': 'popularity', 'per_page': 20, 'page': page}
             )
             
             if response.status_code != 200:
+                print(f"Get songs failed: {response.status_code}")
                 break
                 
             data = response.json()['response']
@@ -90,44 +114,38 @@ def get_songs_by_artist(artist_id):
 
     except Exception as e:
         print(f"Error get songs: {e}")
-        # Return lagu yang sudah berhasil diambil sejauh ini
         return songs
 
-# 3. SCRAPE LIRIK
+# 3. SCRAPE LIRIK (Tetap Pake Logic Lama tapi Rapih)
 def get_lyrics_by_id(song_id):
     try:
-        # STEP 1: Ambil Metadata Lagu dari Genius API (Tetap pakai cara lama, hemat credit)
-        response = requests.get(f"{GENIUS_API_URL}/songs/{song_id}", headers=get_headers(), timeout=10)
+        # STEP 1: Ambil Metadata (Pake Helper ScraperAPI)
+        response = make_genius_request(f"/songs/{song_id}")
+        
         if response.status_code != 200: return None
         
         song_data = response.json()['response']['song']
         song_url = song_data['url']
         
-        # STEP 2: Scrape HTML Liriknya (Gunakan ScraperAPI di sini!)
-        # Kita request ke ScraperAPI, lalu ScraperAPI yang request ke Genius
-        
+        # STEP 2: Scrape HTML Liriknya
+        page_resp = None
         if SCRAPER_API_KEY:
-            # Gunakan ScraperAPI jika key ada (Production/Render)
+            # ScraperAPI Mode untuk HTML
             payload = {
                 'api_key': SCRAPER_API_KEY,
-                'url': song_url,
-                # 'render': 'true' # JANGAN NYALAIN INI KALO GA KEPEPET (1 req = 5 credits)
+                'url': song_url
             }
-            # Timeout digedein dikit karena lewat proxy butuh waktu
             page_resp = requests.get('http://api.scraperapi.com', params=payload, timeout=60)
         else:
-            # Fallback ke cara lama (Direct Request) jika di local ga ada key
-            # Tapi resiko kena blok 403
-            page_resp = requests.get(song_url, headers=get_headers(), timeout=15)
+            # Direct Mode
+            page_resp = requests.get(song_url, timeout=15)
 
-        if page_resp.status_code != 200: 
-            print(f"Scrape failed. Status: {page_resp.status_code}")
+        if not page_resp or page_resp.status_code != 200: 
             return None
         
         soup = BeautifulSoup(page_resp.text, 'html.parser')
         lyrics_text = ""
         
-        # Logic parsing HTML Genius (Sama kayak sebelumnya)
         divs = soup.find_all('div', attrs={'data-lyrics-container': 'true'})
         if divs:
             for div in divs:
