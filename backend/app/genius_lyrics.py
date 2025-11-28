@@ -13,13 +13,8 @@ def clean_lyrics(text):
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-# --- FUNGSI REQUEST SAKTI (Fixed Logic) ---
+# --- FUNGSI REQUEST SAKTI (Revisi Anti-Timeout) ---
 def make_genius_request(endpoint, params=None):
-    """
-    Mengatur strategi request:
-    1. Jika ada SCRAPER_API_KEY (Render) -> Token masuk URL -> Lewat Proxy
-    2. Jika tidak ada (Lokal) -> Token masuk Header -> Direct Request
-    """
     if params is None:
         params = {}
     
@@ -27,45 +22,51 @@ def make_genius_request(endpoint, params=None):
     
     # --- JALUR 1: RENDER / PRODUCTION (ScraperAPI) ---
     if SCRAPER_API_KEY:
-        print(f"DEBUG: Menggunakan ScraperAPI untuk {endpoint}")
+        print(f"DEBUG: [ScraperAPI] Requesting {endpoint}...")
         
-        # Bikin salinan params biar yang asli gak kotor
         proxy_params = params.copy()
-        
-        # Di ScraperAPI, Header susah lewat, jadi Token KITA PAKSA MASUK URL
         if GENIUS_TOKEN:
             proxy_params['access_token'] = GENIUS_TOKEN
             
-        # Encode manual URL targetnya
+        # Encode manual URL target
         query_string = urlencode(proxy_params)
         target_url = f"{full_url}?{query_string}"
         
         payload = {
             'api_key': SCRAPER_API_KEY,
-            'url': target_url
+            'url': target_url,
+            'country_code': 'us', # Tambahan: Pakai IP US biar lebih stabil
+            'keep_headers': 'true' # Tambahan: Coba pertahankan header
         }
         
         try:
-            response = requests.get('http://api.scraperapi.com', params=payload, timeout=60)
-            # Kalau sukses (200), langsung return. Kalau gagal, lanjut ke fallback.
-            if response.status_code == 200:
-                return response
-            print(f"DEBUG: ScraperAPI gagal ({response.status_code}), mencoba Direct...")
+            # PENTING: Timeout diset 25s (di bawah batas Vercel 30s)
+            # Biar kalau lemot, backend masih sempet lapor error ke frontend
+            # daripada diputus paksa sama Vercel (504 Gateway Timeout).
+            response = requests.get('http://api.scraperapi.com', params=payload, timeout=25)
+            
+            print(f"DEBUG: [ScraperAPI] Status Code: {response.status_code}")
+            return response
+            
         except Exception as e:
-            print(f"DEBUG: ScraperAPI Error: {e}, mencoba Direct...")
+            print(f"DEBUG: [ScraperAPI] Error/Timeout: {e}")
+            # JANGAN FALLBACK ke Direct Request di Render.
+            # Karena IP Render pasti diblokir (403), cuma buang waktu & bikin timeout.
+            # Mending return None atau response error dummy biar frontend tau.
+            return None
 
-    # --- JALUR 2: LOKAL / FALLBACK (Direct Request) ---
-    # Di sini kita pakai cara STANDAR Genius (Token di Header)
-    # Params JANGAN ada access_token-nya biar gak konflik/double
-    
-    print(f"DEBUG: Direct Request ke {endpoint}")
-    
-    headers = {
-        "Authorization": f"Bearer {GENIUS_TOKEN}",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
-    
-    return requests.get(full_url, params=params, headers=headers, timeout=15)
+    # --- JALUR 2: LOKAL (Direct Request) ---
+    else:
+        print(f"DEBUG: [Direct] Requesting {endpoint}...")
+        headers = {
+            "Authorization": f"Bearer {GENIUS_TOKEN}",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        try:
+            return requests.get(full_url, params=params, headers=headers, timeout=15)
+        except Exception as e:
+            print(f"DEBUG: [Direct] Error: {e}")
+            return None
 
 # 1. CARI ARTIS
 def search_artist_id(query):
@@ -73,8 +74,9 @@ def search_artist_id(query):
     try:
         response = make_genius_request("/search", {'q': query})
         
-        if response.status_code == 200:
-            hits = response.json()['response']['hits']
+        # Cek kalau response valid dan sukses
+        if response and response.status_code == 200:
+            hits = response.json().get('response', {}).get('hits', [])
             artists = []
             seen_ids = set()
             for hit in hits:
@@ -89,19 +91,21 @@ def search_artist_id(query):
                         seen_ids.add(artist['id'])
             return artists
         else:
-            print(f"Search failed. Code: {response.status_code}")
+            # Log error buat debugging di Render Dashboard
+            code = response.status_code if response else "No Response"
+            text = response.text[:100] if response else "None"
+            print(f"Search failed. Code: {code} | Body: {text}")
             return []
+            
     except Exception as e:
-        print(f"Error search artist: {e}")
+        print(f"Error search artist function: {e}")
         return []
 
 # 2. AMBIL LIST LAGU
 def get_songs_by_artist(artist_id):
     songs = []
     page = 1
-    # Di lokal (Direct) aman mau 3 page. 
-    # Di Render (Scraper) ini akan makan 3 credit per search.
-    MAX_PAGES = 3 
+    MAX_PAGES = 2 # Hemat credit & waktu
     
     try:
         while page <= MAX_PAGES:
@@ -110,12 +114,12 @@ def get_songs_by_artist(artist_id):
                 {'sort': 'popularity', 'per_page': 20, 'page': page}
             )
             
-            if response.status_code != 200:
-                print(f"Get songs failed: {response.status_code}")
+            if not response or response.status_code != 200:
+                print(f"Get songs failed page {page}")
                 break
                 
-            data = response.json()['response']
-            songs_data = data['songs']
+            data = response.json().get('response', {})
+            songs_data = data.get('songs', [])
             
             if not songs_data:
                 break
@@ -142,31 +146,35 @@ def get_songs_by_artist(artist_id):
 # 3. SCRAPE LIRIK
 def get_lyrics_by_id(song_id):
     try:
-        # STEP 1: Ambil Metadata (Lewat Helper API)
+        # STEP 1: Ambil Metadata (API)
         response = make_genius_request(f"/songs/{song_id}")
         
-        if response.status_code != 200: 
+        if not response or response.status_code != 200: 
             return None
         
-        song_data = response.json()['response']['song']
-        song_url = song_data['url']
+        song_data = response.json().get('response', {}).get('song', {})
+        song_url = song_data.get('url')
         
-        # STEP 2: Scrape HTML Liriknya (Web Scraping, Bukan API)
+        if not song_url:
+            return None
+
+        # STEP 2: Scrape HTML Lirik (Web Page)
         page_resp = None
         
-        # Coba ScraperAPI dulu buat HTML-nya
         if SCRAPER_API_KEY:
+            # Mode ScraperAPI untuk HTML
+            # Note: URL targetnya adalah halaman web, bukan API
             payload = {
                 'api_key': SCRAPER_API_KEY,
-                'url': song_url
+                'url': song_url,
+                'country_code': 'us' 
             }
             try:
-                page_resp = requests.get('http://api.scraperapi.com', params=payload, timeout=60)
-            except:
-                pass
-        
-        # Fallback ke Direct Scraping (Lokal)
-        if not page_resp or page_resp.status_code != 200:
+                page_resp = requests.get('http://api.scraperapi.com', params=payload, timeout=55)
+            except Exception as e:
+                print(f"Scrape HTML Error: {e}")
+        else:
+            # Mode Lokal Direct
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
             }
@@ -178,6 +186,7 @@ def get_lyrics_by_id(song_id):
         soup = BeautifulSoup(page_resp.text, 'html.parser')
         lyrics_text = ""
         
+        # Parsing Lirik Genius
         divs = soup.find_all('div', attrs={'data-lyrics-container': 'true'})
         if divs:
             for div in divs:
@@ -192,11 +201,11 @@ def get_lyrics_by_id(song_id):
         if lyrics_text:
             return {
                 "lyrics": clean_lyrics(lyrics_text),
-                "title": song_data['title'],
-                "artist": song_data['primary_artist']['name'],
+                "title": song_data.get('title'),
+                "artist": song_data.get('primary_artist', {}).get('name'),
                 "url": song_url
             }
     except Exception as e:
-        print(f"Scrape error: {e}")
+        print(f"Scrape logic error: {e}")
         return None
     return None
