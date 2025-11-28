@@ -2,7 +2,6 @@ import os
 import requests
 import re
 from bs4 import BeautifulSoup
-from urllib.parse import urlencode
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY") 
@@ -13,7 +12,7 @@ def clean_lyrics(text):
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-# --- FUNGSI REQUEST SAKTI (Helper Baru) ---
+# --- FUNGSI REQUEST SAKTI (Revisi Stabil) ---
 def make_genius_request(endpoint, params=None):
     """
     Mengatur strategi request:
@@ -23,33 +22,51 @@ def make_genius_request(endpoint, params=None):
     if params is None:
         params = {}
     
-    full_url = f"{GENIUS_API_URL}{endpoint}"
+    # URL Target Asli Genius
+    target_url = f"{GENIUS_API_URL}{endpoint}"
     
-    # Masukkan Token Genius ke params (biar aman lewat proxy URL)
+    # Masukkan Token Genius ke params (Wajib untuk API Genius)
     if GENIUS_TOKEN:
         params['access_token'] = GENIUS_TOKEN
 
     if SCRAPER_API_KEY:
         # [MODE RENDER/PREMIUM] - Pakai ScraperAPI
-        # Kita encode URL target + params genius jadi satu string url panjang
-        target_url_with_params = full_url + '?' + urlencode(params)
+        print(f"DEBUG: Menggunakan ScraperAPI untuk {endpoint}")
+        
+        # Trik: Kita tidak encode manual params ke string URL.
+        # Kita kirim params terpisah ke requests, tapi URL targetnya
+        # kita biarkan 'requests' yang menggabungkannya nanti.
+        # ScraperAPI butuh 'api_key' dan 'url' (target).
+        
+        # 1. Konstruksi URL target lengkap dengan query params secara manual
+        #    Ini lebih aman agar ScraperAPI menerima URL yang utuh.
+        from urllib.parse import urlencode
+        query_string = urlencode(params)
+        full_target_url = f"{target_url}?{query_string}"
         
         payload = {
             'api_key': SCRAPER_API_KEY,
-            'url': target_url_with_params
+            'url': full_target_url
         }
-        # Timeout digedein karena lewat proxy butuh waktu
-        return requests.get('http://api.scraperapi.com', params=payload, timeout=60)
+        
+        try:
+            # Timeout 60 detik karena lewat proxy
+            return requests.get('http://api.scraperapi.com', params=payload, timeout=60)
+        except Exception as e:
+            print(f"ScraperAPI Error: {e}")
+            # Fallback darurat: coba direct request kalau scraper mati
+            return requests.get(target_url, params=params, timeout=15)
+            
     else:
         # [MODE LOKAL/GRATIS] - Direct Request
+        print(f"DEBUG: Direct Request ke {endpoint}")
         headers = {"Authorization": f"Bearer {GENIUS_TOKEN}"} if GENIUS_TOKEN else {}
-        return requests.get(full_url, params=params, headers=headers, timeout=15)
+        return requests.get(target_url, params=params, headers=headers, timeout=15)
 
-# 1. CARI ARTIS (Sekarang Pake ScraperAPI juga)
+# 1. CARI ARTIS
 def search_artist_id(query):
     if not GENIUS_TOKEN: return []
     try:
-        # Panggil helper function kita
         response = make_genius_request("/search", {'q': query})
         
         if response.status_code == 200:
@@ -68,20 +85,20 @@ def search_artist_id(query):
                         seen_ids.add(artist['id'])
             return artists
         else:
-            print(f"Search failed. Status: {response.status_code} | Text: {response.text[:100]}")
+            print(f"Search failed. Code: {response.status_code}. Response: {response.text[:200]}")
+            return []
     except Exception as e:
         print(f"Error search artist: {e}")
-    return []
+        return []
 
-# 2. AMBIL LIST LAGU (Sekarang Pake ScraperAPI juga)
+# 2. AMBIL LIST LAGU
 def get_songs_by_artist(artist_id):
     songs = []
     page = 1
-    MAX_PAGES = 2 # Kurangi jadi 2 page biar hemat credit & gak timeout
+    MAX_PAGES = 2 
     
     try:
         while page <= MAX_PAGES:
-            # Panggil helper function kita
             response = make_genius_request(
                 f"/artists/{artist_id}/songs",
                 {'sort': 'popularity', 'per_page': 20, 'page': page}
@@ -116,29 +133,39 @@ def get_songs_by_artist(artist_id):
         print(f"Error get songs: {e}")
         return songs
 
-# 3. SCRAPE LIRIK (Tetap Pake Logic Lama tapi Rapih)
+# 3. SCRAPE LIRIK
 def get_lyrics_by_id(song_id):
     try:
-        # STEP 1: Ambil Metadata (Pake Helper ScraperAPI)
+        # STEP 1: Ambil Metadata (Pake Helper)
         response = make_genius_request(f"/songs/{song_id}")
         
-        if response.status_code != 200: return None
+        if response.status_code != 200: 
+            print(f"Metadata failed: {response.status_code}")
+            return None
         
         song_data = response.json()['response']['song']
         song_url = song_data['url']
         
-        # STEP 2: Scrape HTML Liriknya
+        # STEP 2: Scrape HTML Liriknya (Untuk HTML, URL target beda)
         page_resp = None
         if SCRAPER_API_KEY:
-            # ScraperAPI Mode untuk HTML
+            # ScraperAPI Mode
             payload = {
                 'api_key': SCRAPER_API_KEY,
-                'url': song_url
+                'url': song_url # URL halaman web genius, bukan API
             }
-            page_resp = requests.get('http://api.scraperapi.com', params=payload, timeout=60)
-        else:
-            # Direct Mode
-            page_resp = requests.get(song_url, timeout=15)
+            try:
+                page_resp = requests.get('http://api.scraperapi.com', params=payload, timeout=60)
+            except:
+                pass
+        
+        # Fallback jika ScraperAPI gagal atau tidak ada key
+        if not page_resp or page_resp.status_code != 200:
+            # Coba direct request dengan User-Agent browser
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+            page_resp = requests.get(song_url, headers=headers, timeout=15)
 
         if not page_resp or page_resp.status_code != 200: 
             return None
