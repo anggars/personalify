@@ -13,9 +13,39 @@ def get_headers():
     }
 
 def clean_lyrics(text):
-    text = re.sub(r'\[.*?\]', '', text)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    return text.strip()
+    # Hilangkan semua label section: [Intro], [Verse], dll
+    text = re.sub(r'\[.*?\]', '', text, flags=re.DOTALL)
+
+    cleaned_lines = []
+    for line in text.split("\n"):
+        strip = line.strip()
+
+        # --- FILTER BARIS YANG BUKAN LIRIK ---
+        if not strip:
+            cleaned_lines.append("")
+            continue
+        
+        # buang metadata umum genius
+        blocked = [
+            "contributor", "contribute",
+            "translation", "lyrics", 
+            "read more", "português", 
+        ]
+
+        if any(b in strip.lower() for b in blocked):
+            continue
+
+        # buang paragraf promosi / info album (biasanya panjang > 120 char)
+        if len(strip) > 200:
+            continue
+
+        cleaned_lines.append(strip)
+
+    # Hilangkan line kosong berlebihan
+    final = "\n".join(cleaned_lines)
+    final = re.sub(r'\n{3,}', '\n\n', final).strip()
+    return final
+
 
 # 1. CARI ARTIS
 def search_artist_id(query):
