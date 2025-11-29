@@ -5,12 +5,15 @@ from bs4 import BeautifulSoup
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
-
-# Jika tidak ada ENV VERCEL → berarti jalan di lokal
 IS_LOCAL = os.getenv("VERCEL") is None
 
+# Worker URL (pakai punya lu)
+WORKER_URL = "https://vercel.anggars.workers.dev"  # <-- ganti kalau beda nanti
 
-# ========================= HELPERS ===============================
+
+# =====================================================
+# HELPERS
+# =====================================================
 
 def get_headers():
     return {
@@ -23,248 +26,212 @@ def get_headers():
     }
 
 
-def normalize(text):
-    """Convert artist/title menjadi format URL AZLyrics."""
-    text = text.lower()
-    text = re.sub(r'[^a-z0-9]', '', text)
-    return text
-
-
 def clean_lyrics(text):
     text = re.sub(r'\[.*?\]', '', text, flags=re.DOTALL)
 
-    cleaned_lines = []
+    cleaned = []
     for line in text.split("\n"):
-        strip = line.strip()
+        s = line.strip()
 
-        if not strip:
-            cleaned_lines.append("")
+        if not s:
+            cleaned.append("")
             continue
 
-        blocked = [
-            "contributor", "contribute",
-            "translation", "lyrics",
-            "read more", "português",
-        ]
-        if any(b in strip.lower() for b in blocked):
+        blocked = ["contributor", "read more", "lyrics", "translation"]
+        if any(b in s.lower() for b in blocked):
             continue
 
-        if len(strip) > 200:
+        if len(s) > 200:
             continue
 
-        cleaned_lines.append(strip)
+        cleaned.append(s)
 
-    final = "\n".join(cleaned_lines)
-    final = re.sub(r'\n{3,}', '\n\n', final).strip()
-    return final
+    final = "\n".join(cleaned)
+    final = re.sub(r'\n{3,}', '\n\n', final)
+    return final.strip()
 
 
 def get_page_html(url):
-    """Hanya dipakai di LOCAL, tidak dipakai di deploy."""
+    """LOCAL ONLY: fetch langsung ke Genius tanpa worker."""
     try:
         r = requests.get(url, headers=get_headers(), timeout=15)
         if r.status_code == 200:
             return r.text
-        print("Local fetch error:", r.status_code)
     except Exception as e:
-        print("Local direct fetch error:", e)
+        print("Local fetch error:", e)
     return None
 
 
-# ======================= AZLYRICS SCRAPER =======================
-
-def fetch_from_azlyrics(artist, title):
-    """Scraping lirik dari AZLyrics — dipakai di DEPLOY."""
-    artist_clean = normalize(artist)
-    title_clean = normalize(title)
-
-    url = f"https://www.azlyrics.com/lyrics/{artist_clean}/{title_clean}.html"
-
-    try:
-        r = requests.get(url, timeout=15)
-        if r.status_code != 200:
-            print("AZLyrics status:", r.status_code)
-            return None
-
-        soup = BeautifulSoup(r.text, "html.parser")
-
-        # Lyrics ada di <div> ke-3 yang tidak punya class
-        divs = soup.find_all("div", class_=None)
-
-        for div in divs:
-            text = div.get_text("\n").strip()
-            if len(text) > 200:  # heuristik: pasti lirik
-                return text
-
-        return None
-
-    except Exception as e:
-        print("AZLyrics error:", e)
-        return None
-
-
-# ========================= SEARCH ARTIST ===========================
+# =====================================================
+# SEARCH ARTIST
+# =====================================================
 
 def search_artist_id(query):
-    if not GENIUS_TOKEN:
-        return []
-
     try:
-        response = requests.get(
+        res = requests.get(
             f"{GENIUS_API_URL}/search",
             params={"q": query},
             headers=get_headers(),
             timeout=10
         )
 
-        if response.status_code == 200:
-            hits = response.json()["response"]["hits"]
-            artists = []
-            seen_ids = set()
+        if res.status_code != 200:
+            return []
 
-            for hit in hits:
-                if hit["type"] == "song":
-                    artist = hit["result"]["primary_artist"]
+        hits = res.json()["response"]["hits"]
+        artists = []
+        seen = set()
 
-                    if artist["id"] not in seen_ids:
-                        artists.append({
-                            "id": artist["id"],
-                            "name": artist["name"],
-                            "image": artist["image_url"]
-                        })
-                        seen_ids.add(artist["id"])
+        for hit in hits:
+            if hit["type"] == "song":
+                a = hit["result"]["primary_artist"]
+                if a["id"] not in seen:
+                    artists.append({
+                        "id": a["id"],
+                        "name": a["name"],
+                        "image": a["image_url"]
+                    })
+                    seen.add(a["id"])
 
-            return artists
+        return artists
 
     except Exception as e:
-        print("Error search artist:", e)
+        print("Search error:", e)
+        return []
 
-    return []
 
-
-# ======================= GET SONG LIST ============================
+# =====================================================
+# SONG LIST
+# =====================================================
 
 def get_songs_by_artist(artist_id):
     songs = []
     page = 1
-    MAX_PAGES = 20
 
     try:
-        while page <= MAX_PAGES:
+        while True:
             print(f"Fetching songs page {page}...")
 
-            response = requests.get(
+            res = requests.get(
                 f"{GENIUS_API_URL}/artists/{artist_id}/songs",
                 params={"sort": "release_date", "per_page": 50, "page": page},
                 headers=get_headers(),
                 timeout=20
             )
 
-            if response.status_code != 200:
+            if res.status_code != 200:
                 break
 
-            data = response.json()["response"]
-            songs_data = data["songs"]
+            data = res.json()["response"]
+            items = data["songs"]
 
-            if not songs_data:
+            if not items:
                 break
 
-            for song in songs_data:
-                primary_album = song.get("primary_album")
-                album_name = primary_album.get("name") if primary_album else None
-
+            for s in items:
+                alb = s.get("primary_album")
                 songs.append({
-                    "id": song["id"],
-                    "title": song["title"],
-                    "image": song["song_art_image_thumbnail_url"],
-                    "album": album_name,
-                    "date": song.get("release_date_for_display")
+                    "id": s["id"],
+                    "title": s["title"],
+                    "image": s["song_art_image_thumbnail_url"],
+                    "album": alb["name"] if alb else None,
+                    "date": s.get("release_date_for_display")
                 })
 
-            next_page = data.get("next_page")
-            if not next_page:
+            if not data.get("next_page"):
                 break
 
-            page = next_page
+            page = data["next_page"]
 
         print(f"Total songs fetched: {len(songs)}")
         return songs
 
     except Exception as e:
-        print("Error get songs:", e)
+        print("Get songs error:", e)
         return songs
 
 
-# ======================= GET LYRICS ============================
+# =====================================================
+# GET LYRICS (LOCAL = direct Genius, DEPLOY = Worker)
+# =====================================================
 
 def get_lyrics_by_id(song_id):
     try:
-        # 1. Ambil metadata dari Genius API
-        response = requests.get(
+        # Metadata via Genius API
+        res = requests.get(
             f"{GENIUS_API_URL}/songs/{song_id}",
             headers=get_headers(),
             timeout=10
         )
-        if response.status_code != 200:
+        if res.status_code != 200:
             return None
 
-        song_data = response.json()["response"]["song"]
-        title = song_data["title"]
-        artist = song_data["primary_artist"]["name"]
-        song_url = song_data["url"]
+        song = res.json()["response"]["song"]
+        title = song["title"]
+        artist = song["primary_artist"]["name"]
+        song_url = song["url"]
 
-        # ==========================================================
-        # DEPLOY MODE → PAKAI AZLYRICS
-        # ==========================================================
+        # --------------------------
+        # DEPLOY MODE: USE WORKER
+        # --------------------------
         if not IS_LOCAL:
-            lyrics = fetch_from_azlyrics(artist, title)
+            try:
+                w = requests.get(
+                    f"{WORKER_URL}?url={song_url}",
+                    timeout=20
+                )
+                if w.status_code != 200:
+                    print("Worker fetch failed:", w.status_code)
+                    return None
 
-            if lyrics:
-                return {
-                    "lyrics": clean_lyrics(lyrics),
-                    "title": title,
-                    "artist": artist,
-                    "url": song_url,
-                }
+                html = w.text
 
-            print("AZLyrics gagal → tidak ada fallback di deploy.")
-            return None
+            except Exception as e:
+                print("Worker error:", e)
+                return None
 
-        # ==========================================================
-        # LOCAL MODE → SCRAPING HTML GENIUS FULL
-        # ==========================================================
-        html = get_page_html(song_url)
-        if not html:
-            print("Local scrape error: gagal ambil HTML")
-            return None
+        # --------------------------
+        # LOCAL MODE: direct scrape
+        # --------------------------
+        else:
+            html = get_page_html(song_url)
+            if not html:
+                print("Local Genius scrape fail")
+                return None
 
+        # --------------------------
+        # PARSE HTML SAMA UNTUK LOCAL/DEPLOY
+        # --------------------------
         soup = BeautifulSoup(html, "html.parser")
+
         lyrics_text = ""
 
-        containers = soup.find_all("div", {"data-lyrics-container": "true"})
-        for div in containers:
+        # Format baru Genius
+        blocks = soup.find_all("div", {"data-lyrics-container": "true"})
+        for div in blocks:
             for br in div.find_all("br"):
                 br.replace_with("\n")
-            lyrics_text += div.get_text(separator="\n").strip() + "\n\n"
+            lyrics_text += div.get_text("\n").strip() + "\n\n"
+
+        # Format lama Genius
+        if not lyrics_text:
+            old = soup.find("div", class_="lyrics")
+            if old:
+                lyrics_text = old.get_text("\n")
 
         if not lyrics_text:
-            old_div = soup.find("div", class_="lyrics")
-            if old_div:
-                lyrics_text = old_div.get_text(separator="\n")
-
-        if not lyrics_text:
-            print("❌ Local scrape: lirik tidak ditemukan")
+            print("Lyrics not found")
             return None
 
-        final_lyrics = clean_lyrics(lyrics_text)
+        cleaned = clean_lyrics(lyrics_text)
 
         return {
-            "lyrics": final_lyrics,
+            "lyrics": cleaned,
             "title": title,
             "artist": artist,
             "url": song_url
         }
 
     except Exception as e:
-        print("Lyrics fetch error:", e)
+        print("Lyrics error:", e)
         return None
