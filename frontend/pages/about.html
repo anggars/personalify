@@ -35,15 +35,16 @@
                 </p>
 
                 <p>
-                    This whole thing is built with <a href="https://fastapi.tiangolo.com/" target="_blank" class="footer-link tech-fastapi">Python (FastAPI)</a>
-                    on the backend, pulling data from the <a href="https://developer.spotify.com/" target="_blank" class="footer-link tech-spotify">Spotify Developer API</a>,
-                    and served up via <a href="https://docker.com/" target="_blank" class="footer-link tech-docker">Docker</a>.
-                    The main data lives in <a href="https://www.postgresql.org/" target="_blank" class="footer-link tech-postgres">PostgreSQL</a>,
-                    sync history gets tossed into <a href="https://www.mongodb.com/" target="_blank" class="footer-link tech-mongo">MongoDB</a>,
-                    and <a href="https://redis.io/" target="_blank" class="footer-link tech-redis">Redis</a> handles all the caching to keep things snappy.
-                    The vibe check? That's a <a href="https://huggingface.co/SamLowe/roberta-base-go_emotions" target="_blank" class="footer-link tech-huggingface">Hugging Face</a>
-                    NLP model. Finally, the whole setup is deployed with <a href="https://vercel.com/" target="_blank" class="footer-link tech-vercel">Vercel</a>
-                    acting as a proxy for the <a href="https://render.com/" target="_blank" class="footer-link tech-render">Render</a> backend.
+                    This whole thing is built with a <a href="https://fastapi.tiangolo.com/" target="_blank" class="footer-link tech-fastapi">Python (FastAPI)</a> 
+                    backend, seamlessly pulling data from the <a href="https://developer.spotify.com/" target="_blank" class="footer-link tech-spotify">Spotify Developer API</a>. 
+                    While local development relies on <a href="https://www.docker.com/" target="_blank" class="footer-link tech-docker">Docker</a> containers, 
+                    production runs purely as a Serverless app on <a href="https://vercel.com/" target="_blank" class="footer-link tech-vercel">Vercel</a>. 
+                    Main data lives in <a href="https://supabase.com/" target="_blank" class="footer-link tech-postgres">Supabase (PostgreSQL)</a>, 
+                    sync history goes to <a href="https://www.mongodb.com/atlas" target="_blank" class="footer-link tech-mongo">MongoDB Atlas</a>, 
+                    and <a href="https://upstash.com/" target="_blank" class="footer-link tech-redis">Upstash Redis</a> handles the cache. 
+                    Lyrics come from a custom <a href="https://workers.cloudflare.com/" target="_blank" class="footer-link tech-render">Cloudflare Workers</a> 
+                    proxy to dodge <a href="https://genius.com/developers" target="_blank" class="footer-link tech-huggingface">Genius</a> restrictions, 
+                    and the vibe check? That's a <a href="https://huggingface.co/" target="_blank" class="footer-link tech-huggingface">Hugging Face</a> NLP model.
                 </p>
             </div>
 

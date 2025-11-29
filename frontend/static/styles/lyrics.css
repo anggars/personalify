@@ -63,7 +63,7 @@ header p.subtitle {
 
 /* === STYLE LINK DI SUBTITLE (REVISI: Polos & Tidak Bold) === */
 header p.subtitle a {
-    color: var(--muted); /* Abu-abu */
+    color: #888888; /* Abu-abu */
     text-decoration: none;
     font-weight: 500; /* Samakan dengan teks biasa (tidak bold) */
     transition: color 0.2s ease;

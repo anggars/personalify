@@ -346,7 +346,8 @@ header p.subtitle a:hover {
     gap: 10px;
     max-height: 395px; 
     overflow-y: auto; 
-    padding-right: 8px; 
+    padding-right: 8px;
+    padding-bottom: 0.05rem;
 }
 
 .song-grid::-webkit-scrollbar,
