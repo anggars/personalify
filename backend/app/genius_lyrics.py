@@ -25,63 +25,39 @@ def get_headers():
 
 
 def clean_lyrics(text):
-    """
-    - Hilangkan [Verse], [Chorus], dll
-    - Hilangkan terjemahan bahasa lain
-    - Hilangkan spam seperti 'lyrics', 'translation', dll
-    - Normalize newline: 1 newline antar-baris, 2 newline antar-bagian
-    """
+    # Hilangkan [Verse], [Chorus], dll
+    text = re.sub(r"\[.*?\]", "", text)
 
-    # Hilangkan annotation [Verse], [Chorus], dll
-    text = re.sub(r'\[.*?\]', '', text)
-
-    # Split raw berdasarkan newline
     lines = text.split("\n")
 
     cleaned = []
     for line in lines:
         s = line.strip()
 
-        # skip baris kosong (nanti tetap dibuat 1 baris)
+        # Skip baris yang kosong → kita tidak mau line break
         if not s:
-            cleaned.append("")
             continue
 
-        # Filter blok terjemahan/translation
+        # Blok contributors
+        if re.match(r"^\d+\s+contributors?$", s.lower()):
+            continue
+
+        # blok kata terlarang
         blocked = [
-            "translation", "translated", "português",
-            "bahasa indonesia", "italian", "spanish", "lyrics",
-            "click", "contribute", "read more"
+            "translation", "translated", "lyrics",
+            "click", "contribute", "read more",
+            "produced by", "written by"
         ]
         if any(b in s.lower() for b in blocked):
             continue
 
-        # Skip weird long text
-        if len(s) > 200:
-            continue
-
         cleaned.append(s)
 
-    # Gabung ulang
-    joined = "\n".join(cleaned)
-
-    # === Normalisasi newline ===
-    # 1 newline antara baris
-    joined = re.sub(r'\n{3,}', '\n\n', joined)   # maksimum 2 newline
-    joined = re.sub(r'\n{2}', '\n\n', joined)    # blok antar-verse
-    joined = re.sub(r'\n{1,}', '\n', joined)     # baris biasa
-
-    # Re-apply 2 newlines antar paragraf
-    joined = re.sub(r'(\S)\n(\S)', r'\1\n\2', joined)
-
-    # Rapikan lagi kalau ada dobel
-    joined = re.sub(r'\n{3,}', '\n\n', joined)
-
-    return joined.strip()
+    # HASIL: hanya 1 newline antar baris
+    return "\n".join(cleaned)
 
 
 def get_page_html(url):
-    """Dipakai untuk local only."""
     try:
         r = requests.get(url, headers=get_headers(), timeout=15)
         if r.status_code == 200:
@@ -147,7 +123,7 @@ def get_songs_by_artist(artist_id):
                 timeout=20
             )
 
-            if res.status_code != 200:
+            if res.status_code != 0 and res.status_code != 200:
                 break
 
             data = res.json()["response"]
@@ -197,53 +173,62 @@ def get_lyrics_by_id(song_id):
         artist = song["primary_artist"]["name"]
         song_url = song["url"]
 
-        # ================================
-        # DEPLOY MODE → fetch via Worker
-        # ================================
+        # fetch HTML (worker / local)
         if not IS_LOCAL:
             wr = requests.get(f"{WORKER_URL}?url={song_url}", timeout=20)
             if wr.status_code != 200:
                 print("Worker fail:", wr.status_code)
                 return None
             html = wr.text
-
-        # ================================
-        # LOCAL MODE → direct Genius scrape
-        # ================================
         else:
             html = get_page_html(song_url)
             if not html:
-                print("Local fetch fail")
                 return None
 
-        # ================================
-        # PARSE HTML
-        # ================================
         soup = BeautifulSoup(html, "html.parser")
 
-        lyrics_raw = ""
+        # FIX UTAMA: ambil SEMUA container
+        containers = soup.select("div[data-lyrics-container]")
 
-        # Format baru Genius (utama)
-        containers = soup.find_all("div", {"data-lyrics-container": "true"})
+        all_lines = []
+
         for c in containers:
-
-            # filter translation block
+            # skip terjemahan
             if "translation" in c.get_text().lower():
                 continue
 
+            # ganti <br> dengan newline
             for br in c.find_all("br"):
                 br.replace_with("\n")
 
-            lyrics_raw += c.get_text("\n").strip() + "\n\n"
+            # Ambil text container
+            block = c.get_text("\n").strip()
 
-        # Format lama Genius
-        if not lyrics_raw:
+            # Jika kontainer kosong → skip
+            if not block:
+                continue
+
+            # pecah per-baris
+            lines = block.split("\n")
+
+            # masukkan baris satu per satu (TANPA bikin enter 2x)
+            for line in lines:
+                stripped = line.strip()
+                if stripped:
+                    all_lines.append(stripped)
+                else:
+                    all_lines.append("")  # baris kosong
+
+        # gabungkan semua baris
+        lyrics_raw = "\n".join(all_lines)
+
+        # fallback format lama
+        if not lyrics_raw.strip():
             old = soup.find("div", class_="lyrics")
             if old:
                 lyrics_raw = old.get_text("\n")
 
         if not lyrics_raw.strip():
-            print("Lyrics not found")
             return None
 
         cleaned = clean_lyrics(lyrics_raw)

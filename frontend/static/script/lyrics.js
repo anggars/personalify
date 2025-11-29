@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     if (titleEl && subtitleEl && containerEl) {
         const titleText = titleEl.textContent;
-        const subtitleText = subtitleEl.textContent; // Ambil teks biasa karena sudah tidak ada link
+        const subtitleHtml = subtitleEl.innerHTML;
 
         // 1. TAHAN DULU: Sembunyikan section & matikan animasi CSS bawaan
         // Kita cari elemen .section di dalam container
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         await typeEffect(titleEl, titleText, 50);
         
         // 4. Animasi Ketik Subtitle (Typing Effect)
-        await typeEffect(subtitleEl, subtitleText, 30);
+        await typeEffect(subtitleEl, subtitleHtml, 30);
 
         // 5. BARU MUNCULKAN BODY (Input Form)
         if (sectionEl) {

@@ -157,12 +157,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const techStack = [
         { phrase: "Containerized by", name: "Docker", url: "https://www.docker.com/", class: "tech-docker" },
-        { phrase: "Built with", name: "Python (FastAPI)", url: "https://fastapi.tiangolo.com/", class: "tech-python" },
-        { phrase: "Main Database by", name: "PostgreSQL", url: "https://www.postgresql.org/", class: "tech-postgres" },
-        { phrase: "History stored in", name: "MongoDB", url: "https://www.mongodb.com/", class: "tech-mongo" },
-        { phrase: "Cached by", name: "Redis", url: "https://redis.io/", class: "tech-redis" },
-        { phrase: "Proxied by", name: "Vercel", url: "https://vercel.com/", class: "tech-vercel" },
-        { phrase: "Deployed on", name: "Render", url: "https://render.com/", class: "tech-render" }
+        { phrase: "Built with", name: "Python (FastAPI)", url: "https://fastapi.tiangolo.com/", class: "tech-fastapi" },
+        { phrase: "Deployed on", name: "Vercel", url: "https://vercel.com/", class: "tech-vercel" },
+        { phrase: "Main Database by", name: "Supabase", url: "https://supabase.com/", class: "tech-supabase" },
+        { phrase: "History stored in", name: "MongoDB Atlas", url: "https://www.mongodb.com/atlas", class: "tech-mongo" },
+        { phrase: "Cached by", name: "Upstash", url: "https://upstash.com/", class: "tech-upstash" },
+        { phrase: "Lyrics proxy on", name: "Cloudflare", url: "https://workers.cloudflare.com/", class: "tech-cloudflare" },
     ];
 
     let techLoop = 0;

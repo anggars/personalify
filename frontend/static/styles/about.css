@@ -571,14 +571,50 @@ footer.fade-in {
     border-right: 2px solid transparent; /* Tempat kursor ngetik (opsional) */
 }
 
-/* Warna Hover Spesifik (sesuai brand) */
-#tech-link.tech-python:hover    { color: #009688 !important; } /* FastAPI Teal */
-#tech-link.tech-docker:hover    { color: #2496ED !important; } /* Docker Blue */
-#tech-link.tech-postgres:hover  { color: #336791 !important; } /* Postgres Blue */
-#tech-link.tech-mongo:hover     { color: #4DB33D !important; } /* MongoDB Green */
-#tech-link.tech-redis:hover     { color: #DC382D !important; } /* Redis Red */
-#tech-link.tech-vercel:hover    { color: #ffffff !important; } /* Vercel White */
-#tech-link.tech-render:hover    { color: #4D9DE0 !important; } /* Render Blue */
+/* === Warna Hover Tech Stack & Footer === */
+
+/* FastAPI (Teal) */
+.section p a.tech-fastapi:hover,
+#tech-link.tech-fastapi:hover { color: #009688 !important; }
+
+/* Spotify (Green) */
+.section p a.tech-spotify:hover,
+#tech-link.tech-spotify:hover { color: #1DB954 !important; }
+
+/* Docker (Blue) */
+.section p a.tech-docker:hover,
+#tech-link.tech-docker:hover { color: #2496ED !important; }
+
+/* Vercel (White) */
+.section p a.tech-vercel:hover,
+#tech-link.tech-vercel:hover { color: #ffffff !important; }
+
+/* Supabase & Postgres (Emerald) */
+.section p a.tech-postgres:hover,
+.section p a.tech-supabase:hover,
+#tech-link.tech-supabase:hover { color: #3ECF8E !important; }
+
+/* MongoDB (Leaf Green) */
+.section p a.tech-mongo:hover,
+#tech-link.tech-mongo:hover { color: #4DB33D !important; }
+
+/* Upstash & Redis (Mint/Teal) */
+.section p a.tech-redis:hover,
+.section p a.tech-upstash:hover,
+#tech-link.tech-upstash:hover { color: #00E9A3 !important; }
+
+/* Cloudflare (Orange) - Menggantikan Render */
+.section p a.tech-render:hover,
+.section p a.tech-cloudflare:hover,
+#tech-link.tech-cloudflare:hover { color: #F38020 !important; }
+
+/* Genius (Yellow) */
+.section p a.tech-genius:hover,
+#tech-link.tech-genius:hover { color: #FFFF64 !important; }
+
+/* Hugging Face (Yellow/Gold) */
+.section p a.tech-huggingface:hover,
+#tech-link.tech-huggingface:hover { color: #FFD21E !important; }
 
 /* Mencegah layout lompat saat ganti teks */
 #tech-prefix {
