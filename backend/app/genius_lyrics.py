@@ -23,6 +23,13 @@ def get_headers():
     }
 
 
+def normalize(text):
+    """Convert artist/title menjadi format URL AZLyrics."""
+    text = text.lower()
+    text = re.sub(r'[^a-z0-9]', '', text)
+    return text
+
+
 def clean_lyrics(text):
     text = re.sub(r'\[.*?\]', '', text, flags=re.DOTALL)
 
@@ -62,6 +69,38 @@ def get_page_html(url):
     except Exception as e:
         print("Local direct fetch error:", e)
     return None
+
+
+# ======================= AZLYRICS SCRAPER =======================
+
+def fetch_from_azlyrics(artist, title):
+    """Scraping lirik dari AZLyrics — dipakai di DEPLOY."""
+    artist_clean = normalize(artist)
+    title_clean = normalize(title)
+
+    url = f"https://www.azlyrics.com/lyrics/{artist_clean}/{title_clean}.html"
+
+    try:
+        r = requests.get(url, timeout=15)
+        if r.status_code != 200:
+            print("AZLyrics status:", r.status_code)
+            return None
+
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        # Lyrics ada di <div> ke-3 yang tidak punya class
+        divs = soup.find_all("div", class_=None)
+
+        for div in divs:
+            text = div.get_text("\n").strip()
+            if len(text) > 200:  # heuristik: pasti lirik
+                return text
+
+        return None
+
+    except Exception as e:
+        print("AZLyrics error:", e)
+        return None
 
 
 # ========================= SEARCH ARTIST ===========================
@@ -175,45 +214,24 @@ def get_lyrics_by_id(song_id):
         song_url = song_data["url"]
 
         # ==========================================================
-        # DEPLOY MODE → PAKAI RAPIDAPI "GENIUS-SONG-LYRICS1"
+        # DEPLOY MODE → PAKAI AZLYRICS
         # ==========================================================
         if not IS_LOCAL:
-            rapid_key = os.getenv("RAPIDAPI_KEY")
-            if not rapid_key:
-                print("❌ Missing RAPIDAPI_KEY")
-                return None
+            lyrics = fetch_from_azlyrics(artist, title)
 
-            api_url = (
-                "https://genius-song-lyrics1.p.rapidapi.com/song/lyrics/"
-            )
-            headers = {
-                "x-rapidapi-key": rapid_key,
-                "x-rapidapi-host": "genius-song-lyrics1.p.rapidapi.com"
-            }
-            params = {"id": song_id}
+            if lyrics:
+                return {
+                    "lyrics": clean_lyrics(lyrics),
+                    "title": title,
+                    "artist": artist,
+                    "url": song_url,
+                }
 
-            r = requests.get(api_url, headers=headers, params=params, timeout=20)
-
-            if r.status_code != 200:
-                print("RapidAPI lyrics error:", r.text[:200])
-                return None
-
-            data = r.json()
-
-            lyrics = data.get("lyrics", {}).get("lyrics")
-            if not lyrics:
-                print("RapidAPI: lyrics kosong")
-                return None
-
-            return {
-                "lyrics": lyrics,
-                "title": title,
-                "artist": artist,
-                "url": song_url,
-            }
+            print("AZLyrics gagal → tidak ada fallback di deploy.")
+            return None
 
         # ==========================================================
-        # LOCAL MODE → SCRAPING HTML GENIUS
+        # LOCAL MODE → SCRAPING HTML GENIUS FULL
         # ==========================================================
         html = get_page_html(song_url)
         if not html:
