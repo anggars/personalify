@@ -26,49 +26,38 @@ def get_headers():
 
 
 def clean_lyrics(text):
-    """
-    Versi stabil — EXACT kayak Genius:
-    - Hapus [Verse], [Chorus], dll
-    - Hapus block translation
-    - Pertahankan newline antar paragraf
-    - Jagain format biar ga runtuh
-    """
+    # Hilangkan semua label section: [Intro], [Verse], dll
+    text = re.sub(r'\[.*?\]', '', text, flags=re.DOTALL)
 
-    # Hapus [Verse], [Chorus], dll
-    text = re.sub(r"\[.*?\]", "", text)
-
-    cleaned = []
+    cleaned_lines = []
     for line in text.split("\n"):
-        s = line.strip()
+        strip = line.strip()
 
-        # pertahankan blank-line (jadi 1)
-        if not s:
-            cleaned.append("")
+        # --- FILTER BARIS YANG BUKAN LIRIK ---
+        if not strip:
+            cleaned_lines.append("")
             continue
-
-        # global blockers
+        
+        # buang metadata umum genius
         blocked = [
-            "translation", "translated", "português", "bahasa indonesia",
-            "italian", "spanish", "click", "read more", "contribute",
-            "lyrics", "contributors"
+            "contributor", "contribute",
+            "translation", "lyrics", 
+            "read more", "português", 
         ]
-        if any(b in s.lower() for b in blocked):
+
+        if any(b in strip.lower() for b in blocked):
             continue
 
-        # skip paragraf aneh panjang
-        if len(s) > 200:
+        # buang paragraf promosi / info album (biasanya panjang > 120 char)
+        if len(strip) > 200:
             continue
 
-        cleaned.append(s)
+        cleaned_lines.append(strip)
 
-    # Gabungkan
-    out = "\n".join(cleaned)
-
-    # Normalize:
-    # Maks 2 newline (antar part)
-    out = re.sub(r"\n{3,}", "\n\n", out)
-
-    return out.strip()
+    # Hilangkan line kosong berlebihan
+    final = "\n".join(cleaned_lines)
+    final = re.sub(r'\n{3,}', '\n\n', final).strip()
+    return final
 
 
 def get_page_html(url):
