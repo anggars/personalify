@@ -5,49 +5,17 @@ from bs4 import BeautifulSoup
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
-
-IS_DEPLOY = os.getenv("VERCEL") == "1"
-SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY")
+IS_LOCAL = os.getenv("VERCEL") is None
 
 def get_page_html(url):
-    # LOCAL MODE → direct request
-    if not IS_DEPLOY:
-        try:
-            r = requests.get(url, headers=get_headers(), timeout=15)
-            if r.status_code == 200:
-                return r.text
-            print("Local fetch error:", r.status_code)
-        except Exception as e:
-            print("Local direct fetch error:", e)
-        return None
-
-    # DEPLOY MODE → ScraperAPI
-    if not SCRAPER_API_KEY:
-        print("❌ SCRAPER_API_KEY missing in environment")
-        return None
-
+    """Hanya dipakai di mode lokal."""
     try:
-        r = requests.get(
-            "https://api.scraperapi.com",   # <-- pakai HTTPS
-            params={
-                "api_key": SCRAPER_API_KEY,
-                "url": url,
-                "country_code": "us",
-                "render": "false",          # <-- jangan render, bikin timeout
-                "premium": "true",          # <-- BYPASS Cloudflare
-                "keep_headers": "true"      # <-- pakai UA kita
-            },
-            headers=get_headers(),          # <-- UA override
-            timeout=25,
-        )
-
-        if r.status_code == 200 and len(r.text) > 1000:
+        r = requests.get(url, headers=get_headers(), timeout=15)
+        if r.status_code == 200:
             return r.text
-
-        print("ScraperAPI Error:", r.status_code, r.text[:300])
+        print("Local fetch error:", r.status_code)
     except Exception as e:
-        print("ScraperAPI Request Error:", e)
-
+        print("Local direct fetch error:", e)
     return None
 
 def get_headers():
@@ -184,7 +152,7 @@ def get_songs_by_artist(artist_id):
 # 3. SCRAPE LIRIK
 def get_lyrics_by_id(song_id):
     try:
-        # 1. Ambil metadata lagu
+        # 1. Ambil metadata lagu dari Genius API
         response = requests.get(
             f"{GENIUS_API_URL}/songs/{song_id}",
             headers=get_headers(),
@@ -194,48 +162,71 @@ def get_lyrics_by_id(song_id):
             return None
 
         song_data = response.json()['response']['song']
+        title = song_data['title']
+        artist = song_data['primary_artist']['name']
         song_url = song_data['url']
 
-        # 2. Ambil halaman HTML lewat ScraperAPI
+        # ===============================
+        # MODE DEPLOY → PAKAI PUBLIC LYRICS API
+        # ===============================
+        if not IS_LOCAL:
+            api_url = f"https://some-random-api.com/lyrics?title={artist}+-+{title}"
+            r = requests.get(api_url, timeout=10)
+
+            if r.status_code != 200:
+                print("Public Lyrics API error:", r.text[:200])
+                return None
+
+            data = r.json()
+
+            if not data.get("lyrics"):
+                print("Public Lyrics API: lyrics kosong")
+                return None
+
+            return {
+                "lyrics": data["lyrics"],
+                "title": title,
+                "artist": artist,
+                "url": song_url,
+            }
+
+        # ===============================
+        # MODE LOCAL → SCRAPE GENIUS
+        # ===============================
         html = get_page_html(song_url)
         if not html:
-            print("GAGAL AMBIL HTML via ScraperAPI")
+            print("Local scrape error: gagal ambil HTML")
             return None
 
         soup = BeautifulSoup(html, "html.parser")
 
-        # 3. Cari kontainer lirik baru
         lyrics_text = ""
         containers = soup.find_all("div", {"data-lyrics-container": "true"})
 
         if containers:
             for div in containers:
-                # Convert <br> → newline
                 for br in div.find_all("br"):
                     br.replace_with("\n")
-
                 lyrics_text += div.get_text(separator="\n").strip() + "\n\n"
 
-        # 4. Fallback lama
         if not lyrics_text:
             old_div = soup.find("div", class_="lyrics")
             if old_div:
                 lyrics_text = old_div.get_text(separator="\n")
 
         if not lyrics_text:
-            print("❌ Lirik TIDAK ditemukan di HTML")
+            print("❌ Local scrape: lirik tidak ditemukan")
             return None
 
-        # 5. Bersihkan lirik
         final_lyrics = clean_lyrics(lyrics_text)
 
         return {
             "lyrics": final_lyrics,
-            "title": song_data['title'],
-            "artist": song_data['primary_artist']['name'],
+            "title": title,
+            "artist": artist,
             "url": song_url,
         }
 
     except Exception as e:
-        print("Scrape error:", e)
+        print("Lyrics fetch error:", e)
         return None
