@@ -3,7 +3,7 @@ import sys
 
 # --- PATH HACK ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.dirname(current_dir) # Folder 'personalify'
+root_dir = os.path.dirname(current_dir)
 
 # 1. Masukkan root ke path
 sys.path.append(root_dir)
