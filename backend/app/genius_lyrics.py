@@ -10,17 +10,7 @@ GENIUS_API_URL = "https://api.genius.com"
 IS_LOCAL = os.getenv("VERCEL") is None
 
 
-def get_page_html(url):
-    """Hanya dipakai di mode lokal."""
-    try:
-        r = requests.get(url, headers=get_headers(), timeout=15)
-        if r.status_code == 200:
-            return r.text
-        print("Local fetch error:", r.status_code)
-    except Exception as e:
-        print("Local direct fetch error:", e)
-    return None
-
+# ========================= HELPERS ===============================
 
 def get_headers():
     return {
@@ -49,7 +39,6 @@ def clean_lyrics(text):
             "translation", "lyrics",
             "read more", "português",
         ]
-
         if any(b in strip.lower() for b in blocked):
             continue
 
@@ -63,7 +52,19 @@ def clean_lyrics(text):
     return final
 
 
-# =============== SEARCH ARTIST (Genius API) ====================
+def get_page_html(url):
+    """Hanya dipakai di LOCAL, tidak dipakai di deploy."""
+    try:
+        r = requests.get(url, headers=get_headers(), timeout=15)
+        if r.status_code == 200:
+            return r.text
+        print("Local fetch error:", r.status_code)
+    except Exception as e:
+        print("Local direct fetch error:", e)
+    return None
+
+
+# ========================= SEARCH ARTIST ===========================
 
 def search_artist_id(query):
     if not GENIUS_TOKEN:
@@ -95,13 +96,14 @@ def search_artist_id(query):
                         seen_ids.add(artist["id"])
 
             return artists
+
     except Exception as e:
         print("Error search artist:", e)
 
     return []
 
 
-# =============== GET SONG LIST ====================
+# ======================= GET SONG LIST ============================
 
 def get_songs_by_artist(artist_id):
     songs = []
@@ -154,17 +156,16 @@ def get_songs_by_artist(artist_id):
         return songs
 
 
-# =============== GET LYRICS ====================
+# ======================= GET LYRICS ============================
 
 def get_lyrics_by_id(song_id):
     try:
-        # 1. Ambil metadata
+        # 1. Ambil metadata dari Genius API
         response = requests.get(
             f"{GENIUS_API_URL}/songs/{song_id}",
             headers=get_headers(),
             timeout=10
         )
-
         if response.status_code != 200:
             return None
 
@@ -173,36 +174,47 @@ def get_lyrics_by_id(song_id):
         artist = song_data["primary_artist"]["name"]
         song_url = song_data["url"]
 
-        # ======================
-        # MODE DEPLOY: pakai Lyrist API
-        # ======================
+        # ==========================================================
+        # DEPLOY MODE → PAKAI RAPIDAPI "GENIUS-SONG-LYRICS1"
+        # ==========================================================
         if not IS_LOCAL:
-            safe_artist = artist.replace("/", " ")
-            safe_title = title.replace("/", " ")
+            rapid_key = os.getenv("RAPIDAPI_KEY")
+            if not rapid_key:
+                print("❌ Missing RAPIDAPI_KEY")
+                return None
 
-            api_url = f"https://lyrist.vercel.app/api/{safe_artist}/{safe_title}"
-            r = requests.get(api_url, timeout=10)
+            api_url = (
+                "https://genius-song-lyrics1.p.rapidapi.com/song/lyrics/"
+            )
+            headers = {
+                "x-rapidapi-key": rapid_key,
+                "x-rapidapi-host": "genius-song-lyrics1.p.rapidapi.com"
+            }
+            params = {"id": song_id}
+
+            r = requests.get(api_url, headers=headers, params=params, timeout=20)
 
             if r.status_code != 200:
-                print("Lyrist API error:", r.text[:200])
+                print("RapidAPI lyrics error:", r.text[:200])
                 return None
 
             data = r.json()
 
-            if not data.get("lyrics"):
-                print("Lyrist API: lyrics kosong")
+            lyrics = data.get("lyrics", {}).get("lyrics")
+            if not lyrics:
+                print("RapidAPI: lyrics kosong")
                 return None
 
             return {
-                "lyrics": data["lyrics"],
-                "title": data.get("title", title),
-                "artist": data.get("artist", artist),
-                "url": song_url
+                "lyrics": lyrics,
+                "title": title,
+                "artist": artist,
+                "url": song_url,
             }
 
-        # ======================
-        # MODE LOCAL: scrape HTML Genius
-        # ======================
+        # ==========================================================
+        # LOCAL MODE → SCRAPING HTML GENIUS
+        # ==========================================================
         html = get_page_html(song_url)
         if not html:
             print("Local scrape error: gagal ambil HTML")
