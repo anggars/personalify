@@ -25,7 +25,7 @@ router = APIRouter()
 # --- Perbaikan Path Template ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # Naik 2 level ke root project, lalu masuk ke frontend/templates
-templates_dir = os.path.join(current_dir, "..", "..", "frontend", "templates")
+templates_dir = os.path.join(current_dir, "..", "..", "frontend", "pages")
 templates_dir = os.path.abspath(templates_dir)  # Normalize path
 templates = Jinja2Templates(directory=templates_dir)
 # --- Akhir Perbaikan ---
