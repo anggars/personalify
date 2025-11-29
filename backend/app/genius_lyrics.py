@@ -5,10 +5,12 @@ from bs4 import BeautifulSoup
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
+
+IS_DEPLOY = os.getenv("VERCEL") == "1"
 SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY")
 
 def get_page_html(url):
-    # Kalau sedang LOCAL → ambil HTML langsung (tanpa ScraperAPI)
+    # LOCAL MODE → direct request (lebih cepat & tanpa ScraperAPI)
     if not IS_DEPLOY:
         try:
             r = requests.get(url, headers=get_headers(), timeout=20)
@@ -19,9 +21,9 @@ def get_page_html(url):
             print("Local direct fetch error:", e)
         return None
 
-    # Kalau DEPLOY (Vercel) → pakai ScraperAPI
+    # DEPLOY MODE → gunakan ScraperAPI
     if not SCRAPER_API_KEY:
-        print("⚠ SCRAPER_API_KEY is missing in environment")
+        print("❌ SCRAPER_API_KEY missing in environment")
         return None
 
     try:
@@ -35,6 +37,7 @@ def get_page_html(url):
             },
             timeout=20,
         )
+
         if r.status_code == 200:
             return r.text
 
@@ -43,7 +46,6 @@ def get_page_html(url):
         print("ScraperAPI Request Error:", e)
 
     return None
-
 
 def get_headers():
     return {
