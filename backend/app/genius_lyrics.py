@@ -5,6 +5,45 @@ from bs4 import BeautifulSoup
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
+SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY")
+
+def get_page_html(url):
+    # Kalau sedang LOCAL → ambil HTML langsung (tanpa ScraperAPI)
+    if not IS_DEPLOY:
+        try:
+            r = requests.get(url, headers=get_headers(), timeout=20)
+            if r.status_code == 200:
+                return r.text
+            print("Local fetch error:", r.status_code)
+        except Exception as e:
+            print("Local direct fetch error:", e)
+        return None
+
+    # Kalau DEPLOY (Vercel) → pakai ScraperAPI
+    if not SCRAPER_API_KEY:
+        print("⚠ SCRAPER_API_KEY is missing in environment")
+        return None
+
+    try:
+        r = requests.get(
+            "http://api.scraperapi.com",
+            params={
+                "api_key": SCRAPER_API_KEY,
+                "url": url,
+                "country_code": "us",
+                "render": "true"
+            },
+            timeout=20,
+        )
+        if r.status_code == 200:
+            return r.text
+
+        print("ScraperAPI Error:", r.status_code, r.text[:300])
+    except Exception as e:
+        print("ScraperAPI Request Error:", e)
+
+    return None
+
 
 def get_headers():
     return {
@@ -140,37 +179,58 @@ def get_songs_by_artist(artist_id):
 # 3. SCRAPE LIRIK
 def get_lyrics_by_id(song_id):
     try:
-        response = requests.get(f"{GENIUS_API_URL}/songs/{song_id}", headers=get_headers(), timeout=10)
-        if response.status_code != 200: return None
-        
+        # 1. Ambil metadata lagu
+        response = requests.get(
+            f"{GENIUS_API_URL}/songs/{song_id}",
+            headers=get_headers(),
+            timeout=10
+        )
+        if response.status_code != 200:
+            return None
+
         song_data = response.json()['response']['song']
         song_url = song_data['url']
-        
-        page_resp = requests.get(song_url, headers=get_headers(), timeout=15)
-        if page_resp.status_code != 200: return None
-        
-        soup = BeautifulSoup(page_resp.text, 'html.parser')
+
+        # 2. Ambil halaman HTML lewat ScraperAPI
+        html = get_page_html(song_url)
+        if not html:
+            print("GAGAL AMBIL HTML via ScraperAPI")
+            return None
+
+        soup = BeautifulSoup(html, "html.parser")
+
+        # 3. Cari kontainer lirik baru
         lyrics_text = ""
-        
-        divs = soup.find_all('div', attrs={'data-lyrics-container': 'true'})
-        if divs:
-            for div in divs:
+        containers = soup.find_all("div", {"data-lyrics-container": "true"})
+
+        if containers:
+            for div in containers:
+                # Convert <br> → newline
                 for br in div.find_all("br"):
                     br.replace_with("\n")
-                lyrics_text += div.get_text() + "\n\n"
-        
-        if not lyrics_text:
-            old_div = soup.find('div', class_='lyrics')
-            if old_div: lyrics_text = old_div.get_text()
 
-        if lyrics_text:
-            return {
-                "lyrics": clean_lyrics(lyrics_text),
-                "title": song_data['title'],
-                "artist": song_data['primary_artist']['name'],
-                "url": song_url
-            }
+                lyrics_text += div.get_text(separator="\n").strip() + "\n\n"
+
+        # 4. Fallback lama
+        if not lyrics_text:
+            old_div = soup.find("div", class_="lyrics")
+            if old_div:
+                lyrics_text = old_div.get_text(separator="\n")
+
+        if not lyrics_text:
+            print("❌ Lirik TIDAK ditemukan di HTML")
+            return None
+
+        # 5. Bersihkan lirik
+        final_lyrics = clean_lyrics(lyrics_text)
+
+        return {
+            "lyrics": final_lyrics,
+            "title": song_data['title'],
+            "artist": song_data['primary_artist']['name'],
+            "url": song_url,
+        }
+
     except Exception as e:
-        print(f"Scrape error: {e}")
+        print("Scrape error:", e)
         return None
-    return None
