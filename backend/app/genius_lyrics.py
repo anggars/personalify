@@ -10,10 +10,10 @@ IS_DEPLOY = os.getenv("VERCEL") == "1"
 SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY")
 
 def get_page_html(url):
-    # LOCAL MODE → direct request (lebih cepat & tanpa ScraperAPI)
+    # LOCAL MODE → direct request
     if not IS_DEPLOY:
         try:
-            r = requests.get(url, headers=get_headers(), timeout=20)
+            r = requests.get(url, headers=get_headers(), timeout=15)
             if r.status_code == 200:
                 return r.text
             print("Local fetch error:", r.status_code)
@@ -21,24 +21,27 @@ def get_page_html(url):
             print("Local direct fetch error:", e)
         return None
 
-    # DEPLOY MODE → gunakan ScraperAPI
+    # DEPLOY MODE → ScraperAPI
     if not SCRAPER_API_KEY:
         print("❌ SCRAPER_API_KEY missing in environment")
         return None
 
     try:
         r = requests.get(
-            "http://api.scraperapi.com",
+            "https://api.scraperapi.com",   # <-- pakai HTTPS
             params={
                 "api_key": SCRAPER_API_KEY,
                 "url": url,
                 "country_code": "us",
-                "render": "true"
+                "render": "false",          # <-- jangan render, bikin timeout
+                "premium": "true",          # <-- BYPASS Cloudflare
+                "keep_headers": "true"      # <-- pakai UA kita
             },
-            timeout=20,
+            headers=get_headers(),          # <-- UA override
+            timeout=25,
         )
 
-        if r.status_code == 200:
+        if r.status_code == 200 and len(r.text) > 1000:
             return r.text
 
         print("ScraperAPI Error:", r.status_code, r.text[:300])
