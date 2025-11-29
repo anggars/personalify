@@ -26,38 +26,53 @@ def get_headers():
 
 
 def clean_lyrics(text):
-    # Hilangkan semua label section: [Intro], [Verse], dll
-    text = re.sub(r'\[.*?\]', '', text, flags=re.DOTALL)
+    """
+    Clean paling stabil:
+    - hapus [Verse], [Chorus]
+    - hapus metadata
+    - pertahankan format asli Genius
+    - 1 newline antar baris, 1 newline kosong antar paragraf
+    """
 
-    cleaned_lines = []
-    for line in text.split("\n"):
-        strip = line.strip()
+    # Hapus [Verse], [Chorus], dll
+    text = re.sub(r"\[.*?\]", "", text)
 
-        # --- FILTER BARIS YANG BUKAN LIRIK ---
-        if not strip:
-            cleaned_lines.append("")
+    raw_lines = text.split("\n")
+    cleaned = []
+
+    for line in raw_lines:
+        s = line.strip()
+
+        # baris kosong → simpan sebagai "" (paragraf)
+        if not s:
+            cleaned.append("")
             continue
-        
-        # buang metadata umum genius
+
+        # block terlarang
         blocked = [
-            "contributor", "contribute",
-            "translation", "lyrics", 
-            "read more", "português", 
+            "contributor", "contribute", "lyrics",
+            "translation", "translated",
+            "português", "bahasa indonesia",
+            "read more"
         ]
-
-        if any(b in strip.lower() for b in blocked):
+        if any(b in s.lower() for b in blocked):
             continue
 
-        # buang paragraf promosi / info album (biasanya panjang > 120 char)
-        if len(strip) > 200:
+        # skip paragraf super panjang
+        if len(s) > 200:
             continue
 
-        cleaned_lines.append(strip)
+        cleaned.append(s)
 
-    # Hilangkan line kosong berlebihan
-    final = "\n".join(cleaned_lines)
-    final = re.sub(r'\n{3,}', '\n\n', final).strip()
-    return final
+    # Gabung ulang
+    result = "\n".join(cleaned)
+
+    # Normalize:
+    # maksimal 2 newline
+    result = re.sub(r"\n{3,}", "\n\n", result)
+
+    # hapus newline double di akhir
+    return result.strip()
 
 
 def get_page_html(url):
