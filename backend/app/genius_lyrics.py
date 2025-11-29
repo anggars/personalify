@@ -7,7 +7,6 @@ GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
 IS_LOCAL = os.getenv("VERCEL") is None
 
-# Worker proxy
 WORKER_URL = "https://vercel.anggars.workers.dev"
 
 
@@ -28,62 +27,51 @@ def get_headers():
 
 def clean_lyrics(text):
     """
-    - Hilangkan [Verse], [Chorus], dll
-    - Hilangkan terjemahan bahasa lain
-    - Hilangkan spam seperti 'lyrics', 'translation', dll
-    - Normalize newline: 1 newline antar-baris, 2 newline antar-bagian
+    Versi stabil — EXACT kayak Genius:
+    - Hapus [Verse], [Chorus], dll
+    - Hapus block translation
+    - Pertahankan newline antar paragraf
+    - Jagain format biar ga runtuh
     """
 
-    # Hilangkan annotation [Verse], [Chorus], dll
-    text = re.sub(r'\[.*?\]', '', text)
-
-    # Split raw berdasarkan newline
-    lines = text.split("\n")
+    # Hapus [Verse], [Chorus], dll
+    text = re.sub(r"\[.*?\]", "", text)
 
     cleaned = []
-    for line in lines:
+    for line in text.split("\n"):
         s = line.strip()
 
-        # skip baris kosong (nanti tetap dibuat 1 baris)
+        # pertahankan blank-line (jadi 1)
         if not s:
             cleaned.append("")
             continue
 
-        # Filter blok terjemahan/translation
+        # global blockers
         blocked = [
-            "translation", "translated", "português",
-            "bahasa indonesia", "italian", "spanish", "lyrics",
-            "click", "contribute", "read more"
+            "translation", "translated", "português", "bahasa indonesia",
+            "italian", "spanish", "click", "read more", "contribute",
+            "lyrics", "contributors"
         ]
         if any(b in s.lower() for b in blocked):
             continue
 
-        # Skip weird long text
+        # skip paragraf aneh panjang
         if len(s) > 200:
             continue
 
         cleaned.append(s)
 
-    # Gabung ulang
-    joined = "\n".join(cleaned)
+    # Gabungkan
+    out = "\n".join(cleaned)
 
-    # === Normalisasi newline ===
-    # 1 newline antara baris
-    joined = re.sub(r'\n{3,}', '\n\n', joined)   # maksimum 2 newline
-    joined = re.sub(r'\n{2}', '\n\n', joined)    # blok antar-verse
-    joined = re.sub(r'\n{1,}', '\n', joined)     # baris biasa
+    # Normalize:
+    # Maks 2 newline (antar part)
+    out = re.sub(r"\n{3,}", "\n\n", out)
 
-    # Re-apply 2 newlines antar paragraf
-    joined = re.sub(r'(\S)\n(\S)', r'\1\n\2', joined)
-
-    # Rapikan lagi kalau ada dobel
-    joined = re.sub(r'\n{3,}', '\n\n', joined)
-
-    return joined.strip()
+    return out.strip()
 
 
 def get_page_html(url):
-    """Dipakai untuk local only."""
     try:
         r = requests.get(url, headers=get_headers(), timeout=15)
         if r.status_code == 200:
@@ -154,8 +142,7 @@ def get_songs_by_artist(artist_id):
 
             data = res.json()["response"]
             items = data["songs"]
-            if not items:
-                break
+            if not items: break
 
             for s in items:
                 alb = s.get("primary_album")
@@ -167,9 +154,7 @@ def get_songs_by_artist(artist_id):
                     "date": s.get("release_date_for_display")
                 })
 
-            if not data.get("next_page"):
-                break
-
+            if not data.get("next_page"): break
             page = data["next_page"]
 
         print(f"Total songs fetched: {len(songs)}")
@@ -185,61 +170,54 @@ def get_songs_by_artist(artist_id):
 
 def get_lyrics_by_id(song_id):
     try:
-        # metadata Genius API
+        # metadata
         res = requests.get(
             f"{GENIUS_API_URL}/songs/{song_id}",
             headers=get_headers(),
             timeout=10
         )
-        if res.status_code != 200:
-            return None
+        if res.status_code != 200: return None
 
         song = res.json()["response"]["song"]
         title = song["title"]
         artist = song["primary_artist"]["name"]
         song_url = song["url"]
 
-        # ================================
-        # DEPLOY MODE → fetch via Worker
-        # ================================
+        # Worker mode
         if not IS_LOCAL:
             wr = requests.get(f"{WORKER_URL}?url={song_url}", timeout=20)
             if wr.status_code != 200:
                 print("Worker fail:", wr.status_code)
                 return None
             html = wr.text
-
-        # ================================
-        # LOCAL MODE → direct Genius scrape
-        # ================================
         else:
             html = get_page_html(song_url)
-            if not html:
-                print("Local fetch fail")
-                return None
+            if not html: return None
 
-        # ================================
-        # PARSE HTML
-        # ================================
+        # Parse
         soup = BeautifulSoup(html, "html.parser")
 
         lyrics_raw = ""
 
-        # Format baru Genius (utama)
+        # Format baru Genius
         containers = soup.find_all("div", {"data-lyrics-container": "true"})
         for c in containers:
 
-            # filter translation block
+            # Skip container yang isinya translation
             if "translation" in c.get_text().lower():
                 continue
 
+            # convert <br> to newline
             for br in c.find_all("br"):
                 br.replace_with("\n")
 
-            lyrics_raw += c.get_text("\n").strip() + "\n\n"
+            block = c.get_text("\n").strip()
 
-        # Format lama Genius
-        if not lyrics_raw:
+            if block:
+                lyrics_raw += block + "\n\n"
+
+        # Format lama fallback
+        if not lyrics_raw.strip():
             old = soup.find("div", class_="lyrics")
             if old:
                 lyrics_raw = old.get_text("\n")
