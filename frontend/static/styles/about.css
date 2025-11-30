@@ -111,6 +111,7 @@ header.hero p.visible {
 
 .section {
     width: 100%;
+    max-width: 650px;
     margin: 0 auto;
     background: #1e1e1e;
     border-radius: 1rem;
@@ -430,28 +431,58 @@ footer.fade-in {
                 border-color 0.3s ease;
 }
 
-/* === EFEK AURORA HOVER === */
+/* === EFEK AURORA HOVER (SAMA DENGAN HOME & GENIUS) === */
+
+/* 1. Reset Pseudo-element untuk Aurora */
 .video-bubble-toast::before {
     content: '';
     position: absolute;
-    z-index: -1; 
-    background: radial-gradient(circle at center, #1DB954 0%, transparent 60%);
-    width: 200px; 
-    height: 200px;
-    transform: translate(-100px, -100px);
-    opacity: 0;
-    border-radius: 12px;
-    transition: transform 0.5s ease, opacity 0.4s ease;
+    /* Posisikan di tengah, ukuran 200% biar cover semua sudut pas muter */
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    
+    /* GRADIEN AURORA HALUS (SAMA KAYA TOMBOL LAIN) */
+    background: conic-gradient(
+        from 90deg at 50% 50%,
+        rgba(29, 185, 84, 0.25),   /* Hijau */
+        rgba(59, 130, 246, 0.25),  /* Biru */
+        rgba(139, 92, 246, 0.25),  /* Ungu */
+        rgba(236, 72, 153, 0.25),  /* Pink */
+        rgba(29, 185, 84, 0.25)    /* Balik Hijau */
+    );
+    
+    filter: blur(20px); /* Blur biar warnanya nyatu */
+    opacity: 0;         /* Default sembunyi */
+    z-index: -1;        /* Di belakang konten */
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    
+    /* Reset properti lama */
+    border-radius: 0; 
+    transform: none; 
 }
 
+/* 2. Efek Hover pada Container Bubble */
 .video-bubble-toast:hover {
-    background: rgba(51, 51, 51, 0.75); /* #333 transparan */
-    border-color: #1DB954; 
+    /* Ganti background jadi lebih terang/glassy (mirip tombol Home) */
+    background: rgba(255, 255, 255, 0.2); 
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
+/* 3. Efek Hover pada Aurora (Muncul & Muter) */
 .video-bubble-toast:hover::before {
-    opacity: 0.2; 
-    transform: translate(40px, 40px);
+    opacity: 1;
+    /* Reset transform lama & jalankan animasi muter */
+    transform: none; 
+    animation: spinAurora 4s linear infinite;
+}
+
+/* 4. Keyframes Putaran (Tambahkan jika belum ada di file ini) */
+@keyframes spinAurora {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* === STYLING ELEMEN DI DALAM BUBBLE === */

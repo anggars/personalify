@@ -433,7 +433,7 @@ footer {
     
     /* GANTI margin-top fix (4rem) menjadi auto */
     /* Ini kuncinya: footer akan didorong ke paling bawah oleh 'flex: 1' di main */
-    margin-top: auto; 
+    margin-top: -0.25rem; 
     
     padding: 2rem 0; /* Padding atas bawah yang enak dilihat */
     

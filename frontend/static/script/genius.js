@@ -24,7 +24,7 @@ function setLoading(isLoading) {
     } else {
         searchBtn.classList.remove('loading');
         artistInput.disabled = false;
-        artistInput.focus();
+        artistInput.blur();
     }
 }
 
