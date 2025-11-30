@@ -594,6 +594,10 @@ body {
         box-shadow: none;
         line-height: 1.35;
     }
+
+    .song-grid {
+        padding-bottom: 2px;
+    }
 }
 
 /* === FIX: HILANGKAN BACKGROUND PUTIH SAAT AUTOFILL === */
