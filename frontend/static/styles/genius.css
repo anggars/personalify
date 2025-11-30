@@ -344,10 +344,20 @@ header p.subtitle a:hover {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 10px;
-    max-height: 395px; 
+    
+    /* FIX 1: Tinggi pas untuk 5 baris + 3px toleransi border */
+    max-height: 398px; 
+    
     overflow-y: auto; 
-    padding-right: 8px;
-    padding-bottom: 0.05rem;
+    padding-right: 8px; /* Ruang untuk scrollbar */
+    
+    /* FIX 2: Tambah padding bawah agar border item terakhir tidak kepotong */
+    padding-bottom: 4px; 
+    
+    /* FIX 3: Fitur AUTO RAPIH (Scroll Snap) */
+    /* Ini bikin scroll otomatis berhenti pas di awal baris */
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
 }
 
 .song-grid::-webkit-scrollbar,
@@ -368,6 +378,13 @@ header p.subtitle a:hover {
     transition: 0.2s;
     box-sizing: border-box;
     height: 71px;
+    
+    /* FIX 4: Child Snap Align */
+    /* Pastikan setiap item 'mau' menempel ke atas container saat scroll berhenti */
+    scroll-snap-align: start;
+    
+    /* Opsional: Biar gak nempel banget ke bibir atas (kasih napas dikit) */
+    scroll-margin-top: 1px; 
 }
 
 .song-btn:hover,
@@ -497,7 +514,7 @@ header p.subtitle a:hover {
 
 /* Footer */
 footer {
-    margin-top: 2rem;
+    margin-top: 1.75rem;
     text-align: center;
     font-size: 0.75rem;
     color: #888;
