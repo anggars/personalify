@@ -44,7 +44,7 @@ The Personalify system consists of several components connected through service-
               |                           |                           |
               v                           v                           v
       +---------------+             +----------+              +------------------+
-      |   Supabase    |             | Upstash  |              |  MongoDB Atlas   |
+      |   Neon    |             | Upstash  |              |  MongoDB Atlas   |
       | (PostgreSQL)  |             | (Redis)  |              |  (Sync History)  |
       +-------+-------+             +----------+              +------------------+
               |
@@ -70,7 +70,7 @@ The primary external data source. It handles user authentication (OAuth2) and pr
   Main server that handles Spotify authentication (OAuth2), data synchronization, database storage, caching, external API calls (Hugging Face for NLP analysis, Genius for lyrics), and API serving to frontend.
   
 - **PostgreSQL (Main DB):**  
-  Stores main metadata such as users, artists, and tracks. Can run **locally via Docker** or use **Supabase (cloud-hosted PostgreSQL)** for production/development.
+  Stores main metadata such as users, artists, and tracks. Can run **locally via Docker** or use **Neon (cloud-hosted PostgreSQL)** for production/development.
   
 - **Redis (Cache):**  
   In-memory cache to store top data (artist, track, genre) per user based on `spotify_id` and `time_range`, with TTL for efficiency. Can run **locally via Docker** or use **Upstash (cloud-hosted Redis)** for production.
@@ -98,7 +98,7 @@ The primary external data source. It handles user authentication (OAuth2) and pr
 |------------------|----------------------|----------------------------------------------------------------------------------|
 | **Frontend**     | Jinja                | Lightweight, fast build time, suitable for creating SPA with reactive display.   |
 | **Backend API**  | FastAPI              | Modern Python framework, supports async, fast for building REST APIs.           |
-| **Main Database**| PostgreSQL (Supabase/Local) | Powerful RDBMS, supports complex relations, FDW integration. Supabase for cloud, Docker for local. |
+| **Main Database**| PostgreSQL (Neon/Local) | Serverless Postgres designed for cloud, separates storage & compute. Neon for cloud, Docker for local. |
 | **Cache**        | Redis (Upstash/Local) | In-memory cache with TTL, very fast for storing temporary data per user. Upstash for cloud, Docker for local. |
 | **Sync Storage** | MongoDB (Atlas/Local) | Suitable for storing history in flexible document format. Atlas for cloud, Docker for local. |
 | **Auth**         | Spotify OAuth2       | Official standard protocol from Spotify, secure for login and user data access. |
@@ -229,7 +229,7 @@ This strategy was chosen to demonstrate how systems can use various storage and 
 
 ## 7. Local Development Setup
 
-Personalify can be run locally in **two ways**: using **Docker Compose** (containerized) or **standalone Python environment** (Miniconda/Anaconda/venv). Both methods support connecting to **cloud databases** (Supabase, MongoDB Atlas, Upstash) or **local databases** (via Docker).
+Personalify can be run locally in **two ways**: using **Docker Compose** (containerized) or **standalone Python environment** (Miniconda/Anaconda/venv). Both methods support connecting to **cloud databases** (Neon, MongoDB Atlas, Upstash) or **local databases** (via Docker).
 
 ### 🐳 Option 1: Running with Docker (Containerized)
 
@@ -258,7 +258,7 @@ This method uses Docker Compose to run the entire stack, including local Postgre
    SPOTIFY_CLIENT_SECRET=your_client_secret
    SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/callback
 
-   # PostgreSQL (Local Docker OR Supabase)
+   # PostgreSQL (Local Docker OR Neon)
    # For Docker:
    POSTGRES_HOST=postgresfy
    POSTGRES_PORT=5432
@@ -266,8 +266,8 @@ This method uses Docker Compose to run the entire stack, including local Postgre
    POSTGRES_USER=admin
    POSTGRES_PASSWORD=admin123
    
-   # For Supabase (comment out above and use this):
-   # DATABASE_URL=postgresql://user:password@host:port/database
+   # For Neon (comment out above and use this):
+   # DATABASE_URL=postgresql://neondb_owner:password@cluster.neon.tech/neondb
 
    # MongoDB (Local Docker OR Atlas)
    # For Docker:
@@ -321,7 +321,7 @@ This method runs FastAPI directly on your local machine using a Python virtual e
 
 #### Prerequisites:
 - Python 3.12+ installed (via Miniconda, Anaconda, or standard Python)
-- Cloud database accounts (Supabase, MongoDB Atlas, Upstash) **OR** local Docker containers for databases
+- Cloud database accounts (Neon, MongoDB Atlas, Upstash) **OR** local Docker containers for databases
 - `.env` file configured (see `.env.example`)
 
 #### Steps:
@@ -365,8 +365,8 @@ This method runs FastAPI directly on your local machine using a Python virtual e
    SPOTIFY_CLIENT_SECRET=your_client_secret
    SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/callback
 
-   # PostgreSQL (Supabase)
-   DATABASE_URL=postgresql://user:password@host:port/database
+   # PostgreSQL (Neon)
+   DATABASE_URL=postgresql://neondb_owner:password@cluster.neon.tech/neondb
 
    # MongoDB (Atlas)
    MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/database
@@ -570,7 +570,7 @@ During Personalify development, several technical challenges emerged alongside e
 - Use depends_on in docker-compose.yml.
 - Utilize volumes for persistence and named networks so services recognize each other.
 - Migrate to Vercel for serverless deployment, eliminating container management overhead.
-- Use cloud-hosted databases (Supabase, Atlas, Upstash) instead of local containers for production.
+- Use cloud-hosted databases (Neon, Atlas, Upstash) instead of local containers for production.
 
 **Lessons Learned:**
 - Containerization is very powerful for isolation, but requires understanding of dependencies and lifecycle order.
@@ -600,7 +600,7 @@ During Personalify development, several technical challenges emerged alongside e
 
 **Solutions:**
 - Use `.env` file with conditional logic to support both local and cloud database connections.
-- Leverage Supabase for PostgreSQL, MongoDB Atlas for document storage, and Upstash for Redis caching.
+- Leverage Neon for PostgreSQL, MongoDB Atlas for document storage, and Upstash for Redis caching.
 
 **Lessons Learned:**
 - Cloud databases offer better reliability, automatic backups, and scalability without manual infrastructure management.
@@ -616,7 +616,7 @@ This data is then stored and processed through a combination of databases, each 
 
 Furthermore, this project implements PostgreSQL Foreign Data Wrapper (FDW) to access tables from external databases (remote DB) in real-time. This shows how cross-database queries can be performed as if they came from one source, enabling data federation flexibility and cross-node scenarios. In practice, FDW is used to read external tables and combine them with local data through join operations that run transparently.
 
-The project has evolved significantly from its initial Docker-only deployment to support **both containerized and standalone Python environments**. For local development, users can choose between running the entire stack via Docker Compose (including local databases) or running FastAPI standalone using Miniconda/Anaconda/venv with cloud-hosted databases (Supabase, MongoDB Atlas, Upstash). This flexibility allows developers to work in their preferred environment without compromising functionality.
+The project has evolved significantly from its initial Docker-only deployment to support **both containerized and standalone Python environments**. For local development, users can choose between running the entire stack via Docker Compose (including local databases) or running FastAPI standalone using Miniconda/Anaconda/venv with cloud-hosted databases (Neon, MongoDB Atlas, Upstash). This flexibility allows developers to work in their preferred environment without compromising functionality.
 
 In production, Personalify is deployed as a **serverless application on Vercel**, leveraging managed cloud databases for reliability and scalability. The integration of **Cloudflare Workers** as a proxy layer enables seamless lyrics fetching from Genius API, overcoming CORS restrictions inherent in serverless environments. The **Hugging Face API** powers NLP-based emotion analysis, providing users with actionable insights into the mood and vibe of their music.
 
@@ -633,7 +633,7 @@ Overall, Personalify has successfully become a proof of concept for distributed 
 - **[Hugging Face](https://huggingface.co/)** for pre-trained NLP models that power emotion analysis.
 - **[Cloudflare Workers](https://workers.cloudflare.com/)** for providing a reliable proxy solution to bypass API restrictions.
 - **[Vercel](https://vercel.com/)** for seamless serverless deployment and hosting.
-- **[Supabase](https://supabase.com/)**, **[MongoDB Atlas](https://www.mongodb.com/atlas/)**, and **[Upstash](https://upstash.com/)** for managed cloud database services.
+- **[Neon](https://neon.tech/)**, **[MongoDB Atlas](https://www.mongodb.com/atlas/)**, and **[Upstash](https://upstash.com/)** for managed cloud database services.
 - **[Docker](http://docker.com/)** for containerization and local development environment isolation.
 - **[FastAPI](https://fastapi.tiangolo.com/)** for a modern, high-performance Python web framework.
 

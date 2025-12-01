@@ -620,19 +620,19 @@ footer.fade-in {
 .section p a.tech-vercel:hover,
 #tech-link.tech-vercel:hover { color: #ffffff !important; }
 
-/* Supabase & Postgres (Emerald) */
+/* Neon & Postgres (Neon Green) */
 .section p a.tech-postgres:hover,
-.section p a.tech-supabase:hover,
-#tech-link.tech-supabase:hover { color: #3ECF8E !important; }
+.section p a.tech-neon:hover,
+#tech-link.tech-neon:hover { color: #00E599 !important; }
 
 /* MongoDB (Leaf Green) */
 .section p a.tech-mongo:hover,
 #tech-link.tech-mongo:hover { color: #4DB33D !important; }
 
-/* Upstash & Redis (Mint/Teal) */
+/* Upstash & Redis (Redis Red) */
 .section p a.tech-redis:hover,
 .section p a.tech-upstash:hover,
-#tech-link.tech-upstash:hover { color: #00E9A3 !important; }
+#tech-link.tech-upstash:hover { color: #DC382D !important; }
 
 /* Cloudflare (Orange) - Menggantikan Render */
 .section p a.tech-render:hover,

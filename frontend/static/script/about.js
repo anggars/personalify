@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         { phrase: "Containerized by", name: "Docker", url: "https://www.docker.com/", class: "tech-docker" },
         { phrase: "Built with", name: "Python (FastAPI)", url: "https://fastapi.tiangolo.com/", class: "tech-fastapi" },
         { phrase: "Deployed on", name: "Vercel", url: "https://vercel.com/", class: "tech-vercel" },
-        { phrase: "Main Database by", name: "Supabase", url: "https://supabase.com/", class: "tech-supabase" },
+        { phrase: "Main Database by", name: "Neon", url: "https://neon.tech/", class: "tech-neon" },
         { phrase: "History stored in", name: "MongoDB Atlas", url: "https://www.mongodb.com/atlas", class: "tech-mongo" },
         { phrase: "Cached by", name: "Upstash", url: "https://upstash.com/", class: "tech-upstash" },
         { phrase: "Lyrics proxy on", name: "Cloudflare", url: "https://workers.cloudflare.com/", class: "tech-cloudflare" },
