@@ -1,12 +1,12 @@
 @echo off
-echo 🚀 Menyalakan Personalify Local (Cloud DB Mode)...
+echo Starting Local Personalify (Cloud DB Mode)...
 
-:: 1. Set Path biar Python tau lokasi backend
+:: 1. Set Path so Python knows the backend location
 set PYTHONPATH=backend
 
-:: 2. Aktifin Conda (Jaga-jaga kalo lupa activate di terminal)
+:: 2. Activate Conda (Just in case you forgot to activate in the terminal)
 call conda activate personalify
 
-:: 3. Jalanin Server
-:: --reload aktif biar kalau codingan diubah, server restart sendiri
+:: 3. Run Server
+:: --reload is active so if the code is changed, the server restarts itself
 uvicorn app.main:app --reload --port 8000
