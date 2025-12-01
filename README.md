@@ -8,7 +8,7 @@ This application is hosted and can be accessed publicly through the following li
 
 ## 1. Introduction
 
-Personalify is a personal Spotify analytics dashboard built to display user music preferences based on data from the Spotify API. This project not only displays data but also analyzes the **mood or vibe** of songs using Natural Language Processing (NLP) from Hugging Face. The project is designed with a distributed system approach, leveraging the integration of various databases (PostgreSQL, MongoDB, Redis) as well as features like FDW and caching.
+Personalify is a personal Spotify analytics dashboard built to display user music preferences based on data from the Spotify API. This project not only displays data but also analyzes the **mood or vibe** of songs using Natural Language Processing (NLP) from Hugging Face. Additionally, users can **search for lyrics from any artist or song** via the Genius API and analyze the emotional tone of those lyrics. The project is designed with a distributed system approach, leveraging the integration of various databases (PostgreSQL, MongoDB, Redis) as well as features like FDW and caching.
 
 ## 2. Use Case Overview
 
@@ -17,27 +17,36 @@ Personalify is a personal Spotify analytics dashboard built to display user musi
 | 🎵 Spotify Login/Auth    | Users log in using Spotify OAuth2 to authorize access to their music data.               |
 | 📥 Sync Top Data         | Data such as top artists, top tracks, and genres are synchronized and stored in database. |
 | 🧠 Mood Analysis (NLP)   | Analyzes song titles using models from Hugging Face to determine dominant emotions.       |
+| 🎤 Genius Lyrics Search  | Search for any song lyrics from Genius and analyze the emotional content.                 |
 | ⚡ Caching & History      | Redis is used for fast caching, MongoDB for storing user synchronization history.        |
 | 📊 Dashboard             | Responsive frontend displays visualizations based on user device (desktop/mobile).        |
 | 🌍 Distributed Query     | FDW enables cross-PostgreSQL queries and external sources (distribution simulation).      |
 
 ## 3. System Architecture
 
-The Personalify system consists of several components connected through service-based architecture, with FastAPI backend as the data orchestration center from various sources (Spotify API, Hugging Face API, PostgreSQL, Redis, MongoDB, and FDW).
+The Personalify system consists of several components connected through service-based architecture, with FastAPI backend as the data orchestration center from various sources (Spotify API, Genius API, Hugging Face API, PostgreSQL, Redis, MongoDB, and FDW).
 
 ```text
-+-------------------------+      +------------------+      +----------------------+
-|       Spotify API       |<---->|      FastAPI     |<---->|   Hugging Face API   |
-|       (User Data)       |      |  (Backend API)   |      |  (NLP Emotion Model) |
-+-------------------------+      +--------+---------+      +----------------------+
+                                 +------------------+
+                                 |      Vercel      |
+                                 |   (Serverless)   |
+                                 +--------+---------+               +----------------------+
+                                          |                  +----->|  Hugging Face API    |
+                                          |                  |      | (NLP Emotion Model)  |
++-------------------------+      +------------------+        |      +----------------------+
+|       Spotify API       |<---->|     FastAPI      |<-------+
+|       (User Data)       |      |  (Backend API)   |        |      +----------------------+      +------------------+
++-------------------------+      +--------+---------+        +----->|  Cloudflare Workers  |<---->|    Genius API    |
+                                          |                         |    (Lyrics Proxy)    |      |   (Lyrics Data)  |
+                                          |                         +----------------------+      +------------------+
                                           |
               +---------------------------+---------------------------+
               |                           |                           |
               v                           v                           v
       +---------------+             +----------+              +------------------+
-      |  PostgreSQL   |<----------->|   Redis  |<------------>|     MongoDB      |
-      |   (Main DB)   |             |  (Cache) |              | (Sync History)   |
-      +---------------+             +----------+              +------------------+
+      |   Supabase    |             | Upstash  |              |  MongoDB Atlas   |
+      | (PostgreSQL)  |             | (Redis)  |              |  (Sync History)  |
+      +-------+-------+             +----------+              +------------------+
               |
               v
       +------------------------+
@@ -48,19 +57,40 @@ The Personalify system consists of several components connected through service-
 
 **Component Explanation:**
 
+- **Vercel (Serverless):**
+The cloud platform hosting the application. It runs the FastAPI backend in a serverless environment and serves the frontend assets globally.
+
+- **Spotify API:**
+The primary external data source. It handles user authentication (OAuth2) and provides the core music data (top artists, tracks, genres) for the application.
+
 - **Frontend (Jinja):**  
-  Web-based UI that displays user's top artists, tracks, and genres interactively. Responsive display for desktop & mobile.
+  Web-based UI that displays user's top artists, tracks, and genres interactively. Includes a dedicated **Lyrics Analyzer** page powered by Genius API. Responsive display for desktop & mobile.
+  
 - **FastAPI (Backend API):**  
-  Main server that handles Spotify authentication (OAuth2), data synchronization, database storage, caching, external API calls (Hugging Face) for NLP analysis, and API serving to frontend.
+  Main server that handles Spotify authentication (OAuth2), data synchronization, database storage, caching, external API calls (Hugging Face for NLP analysis, Genius for lyrics), and API serving to frontend.
+  
 - **PostgreSQL (Main DB):**  
-  Stores main metadata such as users, artists, and tracks. Used as the relational center of the system.
+  Stores main metadata such as users, artists, and tracks. Can run **locally via Docker** or use **Supabase (cloud-hosted PostgreSQL)** for production/development.
+  
 - **Redis (Cache):**  
-  In-memory cache to store top data (artist, track, genre) per user based on `spotify_id` and `time_range`, with TTL for efficiency.
+  In-memory cache to store top data (artist, track, genre) per user based on `spotify_id` and `time_range`, with TTL for efficiency. Can run **locally via Docker** or use **Upstash (cloud-hosted Redis)** for production.
+  
 - **MongoDB (Sync DB):**  
-  Stores historical user synchronization logs in document format. Suitable for flexible data and time-based log access.
+  Stores historical user synchronization logs in document format. Can run **locally via Docker** or use **MongoDB Atlas (cloud-hosted MongoDB)** for production.
+  
 - **PostgreSQL + FDW:**  
   Foreign Data Wrapper used to access data from other PostgreSQL servers (distribution simulation). Useful for cross-instance queries.
+  
+- **Genius API:**  
+  Provides song lyrics data from the Genius platform. Due to CORS restrictions on Vercel, lyrics are fetched via a **Cloudflare Workers proxy** to bypass direct access limitations.
+  
+- **Cloudflare Workers:**  
+  Acts as a proxy layer to fetch HTML content from Genius.com, enabling lyrics extraction in serverless environments like Vercel where direct scraping is restricted.
+  
+- **Hugging Face API:**  
+  Provides pre-trained NLP models (GoEmotions) for sentiment and emotion analysis of song titles and lyrics.
 
+---
 
 ## 4. Technology Stack & Rationale
 
@@ -68,14 +98,17 @@ The Personalify system consists of several components connected through service-
 |------------------|----------------------|----------------------------------------------------------------------------------|
 | **Frontend**     | Jinja                | Lightweight, fast build time, suitable for creating SPA with reactive display.   |
 | **Backend API**  | FastAPI              | Modern Python framework, supports async, fast for building REST APIs.           |
-| **Main Database**| PostgreSQL           | Powerful RDBMS, supports complex relations, FDW integration, compatible with analytical tools. |
-| **Cache**        | Redis                | In-memory cache with TTL, very fast for storing temporary data per user.        |
-| **Sync Storage** | MongoDB              | Suitable for storing history in flexible document format (top data per time).   |
+| **Main Database**| PostgreSQL (Supabase / Local) | Powerful RDBMS, supports complex relations, FDW integration. Supabase for cloud, Docker for local. |
+| **Cache**        | Redis (Upstash / Local) | In-memory cache with TTL, very fast for storing temporary data per user. Upstash for cloud, Docker for local. |
+| **Sync Storage** | MongoDB (Atlas / Local) | Suitable for storing history in flexible document format. Atlas for cloud, Docker for local. |
 | **Auth**         | Spotify OAuth2       | Official standard protocol from Spotify, secure for login and user data access. |
+| **Lyrics**       | Genius API + Cloudflare Workers | Genius provides lyrics data; Cloudflare Workers proxy bypasses CORS restrictions on Vercel. |
 | **NLP Model**    | Hugging Face API     | Access to pre-trained AI models for emotion analysis without building from scratch. |
 | **FDW**          | PostgreSQL FDW       | Used for simulating queries between PostgreSQL instances (distributed query).   |
-| **Containerization** | Docker + Compose | Ensures environment isolation, deployment consistency, and easy replication.     |
+| **Containerization** | Docker + Compose (Optional) | Ensures environment isolation, deployment consistency, and easy replication for local development. |
+| **Cloud Deployment** | Vercel           | Serverless deployment platform with seamless FastAPI integration and global CDN. |
 
+---
 
 ## 5. Database Schema Design
 
@@ -128,7 +161,7 @@ CREATE TABLE IF NOT EXISTS user_artists (
 
 ### 📄 MongoDB (Sync History DB)
 
-MongoDB is used as a flexible database to store history of user synchronization results from Spotify. Data is stored in the `user_syncs` collection, which contains one document for each combination of `spotify_id` and `time_range` (`short_term`, `medium_term`, `long_term`)
+MongoDB is used as a flexible database to store history of user synchronization results from Spotify. Data is stored in the `user_syncs` collection, which contains one document for each combination of `spotify_id` and `time_range` (`short_term`, `medium_term`, `long_term`).
 
 The document structure is flexible and can evolve according to needs, usually containing lists of top artists, tracks, and genres from synchronization results. MongoDB was chosen for its advantages in storing semi-structured data without requiring schema migration.
 
@@ -141,6 +174,8 @@ Redis is used as a cache layer to accelerate data serving to the frontend dashbo
 Since Redis is a volatile cache (not permanent), data stored in it is temporary and can be given TTL (Time-To-Live) to automatically expire after a certain period. This reduces load on the main database and Spotify API when the same data is frequently accessed in a short time.
 
 Cache will be checked first every time the dashboard is called. If data is not found, the backend will retrieve from Spotify again, store in Redis, and forward to the frontend.
+
+---
 
 ## 6. Sharding and Replication Strategy
 
@@ -190,14 +225,211 @@ Overall, this system leverages "manual sharding" based on function:
 
 This strategy was chosen to demonstrate how systems can use various storage and distribution models for different needs, and support scalability if the project grows larger.
 
+---
 
-## 7. Sample Distributed Query or Scenario
+## 7. Local Development Setup
+
+Personalify can be run locally in **two ways**: using **Docker Compose** (containerized) or **standalone Python environment** (Miniconda/Anaconda/venv). Both methods support connecting to **cloud databases** (Supabase, MongoDB Atlas, Upstash) or **local databases** (via Docker).
+
+### 🐳 Option 1: Running with Docker (Containerized)
+
+This method uses Docker Compose to run the entire stack, including local PostgreSQL, MongoDB, and Redis containers (optional if you prefer local databases).
+
+#### Prerequisites:
+- Docker and Docker Compose installed
+- `.env` file configured (see `.env.example`)
+
+#### Steps:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/anggars/personalify.git
+   cd personalify
+   ```
+
+2. **Create and configure `.env` file:**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` and fill in your credentials:
+   ```env
+   # Spotify
+   SPOTIFY_CLIENT_ID=your_client_id
+   SPOTIFY_CLIENT_SECRET=your_client_secret
+   SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/callback
+
+   # PostgreSQL (Local Docker OR Supabase)
+   # For Docker:
+   POSTGRES_HOST=postgresfy
+   POSTGRES_PORT=5432
+   POSTGRES_DB=streamdb
+   POSTGRES_USER=admin
+   POSTGRES_PASSWORD=admin123
+   
+   # For Supabase (comment out above and use this):
+   # DATABASE_URL=postgresql://user:password@host:port/database
+
+   # MongoDB (Local Docker OR Atlas)
+   # For Docker:
+   MONGO_HOST=mongofy
+   MONGO_PORT=27017
+   
+   # For Atlas (comment out above and use this):
+   # MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/database
+
+   # Redis (Local Docker OR Upstash)
+   # For Docker:
+   REDIS_HOST=redisfy
+   REDIS_PORT=6379
+   
+   # For Upstash (comment out above and use this):
+   # REDIS_URL=redis://default:password@host:port
+
+   # Hugging Face
+   HUGGING_FACE_API_KEY=your_hugging_face_token
+
+   # Genius API
+   GENIUS_ACCESS_TOKEN=your_genius_token
+   ```
+
+3. **Create Docker network:**
+   ```bash
+   docker network create personalify
+   ```
+
+4. **Start the services:**
+   ```bash
+   docker compose up -d --build
+   ```
+
+5. **Access the application:**
+   Open your browser and navigate to:
+   ```
+   http://127.0.0.1:8000
+   ```
+
+6. **Stop the services:**
+   ```bash
+   docker compose down
+   ```
+
+---
+
+### 🐍 Option 2: Running Standalone (Python Environment)
+
+This method runs FastAPI directly on your local machine using a Python virtual environment (Miniconda, Anaconda, or standard venv). This approach is **lighter** and does **not require Docker**.
+
+#### Prerequisites:
+- Python 3.12+ installed (via Miniconda, Anaconda, or standard Python)
+- Cloud database accounts (Supabase, MongoDB Atlas, Upstash) **OR** local Docker containers for databases
+- `.env` file configured (see `.env.example`)
+
+#### Steps:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/anggars/personalify.git
+   cd personalify
+   ```
+
+2. **Create Conda environment (if using Miniconda/Anaconda):**
+   ```bash
+   conda create -n personalify python=3.12
+   conda activate personalify
+   ```
+   
+   **Or create venv (if using standard Python):**
+   ```bash
+   python -m venv .venv
+   
+   # Windows
+   .venv\Scripts\activate
+   
+   # Linux/Mac
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
+
+4. **Create and configure `.env` file:**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` and configure for **cloud databases**:
+   ```env
+   # Spotify
+   SPOTIFY_CLIENT_ID=your_client_id
+   SPOTIFY_CLIENT_SECRET=your_client_secret
+   SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/callback
+
+   # PostgreSQL (Supabase)
+   DATABASE_URL=postgresql://user:password@host:port/database
+
+   # MongoDB (Atlas)
+   MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/database
+
+   # Redis (Upstash)
+   REDIS_URL=redis://default:password@host:port
+
+   # Hugging Face
+   HUGGING_FACE_API_KEY=your_hugging_face_token
+
+   # Genius API
+   GENIUS_ACCESS_TOKEN=your_genius_token
+   ```
+
+5. **Run the development server:**
+   
+   **For Windows (using provided batch script):**
+   ```bash
+   dev.bat
+   ```
+   
+   **For Linux/Mac (manual command):**
+   ```bash
+   export PYTHONPATH=backend
+   uvicorn app.main:app --reload --port 8000
+   ```
+   
+   The `dev.bat` script contains:
+   ```bat
+   @echo off
+   echo Starting Local Personalify (Cloud DB Mode)...
+
+   :: 1. Set Path so Python knows the backend location
+   set PYTHONPATH=backend
+
+   :: 2. Activate Conda (Just in case you forgot to activate in the terminal)
+   call conda activate personalify
+
+   :: 3. Run Server
+   :: --reload is active so if the code is changed, the server restarts itself
+   uvicorn app.main:app --reload --port 8000
+   ```
+
+6. **Access the application:**
+   Open your browser and navigate to:
+   ```
+   http://127.0.0.1:8000
+   ```
+
+7. **Stop the server:**
+   Press `Ctrl+C` in the terminal.
+
+---
+
+## 8. Sample Distributed Query or Scenario
 
 Here are real-world scenario examples that demonstrate distributed system integration in the Personalify project, focusing on utilizing PostgreSQL Foreign Data Wrapper (FDW) and cross-data source queries.
 
-### 🐧 A. Access PostgreSQL Container
+### 🐧 A. Access PostgreSQL Container (Docker Setup)
 First step: enter the postgresfy container to access the main database (streamdb):
+```bash
 sudo docker exec -it postgresfy psql -U admin -d streamdb
+```
 
 To display table list with details:
 ```bash 
@@ -235,15 +467,22 @@ JOIN dummy_data d ON u.id = d.id;
 ```
 
 4. See execution plan and remote SQL:
+```sql
 EXPLAIN VERBOSE SELECT * FROM dummy_data;
+```
 
 ### 🍃 B. Query Sync History from MongoDB
 MongoDB is used to store Spotify synchronization data based on spotify_id and time_range. Data is stored as flexible JSON documents in the user_syncs collection.
 
+**For Docker setup:**
 1. Enter MongoDB container:
 ```bash 
 sudo docker exec -it mongofy mongosh 
 ```
+
+**For cloud setup (Atlas):**
+1. Connect using MongoDB Compass or `mongosh` CLI with your connection string.
+
 2. Use database and check collections:
 ```bash 
 use personalify_db 
@@ -256,10 +495,16 @@ db.user_syncs.find({ spotify_id: "31xon7qetimdnbmhkupbaszl52nu" }).pretty()
 
 ### 🔴 C. Access Redis Cache for Top Data
 Redis is used to store top artists/tracks/genres data from synchronization results for fast access without always calling Spotify API.
+
+**For Docker setup:**
 1. Enter Redis container:
 ```bash 
 sudo docker exec -it redisfy redis-cli 
 ```
+
+**For cloud setup (Upstash):**
+1. Use the Upstash dashboard or connect via CLI with your connection string.
+
 2. Display cache contents based on key:
 ```bash
 GET top:31xon7qetimdnbmhkupbaszl52nu:short_term
@@ -271,65 +516,127 @@ sudo docker exec -it redisfy redis-cli GET top:31xon7qetimdnbmhkupbaszl52nu:shor
 
 With these three distribution layers (PostgreSQL-FDW, MongoDB, Redis), the system can combine the strengths of relational queries, document storage, and high-speed caching in one lightweight and scalable application.
 
-## 8. Challenges & Lessons Learned
+---
+
+## 9. Challenges & Lessons Learned
+
 During Personalify development, several technical challenges emerged alongside efforts to integrate multi-database systems and containerized environments. Here are some main challenges along with lessons learned:
 
 ### 🔄 A. FDW (Foreign Data Wrapper)
-Challenges:
+**Challenges:**
 - When using postgres_fdw, remote database hostname cannot use localhost, because the context is inside a Docker container.
 - Common errors occur if not replacing localhost with appropriate container service names (remotedb, postgresfy, etc.).
 
-Solutions:
+**Solutions:**
 - Ensure all inter-database connections in Docker context use service names from docker-compose.yml.
 
-Lessons Learned:
+**Lessons Learned:**
 - Understand that localhost in containers has different context from localhost on host machine.
 - Use IMPORT FOREIGN SCHEMA to simplify foreign table setup rather than creating them one by one.
 
 ### 🧩 B. Data Synchronization & Schema
-Challenges:
+**Challenges:**
 - Spotify data obtained from API is very flexible (non-tabular), while PostgreSQL is structural and requires fixed schema.
 - Schema must be consistent between user, artist, and track relations — especially when storing many-to-many data (e.g. user_tracks, user_artists).
 
-Solutions:
+**Solutions:**
 - Use MongoDB to store raw synchronization result data per time_range.
 - Use Redis for caching formatted query results to avoid repeated parsing.
 
-Lessons Learned:
+**Lessons Learned:**
 - Storing data in appropriate places (structured vs unstructured) is important for efficiency and scalability.
 
 ### 🚨 C. Caching Strategy
-Challenges:
-
+**Challenges:**
 - Redis data is ephemeral. If Redis container dies without volume persistence, all cache is lost.
 - Without good key management (e.g.: top:{spotify_id}:{time_range}), cache can overwrite or conflict with each other.
 
-Solutions:
+**Solutions:**
 - Apply systematic and unique key naming.
 - Store sync result cache per user + time_range to avoid redundancy.
+- Migrate to Upstash (cloud Redis) for persistent and managed caching in production.
 
-Lessons Learned:
+**Lessons Learned:**
 - Redis is ideal for read-heavy scenarios like dashboards, but not for permanent data.
+- Cloud-hosted Redis (Upstash) eliminates concerns about container failures and provides better reliability.
 
 ### 🔧 D. Deployment & Containerization
-Challenges:
+**Challenges:**
 - Debugging multi-container can be complicated without good log monitoring.
 - Some container services need specific startup order (e.g. Postgres must be ready before backend queries).
+- Initial deployment on Render.com required Docker support but was limited by cold start times.
 
-Solutions:
+**Solutions:**
 - Use depends_on in docker-compose.yml.
 - Utilize volumes for persistence and named networks so services recognize each other.
+- Migrate to Vercel for serverless deployment, eliminating container management overhead.
+- Use cloud-hosted databases (Supabase, Atlas, Upstash) instead of local containers for production.
 
-Lessons Learned:
+**Lessons Learned:**
 - Containerization is very powerful for isolation, but requires understanding of dependencies and lifecycle order.
+- Serverless platforms like Vercel offer faster cold starts and simpler deployment workflows.
+- Separating database concerns (using managed cloud services) from application deployment simplifies architecture.
 
-## 9. Conclusion
-Personalify is a project designed to explore distributed system concepts in the context of real data-based applications. By utilizing data from Spotify through OAuth2 authentication processes, users can see their music preferences such as top artists, songs, and genres grouped by specific time ranges. This data is then stored and processed through a combination of databases, each with different roles, reflecting a multi-layer and truly distributed architectural approach.
+### 🎤 E. Genius API & Lyrics Fetching
+**Challenges:**
+- Genius API provides song metadata but does not directly return lyrics in JSON format.
+- Lyrics must be scraped from Genius.com HTML pages.
+- When deployed on Vercel (serverless environment), direct scraping fails due to CORS restrictions and rate limiting.
 
-PostgreSQL is used as the main database to store relational entities such as users, artists, and songs, including many-to-many relationships between these entities. Meanwhile, MongoDB serves as storage for synchronization history per user and time_range in more flexible JSON document format, reflecting separation of concerns between data structure and flexibility. Redis is also used to store reformatted synchronization results in cache form, so the system can avoid repeated requests to Spotify API or queries to the main database for the same data.
+**Solutions:**
+- Implement a **Cloudflare Workers proxy** to fetch HTML content from Genius.com.
+- Parse the HTML server-side to extract clean lyrics text.
+- Cache lyrics results to minimize repeated scraping requests.
+
+**Lessons Learned:**
+- Serverless environments have limitations on external HTTP requests that require workarounds.
+- Cloudflare Workers provide an effective proxy layer for bypassing CORS and scraping restrictions.
+- Always respect API rate limits and implement proper error handling for third-party services.
+
+### ☁️ F. Cloud Database Migration
+**Challenges:**
+- Transitioning from local Docker databases to cloud-hosted services required connection string changes.
+- Managing environment variables across local development and production deployments.
+
+**Solutions:**
+- Use `.env` file with conditional logic to support both local and cloud database connections.
+- Leverage Supabase for PostgreSQL, MongoDB Atlas for document storage, and Upstash for Redis caching.
+
+**Lessons Learned:**
+- Cloud databases offer better reliability, automatic backups, and scalability without manual infrastructure management.
+- Using managed database services allows developers to focus on application logic rather than database administration.
+
+---
+
+## 10. Conclusion
+
+Personalify is a project designed to explore distributed system concepts in the context of real data-based applications. By utilizing data from Spotify through OAuth2 authentication processes, users can see their music preferences such as top artists, songs, and genres grouped by specific time ranges. **Additionally, users can search for and analyze lyrics from any song via the Genius API**, providing deeper insights into the emotional content of their favorite music.
+
+This data is then stored and processed through a combination of databases, each with different roles, reflecting a multi-layer and truly distributed architectural approach. PostgreSQL is used as the main database to store relational entities such as users, artists, and songs, including many-to-many relationships between these entities. Meanwhile, MongoDB serves as storage for synchronization history per user and time_range in more flexible JSON document format, reflecting separation of concerns between data structure and flexibility. Redis is also used to store reformatted synchronization results in cache form, so the system can avoid repeated requests to Spotify API or queries to the main database for the same data.
 
 Furthermore, this project implements PostgreSQL Foreign Data Wrapper (FDW) to access tables from external databases (remote DB) in real-time. This shows how cross-database queries can be performed as if they came from one source, enabling data federation flexibility and cross-node scenarios. In practice, FDW is used to read external tables and combine them with local data through join operations that run transparently.
 
-During development, several technical challenges were successfully overcome, from synchronizing non-homogeneous data between Spotify API and relational table structures, to configuring hostnames between Docker containers so they can connect to each other. These challenges resulted in practical learning about technology selection, cache management, and efficient data integration from different sources.
+The project has evolved significantly from its initial Docker-only deployment to support **both containerized and standalone Python environments**. For local development, users can choose between running the entire stack via Docker Compose (including local databases) or running FastAPI standalone using Miniconda/Anaconda/venv with cloud-hosted databases (Supabase, MongoDB Atlas, Upstash). This flexibility allows developers to work in their preferred environment without compromising functionality.
 
-Overall, Personalify has successfully become a proof of concept for distributed systems that combine modern authentication, external API synchronization, multi-database storage, as well as cache and data federation in one cohesive ecosystem. This project not only meets the functional and technical aspects of the Distributed Data Processing assignment, but also provides real-world practical experience in building and managing complex and scalable data systems.
+In production, Personalify is deployed as a **serverless application on Vercel**, leveraging managed cloud databases for reliability and scalability. The integration of **Cloudflare Workers** as a proxy layer enables seamless lyrics fetching from Genius API, overcoming CORS restrictions inherent in serverless environments. The **Hugging Face API** powers NLP-based emotion analysis, providing users with actionable insights into the mood and vibe of their music.
+
+During development, several technical challenges were successfully overcome, from synchronizing non-homogeneous data between Spotify API and relational table structures, to configuring hostnames between Docker containers so they can connect to each other, to implementing proxy solutions for third-party API restrictions. These challenges resulted in practical learning about technology selection, cache management, serverless deployment strategies, and efficient data integration from different sources.
+
+Overall, Personalify has successfully become a proof of concept for distributed systems that combine modern authentication, external API synchronization, multi-database storage, as well as cache and data federation in one cohesive ecosystem. This project not only meets the functional and technical aspects of the Distributed Data Processing assignment, but also provides real-world practical experience in building and managing complex and scalable data systems that can run both locally and in production environments.
+
+---
+
+## 11. Credits & Acknowledgments
+
+- **[Spotify API](https://developer.spotify.com/)** for providing comprehensive music data and authentication services.
+- **[Genius API](https://genius.com/developers/)** for enabling access to song lyrics and artist information.
+- **[Hugging Face](https://huggingface.co/)** for pre-trained NLP models that power emotion analysis.
+- **[Cloudflare Workers](https://workers.cloudflare.com/)** for providing a reliable proxy solution to bypass API restrictions.
+- **[Vercel](https://vercel.com/)** for seamless serverless deployment and hosting.
+- **[Supabase](https://supabase.com/)**, **[MongoDB Atlas](https://www.mongodb.com/atlas/)**, and **[Upstash](https://upstash.com/)** for managed cloud database services.
+- **[Docker](http://docker.com/)** for containerization and local development environment isolation.
+- **[FastAPI](https://fastapi.tiangolo.com/)** for a modern, high-performance Python web framework.
+
+**Created by [アリツ](https://desty.page/anggars)** © 2025
+
+---
