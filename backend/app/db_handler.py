@@ -1,147 +1,84 @@
 import os
 import psycopg2
-from psycopg2 import pool
 from psycopg2.extras import execute_values
 from urllib.parse import urlparse
-from contextlib import contextmanager
-from dotenv import load_dotenv
 
-# Load .env jika dijalankan di lokal
-load_dotenv()
+# Load .env hanya jika DATABASE_URL belum ada (biar di Render tidak override)
+if not os.getenv("DATABASE_URL"):
+    from dotenv import load_dotenv
+    load_dotenv()
 
-# Variabel Global untuk menampung Pool Koneksi
-pg_pool = None
-
-def init_db_pool():
-    """
-    Inisialisasi Connection Pool.
-    Hanya dijalankan sekali saat pertama kali koneksi dibutuhkan.
-    """
-    global pg_pool
-    
-    # Cek jika pool sudah ada, tidak perlu buat lagi
-    if pg_pool:
-        return
-
-    DATABASE_URL = os.getenv("DATABASE_URL")
-
-    # Parameter agar koneksi tidak mudah putus (Keep-Alive)
-    conn_params = {
-        "minconn": 1,
-        "maxconn": 5,  # Maksimal 5 koneksi standby (cukup untuk lokal)
-        "keepalives": 1,
-        "keepalives_idle": 30,
-        "keepalives_interval": 10,
-        "keepalives_count": 5,
-        "connect_timeout": 10
-    }
-
-    print("DB HANDLER: Menginisialisasi Connection Pool...")
-
-    try:
-        if DATABASE_URL:
-            # Mode Cloud (Supabase via URL)
-            result = urlparse(DATABASE_URL)
-            pg_pool = psycopg2.pool.ThreadedConnectionPool(
-                user=result.username,
-                password=result.password,
-                host=result.hostname,
-                port=result.port,
-                database=result.path[1:],
-                sslmode='require', # Wajib untuk Supabase
-                **conn_params
-            )
-        else:
-            # Mode Docker Lokal
-            pg_pool = psycopg2.pool.ThreadedConnectionPool(
-                user=os.getenv("POSTGRES_USER", "admin"),
-                password=os.getenv("POSTGRES_PASSWORD", "admin123"),
-                host=os.getenv("POSTGRES_HOST", "postgresfy"),
-                port=os.getenv("POSTGRES_PORT", "5432"),
-                database=os.getenv("POSTGRES_DB", "streamdb"),
-                **conn_params
-            )
-        print("DB HANDLER: Connection Pool siap digunakan.")
-        
-    except Exception as e:
-        print(f"DB HANDLER ERROR (Init Pool): {e}")
-        # Kita tidak raise error di sini agar app tetap jalan, 
-        # error akan muncul saat get_conn dipanggil.
-
-@contextmanager
 def get_conn():
     """
-    Mengambil satu koneksi dari pool, menggunakannya, 
-    dan MENGEMBALIKANNYA ke pool setelah selesai (yield).
+    Membuat koneksi database yang cerdas.
+    Bisa menangani DATABASE_URL (untuk Render/Supabase)
+    atau variabel terpisah (untuk Docker lokal).
     """
-    global pg_pool
-    if not pg_pool:
-        init_db_pool()
+    DATABASE_URL = os.getenv("DATABASE_URL")
 
-    conn = None
-    try:
-        # Pinjam koneksi dari pool
-        conn = pg_pool.getconn()
-        yield conn
-    except Exception as e:
-        print(f"DB HANDLER ERROR (Query): {e}")
-        # Jika ada error, rollback transaksi agar koneksi 'bersih' saat dikembalikan
-        if conn:
-            conn.rollback()
-        raise e
-    finally:
-        # Kembalikan koneksi ke pool (WAJIB)
-        if conn:
-            pg_pool.putconn(conn)
+    if DATABASE_URL:
+        # Jika ada DATABASE_URL, kita parse secara manual untuk Supabase
+        result = urlparse(DATABASE_URL)
+        db_params = {
+            'dbname': result.path[1:],
+            'user': result.username,
+            'password': result.password,
+            'host': result.hostname,
+            'port': result.port
+        }
+        return psycopg2.connect(**db_params)
+    else:
+        # Jika tidak ada, gunakan variabel terpisah untuk lokal
+        db_params = {
+            "host": os.getenv("POSTGRES_HOST", "postgresfy"),
+            "port": os.getenv("POSTGRES_PORT", "5432"),
+            "database": os.getenv("POSTGRES_DB", "streamdb"),
+            "user": os.getenv("POSTGRES_USER", "admin"),
+            "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
+        }
+        return psycopg2.connect(**db_params)
 
 def init_db():
-    """Membuat tabel jika belum ada."""
-    try:
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id SERIAL PRIMARY KEY,
-                        spotify_id TEXT UNIQUE,
-                        display_name TEXT
-                    );
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    spotify_id TEXT UNIQUE,
+                    display_name TEXT
+                );
 
-                    CREATE TABLE IF NOT EXISTS artists (
-                        id TEXT PRIMARY KEY,
-                        name TEXT,
-                        popularity INTEGER,
-                        image_url TEXT
-                    );
+                CREATE TABLE IF NOT EXISTS artists (
+                    id TEXT PRIMARY KEY,
+                    name TEXT,
+                    popularity INTEGER,
+                    image_url TEXT
+                );
 
-                    CREATE TABLE IF NOT EXISTS tracks (
-                        id TEXT PRIMARY KEY,
-                        name TEXT,
-                        popularity INTEGER,
-                        preview_url TEXT
-                    );
+                CREATE TABLE IF NOT EXISTS tracks (
+                    id TEXT PRIMARY KEY,
+                    name TEXT,
+                    popularity INTEGER,
+                    preview_url TEXT
+                );
 
-                    CREATE TABLE IF NOT EXISTS user_tracks (
-                        spotify_id TEXT,
-                        track_id TEXT,
-                        PRIMARY KEY (spotify_id, track_id),
-                        FOREIGN KEY (spotify_id) REFERENCES users(spotify_id) ON DELETE CASCADE,
-                        FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
-                    );
+                CREATE TABLE IF NOT EXISTS user_tracks (
+                    spotify_id TEXT,
+                    track_id TEXT,
+                    PRIMARY KEY (spotify_id, track_id),
+                    FOREIGN KEY (spotify_id) REFERENCES users(spotify_id) ON DELETE CASCADE,
+                    FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+                );
 
-                    CREATE TABLE IF NOT EXISTS user_artists (
-                        spotify_id TEXT,
-                        artist_id TEXT,
-                        PRIMARY KEY (spotify_id, artist_id),
-                        FOREIGN KEY (spotify_id) REFERENCES users(spotify_id) ON DELETE CASCADE,
-                        FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
-                    );
-                """)
-                conn.commit()
-                print("DB HANDLER: Tabel database berhasil diinisialisasi.")
-    except Exception as e:
-        print(f"DB HANDLER ERROR (Init DB): {e}")
-
-# --- FUNGSI CRUD (Tidak berubah logika, hanya menggunakan get_conn yang baru) ---
+                CREATE TABLE IF NOT EXISTS user_artists (
+                    spotify_id TEXT,
+                    artist_id TEXT,
+                    PRIMARY KEY (spotify_id, artist_id),
+                    FOREIGN KEY (spotify_id) REFERENCES users(spotify_id) ON DELETE CASCADE,
+                    FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
+                );
+            """)
+            conn.commit()
 
 def save_user(spotify_id, display_name):
     with get_conn() as conn:
@@ -153,10 +90,58 @@ def save_user(spotify_id, display_name):
             """, (spotify_id, display_name))
             conn.commit()
 
+def save_artist(artist_id, name, popularity, image_url):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO artists (id, name, popularity, image_url)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE
+                SET name = EXCLUDED.name,
+                    popularity = EXCLUDED.popularity,
+                    image_url = EXCLUDED.image_url
+            """, (artist_id, name, popularity, image_url))
+            conn.commit()
+
+def save_track(track_id, name, popularity, preview_url):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO tracks (id, name, popularity, preview_url)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE
+                SET name = EXCLUDED.name,
+                    popularity = EXCLUDED.popularity,
+                    preview_url = EXCLUDED.preview_url
+            """, (track_id, name, popularity, preview_url))
+            conn.commit()
+
+def save_user_track(spotify_id, track_id):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO user_tracks (spotify_id, track_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+            """, (spotify_id, track_id))
+            conn.commit()
+
+def save_user_artist(spotify_id, artist_id):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO user_artists (spotify_id, artist_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+            """, (spotify_id, artist_id))
+            conn.commit()
+            
 def save_artists_batch(artists_data):
+    """Menyimpan banyak artis sekaligus."""
     if not artists_data: return
     with get_conn() as conn:
         with conn.cursor() as cur:
+            # Kolom: id, name, popularity, image_url
             execute_values(cur, """
                 INSERT INTO artists (id, name, popularity, image_url)
                 VALUES %s
@@ -168,9 +153,11 @@ def save_artists_batch(artists_data):
             conn.commit()
 
 def save_tracks_batch(tracks_data):
+    """Menyimpan banyak lagu sekaligus."""
     if not tracks_data: return
     with get_conn() as conn:
         with conn.cursor() as cur:
+            # Kolom: id, name, popularity, preview_url
             execute_values(cur, """
                 INSERT INTO tracks (id, name, popularity, preview_url)
                 VALUES %s
@@ -182,14 +169,12 @@ def save_tracks_batch(tracks_data):
             conn.commit()
 
 def save_user_associations_batch(table_name, column_name, spotify_id, item_ids):
+    """Menyimpan banyak relasi user-lagu atau user-artis sekaligus."""
     if not item_ids: return
     with get_conn() as conn:
         with conn.cursor() as cur:
+            # Membuat data tuple (spotify_id, item_id)
             data_to_insert = [(spotify_id, item_id) for item_id in item_ids]
-            valid_tables = {"user_tracks", "user_artists"}
-            valid_cols = {"track_id", "artist_id"}
-            if table_name not in valid_tables or column_name not in valid_cols:
-                return 
             execute_values(cur, f"""
                 INSERT INTO {table_name} (spotify_id, {column_name})
                 VALUES %s
@@ -198,25 +183,45 @@ def save_user_associations_batch(table_name, column_name, spotify_id, item_ids):
             conn.commit()
 
 def get_aggregate_stats():
+    """
+    Fungsi Python baru untuk mengambil statistik dari database PostgreSQL.
+    """
     stats = {}
     with get_conn() as conn:
         with conn.cursor() as cur:
+            
+            # Hitung total users
             cur.execute("SELECT COUNT(*) FROM users")
             stats["total_users"] = cur.fetchone()[0]
+            
+            # Hitung total artists
             cur.execute("SELECT COUNT(*) FROM artists")
             stats["total_unique_artists"] = cur.fetchone()[0]
+            
+            # Hitung total tracks
             cur.execute("SELECT COUNT(*) FROM tracks")
             stats["total_unique_tracks"] = cur.fetchone()[0]
+            
+            # Ambil 5 artis terpopuler di seluruh database
             cur.execute("SELECT name, popularity FROM artists ORDER BY popularity DESC LIMIT 5")
             stats["most_popular_artists"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
+            
+            # Ambil 5 track terpopuler di seluruh database
             cur.execute("SELECT name, popularity FROM tracks ORDER BY popularity DESC LIMIT 5")
             stats["most_popular_tracks"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
+            
     return stats
 
 def get_user_db_details(spotify_id: str):
+    """
+    Mengambil detail spesifik user dari database PostgreSQL.
+    Ini adalah query JOIN murni.
+    """
     details = {}
     with get_conn() as conn:
         with conn.cursor() as cur:
+            
+            # 1. Ambil info user
             cur.execute("SELECT display_name FROM users WHERE spotify_id = %s", (spotify_id,))
             user_result = cur.fetchone()
             if not user_result:
@@ -224,6 +229,7 @@ def get_user_db_details(spotify_id: str):
             details["display_name"] = user_result[0]
             details["spotify_id"] = spotify_id
             
+            # 2. Ambil top 5 artists (contoh: berdasarkan popularity)
             cur.execute("""
                 SELECT a.name, a.popularity
                 FROM artists a
@@ -234,6 +240,7 @@ def get_user_db_details(spotify_id: str):
             """, (spotify_id,))
             details["db_top_artists"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
 
+            # 3. Ambil top 5 tracks (contoh: berdasarkan popularity)
             cur.execute("""
                 SELECT t.name, t.popularity
                 FROM tracks t
@@ -243,4 +250,5 @@ def get_user_db_details(spotify_id: str):
                 LIMIT 5
             """, (spotify_id,))
             details["db_top_tracks"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
+            
     return details
