@@ -128,7 +128,8 @@ header p.subtitle a:hover {
     background-color: #181818;
     color: #fff;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.05rem;
+    font-size: 1rem;
+    line-height: 1.6;
     resize: vertical;
     box-sizing: border-box;
     transition: border-color 0.2s, box-shadow 0.2s;

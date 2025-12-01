@@ -479,7 +479,98 @@ header p.subtitle a:hover {
     font-size: 1.2rem; 
 }
 
+/* Wrapper utama judul di halaman hasil */
+.track-title-wrapper {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    max-width: 100%; /* Pastikan tidak melebar keluar */
+    display: flex;
+    justify-content: center; /* Default tengah */
+    margin-bottom: 0.5rem;
+}
+
+/* Jika teks kepanjangan dan perlu di-mask (fade di pinggir) */
+.track-title-wrapper.masked {
+    mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+    justify-content: flex-start; /* Ubah jadi start biar scroll dari kiri */
+}
+
+/* Container yang bergerak */
+.track-marquee-track {
+    display: inline-flex;
+    white-space: nowrap;
+    will-change: transform;
+    align-items: center;
+    /* Animasi default mati, nyala kalau ada class .animate */
+}
+
+.track-marquee-track.animate {
+    animation: resultMarquee var(--duration, 15s) linear infinite;
+}
+
+/* Teks Judul Asli */
+.track-title-text {
+    /* KEMBALIKAN KE UKURAN ASLI */
+    font-size: 1.2rem; 
+    
+    font-weight: 800;
+    color: var(--primary);
+    margin: 0;
+    
+    /* Pastikan align vertical pas di tengah */
+    line-height: 1.2; 
+    display: flex;
+    align-items: center;
+}
+
+/* Spacer antar teks saat running text */
+.track-title-spacer {
+    display: inline-block;
+    width: 30px; /* Perkecil dikit biar ga kejauhan */
+}
+
+@keyframes resultMarquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(calc(-100% - 50px)); /* Geser sejauh teks + spacer */ }
+}
+
+/* Penyesuaian Header agar wrapper bisa kerja */
+.track-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    overflow: hidden; /* Jaga-jaga */
+}
+
+/* === BARIS LIRIK (Kembali ke Style Asli) === */
+.lyric-line {
+    /* Hapus semua margin biar rapat lagi */
+    margin: 0;
+    
+    /* Hapus padding bottom yang bikin renggang */
+    padding-bottom: 0; 
+    
+    /* Kembalikan warna jadi abu-abu (bukan putih terang) */
+    color: #ccc; 
+    
+    /* Samakan line-height dengan .lyrics-box asli */
+    line-height: 1.6;
+    
+    font-size: 1rem;
+    
+    /* Tetap aktifkan snap biar auto-scroll */
+    scroll-snap-align: start;
+}
+
+/* Spacer untuk jeda antar bait (opsional, kecilin aja) */
+.lyric-spacer {
+    height: 16px; /* Cukup segini buat pemisah bait */
+    scroll-snap-align: none;
+}
+
 .track-artist {
+    margin-bottom: 0;
     color: #aaa;
     margin-top: 0;
     font-size: 1rem; 
@@ -488,7 +579,7 @@ header p.subtitle a:hover {
 
 .lyrics-box {
     background: #181818; padding: 18px; border-radius: 12px; border: 1px solid #282828;
-    white-space: pre-wrap; color: #ccc; line-height: 1.6; 
+    white-space: pre-wrap; color: #ccc; line-height: 1.6; font-size: 1rem; 
     max-height: 300px; overflow-y: auto; margin-bottom: 25px;
 }
 

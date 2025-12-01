@@ -181,38 +181,59 @@ async function loadSongs(artistId, artistName) {
     }
 }
 
-// --- 4. Analisis Lagu ---
+// --- 4. Analisis Lagu (FIXED: Marquee + Lirik Rapi) ---
 async function analyzeSong(songId, clickedElement) {
+    // 1. Reset UI & Loading
     const allSongs = document.querySelectorAll('.song-btn');
     allSongs.forEach(btn => btn.classList.remove('active'));
     if (clickedElement) clickedElement.classList.add('active');
 
     analysisResult.style.display = 'block';
-    
-    // Loading di sini sudah pakai class loading-state-container dari helper, 
-    // jadi otomatis padding-nya sudah mengecil sesuai CSS baru.
     resultContent.innerHTML = getSpinnerHtml("Fetching lyrics & analyzing vibe...");
     resultContent.scrollIntoView({behavior: 'smooth'});
 
     try {
+        // 2. Fetch Data
         const res = await fetch(`/api/genius/lyrics/${songId}`);
+        if (!res.ok) throw new Error(`Server error: ${res.statusText}`);
         const data = await res.json();
 
-        // ... (Sisa kode di dalam try ini SAMA SAJA, tidak perlu diubah) ...
+        if (!data.lyrics) throw new Error("Lyrics content is empty.");
+
+        // 3. Proses Lirik (Biar Enter Kebaca & Bisa Scroll Snap)
+        // Pakai Regex /\r?\n/ biar aman untuk semua jenis Enter
+        const processedLyrics = data.lyrics
+            .split(/\r?\n/) 
+            .map(line => {
+                const trimmed = line.trim();
+                // Kalau baris kosong, kasih spacer
+                if (!trimmed) return '<div class="lyric-spacer"></div>';
+                // Kalau ada isi, bungkus <p> biar bisa di-snap
+                return `<p class="lyric-line">${trimmed}</p>`;
+            })
+            .join('');
+
+        // 4. Render HTML (HANYA SATU JUDUL & SATU LIRIK)
         let html = `
             <div class="track-header">
-                <h2 class="track-title">${data.track_info.title}</h2>
+                <div class="track-title-wrapper" id="resultTitleWrapper">
+                    <div class="track-marquee-track" id="resultTitleTrack">
+                        <h2 class="track-title-text">${data.track_info.title}</h2>
+                    </div>
+                </div>
+                
                 <p class="track-artist">${data.track_info.artist}</p>
             </div>
-            <div class="lyrics-box">${data.lyrics}</div>
+            
+            <div class="lyrics-box">${processedLyrics}</div>
         `;
 
+        // 5. Tambah Grafik Emosi (Kalau Ada)
         if (data.emotion_analysis && data.emotion_analysis.emotions) {
             const emotions = data.emotion_analysis.emotions.slice(0, 5);
             const maxScore = Math.max(...emotions.map(e => e.score));
             
             html += `<h3 style="border-top:1px solid #333; text-align:center; padding-top:15px; color:#1DB954; margin-bottom:15px; font-size: 1.2rem;">Emotion Results:</h3>`;
-            
             html += `<div class="emotion-bars-group">`;
             emotions.forEach(e => {
                 html += `
@@ -227,12 +248,44 @@ async function analyzeSong(songId, clickedElement) {
             });
             html += `</div>`;
         }
+        
+        // Masukkan ke layar
         resultContent.innerHTML = html;
 
+        // 6. Jalankan Logika Marquee (Cek Panjang Judul)
+        setTimeout(() => {
+            const wrapper = document.getElementById('resultTitleWrapper');
+            const track = document.getElementById('resultTitleTrack');
+            // Ambil elemen h2 yang baru di-render
+            const textEl = track ? track.querySelector('.track-title-text') : null;
+
+            if (wrapper && track && textEl) {
+                const wrapperWidth = wrapper.clientWidth;
+                const textWidth = textEl.scrollWidth;
+
+                // Cek: Apakah judul lebih panjang dari wadahnya?
+                if (textWidth > wrapperWidth) {
+                    wrapper.classList.add('masked'); // Tambah efek fade pinggir
+                    track.classList.add('animate');  // Jalankan animasi
+
+                    // Clone teks & tambah spacer biar muter (looping) halus
+                    const clone = textEl.cloneNode(true);
+                    const spacer = document.createElement('span');
+                    spacer.className = 'track-title-spacer';
+                    
+                    track.appendChild(spacer);
+                    track.appendChild(clone);
+
+                    // Hitung durasi biar kecepatannya pas
+                    const duration = textWidth / 40; 
+                    track.style.setProperty('--duration', `${Math.max(duration, 10)}s`);
+                }
+            }
+        }, 100);
+
     } catch (err) {
-        console.error(err);
-        // Update styling error message
-        resultContent.innerHTML = '<p class="status-msg error">Failed to analyze lyrics.</p>';
+        console.error("Lyrics Error:", err);
+        resultContent.innerHTML = '<p class="status-msg error">Failed to fetch lyrics. Please try again.</p>';
     }
 }
 
