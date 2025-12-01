@@ -98,9 +98,9 @@ The primary external data source. It handles user authentication (OAuth2) and pr
 |------------------|----------------------|----------------------------------------------------------------------------------|
 | **Frontend**     | Jinja                | Lightweight, fast build time, suitable for creating SPA with reactive display.   |
 | **Backend API**  | FastAPI              | Modern Python framework, supports async, fast for building REST APIs.           |
-| **Main Database**| PostgreSQL (Supabase / Local) | Powerful RDBMS, supports complex relations, FDW integration. Supabase for cloud, Docker for local. |
-| **Cache**        | Redis (Upstash / Local) | In-memory cache with TTL, very fast for storing temporary data per user. Upstash for cloud, Docker for local. |
-| **Sync Storage** | MongoDB (Atlas / Local) | Suitable for storing history in flexible document format. Atlas for cloud, Docker for local. |
+| **Main Database**| PostgreSQL (Supabase/Local) | Powerful RDBMS, supports complex relations, FDW integration. Supabase for cloud, Docker for local. |
+| **Cache**        | Redis (Upstash/Local) | In-memory cache with TTL, very fast for storing temporary data per user. Upstash for cloud, Docker for local. |
+| **Sync Storage** | MongoDB (Atlas/Local) | Suitable for storing history in flexible document format. Atlas for cloud, Docker for local. |
 | **Auth**         | Spotify OAuth2       | Official standard protocol from Spotify, secure for login and user data access. |
 | **Lyrics**       | Genius API + Cloudflare Workers | Genius provides lyrics data; Cloudflare Workers proxy bypasses CORS restrictions on Vercel. |
 | **NLP Model**    | Hugging Face API     | Access to pre-trained AI models for emotion analysis without building from scratch. |
@@ -640,3 +640,4 @@ Overall, Personalify has successfully become a proof of concept for distributed 
 **Created by [アリツ](https://desty.page/anggars)** © 2025
 
 ---
+
