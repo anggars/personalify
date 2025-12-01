@@ -283,6 +283,17 @@ function customTooltip(tooltipModel) {
     tooltipEl.style.pointerEvents = 'none';
 }
 
+document.addEventListener('keydown', function(event) {
+    // Ambil elemen modal
+    const modal = document.getElementById("save-modal-overlay");
+    
+    // Cek: 1. Apakah tombol yang ditekan adalah 'Escape'? DAN 2. Apakah modal sedang tampil ('display: flex')?
+    if (event.key === 'Escape' && modal.style.display === 'flex') {
+        // Jika ya, panggil fungsi untuk menutup modal
+        hideSaveOptions();
+    }
+});
+
 function generateImage(selectedCategory) {
     hideSaveOptions();
 
