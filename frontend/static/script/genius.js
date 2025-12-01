@@ -252,11 +252,10 @@ async function analyzeSong(songId, clickedElement) {
         // Masukkan ke layar
         resultContent.innerHTML = html;
 
-        // 6. Jalankan Logika Marquee (Cek Panjang Judul)
+        // 6. Jalankan Logika Marquee (Fixed: Unlimited Loop & No Gap)
         setTimeout(() => {
             const wrapper = document.getElementById('resultTitleWrapper');
             const track = document.getElementById('resultTitleTrack');
-            // Ambil elemen h2 yang baru di-render
             const textEl = track ? track.querySelector('.track-title-text') : null;
 
             if (wrapper && track && textEl) {
@@ -265,20 +264,30 @@ async function analyzeSong(songId, clickedElement) {
 
                 // Cek: Apakah judul lebih panjang dari wadahnya?
                 if (textWidth > wrapperWidth) {
-                    wrapper.classList.add('masked'); // Tambah efek fade pinggir
-                    track.classList.add('animate');  // Jalankan animasi
+                    wrapper.classList.add('masked');
+                    track.classList.add('animate');
 
-                    // Clone teks & tambah spacer biar muter (looping) halus
-                    const clone = textEl.cloneNode(true);
-                    const spacer = document.createElement('span');
-                    spacer.className = 'track-title-spacer';
+                    // --- TEKNIK UNLIMITED LOOP ---
+                    // Struktur harus: [Teks] [Spacer] [Teks] [Spacer]
+                    // Nanti kita geser 50%, jadi pas Teks 1 ilang, Teks 2 pas gantiin posisinya.
                     
-                    track.appendChild(spacer);
+                    const clone = textEl.cloneNode(true);
+                    
+                    const spacer1 = document.createElement('span');
+                    spacer1.className = 'track-title-spacer';
+                    
+                    const spacer2 = document.createElement('span');
+                    spacer2.className = 'track-title-spacer';
+                    
+                    // Susun urutannya: Asli + Spacer1 + Kloningan + Spacer2
+                    track.appendChild(spacer1);
                     track.appendChild(clone);
+                    track.appendChild(spacer2);
 
-                    // Hitung durasi biar kecepatannya pas
-                    const duration = textWidth / 40; 
-                    track.style.setProperty('--duration', `${Math.max(duration, 10)}s`);
+                    // Hitung durasi (makin panjang makin santai jalannya)
+                    // Kita kali 2 karena sekarang track-nya jadi 2x lipat panjangnya
+                    const duration = (textWidth * 2) / 50; 
+                    track.style.setProperty('--duration', `${Math.max(duration, 15)}s`);
                 }
             }
         }, 100);
