@@ -510,16 +510,10 @@ header p.subtitle a:hover {
     animation: resultMarquee var(--duration, 15s) linear infinite;
 }
 
-/* Teks Judul Asli */
 .track-title-text {
-    /* KEMBALIKAN KE UKURAN ASLI */
     font-size: 1.2rem; 
-    
-    font-weight: 800;
     color: var(--primary);
     margin: 0;
-    
-    /* Pastikan align vertical pas di tengah */
     line-height: 1.2; 
     display: flex;
     align-items: center;
@@ -533,7 +527,7 @@ header p.subtitle a:hover {
 
 @keyframes resultMarquee {
     from { transform: translateX(0); }
-    to   { transform: translateX(calc(-100% - 50px)); /* Geser sejauh teks + spacer */ }
+    to   { transform: translateX(-50%);}
 }
 
 /* Penyesuaian Header agar wrapper bisa kerja */

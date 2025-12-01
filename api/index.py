@@ -13,5 +13,5 @@ sys.path.append(root_dir)
 sys.path.append(os.path.join(root_dir, 'backend'))
 # -----------------
 
-# Import app FastAPI kamu
+# Import app FastAPI
 from backend.app.main import app
