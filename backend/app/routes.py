@@ -651,11 +651,20 @@ def api_get_lyrics_emotion(song_id: int):
     if not data:
         raise HTTPException(status_code=404, detail="Lirik tidak ditemukan")
     
+    # --- [FIXED] LOGGING YANG BENAR ---
+    # Akses langsung ke key 'title' dan 'artist', jangan lewat 'track_info'
+    print("="*50)
+    print(f"ANALYSIS REQUEST: {data.get('title')} - {data.get('artist')}")
+    print("-" * 20)
+    print(f"LYRICS CONTENT:\n{data.get('lyrics')}")
+    print("="*50)
+    # ----------------------------------
+
     # Analisis Emosi
     emotion = analyze_lyrics_emotion(data['lyrics'])
     
     return {
-        "track_info": data,
+        "track_info": data, # Nah, baru di sini dia dibungkus jadi track_info buat dikirim ke frontend
         "lyrics": data['lyrics'],
         "emotion_analysis": emotion
     }

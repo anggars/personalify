@@ -80,7 +80,7 @@ def prepare_text_for_analysis(text: str) -> str:
 
             if translated_text and len(translated_text.strip()) > 0:
                 # Kita ubah log-nya jadi lebih generik
-                print(f"NLP Handler: Teks siap untuk dianalisis. Preview: '{translated_text[:100]}...'")
+                print(f"NLP Handler: Teks siap untuk dianalisis (Full):\n{translated_text}")
                 return translated_text
             else:
                 print("NLP Handler: Hasil translasi kosong. Gunakan teks asli.")
@@ -121,7 +121,12 @@ def get_emotion_from_text(text: str):
         results = hf_client.text_classification(text_to_analyze, top_k=28)
 
         if results and isinstance(results, list):
-            print(f"NLP Handler: Berhasil. Top emotion: {results[0]['label']} ({results[0]['score']:.3f})")
+            print(f"NLP Handler: Berhasil. Detil Full Emosi:")
+            # Loop semua hasil dan print satu per satu
+            for res in results:
+                # Tampilkan Label dan Score (4 digit desimal biar detail)
+                print(f"  > {res['label']:<15} : {res['score']:.4f}")
+            
             _analysis_cache[text] = results
             return results
         else:
