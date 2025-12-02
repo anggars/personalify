@@ -100,6 +100,35 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+// --- NEW: CURSOR FOLLOW GLOW LOGIC ---
+document.addEventListener('DOMContentLoaded', function() {
+    const buttonEl = document.querySelector('.hero .button');
+
+    if (buttonEl) {
+        // Fungsi menghitung posisi kursor relatif terhadap elemen
+        const updateGlow = (e) => {
+            const rect = buttonEl.getBoundingClientRect();
+            
+            // Hitung posisi (dalam persentase) relatif terhadap tepi elemen
+            const x = (e.clientX - rect.left) / rect.width * 100;
+            const y = (e.clientY - rect.top) / rect.height * 100;
+            
+            // Injeksi variabel CSS
+            buttonEl.style.setProperty('--mouse-x', `${x}%`);
+            buttonEl.style.setProperty('--mouse-y', `${y}%`);
+        };
+
+        // Pasang event listener saat kursor bergerak di atas tombol
+        buttonEl.addEventListener('mousemove', updateGlow);
+        
+        // Bersihkan variabel saat kursor meninggalkan tombol (opsional, tapi disarankan)
+        buttonEl.addEventListener('mouseleave', () => {
+             buttonEl.style.setProperty('--mouse-x', `50%`);
+             buttonEl.style.setProperty('--mouse-y', `50%`);
+        });
+    }
+});
+
 // Reset tombol loading saat user kembali (Back button)
 window.addEventListener('pageshow', function(event) {
     if (event.persisted) {

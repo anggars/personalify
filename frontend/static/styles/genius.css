@@ -158,34 +158,29 @@ header p.subtitle a:hover {
 .button-primary::before {
     content: '';
     position: absolute;
-    /* Posisi tengah, ukuran 200% biar cover pas muter */
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
+    width: 100%;
+    height: 100%;
     
-    /* GRADIEN AURORA HALUS (Opacity 0.25) */
-    background: conic-gradient(
-        from 90deg at 50% 50%,
-        rgba(29, 185, 84, 0.25),   /* Hijau */
-        rgba(59, 130, 246, 0.25),  /* Biru */
-        rgba(139, 92, 246, 0.25),  /* Ungu */
-        rgba(236, 72, 153, 0.25),  /* Pink */
-        rgba(29, 185, 84, 0.25)    /* Balik Hijau */
+    left: calc(var(--mouse-x, 50%) - 50%); 
+    top: calc(var(--mouse-y, 50%) - 50%);
+    
+    background: radial-gradient(
+        circle at center,
+        rgba(29, 185, 84, 0.4), 
+        rgba(29, 185, 84, 0.05) 50%, 
+        transparent 100%            
     );
     
-    filter: blur(20px);
+    filter: blur(10px);
     opacity: 0;
     z-index: -1;
     transition: opacity 0.4s ease;
     pointer-events: none;
-    transform: none; /* Reset transform lama */
 }
 
-/* Efek Hover: Muncul & Muter */
 .button-primary:hover::before {
     opacity: 1;
-    animation: spinAurora 4s linear infinite;
+    animation: none;
 }
 
 /* Efek Hover Tombol */
@@ -194,12 +189,6 @@ header p.subtitle a:hover {
     border-color: rgba(255, 255, 255, 0.3);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     transform: none; /* Reset efek transform lama yg geser */
-}
-
-/* Animasi Putar */
-@keyframes spinAurora {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
 }
 
 .button-primary .button-text { 

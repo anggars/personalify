@@ -437,31 +437,24 @@ footer.fade-in {
 .video-bubble-toast::before {
     content: '';
     position: absolute;
-    /* Posisikan di tengah, ukuran 200% biar cover semua sudut pas muter */
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
+    width: 100%; 
+    height: 100%;
     
-    /* GRADIEN AURORA HALUS (SAMA KAYA TOMBOL LAIN) */
-    background: conic-gradient(
-        from 90deg at 50% 50%,
-        rgba(29, 185, 84, 0.25),   /* Hijau */
-        rgba(59, 130, 246, 0.25),  /* Biru */
-        rgba(139, 92, 246, 0.25),  /* Ungu */
-        rgba(236, 72, 153, 0.25),  /* Pink */
-        rgba(29, 185, 84, 0.25)    /* Balik Hijau */
+    left: calc(var(--mouse-x, 50%) - 50%); 
+    top: calc(var(--mouse-y, 50%) - 50%);
+
+    background: radial-gradient(
+        circle at center,
+        rgba(29, 185, 84, 0.4), 
+        rgba(29, 185, 84, 0.05) 50%, 
+        transparent 100%            
     );
     
-    filter: blur(20px); /* Blur biar warnanya nyatu */
-    opacity: 0;         /* Default sembunyi */
-    z-index: -1;        /* Di belakang konten */
+    filter: blur(10px); 
+    opacity: 0;         
+    z-index: -1;
     transition: opacity 0.4s ease;
     pointer-events: none;
-    
-    /* Reset properti lama */
-    border-radius: 0; 
-    transform: none; 
 }
 
 /* 2. Efek Hover pada Container Bubble */
@@ -474,15 +467,7 @@ footer.fade-in {
 /* 3. Efek Hover pada Aurora (Muncul & Muter) */
 .video-bubble-toast:hover::before {
     opacity: 1;
-    /* Reset transform lama & jalankan animasi muter */
-    transform: none; 
-    animation: spinAurora 4s linear infinite;
-}
-
-/* 4. Keyframes Putaran (Tambahkan jika belum ada di file ini) */
-@keyframes spinAurora {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    animation: none;
 }
 
 /* === STYLING ELEMEN DI DALAM BUBBLE === */

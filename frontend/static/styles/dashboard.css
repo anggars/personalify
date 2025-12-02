@@ -266,47 +266,56 @@ li {
 .download-btn::before {
     content: '';
     position: absolute;
-    /* Posisikan di tengah, ukuran 2x lipat tombol biar cover semua sudut pas muter */
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
+    width: 100%; /* Dikecilkan */
+    height: 100%;
     
-    /* GRADIEN AURORA (VERSI TIPIS / SUBTLE) */
-    /* Opacity diturunkan dari 0.5 ke 0.25 biar gak "menuhin" tombol */
-    background: conic-gradient(
-        from 90deg at 50% 50%,
-        rgba(29, 185, 84, 0.25),   /* Hijau Tipis */
-        rgba(59, 130, 246, 0.25),  /* Biru Tipis */
-        rgba(139, 92, 246, 0.25),  /* Ungu Tipis */
-        rgba(236, 72, 153, 0.25),  /* Pink Tipis */
-        rgba(29, 185, 84, 0.25)    /* Balik Hijau Tipis */
+    left: calc(var(--mouse-x, 50%) - 50%); 
+    top: calc(var(--mouse-y, 50%) - 50%);
+
+    background: radial-gradient(
+        circle at center,
+        rgba(29, 185, 84, 0.4), /* Hijau Terang (Maksimum opacity 0.4) */
+        rgba(29, 185, 84, 0.05) 50%, /* Hijau pudar (Sangat tipis, opacity 0.05) */
+        transparent 100%            
     );
     
-    filter: blur(20px); /* Blur biar warnanya nyatu */
-    opacity: 0;         /* Default sembunyi */
-    z-index: -1;        /* Di belakang teks */
+    filter: blur(10px); /* Fokus cahaya */
+    opacity: 0;         
+    z-index: -1;
     transition: opacity 0.4s ease;
     pointer-events: none;
 }
-
-/* Saat Hover: Muncul & Muter */
+/* Ganti: .download-btn:hover::before (Hapus animasi putar) */
 .download-btn:hover::before {
     opacity: 1;
-    /* Jalankan animasi muter */
-    animation: spinAurora 4s linear infinite; 
+    animation: none; 
 }
 
-/* Saat Hover: Tombolnya sendiri jadi agak terang */
-.download-btn:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-}
+/* Update: .modal-options button:not(.modal-close)::before (Sekitar baris 219) */
+.modal-options button:not(.modal-close)::before {
+    content: '';
+    position: absolute;
+    width: 100%; /* Dikecilkan */
+    height: 100%;
+    
+    left: calc(var(--mouse-x, 50%) - 50%); 
+    top: calc(var(--mouse-y, 50%) - 50%);
 
-/* Animasi Putaran (Pastikan ini ada di file CSS) */
-@keyframes spinAurora {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    background: radial-gradient(
+        circle at center,
+        rgba(29, 185, 84, 0.4), 
+        rgba(29, 185, 84, 0.05) 50%, 
+        transparent 100%            
+    );
+    filter: blur(10px);
+    opacity: 0;
+    z-index: 0;
+    transition: opacity 0.3s ease;
+}
+/* Ganti: .modal-options button:not(.modal-close):hover::before (Hapus animasi putar) */
+.modal-options button:not(.modal-close):hover::before {
+    opacity: 1;
+    animation: none;
 }
 
 /* Layer teks di atas aurora */
@@ -416,35 +425,6 @@ footer.fade-in {
     font-family: 'Plus Jakarta Sans', sans-serif;
     overflow: hidden;
     transition: transform 0.2s ease, background 0.2s;
-}
-
-/* Efek Aurora Hover */
-.modal-options button:not(.modal-close)::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    
-    /* Ubah opacity dari 0.4 jadi 0.25 */
-    background: conic-gradient(
-        from 90deg at 50% 50%,
-        rgba(29, 185, 84, 0.25),   /* Hijau */
-        rgba(59, 130, 246, 0.25),  /* Biru */
-        rgba(139, 92, 246, 0.25),  /* Ungu */
-        rgba(29, 185, 84, 0.25)    /* Balik Hijau */
-    );
-    
-    filter: blur(20px);
-    opacity: 0;
-    z-index: 0;
-    transition: opacity 0.3s ease;
-}
-
-.modal-options button:not(.modal-close):hover::before {
-    opacity: 1;
-    animation: spinAurora 4s linear infinite;
 }
 
 .modal-options button:not(.modal-close):hover {
