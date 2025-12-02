@@ -19,6 +19,7 @@ def get_conn():
     if DATABASE_URL:
         # Jika ada DATABASE_URL, kita parse secara manual untuk Supabase
         result = urlparse(DATABASE_URL)
+        print(f"DB CONNECTING TO (CLOUD): {result.hostname}:{result.port}")
         db_params = {
             'dbname': result.path[1:],
             'user': result.username,
@@ -36,6 +37,7 @@ def get_conn():
             "user": os.getenv("POSTGRES_USER", "admin"),
             "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
         }
+        print(f"DB CONNECTING TO (LOCAL): {db_params['host']}:{db_params['port']}")
         return psycopg2.connect(**db_params)
 
 def init_db():

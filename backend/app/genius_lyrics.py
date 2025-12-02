@@ -114,7 +114,7 @@ def get_songs_by_artist(artist_id):
 
     try:
         while True:
-            print(f"Fetching songs page {page}...")
+            print(f"FETCHING SONGS PAGE {page}...")
 
             res = requests.get(
                 f"{GENIUS_API_URL}/artists/{artist_id}/songs",
@@ -146,7 +146,7 @@ def get_songs_by_artist(artist_id):
 
             page = data["next_page"]
 
-        print(f"Total songs fetched: {len(songs)}")
+        print(f"TOTAL SONGS FETCHED: {len(songs)}")
         return songs
 
     except:
@@ -177,7 +177,7 @@ def get_lyrics_by_id(song_id):
         if not IS_LOCAL:
             wr = requests.get(f"{WORKER_URL}?url={song_url}", timeout=20)
             if wr.status_code != 200:
-                print("Worker fail:", wr.status_code)
+                print("WORKER FAIL:", wr.status_code)
                 return None
             html = wr.text
         else:
@@ -241,5 +241,5 @@ def get_lyrics_by_id(song_id):
         }
 
     except Exception as e:
-        print("Lyrics error:", e)
+        print("LYRICS ERROR:", e)
         return None

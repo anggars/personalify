@@ -10,14 +10,14 @@ def get_system_wide_stats():
     Fungsi utama untuk mengumpulkan statistik dari semua database.
     Ini adalah 100% logika Python murni.
     """
-    print("ADMIN_STATS: Mengumpulkan data statistik...")
+    print("ADMIN_STATS: COLLECTING SYSTEM-WIDE STATISTICS...")
     
     # 1. Ambil statistik agregat dari PostgreSQL
     try:
         db_stats = get_aggregate_stats()
-        print(f"ADMIN_STATS: Berhasil mendapat data dari PostgreSQL.")
+        print(f"ADMIN_STATS: SUCCESSFULLY RETRIEVED DATA FROM POSTGRESQL.")
     except Exception as e:
-        print(f"ADMIN_STATS: Gagal mengambil data PostgreSQL: {e}")
+        print(f"ADMIN_STATS: FAILED TO RETRIEVE DATA FROM POSTGRESQL: {e}")
         db_stats = {
             "error_postgres": str(e),
             "total_users": -1,
@@ -32,9 +32,9 @@ def get_system_wide_stats():
         mongo_users = get_all_synced_user_ids()
         db_stats["mongo_synced_users_count"] = len(mongo_users)
         db_stats["mongo_synced_user_list"] = mongo_users
-        print(f"ADMIN_STATS: Berhasil mendapat data dari MongoDB.")
+        print(f"ADMIN_STATS: SUCCESSFULLY RETRIEVED DATA FROM MONGODB.")
     except Exception as e:
-        print(f"ADMIN_STATS: Gagal mengambil data MongoDB: {e}")
+        print(f"ADMIN_STATS: FAILED TO RETRIEVE DATA FROM MONGODB: {e}")
         db_stats["mongo_synced_users_count"] = -1
         db_stats["mongo_synced_user_list"] = [f"Error: {e}"]
 
@@ -46,26 +46,26 @@ def get_system_wide_stats():
         
         db_stats["redis_sample_keys"] = redis_keys[:5]
         
-        print(f"ADMIN_STATS: Berhasil mendapat data dari Redis.")
+        print(f"ADMIN_STATS: SUCCESSFULLY RETRIEVED DATA FROM REDIS.")
     except Exception as e:
-        print(f"ADMIN_STATS: Gagal mengambil data Redis: {e}")
+        print(f"ADMIN_STATS: FAILED TO RETRIEVE DATA FROM REDIS: {e}")
         db_stats["redis_cached_keys_count"] = -1
         db_stats["redis_sample_keys"] = [f"Error: {e}"]
 
-    print("ADMIN_STATS: Selesai mengumpulkan data.")
+    print("ADMIN_STATS: DONE COLLECTING SYSTEM-WIDE STATISTICS.")
     return db_stats
 
 def get_user_report(spotify_id: str):
     """
     Mengambil data laporan untuk satu user spesifik.
     """
-    print(f"ADMIN_STATS: Mengambil laporan untuk user: {spotify_id}")
+    print(f"ADMIN_STATS: FETCHING REPORT FOR USER: {spotify_id}")
     try:
         user_details = get_user_db_details(spotify_id)
-        print(f"ADMIN_STATS: Berhasil mendapat data user {spotify_id} from PostgreSQL.")
+        print(f"ADMIN_STATS: SUCCESSFULLY RETRIEVED DATA FOR USER {spotify_id} FROM POSTGRESQL.")
         return user_details
     except Exception as e:
-        print(f"ADMIN_STATS: Gagal mengambil data user {spotify_id}: {e}")
+        print(f"ADMIN_STATS: FAILED TO RETRIEVE DATA FOR USER {spotify_id} FROM POSTGRESQL: {e}")
         return {
             "error": str(e),
             "spotify_id": spotify_id,
@@ -79,7 +79,7 @@ def export_users_to_csv():
     Fungsi Admin: Export data user LENGKAP dengan Top Artists & Tracks
     dari PostgreSQL ke format CSV (Lightweight/Tanpa Pandas).
     """
-    print("ADMIN: Memulai export data users (Full Detail Mode)...")
+    print("ADMIN: STARTING TO EXPORT USERS DATA (FULL DETAIL MODE)...")
     
     try:
         output = io.StringIO()
@@ -138,9 +138,9 @@ def export_users_to_csv():
         csv_string = output.getvalue()
         output.close()
         
-        print(f"ADMIN: Export selesai.")
+        print(f"ADMIN: EXPORT COMPLETED.")
         return csv_string
 
     except Exception as e:
-        print(f"ADMIN: Gagal export csv: {e}")
+        print(f"ADMIN: FAILED TO EXPORT CSV: {e}")
         return str(e)

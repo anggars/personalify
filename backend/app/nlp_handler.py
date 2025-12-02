@@ -13,16 +13,16 @@ HF_MODEL = "SamLowe/roberta-base-go_emotions"
 
 if not HF_API_KEY:
     print("="*50)
-    print("WARNING: HUGGING_FACE_API_KEY tidak ditemukan di .env")
-    print("Analisis emosi TIDAK AKAN JALAN TANPA API KEY.")
+    print("WARNING: HUGGING_FACE_API_KEY NOT FOUND IN .ENV FILE.")
+    print("EMOTION ANALYSIS WILL NOT WORK WITHOUT API KEY.")
     print("="*50)
     hf_client = None
 else:
     try:
         hf_client = InferenceClient(model=HF_MODEL, token=HF_API_KEY)
-        print("NLP Handler: Hugging Face InferenceClient siap.")
+        print("NLP HANDLER: HUGGING FACE INFERENCE CLIENT READY.")
     except Exception as e:
-        print(f"NLP Handler: GAGAL inisialisasi InferenceClient. Error: {e}")
+        print(f"NLP HANDLER: FAILED TO INITIALIZE INFERENCE CLIENT. ERROR: {e}")
         hf_client = None
 
 emotion_texts = {
@@ -64,7 +64,7 @@ def prepare_text_for_analysis(text: str) -> str:
     FIXED: Menghapus blok .detect() yang error, langsung pakai source='auto'.
     """
     if not text or not text.strip():
-        print("NLP Handler: Teks kosong, tidak ada yang diterjemahkan.")
+        print("NLP HANDLER: EMPTY TEXT, NOTHING TO TRANSLATE.")
         return ""
 
     try:
@@ -72,7 +72,7 @@ def prepare_text_for_analysis(text: str) -> str:
         # Kita HAPUS juga cek 'if detected_lang == 'en''.
         # Kita langsung serahkan ke 'source=auto' karena dia lebih pintar.
 
-        print(f"NLP Handler: Memastikan teks dalam Bahasa Inggris (translasi jika perlu)...")
+        print(f"NLP HANDLER: ENSURING TEXT IS IN ENGLISH (TRANSLATE IF NEEDED)...")
 
         try:
             translator = GoogleTranslator(source='auto', target='en')
@@ -80,20 +80,20 @@ def prepare_text_for_analysis(text: str) -> str:
 
             if translated_text and len(translated_text.strip()) > 0:
                 # Kita ubah log-nya jadi lebih generik
-                print(f"NLP Handler: Teks siap untuk dianalisis (Full):\n{translated_text}")
+                print(f"NLP HANDLER: TEXT READY FOR ANALYSIS (FULL):\n{translated_text}")
                 return translated_text
             else:
-                print("NLP Handler: Hasil translasi kosong. Gunakan teks asli.")
+                print("NLP HANDLER: TRANSLATION RESULTED IN EMPTY TEXT. USING ORIGINAL TEXT.")
                 return text
 
         except Exception as translate_error:
             # Jika 'source=auto' pun gagal, kita tangkap di sini
-            print(f"NLP Handler: Error saat translasi: {translate_error}. Gunakan teks asli.")
+            print(f"NLP HANDLER: ERROR DURING TRANSLATION: {translate_error}. USING ORIGINAL TEXT.")
             return text
 
     except Exception as e:
-        print(f"NLP Handler: Error umum pada prepare_text_for_analysis: {e}")
-        print("NLP Handler: Menggunakan teks asli sebagai fallback.")
+        print(f"NLP HANDLER: GENERAL ERROR IN PREPARE_TEXT_FOR_ANALYSIS: {e}")
+        print("NLP HANDLER: USING ORIGINAL TEXT AS FALLBACK.")
         return text
 
 def get_emotion_from_text(text: str):
@@ -101,19 +101,19 @@ def get_emotion_from_text(text: str):
     Menganalisis teks menggunakan InferenceClient API.
     """
     if not hf_client:
-        print("NLP Handler: HF Client tidak siap. Analisis dibatalkan.")
+        print("NLP HANDLER: HF CLIENT NOT READY. ANALYSIS CANCELLED.")
         return None
     if not text or not text.strip():
-        print("NLP Handler: Teks input kosong. Analisis dibatalkan.")
+        print("NLP HANDLER: INPUT TEXT EMPTY. ANALYSIS CANCELLED.")
         return None
 
     # Cek cache
     if text in _analysis_cache:
-        print("NLP Handler: Mengambil hasil dari cache.")
+        print("NLP HANDLER: FETCHING RESULT FROM CACHE.")
         return _analysis_cache[text]
 
     try:
-        print(f"NLP Handler: Memanggil HF API untuk analisis...")
+        print(f"NLP HANDLER: CALLING HF API FOR ANALYSIS...")
 
         # Batasi panjang teks ke 510 karakter untuk model
         text_to_analyze = text[:510]
@@ -121,20 +121,19 @@ def get_emotion_from_text(text: str):
         results = hf_client.text_classification(text_to_analyze, top_k=28)
 
         if results and isinstance(results, list):
-            print(f"NLP Handler: Berhasil. Detil Full Emosi:")
-            # Loop semua hasil dan print satu per satu
+            details_lines = ["NLP HANDLER: SUCCESSFUL. FULL EMOTION DETAILS:"]
             for res in results:
-                # Tampilkan Label dan Score (4 digit desimal biar detail)
-                print(f"  > {res['label']:<15} : {res['score']:.4f}")
-            
+                # Tambahkan setiap emosi sebagai baris dalam list
+                details_lines.append(f"  > {res['label']:<15} : {res['score']:.4f}")
+            print("\n".join(details_lines))
             _analysis_cache[text] = results
             return results
         else:
-            print(f"NLP Handler: Format hasil tidak terduga: {results}")
+            print(f"NLP HANDLER: UNEXPECTED RESULT FORMAT: {results}")
             return None
 
     except Exception as e:
-        print(f"NLP Handler: Error API call: {e}")
+        print(f"NLP HANDLER: ERROR API CALL: {e}")
         return None
 
 def analyze_lyrics_emotion(lyrics: str):
@@ -148,14 +147,14 @@ def analyze_lyrics_emotion(lyrics: str):
     text = prepare_text_for_analysis(lyrics.strip())
 
     if not text or len(text.strip()) == 0:
-        print("NLP Handler: Teks hasil translasi kosong.")
+        print("NLP HANDLER: TRANSLATION RESULTED IN EMPTY TEXT.")
         return {"error": "Translation resulted in empty text."}
 
     # Analisis
     emotions = get_emotion_from_text(text)
 
     if not emotions:
-        print("NLP Handler: API gagal atau tidak ada hasil.")
+        print("NLP HANDLER: API FAILED OR NO RESULTS.")
         return {"error": "Emotion analysis is currently unavailable. Check server logs."}
 
     try:
@@ -164,7 +163,7 @@ def analyze_lyrics_emotion(lyrics: str):
         out = [{"label": e["label"], "score": float(e.get("score", 0))} for e in top5]
         return {"emotions": out}
     except Exception as e:
-        print(f"NLP Handler: Error parsing results: {e}")
+        print(f"NLP HANDLER: ERROR PARSING RESULTS: {e}")
         return {"error": "Error parsing analysis results."}
 
 def generate_emotion_paragraph(track_names, extended=False):
@@ -179,7 +178,7 @@ def generate_emotion_paragraph(track_names, extended=False):
     num_tracks = len(track_names) if extended else min(10, len(track_names))
     tracks_to_analyze = track_names[:num_tracks]
 
-    print(f"NLP Handler: Menganalisis {num_tracks} lagu (extended={extended})")
+    print(f"NLP HANDLER: ANALYZING {num_tracks} TRACKS (EXTENDED={extended})")
 
     # Gabungkan judul
     combined_text = "\n".join(tracks_to_analyze)
@@ -188,7 +187,7 @@ def generate_emotion_paragraph(track_names, extended=False):
     text = prepare_text_for_analysis(combined_text)
 
     if not text or len(text.strip()) == 0:
-        print("NLP Handler: Teks untuk analisis kosong setelah translasi.")
+        print("NLP HANDLER: TEXT FOR ANALYSIS EMPTY AFTER TRANSLATION.")
         return "Vibe analysis failed (empty text after translation)."
 
     # Analisis
