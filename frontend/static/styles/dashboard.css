@@ -123,8 +123,8 @@ h1 {
     transition: all 0.2s ease;
 }
 #genres-section li:hover {
-    background-color: rgba(29, 185, 84, 0.1);
-    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
+    background-color: rgba(255, 255, 255, 0.05); 
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     border-radius: 8px;
 }
 li {

@@ -784,8 +784,8 @@ style.textContent = `
 
 #tracks-section li:hover,
 #artists-section li:hover {
-    background-color: rgba(29, 185, 84, 0.1);
-    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
+    background-color: rgba(255, 255, 255, 0.05); 
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     border-radius: 8px; /* Pastikan radius juga diaplikasikan */
 }
 
@@ -805,7 +805,7 @@ style.textContent = `
     width: 100%;
     height: 100%;
 
-    background-color: rgba(29, 185, 84, 0.1); /* Warna hijau Spotify transparan */
+    background-color: rgba(255, 255, 255, 0.05);
     border-radius: 8px; /* Menyesuaikan sudut iframe */
 
     /* Awalnya tidak terlihat dan tidak bisa diklik */
@@ -832,19 +832,18 @@ style.textContent = `
 .embed-close-btn {
     /* Positioning */
     position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 5;
-    background-color: #333;
+    top: 6px; /* Naikkan dikit */
+    right: 6px; /* Geser ke kanan dikit */
+    z-index: 5; /* Pastikan di atas iframe */
 
     /* Tampilan Tombol */
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
+    background-color: rgba(255, 255, 255, 0.25); /* Putih transparan */
+    color: #ffffff;
     border: none;
     border-radius: 50%; /* Bulat sempurna */
-    width: 24px;
-    height: 24px;
-    font-size: 16px;
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
     font-weight: bold;
     cursor: pointer;
 
@@ -853,12 +852,11 @@ style.textContent = `
     align-items: center;
     justify-content: center;
     line-height: 1;
-    padding-bottom: 2px; /* Koreksi posisi vertikal simbol */
-
+    
     /* Efek Transisi dan Visibilitas Awal */
     opacity: 0; /* Tersembunyi secara default */
     transform: scale(0.8);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
     pointer-events: none; /* Tidak bisa diklik saat tersembunyi */
 }
 
@@ -1300,7 +1298,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- NEW: CURSOR FOLLOW GLOW LOGIC (Dashboard) ---
     const downloadBtn = document.querySelector('.download-btn');
     const modalButtons = document.querySelectorAll('.modal-options button:not(.modal-close)');
-    const elementsToGlow = [downloadBtn, ...modalButtons];
+    const listItems = document.querySelectorAll('.list-container li');
+    const elementsToGlow = [downloadBtn, ...modalButtons, ...listItems];
     elementsToGlow.forEach(el => {
         if (el) {
             el.addEventListener('mousemove', (e) => updateGlow(e, el));
