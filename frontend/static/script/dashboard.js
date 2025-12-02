@@ -19,6 +19,15 @@ const modal = document.getElementById("save-modal-overlay");
  * @param {string} text - Teks lengkap yang ingin ditampilkan (termasuk HTML).
  * @param {number} speed - Kecepatan mengetik dalam milidetik (opsional).
  */
+
+function updateGlow(e, el) {
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * 100;
+    const y = (e.clientY - rect.top) / rect.height * 100;
+    el.style.setProperty('--mouse-x', `${x}%`);
+    el.style.setProperty('--mouse-y', `${y}%`);
+};
+
 function typeEffect(element, text, speed = 30) {
     // 1. Fungsi ini sekarang mengembalikan Promise
     return new Promise((resolve) => {
@@ -1287,9 +1296,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         }, 5000); // Ganti setiap 5 detik
     }
+
+    // --- NEW: CURSOR FOLLOW GLOW LOGIC (Dashboard) ---
+    const downloadBtn = document.querySelector('.download-btn');
+    const modalButtons = document.querySelectorAll('.modal-options button:not(.modal-close)');
+    const elementsToGlow = [downloadBtn, ...modalButtons];
+    elementsToGlow.forEach(el => {
+        if (el) {
+            el.addEventListener('mousemove', (e) => updateGlow(e, el));
+            el.addEventListener('mouseleave', () => {
+                el.style.setProperty('--mouse-x', `50%`);
+                el.style.setProperty('--mouse-y', `50%`);
+            });
+        }
+    });
     
     const footerEl = document.querySelector('footer');
-    const downloadBtn = document.querySelector('.download-btn');
     const container = document.getElementById('dashboard');
 
     // Cek dulu elemennya ada gak

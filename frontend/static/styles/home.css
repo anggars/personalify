@@ -124,37 +124,39 @@ p {
     z-index: 1;
 }
 
-/* Pseudo-element Aurora */
+/* Pseudo-element Aurora (Kini menjadi Radial Glow Lokal) */
 .button::before {
     content: '';
     position: absolute;
-    /* Posisi tengah, ukuran 200% biar cover pas muter */
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
+    /* UKURAN DIPERLAMA: 80% dari tombol (membuat spotlight kecil) */
+    width: 100%; 
+    height: 100%;
     
-    /* GRADIEN AURORA HALUS (Opacity 0.25) */
-    background: conic-gradient(
-        from 90deg at 50% 50%,
-        rgba(29, 185, 84, 0.25),
-        rgba(59, 130, 246, 0.25),
-        rgba(139, 92, 246, 0.25),
-        rgba(236, 72, 153, 0.25),
-        rgba(29, 185, 84, 0.25)
+    /* POSISI SUMBER CAHAYA: Mengikuti variabel JS */
+    /* 40% adalah offset dari 80% */
+    left: calc(var(--mouse-x, 50%) - 50%); 
+    top: calc(var(--mouse-y, 50%) - 50%);
+
+    /* GRADIENT RADIAL SATU WARNA (Spotify Green - Sangat Tipis) */
+    background: radial-gradient(
+        circle at center,
+        rgba(29, 185, 84, 0.4), /* Hijau Terang (Maksimum opacity 0.4) */
+        rgba(29, 185, 84, 0.05) 50%, /* Hijau pudar (Sangat tipis, opacity 0.05) */
+        transparent 100%            
     );
     
-    filter: blur(20px);
-    opacity: 0;
+    filter: blur(10px); /* Blur diperkecil (10px) agar cahaya terfokus */
+    opacity: 0;         
     z-index: -1;
     transition: opacity 0.4s ease;
     pointer-events: none;
 }
 
-/* Efek Hover: Muncul & Muter */
+/* Efek Hover Tombol */
 .button:hover::before {
+    /* Hanya munculkan, tanpa animasi putar */
     opacity: 1;
-    animation: spinAurora 4s linear infinite;
+    animation: none; 
 }
 
 /* Efek Hover Tombol */
@@ -163,12 +165,6 @@ p {
     border-color: rgba(255, 255, 255, 0.3);
     transform: scale(1.05) translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-/* Animasi Putar (Pastikan ini ada) */
-@keyframes spinAurora {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
 }
 
 /* (4) Style untuk Teks & Spinner (Updated) */

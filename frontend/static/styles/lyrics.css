@@ -230,22 +230,20 @@ header p.subtitle a:hover {
 .button-primary::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
+    width: 100%;
+    height: 100%;
     
-    /* GRADIEN AURORA HALUS (0.25) */
-    background: conic-gradient(
-        from 90deg at 50% 50%,
-        rgba(29, 185, 84, 0.25),
-        rgba(59, 130, 246, 0.25),
-        rgba(139, 92, 246, 0.25),
-        rgba(236, 72, 153, 0.25),
-        rgba(29, 185, 84, 0.25)
+    left: calc(var(--mouse-x, 50%) - 50%); 
+    top: calc(var(--mouse-y, 50%) - 50%);
+    
+    background: radial-gradient(
+        circle at center,
+        rgba(29, 185, 84, 0.4), 
+        rgba(29, 185, 84, 0.05) 50%, 
+        transparent 100%            
     );
     
-    filter: blur(20px);
+    filter: blur(10px);
     opacity: 0;
     z-index: -1;
     transition: opacity 0.4s ease;
@@ -254,18 +252,13 @@ header p.subtitle a:hover {
 
 .button-primary:hover::before {
     opacity: 1;
-    animation: spinAurora 4s linear infinite;
+    animation: none; 
 }
 
 .button-primary:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.3);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-@keyframes spinAurora {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
 }
 
 /* (5) Style untuk Teks & Spinner di dalam tombol */

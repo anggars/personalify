@@ -17,6 +17,14 @@ const getSpinnerHtml = (text) => `
     </div>
 `;
 
+function updateGlow(e, el) {
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * 100;
+    const y = (e.clientY - rect.top) / rect.height * 100;
+    el.style.setProperty('--mouse-x', `${x}%`);
+    el.style.setProperty('--mouse-y', `${y}%`);
+};
+
 // Fungsi untuk menangani submit
 async function analyzeLyrics() {
     const lyrics = lyricsInput.value;
@@ -131,6 +139,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     const subtitleEl = document.querySelector('header p.subtitle');
     const containerEl = document.querySelector('.container');
     const footerEl = document.querySelector('footer');
+    const analyzeButton = document.querySelector('.lyrics-form .button-primary');
+
+    // --- NEW: CURSOR FOLLOW GLOW LOGIC (Analyze Button) ---
+    if (analyzeButton) {
+        analyzeButton.addEventListener('mousemove', (e) => updateGlow(e, analyzeButton));
+        analyzeButton.addEventListener('mouseleave', () => {
+            analyzeButton.style.setProperty('--mouse-x', `50%`);
+            analyzeButton.style.setProperty('--mouse-y', `50%`);
+        });
+    }
 
     if (titleEl && subtitleEl && containerEl) {
         const titleText = titleEl.textContent;

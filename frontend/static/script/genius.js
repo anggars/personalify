@@ -16,6 +16,14 @@ const getSpinnerHtml = (text) => `
     </div>
 `;
 
+function updateGlow(e, el) {
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * 100;
+    const y = (e.clientY - rect.top) / rect.height * 100;
+    el.style.setProperty('--mouse-x', `${x}%`);
+    el.style.setProperty('--mouse-y', `${y}%`);
+};
+
 // --- 1. Helper: Loading State pada Tombol ---
 function setLoading(isLoading) {
     if (isLoading) {
@@ -334,6 +342,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     const titleEl = document.querySelector('header h1');
     const subtitleEl = document.querySelector('header p.subtitle');
     const footerEl = document.querySelector('footer');
+
+    // --- NEW: CURSOR FOLLOW GLOW LOGIC (Search Button) ---
+    if (searchBtn) {
+        searchBtn.addEventListener('mousemove', (e) => updateGlow(e, searchBtn));
+        searchBtn.addEventListener('mouseleave', () => {
+            searchBtn.style.setProperty('--mouse-x', `50%`);
+            searchBtn.style.setProperty('--mouse-y', `50%`);
+        });
+    }
     
     if (titleEl && subtitleEl) {
         const titleText = titleEl.textContent;

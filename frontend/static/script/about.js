@@ -31,6 +31,14 @@ function typeEffect(element, text, speed = 30) {
     });
 }
 
+function updateGlow(e, el) {
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * 100;
+    const y = (e.clientY - rect.top) / rect.height * 100;
+    el.style.setProperty('--mouse-x', `${x}%`);
+    el.style.setProperty('--mouse-y', `${y}%`);
+};
+
 document.addEventListener('DOMContentLoaded', async function() {
     const titleEl = document.querySelector('header.hero h1');
     const subtitleEl = document.querySelector('header.hero p');
@@ -214,6 +222,18 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         setTimeout(typeTechFooter, delta);
     }
+
+    // =========================================
+    // 4. CURSOR FOLLOW GLOW LOGIC (Bubbles)
+    // =========================================
+        
+    allBubbles.forEach(bubble => {
+        bubble.addEventListener('mousemove', (e) => updateGlow(e, bubble));
+        bubble.addEventListener('mouseleave', () => {
+            bubble.style.setProperty('--mouse-x', `50%`);
+            bubble.style.setProperty('--mouse-y', `50%`);
+        });
+    });
 
     typeTechFooter();
 });
