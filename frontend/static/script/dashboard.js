@@ -1314,16 +1314,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // [LOGIC MOUSE LAMA TETAP ADA]
             el.addEventListener('mousemove', (e) => updateGlow(e, el));
             el.addEventListener('mouseleave', () => {
-                el.style.setProperty('--mouse-x', `50%`);
-                el.style.setProperty('--mouse-y', `50%`);
             });
             
             // [BARU: TOUCH EVENTS]
             el.addEventListener('touchstart', (e) => updateGlow(e, el));
             el.addEventListener('touchmove', (e) => updateGlow(e, el));
             el.addEventListener('touchend', () => {
-                el.style.setProperty('--mouse-x', `50%`);
-                el.style.setProperty('--mouse-y', `50%`);
             });
         }
     });
