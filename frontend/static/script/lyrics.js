@@ -155,15 +155,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         // [LOGIC MOUSE LAMA TETAP ADA]
         analyzeButton.addEventListener('mousemove', (e) => updateGlow(e, analyzeButton));
         analyzeButton.addEventListener('mouseleave', () => {
-            analyzeButton.style.setProperty('--mouse-x', `50%`);
-            analyzeButton.style.setProperty('--mouse-y', `50%`);
         });
         // [BARU: TOUCH EVENTS]
         analyzeButton.addEventListener('touchstart', (e) => updateGlow(e, analyzeButton));
         analyzeButton.addEventListener('touchmove', (e) => updateGlow(e, analyzeButton));
         analyzeButton.addEventListener('touchend', () => {
-            analyzeButton.style.setProperty('--mouse-x', `50%`);
-            analyzeButton.style.setProperty('--mouse-y', `50%`);
         });
     }
     // ...
