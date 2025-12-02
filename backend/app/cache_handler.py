@@ -10,12 +10,14 @@ load_dotenv()
 REDIS_URL = os.getenv("REDIS_URL")
 
 if REDIS_URL:
-    # Jika ada REDIS_URL (saat di Render), gunakan itu
+    # Jika ada REDIS_URL (saat di Vercel), gunakan itu
+    print(f"CACHE HANDLER: CONNECTING TO CLOUD REDIS VIA URL.")
     r = redis.from_url(REDIS_URL, decode_responses=True)
 else:
     # Jika tidak ada (saat di lokal), gunakan host dan port dari .env
     redis_host = os.getenv("REDIS_HOST", "redisfy")
     redis_port = int(os.getenv("REDIS_PORT", 6379))
+    print(f"CACHE HANDLER: CONNECTING TO LOCAL REDIS AT {redis_host}:{redis_port}.")
     r = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
 
 
@@ -42,14 +44,14 @@ def clear_top_data_cache():
     Menghapus semua cache 'top:*' dari Redis.
     Menggunakan SCAN_ITER agar aman dan tidak memblokir server.
     """
-    print("CACHE_HANDLER: Memulai pembersihan cache 'top:*:*'...")
+    print("CACHE_HANDLER: STARTING TO CLEAR CACHE 'TOP:*:*'...")
     keys_to_delete = []
     # 'r' adalah klien redis.Redis(decode_responses=True) yang sudah ada
     for key in r.scan_iter("top:*:*"):
         keys_to_delete.append(key)
     
     if not keys_to_delete:
-        print("CACHE_HANDLER: Tidak ada cache 'top:*:*' yang ditemukan.")
+        print("CACHE_HANDLER: NO 'TOP:*:*' CACHE FOUND.")
         return 0 # 0 keys deleted
     
     # Gunakan pipeline untuk menghapus secara efisien
@@ -58,5 +60,5 @@ def clear_top_data_cache():
         pipe.delete(key)
     pipe.execute()
     
-    print(f"CACHE_HANDLER: Selesai. {len(keys_to_delete)} cache telah dihapus.")
+    print(f"CACHE_HANDLER: DONE. {len(keys_to_delete)} CACHE ENTRIES DELETED.")
     return len(keys_to_delete) # Mengembalikan jumlah cache yang dihapus

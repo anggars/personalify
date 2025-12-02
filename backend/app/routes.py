@@ -191,11 +191,11 @@ async def analyze_emotions_background(
         if extended:
             # Jika ini permintaan 'extended', JANGAN simpan hasilnya.
             # Cukup kembalikan untuk ditampilkan sementara di browser.
-            print("Extended analysis requested. Returning temporary result without caching.")
+            print("EXTENDED ANALYSIS REQUESTED. RETURNING TEMPORARY RESULT WITHOUT CACHING.")
         else:
             # Jika ini analisis standar (Top 10 saat halaman dibuka),
             # baru simpan hasilnya ke cache dan database.
-            print("Standard analysis. Updating cache and database.")
+            print("STANDARD ANALYSIS. UPDATING CACHE AND DATABASE.")
             cached_data['emotion_paragraph'] = emotion_paragraph
             cache_top_data("top", spotify_id, time_range, cached_data)
             save_user_sync(spotify_id, time_range, cached_data)
@@ -203,7 +203,7 @@ async def analyze_emotions_background(
         return {"emotion_paragraph": emotion_paragraph}
 
     except Exception as e:
-        print(f"Background emotion analysis failed: {e}")
+        print(f"BACKGROUND EMOTION ANALYSIS FAILED: {e}")
         return {"emotion_paragraph": "Vibe analysis is currently unavailable."}
 
 @router.get("/sync/top-data", tags=["Sync"])
@@ -217,12 +217,12 @@ def sync_top_data(
 
     # [FIX UTAMA] Tangani Token Expired (401) agar tidak jadi Internal Server Error
     if res.status_code == 401:
-        print(f"SYNC ERROR: Token expired for access_token={access_token[:10]}...")
+        print(f"SYNC ERROR: TOKEN EXPIRED FOR ACCESS_TOKEN={access_token[:10]}...")
         # Lempar 401 agar frontend tahu user harus login ulang
         raise HTTPException(status_code=401, detail="Spotify token expired. Please login again.")
     
     if res.status_code != 200:
-        print(f"SYNC ERROR: Failed to fetch user profile. Status: {res.status_code}")
+        print(f"SYNC ERROR: FAILED TO FETCH USER PROFILE. STATUS: {res.status_code}")
         raise HTTPException(status_code=res.status_code, detail=res.json())
 
     # Jika token aman, lanjut proses normal
@@ -485,9 +485,9 @@ def get_stats():
         return Response(content=report_string, media_type="text/plain")
         
     except Exception as e:
-        print(f"ADMIN_STATS: Gagal total di endpoint: {e}")
+        print(f"ADMIN_STATS: FAILED TO RETRIEVE SYSTEM-WIDE STATS AT ENDPOINT: {e}")
         return Response(
-            content=f"Gagal mengambil statistik sistem: {str(e)}", 
+            content=f"FAILED TO RETRIEVE SYSTEM-WIDE STATS: {str(e)}", 
             media_type="text/plain", 
             status_code=500
         )
@@ -527,9 +527,9 @@ def clear_cache():
         return Response(content=report_string, media_type="text/plain")
         
     except Exception as e:
-        print(f"ADMIN_STATS: Gagal menghapus cache: {e}")
+        print(f"ADMIN_STATS: FAILED TO CLEAR CACHE: {e}")
         return Response(
-            content=f"Gagal menghapus cache: {str(e)}", 
+            content=f"FAILED TO CLEAR CACHE: {str(e)}", 
             media_type="text/plain", 
             status_code=500
         )
@@ -590,9 +590,9 @@ def get_user_stats(spotify_id: str):
         return Response(content=report_string, media_type="text/plain")
         
     except Exception as e:
-        print(f"ADMIN_STATS: Gagal total di endpoint user-report: {e}")
+        print(f"ADMIN_STATS: FAILED TO RETRIEVE USER REPORT AT ENDPOINT: {e}")
         return Response(
-            content=f"Gagal mengambil laporan user: {str(e)}", 
+            content=f"FAILED TO RETRIEVE USER REPORT: {str(e)}", 
             media_type="text/plain", 
             status_code=500
         )
