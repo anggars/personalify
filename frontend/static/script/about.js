@@ -32,9 +32,18 @@ function typeEffect(element, text, speed = 30) {
 }
 
 function updateGlow(e, el) {
+    // Tentukan sumber koordinat: (e.touches[0] untuk touch, e untuk mouse)
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    // Safety check jika koordinat tidak ditemukan (misal: multi-touch)
+    if (clientX === undefined) return; 
+
     const rect = el.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width * 100;
-    const y = (e.clientY - rect.top) / rect.height * 100;
+    const x = (clientX - rect.left) / rect.width * 100;
+    // Gunakan el.clientHeight untuk Y agar perhitungan posisi vertikal lebih stabil
+    const y = (clientY - rect.top) / el.clientHeight * 100; 
+    
     el.style.setProperty('--mouse-x', `${x}%`);
     el.style.setProperty('--mouse-y', `${y}%`);
 };
@@ -228,12 +237,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     // =========================================
         
     allBubbles.forEach(bubble => {
+        // [LOGIC MOUSE LAMA TETAP ADA]
         bubble.addEventListener('mousemove', (e) => updateGlow(e, bubble));
         bubble.addEventListener('mouseleave', () => {
             bubble.style.setProperty('--mouse-x', `50%`);
             bubble.style.setProperty('--mouse-y', `50%`);
         });
+        // [BARU: TOUCH EVENTS]
+        bubble.addEventListener('touchstart', (e) => updateGlow(e, bubble));
+        bubble.addEventListener('touchmove', (e) => updateGlow(e, bubble));
+        bubble.addEventListener('touchend', () => {
+            bubble.style.setProperty('--mouse-x', `50%`);
+            bubble.style.setProperty('--mouse-y', `50%`);
+        });
     });
-
     typeTechFooter();
 });

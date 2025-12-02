@@ -37,6 +37,23 @@ function typeEffect(element, text, speed = 30) {
     });
 }
 
+function updateGlow(e, el) {
+    // Tentukan sumber koordinat: (e.touches[0] untuk touch, e untuk mouse)
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    // Safety check jika koordinat tidak ditemukan (misal: multi-touch)
+    if (clientX === undefined) return; 
+
+    const rect = el.getBoundingClientRect();
+    const x = (clientX - rect.left) / rect.width * 100;
+    // Gunakan el.clientHeight untuk Y agar perhitungan posisi vertikal lebih stabil
+    const y = (clientY - rect.top) / el.clientHeight * 100; 
+    
+    el.style.setProperty('--mouse-x', `${x}%`);
+    el.style.setProperty('--mouse-y', `${y}%`);
+};
+
 document.addEventListener('DOMContentLoaded', async function() {
     // === 1. HERO ANIMATION ===
     const titleEl = document.querySelector('.hero h1');
@@ -105,26 +122,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const buttonEl = document.querySelector('.hero .button');
 
     if (buttonEl) {
-        // Fungsi menghitung posisi kursor relatif terhadap elemen
-        const updateGlow = (e) => {
-            const rect = buttonEl.getBoundingClientRect();
-            
-            // Hitung posisi (dalam persentase) relatif terhadap tepi elemen
-            const x = (e.clientX - rect.left) / rect.width * 100;
-            const y = (e.clientY - rect.top) / rect.height * 100;
-            
-            // Injeksi variabel CSS
-            buttonEl.style.setProperty('--mouse-x', `${x}%`);
-            buttonEl.style.setProperty('--mouse-y', `${y}%`);
-        };
-
-        // Pasang event listener saat kursor bergerak di atas tombol
-        buttonEl.addEventListener('mousemove', updateGlow);
-        
-        // Bersihkan variabel saat kursor meninggalkan tombol (opsional, tapi disarankan)
+        // [LOGIC MOUSE LAMA TETAP ADA]
+        buttonEl.addEventListener('mousemove', (e) => updateGlow(e, buttonEl));
         buttonEl.addEventListener('mouseleave', () => {
-             buttonEl.style.setProperty('--mouse-x', `50%`);
-             buttonEl.style.setProperty('--mouse-y', `50%`);
+            buttonEl.style.setProperty('--mouse-x', `50%`);
+            buttonEl.style.setProperty('--mouse-y', `50%`);
+        });
+        // [BARU: TOUCH EVENTS]
+        buttonEl.addEventListener('touchstart', (e) => updateGlow(e, buttonEl));
+        buttonEl.addEventListener('touchmove', (e) => updateGlow(e, buttonEl));
+        buttonEl.addEventListener('touchend', () => {
+            buttonEl.style.setProperty('--mouse-x', `50%`);
+            buttonEl.style.setProperty('--mouse-y', `50%`);
         });
     }
 });

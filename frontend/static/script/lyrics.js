@@ -18,9 +18,18 @@ const getSpinnerHtml = (text) => `
 `;
 
 function updateGlow(e, el) {
+    // Tentukan sumber koordinat: (e.touches[0] untuk touch, e untuk mouse)
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    // Safety check jika koordinat tidak ditemukan (misal: multi-touch)
+    if (clientX === undefined) return; 
+
     const rect = el.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width * 100;
-    const y = (e.clientY - rect.top) / rect.height * 100;
+    const x = (clientX - rect.left) / rect.width * 100;
+    // Gunakan el.clientHeight untuk Y agar perhitungan posisi vertikal lebih stabil
+    const y = (clientY - rect.top) / el.clientHeight * 100; 
+    
     el.style.setProperty('--mouse-x', `${x}%`);
     el.style.setProperty('--mouse-y', `${y}%`);
 };
@@ -143,12 +152,21 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // --- NEW: CURSOR FOLLOW GLOW LOGIC (Analyze Button) ---
     if (analyzeButton) {
+        // [LOGIC MOUSE LAMA TETAP ADA]
         analyzeButton.addEventListener('mousemove', (e) => updateGlow(e, analyzeButton));
         analyzeButton.addEventListener('mouseleave', () => {
             analyzeButton.style.setProperty('--mouse-x', `50%`);
             analyzeButton.style.setProperty('--mouse-y', `50%`);
         });
+        // [BARU: TOUCH EVENTS]
+        analyzeButton.addEventListener('touchstart', (e) => updateGlow(e, analyzeButton));
+        analyzeButton.addEventListener('touchmove', (e) => updateGlow(e, analyzeButton));
+        analyzeButton.addEventListener('touchend', () => {
+            analyzeButton.style.setProperty('--mouse-x', `50%`);
+            analyzeButton.style.setProperty('--mouse-y', `50%`);
+        });
     }
+    // ...
 
     if (titleEl && subtitleEl && containerEl) {
         const titleText = titleEl.textContent;
