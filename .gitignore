@@ -25,3 +25,13 @@ __pycache__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Abaikan file Jupyter Notebook dari statistik bahasa
+*.ipynb linguist-vendored
+
+# Abaikan file CSV dari statistik
+*.csv linguist-vendored
+
+# Paksa file Python di backend dihitung sebagai Python (Opsional, buat negesin)
+backend/**/*.py linguist-language=Python
+api/**/*.py linguist-language=Python
