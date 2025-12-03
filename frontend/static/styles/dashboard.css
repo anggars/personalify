@@ -157,10 +157,10 @@ li {
     min-width: 0;
     position: relative;
     overflow: hidden; /* Tetap perlu ini buat motong teks panjang */
-    
-    /* HAPUS MASK-IMAGE BIAR GAK ADA EFEK BLUR PUDAR */
-    mask-image: none !important;
-    -webkit-mask-image: none !important;
+}
+.info.mask-active {
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 /* Default Teks: Satu baris, potong pakai titik-titik (...) */
 .info .name,
@@ -273,24 +273,26 @@ li {
     font-size: 0.75rem;
 }
 
+/* === BAGIAN .download-btn === */
 .download-btn {
     position: fixed;
-    overflow: hidden; /* Wajib: biar aurora gak bocor keluar tombol */
+    overflow: hidden;
     bottom: 1.5rem;
     right: 2rem;
     
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 24px; /* Padding pas */
+    padding: 10px 24px;
     
-    /* Base Glass Style */
-    background-color: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* === ULTRA LIQUID GLASS === */
+    background-color: rgba(255, 255, 255, 0.025); /* 2.5% Opacity */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    
     color: #ffffff;
-    border-radius: 9999px; /* Pill shape */
+    border-radius: 9999px;
     
     font-weight: 600;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -298,12 +300,37 @@ li {
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     z-index: 1000;
     
-    /* Transisi standar */
     transition: background-color 0.3s ease, 
                 border-color 0.3s ease,
-                transform 0.2s ease, /* Tambahin ini buat efek klik */
+                transform 0.2s ease,
                 opacity 0.4s ease, 
                 bottom 0.4s ease;
+}
+
+/* === BAGIAN Modal Options (Artist, Tracks, Genres) === */
+.modal-options button:not(.modal-close) {
+    position: relative;
+    padding: 14px 24px;
+    font-size: 1rem;
+    border-radius: 9999px; 
+    
+    /* === ULTRA LIQUID GLASS === */
+    background: rgba(255, 255, 255, 0.01); /* 1% Opacity */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow: hidden;
+    transition: transform 0.2s ease, background 0.2s;
+}
+
+.modal-options button:not(.modal-close):hover {
+    transform: scale(1.001);
+    /* Hover state juga dijaga tetep bening */
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .download-btn .button-text {
@@ -454,32 +481,6 @@ footer.fade-in {
     display: flex;
     flex-direction: column;
     gap: 15px;
-}
-
-/* === TOMBOL PILIHAN (Artist, Tracks, Genres) === */
-.modal-options button:not(.modal-close) {
-    position: relative;
-    padding: 14px 24px; /* Padding mirip tombol Save as Image */
-    font-size: 1rem;
-    
-    /* PERUBAHAN: Radius 9999px biar sama kayak tombol lain (Pill Shape) */
-    border-radius: 9999px; 
-    
-    /* Efek Kaca */
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
-    font-weight: 700; /* Bold biar sama */
-    cursor: pointer;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    overflow: hidden;
-    transition: transform 0.2s ease, background 0.2s;
-}
-
-.modal-options button:not(.modal-close):hover {
-    transform: scale(1.001);
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .modal-options button span, 

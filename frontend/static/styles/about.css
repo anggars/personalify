@@ -377,26 +377,24 @@ footer.fade-in {
 }
 
 /* === STYLING BUBBLE VIDEO (VERSI DYNAMIC ISLAND) === */
+/* Cari bagian .video-bubble-toast */
+
 .video-bubble-toast {
     position: fixed; 
-    
-    /* PERUBAHAN: Pindah ke T-O-P (Tengah Atas) */
     top: 2rem; 
-    bottom: auto; /* Hapus setting 'bottom' */
+    bottom: auto;
     left: 50%;
     width: auto; 
     
-    /* === EFEK LIQUID GLASS (DIAMBIL DARI DASHBOARD.CSS) === */
-    background: rgba(255, 255, 255, 0.1); 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* === ULTRA LIQUID GLASS === */
+    background: rgba(255, 255, 255, 0.01); /* 1% Opacity */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); 
     
-    /* PERUBAHAN: Bentuk "Pill" ala Dynamic Island */
     border-radius: 12px; 
     
-    /* === Layout Flexbox === */
     display: flex;
     align-items: center; 
     gap: 0.75rem; 
@@ -406,16 +404,14 @@ footer.fade-in {
     text-decoration: none; 
     overflow: hidden; 
     
-    /* PERUBAHAN: Animasi "Expand/Collapse" */
     opacity: 0;
     visibility: hidden;
-    transform: translateX(-50%) scale(0.2); /* Mulai dari kecil */
-    transform-origin: top center; /* Mengembang dari atas tengah */
+    transform: translateX(-50%) scale(0.2);
+    transform-origin: top center;
     
-    /* Transisi dengan efek "bouncy" */
     transition: opacity 0.3s ease-in, 
                 transform 0.3s ease-in, 
-                visibility 0s ease-in 0.3s, /* <-- KUNCI 1 */
+                visibility 0s ease-in 0.3s,
                 background 0.3s ease, 
                 border-color 0.3s ease;
 }
@@ -459,8 +455,8 @@ footer.fade-in {
 
 /* 2. Efek Hover pada Container Bubble */
 .video-bubble-toast:hover {
-    /* Ganti background jadi lebih terang/glassy (mirip tombol Home) */
-    background: rgba(255, 255, 255, 0.2); 
+    /* Hover: sedikit lebih terlihat (8%) */
+    background: rgba(255, 255, 255, 0.08); 
     border-color: rgba(255, 255, 255, 0.3);
 }
 
