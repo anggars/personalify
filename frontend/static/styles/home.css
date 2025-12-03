@@ -121,10 +121,18 @@ p {
     -webkit-backdrop-filter: blur(6px);
     
     /* Border dipertipis transparansinya biar elegan */
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     
     color: var(--text); 
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
+    box-shadow: 
+        /* Highlight Atas (Putih Terang & Pudar ke bawah) -> Ini yang bikin efek 'netes' */
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.35), 
+        
+        /* Highlight Pinggir Tipis (Crisp) */
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
+        
+        /* Shadow Luar (Depth) */
+        0 4px 15px rgba(0, 0, 0, 0.2);
     z-index: 1;
 }
 
@@ -133,9 +141,12 @@ p {
     /* Pas hover, opacity naik dikit jadi 8% (masih bening) */
     background: rgba(255, 255, 255, 0.08); 
     
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.12);
     transform: scale(1.05) translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    box-shadow: 
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.45), 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.6),
+        0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
 /* Pseudo-element Aurora (Kini menjadi Radial Glow Lokal) */

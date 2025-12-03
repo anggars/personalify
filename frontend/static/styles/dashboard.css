@@ -96,11 +96,20 @@ h1 {
     z-index: 1;
     transition: transform 0.3s ease, box-shadow 0.3s ease; /* Transisi yang lebih smooth */
     overflow: hidden;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.15), 
+        inset 0 2px 10px 0 rgba(255, 255, 255, 0.05),
+        0 12px 40px rgba(0, 0, 0, 0.6);
 }
 
 .section:hover {
-    transform: translateY(-4px); /* Gerakan lebih jauh (dari -2px ke -8px) */
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7); /* Bayangan lebih dramatis */
+    transform: translateY(-4px);
+    box-shadow: 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.2), 
+        inset 0 2px 10px 0 rgba(255, 255, 255, 0.08),
+        0 15px 50px rgba(0, 0, 0, 0.7);
     z-index: 2;
 }
 .section h2 {
@@ -289,7 +298,16 @@ li {
     background-color: rgba(255, 255, 255, 0.025); /* 2.5% Opacity */
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 
+        /* Highlight Atas (Putih Terang & Pudar ke bawah) -> Ini yang bikin efek 'netes' */
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.35), 
+        
+        /* Highlight Pinggir Tipis (Crisp) */
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
+        
+        /* Shadow Luar (Depth) */
+        0 4px 15px rgba(0, 0, 0, 0.2);
     
     color: #ffffff;
     border-radius: 9999px;
@@ -297,7 +315,6 @@ li {
     font-weight: 600;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     z-index: 1000;
     
     transition: background-color 0.3s ease, 
@@ -315,8 +332,13 @@ li {
     border-radius: 9999px; 
     
     /* === ULTRA LIQUID GLASS === */
-    background: rgba(255, 255, 255, 0.01); /* 1% Opacity */
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.025); /* 2.5% Opacity */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.25), /* Sedikit lebih redup di modal */
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.4);
     
     color: #fff;
     font-weight: 700;
@@ -331,6 +353,9 @@ li {
     /* Hover state juga dijaga tetep bening */
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.4), 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .download-btn .button-text {
@@ -499,6 +524,15 @@ footer.fade-in {
     background: rgba(255, 59, 48, 0.15); /* Merah transparan */
     border: 1px solid rgba(255, 59, 48, 0.2);
     color: #ff453a; /* Merah terang */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 
+        /* Highlight Atas (Soft) */
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.15), 
+        /* Highlight Pinggir Atas (Tajam) */
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
+        /* Shadow Luar */
+        0 4px 15px rgba(0, 0, 0, 0.2);
     
     font-weight: 700;
     font-size: 1rem;
