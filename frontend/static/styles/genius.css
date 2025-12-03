@@ -124,24 +124,26 @@ header p.subtitle a:hover {
     box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
 }
 
-/* === UPDATE TOMBOL SEARCH (Spinning Aurora) === */
+/* === UPDATE TOMBOL SEARCH (ULTRA LIQUID GLASS) === */
 
 .button-primary {
     position: relative;
-    overflow: hidden; /* WAJIB: Biar aurora gak bocor */
+    overflow: hidden; 
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 100%; /* Tetap lebar penuh sesuai layout genius */
+    width: 100%; /* (Di lyrics.css width-nya auto/ikut container, sesuaikan saja) */
     
     padding: 12px 24px;
     border-radius: 50px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
     
-    /* Base Glass Style */
-    background: rgba(255, 255, 255, 0.1); 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    /* Border lebih tipis */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    
+    /* === ULTRA LIQUID GLASS === */
+    background: rgba(255, 255, 255, 0.05); /* 5% Opacity */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     
     color: #FFFFFF;
     font-weight: 700;
@@ -152,6 +154,14 @@ header p.subtitle a:hover {
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     z-index: 1;
+}
+
+.button-primary:hover {
+    /* Hover state */
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    transform: none; 
 }
 
 /* Pseudo-element Aurora */
@@ -181,14 +191,6 @@ header p.subtitle a:hover {
 .button-primary:hover::before {
     opacity: 1;
     animation: none;
-}
-
-/* Efek Hover Tombol */
-.button-primary:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    transform: none; /* Reset efek transform lama yg geser */
 }
 
 .button-primary .button-text { 

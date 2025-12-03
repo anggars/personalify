@@ -98,11 +98,9 @@ p {
 
 /* === STYLE BARU: LIQUID GLASS BUTTON === */
 
-/* === UPDATE TOMBOL LOGIN (Spinning Aurora) === */
-
 .button {
     position: relative;
-    overflow: hidden; /* WAJIB: Biar aurora gak bocor */
+    overflow: hidden; 
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -114,14 +112,30 @@ p {
     border-radius: 50px;
     transition: all 0.3s ease;
     
-    /* Glass Style Base */
-    background: rgba(255, 255, 255, 0.1); 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* === ULTRA LIQUID GLASS === */
+    /* Background nyaris hilang (1%) */
+    background: rgba(255, 255, 255, 0.075); 
+    
+    /* Blur sedikit dinaikkan biar smooth */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    
+    /* Border dipertipis transparansinya biar elegan */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    
     color: var(--text); 
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
     z-index: 1;
+}
+
+/* Update Hover state biar gak jadi putih susu */
+.button:hover {
+    /* Pas hover, opacity naik dikit jadi 8% (masih bening) */
+    background: rgba(255, 255, 255, 0.08); 
+    
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
 /* Pseudo-element Aurora (Kini menjadi Radial Glow Lokal) */
@@ -157,14 +171,6 @@ p {
     /* Hanya munculkan, tanpa animasi putar */
     opacity: 1;
     animation: none; 
-}
-
-/* Efek Hover Tombol */
-.button:hover {
-    background: rgba(255, 255, 255, 0.2); 
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: scale(1.05) translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
 /* (4) Style untuk Teks & Spinner (Updated) */

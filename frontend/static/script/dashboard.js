@@ -1363,17 +1363,20 @@ document.addEventListener('DOMContentLoaded', function() {
    - Tunggu Font Ready (Akurasi Tinggi)
    - Buffer 15px (Anti gerak teks pendek)
    ========================================= */
-   function setupMarquee() {
-    // 1. CLEANUP: Bersihkan sisa animasi lama (PENTING)
+function setupMarquee() {
+    // 1. CLEANUP: Reset semua animasi & masking lama
     document.querySelectorAll('.scroll-active').forEach(el => {
         el.classList.remove('scroll-active');
         el.style.removeProperty('--scroll-distance');
         el.style.removeProperty('--scroll-duration');
+        
+        // Hapus mask dari parent (biar gak ngeblur pas diem)
+        if (el.parentElement.classList.contains('mask-active')) {
+            el.parentElement.classList.remove('mask-active');
+        }
     });
 
-    // 2. TARGET:
-    // - Judul (.name) di Artists & Tracks
-    // - Metadata (.meta) CUMA di Tracks yang depannya "Album:"
+    // 2. TARGET: Pilih elemen yang BOLEH gerak
     const titles = document.querySelectorAll('#artists-section .info .name, #tracks-section .info .name');
     
     const trackMetas = document.querySelectorAll('#tracks-section .info .meta');
@@ -1381,7 +1384,6 @@ document.addEventListener('DOMContentLoaded', function() {
         el.textContent.trim().startsWith("Album:")
     );
 
-    // Gabungkan target
     const allowedElements = [...titles, ...albumMetas];
 
     // 3. EKSEKUSI (Tunggu Font Siap)
@@ -1391,20 +1393,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const scrollWidth = Math.ceil(el.scrollWidth);
             const clientWidth = Math.ceil(el.clientWidth);
 
-            // LOGIC KETAT:
-            // Panjang Teks harus > Lebar Wadah + 15px (BUFFER)
-            // Kalau selisihnya dikit doang (misal teks "Test"), dia bakal DIEM.
-            if (scrollWidth > clientWidth + 15) {
+            // LOGIC FIX: Buffer cuma 2px (biar Desktop Sensitif)
+            // Kalau selisih > 2px, langsung jalan!
+            if (scrollWidth > clientWidth + 2) {
                 
-                // Jarak geser + buffer visual biar teks gak kepotong pas jalan
-                const distance = scrollWidth - clientWidth + 30; 
+                const distance = scrollWidth - clientWidth + 30; // Jarak geser + space
                 
-                // Kecepatan santai (makin kecil pembaginya, makin pelan)
+                // Kecepatan santai (makin kecil pembagi, makin pelan)
                 const duration = Math.max(distance / 25, 6);   
                 
                 el.style.setProperty('--scroll-distance', `-${distance}px`);
                 el.style.setProperty('--scroll-duration', `${duration}s`);
+                
+                // 1. Aktifkan Animasi Gerak
                 el.classList.add('scroll-active');
+
+                // 2. Aktifkan Fadeout Masking (Cuma kalau gerak!)
+                el.parentElement.classList.add('mask-active');
             }
         });
     });
