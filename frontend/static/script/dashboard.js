@@ -319,6 +319,7 @@ function generateImage(selectedCategory) {
     closeCurrentEmbed();
 
     document.body.classList.add('force-desktop-view');
+    document.body.classList.add('download-mode');
 
     // Sembunyikan semua section
     for (const key in sections) {
@@ -484,11 +485,13 @@ function generateImage(selectedCategory) {
             link.href = canvas.toDataURL("image/png");
             link.click();
             document.body.classList.remove('force-desktop-view');
+            document.body.classList.remove('download-mode');
             document.body.removeChild(container);
             checkScreenSize();
         }).catch(err => {
             console.error("html2canvas failed:", err);
             document.body.classList.remove('force-desktop-view');
+            document.body.classList.remove('download-mode');
             if (document.body.contains(container)) {
                  document.body.removeChild(container);
             }
