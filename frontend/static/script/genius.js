@@ -81,6 +81,9 @@ async function searchArtist() {
                     <div style="font-weight:bold; font-size:0.9rem;">${artist.name}</div>
                 `;
                 card.onclick = () => loadSongs(artist.id, artist.name);
+                card.addEventListener('mousemove', (e) => updateGlow(e, card));
+                card.addEventListener('touchstart', (e) => updateGlow(e, card));
+                card.addEventListener('touchmove', (e) => updateGlow(e, card));
                 artistList.appendChild(card);
             });
         }
@@ -148,7 +151,9 @@ async function loadSongs(artistId, artistName) {
             btn.onclick = function() { 
                 analyzeSong(song.id, this); 
             };
-            
+            btn.addEventListener('mousemove', (e) => updateGlow(e, btn));
+            btn.addEventListener('touchstart', (e) => updateGlow(e, btn));
+            btn.addEventListener('touchmove', (e) => updateGlow(e, btn));
             songList.appendChild(btn);
             setTimeout(() => {
                 const wrapper = btn.querySelector('.song-title-wrapper');

@@ -230,3 +230,30 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 5000); // Ganti setiap 5 detik
     }   
 });
+
+/* ==========================================
+   SMART PASTE: AUTO CLEAN FROM GENIUS
+   ========================================== */
+document.addEventListener('DOMContentLoaded', () => {
+    const lyricsInput = document.getElementById('lyricsInput'); // Pastikan ID textarea lo 'lyricsInput'
+
+    if (lyricsInput) {
+        lyricsInput.addEventListener('paste', (e) => {
+            // 1. Cegah paste default (biar ga numpuk)
+            e.preventDefault();
+
+            // 2. Ambil teks murni dari clipboard
+            const clipboardText = (e.clipboardData || window.clipboardData).getData('text');
+
+            // 3. PROSES PEMBERSIHAN (MAGIC HAPPENS HERE)
+            const cleanText = clipboardText
+                .split(/\r?\n/)             // Pecah jadi array per baris
+                .map(line => line.trim())   // Hapus spasi di kiri/kanan setiap baris
+                .filter(line => line !== '') // Hapus baris yang bener-bener kosong (Jarak Jauh)
+                .join('\n');                // Sambung lagi cuma pake 1 enter
+
+            // 4. Masukkan teks bersih ke posisi kursor
+            document.execCommand('insertText', false, cleanText);
+        });
+    }
+});

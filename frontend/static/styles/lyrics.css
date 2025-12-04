@@ -379,7 +379,7 @@ header p.subtitle a:hover {
 }
 
 .emotion-bar-row:last-child {
-    margin-bottom: 0;
+    margin-bottom: 1rem;
 }
 
 .emotion-label {
@@ -394,13 +394,16 @@ header p.subtitle a:hover {
 
 .emotion-bar-bg {
     flex: 1 1 0;
-    background: #282828;
+    background: #282828 !important; /* Solid Gelap */
     border-radius: 50px;
-    height: 12px;
+    height: 12px; /* Tinggi Fix */
     overflow: hidden;
+    position: relative;
     min-width: 80px;
     max-width: 100%;
-    display: block;
+    
+    /* Shadow Dalam (Cekung) */
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
 }
 
 .emotion-bars-group {
@@ -415,12 +418,29 @@ header p.subtitle a:hover {
 }
 
 .emotion-bar {
-    background: #B3B3B3; /* Semula: #1DB954 (hijau) */
+    background: rgba(255, 255, 255, 0.15) !important;
+    
+    /* Blur Effect */
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    
     height: 100%;
     border-radius: 50px;
-    transition: width 0.5s ease-out;
     min-width: 0;
     display: block;
+    transition: width 0.5s ease-out;
+    
+    /* === FIX: BIAR GAK KEPOTONG === */
+    box-sizing: border-box !important; /* Wajib ada biar border masuk ke dalem */
+    
+    /* Border tipis */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+
+    /* Highlight Kaca Cair (Persis Genius) */
+    box-shadow: 
+        inset 0 1px 1px rgba(255, 255, 255, 0.9), /* Kilau Atas */
+        inset 0 0 3px rgba(255, 255, 255, 0.2),   /* Kilau Tengah */
+        0 0 5px rgba(255, 255, 255, 0.15);        /* Glow Luar */
 }
 
 .emotion-score {
@@ -589,24 +609,6 @@ footer.fade-in {
         overflow: visible;
         text-overflow: unset;
     }
-    .emotion-bar-bg {
-        flex: 1 1 0;
-        background: #282828;
-        border-radius: 50px;
-        height: 10px;
-        min-width: 40px;
-        max-width: 100%;
-        overflow: hidden;
-        display: block;
-    }
-    .emotion-bar {
-        background: #B3B3B3;
-        height: 100%;
-        border-radius: 50px;
-        transition: width 0.5s ease-out;
-        min-width: 0;
-        display: block;
-    }
     .emotion-bars-group {
         display: flex;
         flex-direction: column;
@@ -641,34 +643,27 @@ footer.fade-in {
     box-shadow: 0 0 0 2px rgba(85, 85, 85, 0.2);
 }
 
-.emotion-bar-row:last-child {
-    margin-bottom: 1rem; 
-}
-
 .emotion-bar-bg {
     position: relative;
     overflow: hidden;
 }
 
 .emotion-bar-bg::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 50%;
+    content: ''; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 50%; 
     height: 100%;
-    
-    /* ▼▼▼ UBAH WARNA GRADASI INI ▼▼▼ */
     background: linear-gradient(90deg, 
-        rgba(29, 185, 84, 0) 0%,      /* Ganti jadi Hijau transparan */
-        rgba(60, 180, 102, 0.2) 50%,   /* Ganti jadi Hijau 30% */
-        rgba(29, 185, 84, 0) 100%     /* Ganti jadi Hijau transparan */
+        rgba(29, 185, 84, 0) 0%, 
+        rgba(60, 180, 102, 0.2) 50%, 
+        rgba(29, 185, 84, 0) 100%
     );
-    /* ▲▲▲ BATAS PERUBAHAN ▲▲▲ */
-    
-    transform: translateX(-100%);
-    animation: shimmer 2.5s infinite;
+    transform: translateX(-100%); 
+    animation: shimmer 2.5s infinite; 
     animation-delay: 1s;
+    pointer-events: none;
 }
 
 .emotion-bar::after {
