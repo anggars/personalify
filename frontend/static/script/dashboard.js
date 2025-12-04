@@ -1309,7 +1309,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- NEW: CURSOR FOLLOW GLOW LOGIC (Dashboard) ---
     const downloadBtn = document.querySelector('.download-btn');
-    const modalButtons = document.querySelectorAll('.modal-options button:not(.modal-close)');
+    const modalButtons = document.querySelectorAll('.modal-options button');
     const listItems = document.querySelectorAll('.list-container li');
     const elementsToGlow = [downloadBtn, ...modalButtons, ...listItems];
     elementsToGlow.forEach(el => {

@@ -132,6 +132,18 @@ document.addEventListener('DOMContentLoaded', function() {
         buttonEl.addEventListener('touchend', () => {
         });
     }
+    const errorToast = document.getElementById('error-toast');
+    if (errorToast) {
+        // [LOGIC MOUSE LAMA TETAP ADA]
+        errorToast.addEventListener('mousemove', (e) => updateGlow(e, errorToast));
+        errorToast.addEventListener('mouseleave', () => {
+        });
+        // [BARU: TOUCH EVENTS]
+        errorToast.addEventListener('touchstart', (e) => updateGlow(e, errorToast));
+        errorToast.addEventListener('touchmove', (e) => updateGlow(e, errorToast));
+        errorToast.addEventListener('touchend', () => {
+        });
+    }
 });
 
 // Reset tombol loading saat user kembali (Back button)
