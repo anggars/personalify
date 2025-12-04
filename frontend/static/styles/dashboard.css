@@ -151,67 +151,64 @@ li {
     object-fit: cover;
     flex-shrink: 0;
 }
-/* Update class .info */
+/* Parent Container */
 .info {
     flex: 1;
-    min-width: 0; /* Wajib: biar flex item bisa mengecil */
-    overflow: hidden; /* Masking: sembunyikan teks yang keluar */
-    mask-image: linear-gradient(to right, black 90%, transparent 100%); /* Efek pudar di ujung kanan */
-    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
-}
-/* Update class .info .name */
-.info .name {
-    font-weight: 600;
-    font-size: 0.85rem;
-    display: block; 
-    /* --- UBAH DARI SINI (Running Text Logic) --- */
-    white-space: nowrap;      /* Paksa satu baris */
-    overflow: hidden;         /* Sembunyikan sisa teks */
-    text-overflow: ellipsis;  /* Tampilkan titik-titik (...) kalau diam */
-    line-height: 1.3;
-    padding-right: 4px;
-    width: fit-content;       /* Lebar menyesuaikan konten */
-    max-width: 100%;          /* Tapi dibatasi container induk */
-}
-/* Trigger Animasi saat Hover di .list-item */
-.list-item:hover .info .name {
-    /* Hapus batasan max-width saat hover biar bisa jalan */
-    max-width: unset; 
-    text-overflow: clip; 
+    min-width: 0;
+    position: relative;
+    overflow: hidden; /* Tetap perlu ini buat motong teks panjang */
     
-    /* Jalankan animasi: Nama animasi | durasi | tipe | delay | loop | arah */
-    animation: running-text 6s linear 0.5s infinite alternate;
+    /* HAPUS MASK-IMAGE BIAR GAK ADA EFEK BLUR PUDAR */
+    mask-image: none !important;
+    -webkit-mask-image: none !important;
 }
-/* Tambahkan Keyframes di bagian paling bawah CSS */
-@keyframes running-text {
-    0% {
-        transform: translateX(0);
-    }
-    20% {
-        transform: translateX(0); /* Tahan sebentar di awal */
-    }
-    100% {
-        /* Geser ke kiri sejauh (lebar teks - lebar container) */
-        /* Kita pakai perkiraan aman -50% sampai -80% untuk teks panjang */
-        transform: translateX(calc(-100% + 200px)); 
-    }
-}
-.info .meta {
-    font-size: 0.68rem;
-    color: #908f8fff;
-    margin-top: 0.25rem;
-}
-/* Styling dasar biar teks rapi dan ada titik-titik (...) kalau diam */
+
+/* Default Teks: Satu baris, potong pakai titik-titik (...) */
 .info .name,
 .info .meta {
     display: block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100%;
+    width: 100%;
+    padding-right: 5px;
+}
+
+/* KHUSUS Metadata di Artist & Genre: Izinkan turun baris (Wrap) */
+#artists-section .info .meta,
+#genres-section .info .meta {
+    white-space: normal !important;    
+    overflow: visible !important;
+    text-overflow: clip !important;
+    height: auto !important;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: #b3b3b3;
+    line-height: 1.35; 
+}
+
+/* KHUSUS Animasi Running Text (Hanya aktif jika JS menambahkan class ini) */
+.scroll-active {
+    width: max-content !important; 
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important; /* Hilangkan titik-titik pas gerak */
     
-    /* Siapkan variabel untuk jarak gerak (nanti diisi JS) */
-    --scroll-distance: -100%;
+    /* Animasi jalan otomatis setelah delay 2 detik */
+    animation: smart-scroll var(--scroll-duration, 8s) linear infinite alternate;
+    animation-delay: 2s; 
+    
+    padding-right: 50px; /* Jarak kosong di ujung biar gak nempel banget */
+}
+
+@keyframes smart-scroll {
+    0%, 15% { transform: translateX(0); }
+    100% { transform: translateX(var(--scroll-distance)); }
+}
+.info .meta {
+    font-size: 0.68rem;
+    color: #908f8fff;
+    margin-top: 0.25rem;
 }
 /* KHUSUS elemen yang dideteksi kepanjangan oleh JS */
 .scroll-active:hover {
@@ -219,12 +216,6 @@ li {
     
     /* Animasi: Nama | Durasi (dihitung JS nanti biar smooth) | Tipe | Delay | Loop */
     animation: smart-scroll var(--scroll-duration, 5s) linear 0.5s infinite alternate;
-}
-/* Keyframes pakai variabel biar geraknya pas di ujung teks */
-@keyframes smart-scroll {
-    0% { transform: translateX(0); }
-    15% { transform: translateX(0); } /* Tahan bentar di awal */
-    100% { transform: translateX(var(--scroll-distance)); }
 }
 .genre-pills .genre-label {
     display: inline-flex;
