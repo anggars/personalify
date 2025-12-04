@@ -522,8 +522,8 @@ footer.fade-in {
 .modal-content {
     background: rgba(30, 30, 30, 0.65);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    backdrop-filter: blur(6px) saturate(180%);
+    -webkit-backdrop-filter: blur(6px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.08);
         box-shadow: 
         /* Highlight Atas (Putih Terang & Pudar ke bawah) -> Ini yang bikin efek 'netes' */
@@ -571,28 +571,63 @@ footer.fade-in {
     /* Radius Pill juga */
     border-radius: 9999px;
     
-    background: rgba(255, 59, 48, 0.15); /* Merah transparan */
+    background: rgba(255, 59, 48, 0.1);
     border: 1px solid rgba(255, 59, 48, 0.2);
     color: #ff453a; /* Merah terang */
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     box-shadow: 
-        /* Highlight Atas (Soft) */
-        inset 0 2px 4px 0 rgba(255, 255, 255, 0.15), 
-        /* Highlight Pinggir Atas (Tajam) */
-        inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
-        /* Shadow Luar */
-        0 4px 15px rgba(0, 0, 0, 0.2);
+                /* Highlight Atas (Putih Transparan - Efek Basah) */
+                inset 0 1px 1px rgba(255, 59, 48, 0.35), 
+                
+                /* Glow Merah Halus di Dalam */
+                inset 0 2px 10px rgba(255, 59, 48, 0.5),
+                
+                /* Shadow Luar (Deep) */
+                0 10px 40px rgba(0, 0, 0, 0.2);
     
     font-weight: 700;
     font-size: 1rem;
     font-family: 'Plus Jakarta Sans', sans-serif;
     cursor: pointer;
     transition: all 0.2s;
+    position: relative;
+    overflow: hidden; /* Wajib biar glow gak tumpah */
+    z-index: 1;       /* Pastikan di atas layer dasar */
+}
+
+/* === RED SPOTLIGHT GLOW (VERSI HALUS) === */
+.modal-close::before {
+    content: '';
+    position: absolute;
+    width: 100%; 
+    height: 100%;
+    
+    left: calc(var(--mouse-x, 50%) - 50%); 
+    top: calc(var(--mouse-y, 50%) - 50%);
+
+    /* GRADIENT MERAH YANG SANGAT TIPIS */
+    background: radial-gradient(
+        circle at center,
+        rgba(255, 59, 48, 0.15), /* Cuma 15% opacity (sebelumnya 50%) */
+        rgba(255, 59, 48, 0.02) 50%, /* Nyaris transparan */
+        transparent 100%            
+    );
+    
+    filter: blur(8px); /* Blur sedikit dikurangi biar gak terlalu nyebar */
+    opacity: 0;         
+    z-index: -1;        
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+/* Munculkan glow pas hover */
+.modal-close:hover::before {
+    opacity: 1;
 }
 
 .modal-close:hover {
-    background: rgba(255, 59, 48, 0.25);
+    background: rgba(255, 59, 48, 0.1);
     transform: scale(1.001);
 }
 
