@@ -69,22 +69,73 @@ async function searchArtist() {
         const data = await res.json();
 
         if (data.artists.length === 0) {
-            // Gunakan class .status-msg error
             artistList.innerHTML = '<p class="status-msg error">No artist found.</p>';
         } else {
             data.artists.forEach(artist => {
                 const card = document.createElement('div');
                 card.className = 'artist-card';
                 const imgUrl = artist.image || 'https://via.placeholder.com/150?text=No+Image';
+                
+                // 1. STRUKTUR BARU: Pakai Wrapper biar bisa di-scroll
                 card.innerHTML = `
                     <img src="${imgUrl}" class="artist-img">
-                    <div style="font-weight:bold; font-size:0.9rem;">${artist.name}</div>
+                    <div class="artist-name-wrapper">
+                        <span class="artist-name">${artist.name}</span>
+                    </div>
                 `;
+                
                 card.onclick = () => loadSongs(artist.id, artist.name);
                 card.addEventListener('mousemove', (e) => updateGlow(e, card));
                 card.addEventListener('touchstart', (e) => updateGlow(e, card));
                 card.addEventListener('touchmove', (e) => updateGlow(e, card));
+                
                 artistList.appendChild(card);
+
+                // 2. LOGIKA MARQUEE (Update: Safety Check)
+                document.fonts.ready.then(() => {
+                    setTimeout(() => {
+                        const wrapper = card.querySelector('.artist-name-wrapper');
+                        const textEl = card.querySelector('.artist-name');
+
+                        if (wrapper && textEl) {
+                            // Cek overflow (+1 buffer)
+                            if (textEl.scrollWidth > wrapper.clientWidth + 1) {
+                                wrapper.classList.add('masked');
+                                
+                                const track = document.createElement('div');
+                                track.className = 'artist-marquee-track';
+                                
+                                // === TEKNIK 4 ELEMEN (A+S+A+S) ===
+                                const originalText = textEl.cloneNode(true);
+                                const cloneText = textEl.cloneNode(true);
+                                
+                                const spacer1 = document.createElement("span");
+                                spacer1.className = "artist-spacer";
+                                
+                                const spacer2 = document.createElement("span");
+                                spacer2.className = "artist-spacer";
+                                
+                                wrapper.innerHTML = '';
+                                
+                                track.appendChild(originalText);
+                                track.appendChild(spacer1);
+                                track.appendChild(cloneText);
+                                track.appendChild(spacer2);
+                                
+                                wrapper.appendChild(track);
+                                
+                                // Hitung lebar & Durasi
+                                const singleSetWidth = track.scrollWidth / 2;
+                                const speed = 30; // pixels per second
+                                
+                                // Safety: Minimal durasi 5 detik biar gak ngebut
+                                const duration = Math.max(singleSetWidth / speed, 5); 
+                                
+                                track.style.setProperty('--duration', `${duration}s`);
+                            }
+                        }
+                    }, 100); 
+                });
             });
         }
     } catch (err) {
@@ -164,38 +215,51 @@ async function loadSongs(artistId, artistName) {
                 const wrapperWidth = wrapper.clientWidth;
                 const textWidth = titleEl.scrollWidth;
 
-                // --- 1️⃣: Jika teks TIDAK overflow → ga usah running text & tanpa mask
+                // 1. Kalau gak kepanjangan, biarin aja
                 if (textWidth <= wrapperWidth) {
                     wrapper.classList.remove("masked");
                     return;
                 }
 
-                // --- 2️⃣: Kalau overflow → aktifkan mask biar fade mulus di ujung
+                // 2. Kalau kepanjangan, aktifkan mode seamless
                 wrapper.classList.add("masked");
 
-                // Buat track container
                 const track = document.createElement("div");
                 track.classList.add("marquee-track");
 
-                const clone = titleEl.cloneNode(true);
+                // === TEKNIK 4 ELEMEN (A+S+A+S) ===
+                // Biar pas geser 50% ketemu posisi awal lagi
+                
+                const originalTitle = titleEl.cloneNode(true);
+                const cloneTitle = titleEl.cloneNode(true);
 
-                // Spacer (jarak)
-                const spacer = document.createElement("span");
-                spacer.innerHTML = "&nbsp;&nbsp;&nbsp;";
-                spacer.style.display = "inline-block";
+                // Spacer 1
+                const spacer1 = document.createElement("span");
+                spacer1.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;"; // 4 spasi biar lega
+                spacer1.style.display = "inline-block";
+                
+                // Spacer 2 (Wajib ada biar seimbang)
+                const spacer2 = document.createElement("span");
+                spacer2.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;"; 
+                spacer2.style.display = "inline-block";
 
                 wrapper.innerHTML = "";
-                track.appendChild(titleEl);
-                track.appendChild(spacer);
-                track.appendChild(clone);
+                
+                // Susun: [Judul] [Spasi] [Judul] [Spasi]
+                track.appendChild(originalTitle);
+                track.appendChild(spacer1);
+                track.appendChild(cloneTitle);
+                track.appendChild(spacer2);
+                
                 wrapper.appendChild(track);
 
-                // Hitung durasi animasi
-                const scrollWidth = track.scrollWidth / 2;
-                const duration = scrollWidth / 45;
+                // Hitung Durasi (Speed konstan: 30px per detik)
+                // scrollWidth track sekarang adalah 2x panjang set, jadi kita ambil setengahnya
+                const singleSetWidth = track.scrollWidth / 2;
+                const duration = singleSetWidth / 30; 
 
+                // Set durasi animasi
                 track.style.setProperty("--duration", duration + "s");
-                track.style.setProperty("--scroll-width", scrollWidth + "px");
             }, 50);
         });
     } catch (err) {
@@ -264,7 +328,7 @@ async function analyzeSong(songId, clickedElement) {
                         <div class="emotion-bar-bg">
                             <div class="emotion-bar" style="width:${(e.score/maxScore*100).toFixed(1)}%"></div>
                         </div>
-                        <span class="emotion-score">${e.score.toFixed(3)}</span>
+                        <span class="emotion-score">${(e.score * 100).toFixed(1)}%</span>
                     </div>
                 `;
             });

@@ -365,6 +365,58 @@ header p.subtitle a:hover {
 .artist-card div {
     position: relative; z-index: 2; /* Teks di atas glow */
 }
+
+/* === ARTIST MARQUEE STYLES (FIXED & RENAMED) === */
+
+.artist-name-wrapper {
+    width: 100%;
+    max-width: 100%; 
+    min-width: 0; 
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    text-align: center; 
+    z-index: 2;
+}
+
+.artist-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+/* Masking: Awal Solid (Hitam), Ujung Fade Out */
+.artist-name-wrapper.masked {
+    mask-image: linear-gradient(to right, black 0%, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 0%, black 85%, transparent 100%);
+    text-align: left; 
+}
+
+.artist-marquee-track {
+    display: inline-flex;
+    white-space: nowrap;
+    will-change: transform;
+    align-items: center;
+    gap: 0;
+}
+
+/* GANTI NAMA ANIMASI JADI 'artistScroll' BIAR GAK BENTROK */
+.artist-card:hover .artist-marquee-track {
+    animation: artistScroll var(--duration, 10s) linear infinite;
+}
+
+/* Keyframes Khusus Artis (Geser 50%) */
+@keyframes artistScroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); } 
+}
+
+.artist-spacer {
+    display: inline-block;
+    min-width: 30px; 
+}
+
 /* === SONG LIST === */
 
 /* -- HEADER ARTIS (PERBAIKAN UTAMA) -- */
@@ -557,8 +609,11 @@ header p.subtitle a:hover {
     white-space: nowrap;
 }
 
+/* === FIX MARQUEE LAGU (SEAMLESS) === */
+
 .song-btn:hover .marquee-track {
-    animation: marqueeScroll var(--duration, 12s) linear infinite;
+    /* Animasi jalan pas hover */
+    animation: marqueeScroll var(--duration, 10s) linear infinite;
 }
 
 .marquee-track {
@@ -566,13 +621,13 @@ header p.subtitle a:hover {
     white-space: nowrap;
     will-change: transform;
     align-items: center;
-    gap: 0; /* jangan pakai gap karena clone diatur manual */
-    animation: marquee var(--duration) linear infinite;
+    gap: 0; /* Gap diatur manual via spacer */
 }
 
+/* UBAH INI: Dari calc(-var) jadi -50% biar loop sempurna */
 @keyframes marqueeScroll {
     from { transform: translateX(0); }
-    to   { transform: translateX(calc(-1 * var(--scroll-width))); }
+    to   { transform: translateX(-50%); } 
 }
 
 /* Style untuk info Album & Tanggal biar rapi */
