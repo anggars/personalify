@@ -78,7 +78,7 @@ async function analyzeLyrics() {
                     <div class="emotion-bar-bg">
                         <div class="emotion-bar" style="width:${(e.score / maxScore * 100).toFixed(1)}%"></div>
                     </div>
-                    <span class="emotion-score">${e.score.toFixed(3)}</span>
+                    <span class="emotion-score">${(e.score * 100).toFixed(1)}%</span>
                 </div>
             `).join('');
         } else {
