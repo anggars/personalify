@@ -69,8 +69,6 @@ h1 {
 }
 .filters select {
     appearance: none;
-    background-color: #2a2a2a;
-    border: none;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     padding-top: 8px; 
     padding-bottom: 10px;
@@ -80,7 +78,25 @@ h1 {
     color: #ffffff;
     cursor: pointer;
     border-radius: 9999px;
-    line-height: 1.5; 
+    line-height: 1.5;
+    background-color: rgba(255, 255, 255, 0.05); /* 2.5% Opacity */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 
+        /* Highlight Atas (Putih Terang & Pudar ke bawah) -> Ini yang bikin efek 'netes' */
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.35), 
+        
+        /* Highlight Pinggir Tipis (Crisp) */
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
+        
+        /* Shadow Luar (Depth) */
+        0 4px 15px rgba(0, 0, 0, 0.2);
+}
+.filters select option {
+    background-color: #1e1e1e; /* Warna gelap solid (Senada dengan Section) */
+    color: #ffffff;
+    padding: 10px; /* Opsional: Biar lega dikit */
 }
 .container {
     display: grid;
@@ -508,7 +524,16 @@ footer.fade-in {
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(40px) saturate(180%);
     -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 
+        /* Highlight Atas (Putih Terang & Pudar ke bawah) -> Ini yang bikin efek 'netes' */
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.35), 
+        
+        /* Highlight Pinggir Tipis (Crisp) */
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
+        
+        /* Shadow Luar (Depth) */
+        0 4px 15px rgba(0, 0, 0, 0.2);
     
     padding: 30px;
     border-radius: 30px; /* Radius kontainer besar */
