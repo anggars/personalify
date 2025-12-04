@@ -374,7 +374,7 @@ header p.subtitle a:hover {
 .emotion-bar-row {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
     margin-bottom: 1rem;
 }
 

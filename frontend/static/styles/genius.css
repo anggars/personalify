@@ -356,7 +356,8 @@ header p.subtitle a:hover {
     height: 90px; 
     border-radius: 50%; 
     object-fit: cover; 
-    margin-bottom: 10px;
+    margin-top: 5px;
+    margin-bottom: 12px;
     position: relative; z-index: 2; /* Di atas glow */
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
@@ -708,7 +709,7 @@ header p.subtitle a:hover {
 }
 
 /* Emotion Bars */
-.emotion-bar-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.emotion-bar-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
 .emotion-bar-row:last-child { margin-bottom: 0; }
 
 .emotion-label { font-weight: 700; color: #fff; text-transform: capitalize; letter-spacing: 0.5px; white-space: nowrap; overflow: visible; }
@@ -833,6 +834,26 @@ body {
     header p.subtitle {
         font-size: 1rem;
         margin-bottom: 2rem;
+    }
+
+    .emotion-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        width: 100%;
+    }
+    .emotion-label {
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: unset;
+    }
+    .emotion-bars-group {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
     }
 
     .container {
