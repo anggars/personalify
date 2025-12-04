@@ -1358,69 +1358,70 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /* =========================================
-   LOGIC: SMART MARQUEE (REVISI FINAL)
-   - Hanya Artists & Tracks (Genre skip)
-   - Toleransi pixel biar yg pendek gak gerak
+   LOGIC: SMART MARQUEE (FINAL)
+   - Hapus animasi hover CSS (DONE via CSS)
+   - Tunggu Font Ready (Akurasi Tinggi)
+   - Buffer 15px (Anti gerak teks pendek)
    ========================================= */
-function setupMarquee() {
-    // 1. Target HANYA section Artist dan Track (Genre di-skip)
-    const targetContainers = document.querySelectorAll('#artists-section, #tracks-section');
+   function setupMarquee() {
+    // 1. CLEANUP: Bersihkan sisa animasi lama (PENTING)
+    document.querySelectorAll('.scroll-active').forEach(el => {
+        el.classList.remove('scroll-active');
+        el.style.removeProperty('--scroll-distance');
+        el.style.removeProperty('--scroll-duration');
+    });
+
+    // 2. TARGET:
+    // - Judul (.name) di Artists & Tracks
+    // - Metadata (.meta) CUMA di Tracks yang depannya "Album:"
+    const titles = document.querySelectorAll('#artists-section .info .name, #tracks-section .info .name');
     
-    targetContainers.forEach(container => {
-        // Di dalam container ini, pilih elemen .name dan .meta
-        const textElements = container.querySelectorAll('.info .name, .info .meta');
-        
-        textElements.forEach(el => {
-            // A. Reset dulu biar bersih (hapus class lama)
-            el.classList.remove('scroll-active');
-            el.style.removeProperty('--scroll-distance');
-            el.style.removeProperty('--scroll-duration');
+    const trackMetas = document.querySelectorAll('#tracks-section .info .meta');
+    const albumMetas = Array.from(trackMetas).filter(el => 
+        el.textContent.trim().startsWith("Album:")
+    );
 
-            // B. Cek kepanjangan dengan TOLERANSI 2px
-            // scrollWidth = panjang asli teks
-            // clientWidth = lebar wadah yang terlihat
-            // Kalau selisihnya cuma 1-2px (biasanya sub-pixel rendering), anggap muat (false).
-            if (el.scrollWidth > el.clientWidth + 2) {
+    // Gabungkan target
+    const allowedElements = [...titles, ...albumMetas];
+
+    // 3. EKSEKUSI (Tunggu Font Siap)
+    document.fonts.ready.then(() => {
+        allowedElements.forEach(el => {
+            // Ambil ukuran (bulatkan ke atas)
+            const scrollWidth = Math.ceil(el.scrollWidth);
+            const clientWidth = Math.ceil(el.clientWidth);
+
+            // LOGIC KETAT:
+            // Panjang Teks harus > Lebar Wadah + 15px (BUFFER)
+            // Kalau selisihnya dikit doang (misal teks "Test"), dia bakal DIEM.
+            if (scrollWidth > clientWidth + 15) {
                 
-                // Hitung jarak geser (selisih + sedikit buffer 10px biar enak)
-                const distance = el.scrollWidth - el.clientWidth + 10; 
+                // Jarak geser + buffer visual biar teks gak kepotong pas jalan
+                const distance = scrollWidth - clientWidth + 30; 
                 
-                // Set variabel CSS
+                // Kecepatan santai (makin kecil pembaginya, makin pelan)
+                const duration = Math.max(distance / 25, 6);   
+                
                 el.style.setProperty('--scroll-distance', `-${distance}px`);
-                
-                // Hitung durasi biar kecepatannya konsisten (misal 30px per detik)
-                // Minimal 5 detik biar gak terlalu ngebut kalau pendek
-                const duration = Math.max(distance / 30, 5); 
                 el.style.setProperty('--scroll-duration', `${duration}s`);
-
-                // C. Baru tambahkan class animasi
                 el.classList.add('scroll-active');
             }
         });
     });
-
-    // 2. SAFETY: Pastikan section Genre BERSIH dari animasi
-    const genreSection = document.getElementById('genres-section');
-    if (genreSection) {
-        const genreTexts = genreSection.querySelectorAll('.scroll-active');
-        genreTexts.forEach(el => el.classList.remove('scroll-active'));
-    }
 }
 
-// Jalankan saat halaman siap
+// === TRIGGERS ===
 document.addEventListener('DOMContentLoaded', setupMarquee);
+window.addEventListener('load', setupMarquee); // Backup kalau font telat
 
-// Jalankan ulang saat resize (penting!)
 let resizeTimer;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(setupMarquee, 200);
 });
 
-// Jalankan ulang saat tombol "Show More" diklik
 document.querySelectorAll('.footer-toggler, .show-more').forEach(btn => {
     btn.addEventListener('click', () => {
-        // Kasih delay dikit biar animasi buka selesai dulu, baru hitung lebar teks
-        setTimeout(setupMarquee, 500); 
+        setTimeout(setupMarquee, 600); 
     });
 });
