@@ -162,7 +162,6 @@ li {
     mask-image: none !important;
     -webkit-mask-image: none !important;
 }
-
 /* Default Teks: Satu baris, potong pakai titik-titik (...) */
 .info .name,
 .info .meta {
@@ -173,7 +172,6 @@ li {
     width: 100%;
     padding-right: 5px;
 }
-
 /* KHUSUS Metadata di Artist & Genre: Izinkan turun baris (Wrap) */
 #artists-section .info .meta,
 #genres-section .info .meta {
@@ -185,7 +183,6 @@ li {
     font-size: 0.68rem;
     line-height: 1.35; 
 }
-
 /* KHUSUS Animasi Running Text (Hanya aktif jika JS menambahkan class ini) */
 .scroll-active {
     width: max-content !important; 
@@ -199,7 +196,6 @@ li {
     
     padding-right: 50px; /* Jarak kosong di ujung biar gak nempel banget */
 }
-
 @keyframes smart-scroll {
     0%, 15% { transform: translateX(0); }
     100% { transform: translateX(var(--scroll-distance)); }
@@ -254,7 +250,6 @@ li {
     /* 5. Transisi (termasuk border-color) */
     transition: all 0.2s ease, border-color 0.2s ease;
 }
-
 .genre-pills .genre-label:hover {
     background: rgba(255, 255, 255, 0.2);
     
