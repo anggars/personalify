@@ -476,9 +476,12 @@ async function generateImage(selectedCategory) {
         .list-container li { opacity: 1 !important; animation: none !important; }
         
         .genre-pills .genre-label {
+            /* 1. FLEXBOX MUTLAK */
             display: inline-flex !important; 
-            align-items: center !important;
-            justify-content: center !important;
+            align-items: center !important;     /* Center Vertikal */
+            justify-content: center !important; /* Center Horizontal */
+            
+            /* 2. STYLE DASAR */
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
             box-shadow: none !important; 
@@ -488,19 +491,22 @@ async function generateImage(selectedCategory) {
             color: #FFFFFF !important;
             font-size: 0.6rem !important;
             white-space: nowrap !important;
+            
+            /* 3. DIMENSI FIX */
             height: 18px !important; 
             box-sizing: border-box !important;
+            
+            /* 4. RESET PADDING VERTIKAL (HAPUS PADDING BAWAH 2PX) */
             padding-left: 8px !important;
             padding-right: 8px !important;
-            padding-top: 0 !important;
-            padding-bottom: 2px !important;
-            line-height: normal !important;
+            padding-top: 0 !important;    /* Atas 0 */
+            padding-bottom: 0 !important; /* Bawah 0 -> Biar seimbang di HP & Laptop */
+            
+            /* 5. RESET LINE HEIGHT */
+            /* Ini trik biar font gak punya 'ruang kosong' bawaan */
+            line-height: 1 !important; 
+            
             margin-top: 0 !important;
-        }
-        @media (max-width: 768px) {
-            .genre-pills .genre-label {
-                padding-bottom: 0 !important;
-            }
         }
     `;
     contentWrapper.appendChild(styleFix);
