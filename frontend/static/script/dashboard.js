@@ -473,38 +473,39 @@ async function generateImage(selectedCategory) {
     // --- 5. STYLE FIX (GENRE PILLS + LIST ITEM ALIGNMENT) ---
     const styleFix = document.createElement('style');
     styleFix.innerHTML = `
-        .list-container li { opacity: 1 !important; animation: none !important; }
-        
-        /* CSS Genre Pills - FINAL UNIVERSAL FIX */
+        .list-container li { 
+            opacity: 1 !important; 
+            animation: none !important; 
+        }
+
+        /* DEFAULT (UI Desktop / Browser) — stabil & sesuai kondisi awal lu */
         .genre-pills .genre-label {
-            /* 1. GUNAKAN FLEXBOX UNTUK CENTER PASTI */
-            display: inline-flex !important; 
-            align-items: center !important;    /* Kunci agar pas di tengah vertikal */
+            display: inline-flex !important;
+            align-items: center !important;
             justify-content: center !important;
-            
-            /* 2. DIMENSI FIXED */
-            height: 18px !important; 
-            box-sizing: border-box !important;
-            
-            /* 3. RESET LINE-HEIGHT & PADDING (PENTING!) */
-            /* Kita set line-height jadi 1 biar 'ketat' sama teksnya */
-            line-height: 1 !important; 
-            
-            /* Padding atas bawah 0, karena sudah di-handle oleh align-items: center */
-            padding: 0 8px !important; 
-            margin: 0 !important;
-            
-            /* 4. STYLE LAINNYA */
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            box-shadow: none !important; 
-            background: #2a2a2a !important; 
+            align-content: center !important;
+
+            background: #2a2a2a !important;
             border-radius: 10px !important;
             border: 1px solid var(--genre-color, #555);
             color: #FFFFFF !important;
+
             font-size: 0.6rem !important;
             white-space: nowrap !important;
-            vertical-align: middle !important;
+
+            height: 18px !important;
+            line-height: 1 !important;  /* BALIKKAN DESKTOP KE NORMAL */
+
+            padding-left: 8px !important;
+            padding-right: 8px !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            margin-top: 0 !important;
+        }
+
+        /* === FIX KHUSUS UNTUK SCREENSHOT html-to-image === */
+        #personalify-screenshot .genre-pills .genre-label {
+            line-height: 18px !important; /* Mobile tidak naik ke atas */
         }
     `;
     contentWrapper.appendChild(styleFix);
