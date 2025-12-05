@@ -119,22 +119,6 @@ h1 {
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.1),
         0 4px 15px rgba(0, 0, 0, 0.2);
 }
-body.download-mode .section,
-body.download-mode .spotify-embed-container {
-    /* Matikan semua efek 'berat' biar hasil render bersih/flat */
-    box-shadow: none !important; 
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    
-    /* Ganti dengan border solid biasa biar tetep rapi di gambar */
-    border: 1px solid #333 !important;
-    
-    /* Pastikan background solid 100% */
-    background: #1e1e1e !important;
-    
-    /* Hapus rounded corner kalau bikin glitch (opsional, biasanya aman) */
-    /* border-radius: 0 !important; */
-}
 
 /* Fix khusus untuk chart/canvas biar gak item backgroundnya pas download */
 body.download-mode canvas {
@@ -272,6 +256,8 @@ li {
     font-weight: 500;
     border-radius: 9999px;
     margin: 0.1rem 0.2rem 0 0;
+    text-align: center;
+    justify-content: center;
 
     /* === EFEK KACA (VERSI CSS VARIABLE) === */
     

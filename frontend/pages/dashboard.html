@@ -152,21 +152,49 @@
     </footer>
     
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script>
-        // Data default (top 10)
-        const genreData = {
-            labels: [{% for genre in genres %}'{{ genre.name | safe }}'{% if not loop.last %},{% endif %}{% endfor %}],
-            counts: [{% for genre in genres %}{{ genre.count }}{% if not loop.last %},{% endif %}{% endfor %}]
-        };
-        const genreArtistsMap = {{ genre_artists_map | tojson | safe }};
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+    <script id="data-genres" type="application/json">
+        {{ genres | tojson | safe }}
+    </script>
 
-        // Data extended (top 20) untuk easter egg
-        const genreDataExtended = {
-            labels: [{% for genre in genres_extended %}'{{ genre.name | safe }}'{% if not loop.last %},{% endif %}{% endfor %}],
-            counts: [{% for genre in genres_extended %}{{ genre.count }}{% if not loop.last %},{% endif %}{% endfor %}]
+    <script id="data-genres-extended" type="application/json">
+        {{ genres_extended | tojson | safe }}
+    </script>
+
+    <script id="data-map-normal" type="application/json">
+        {{ genre_artists_map | tojson | safe }}
+    </script>
+
+    <script id="data-map-extended" type="application/json">
+        {{ genre_artists_map_extended | tojson | safe }}
+    </script>
+
+    <script>
+        // Fungsi helper buat ambil data
+        function getJsonData(id) {
+            const el = document.getElementById(id);
+            return el ? JSON.parse(el.textContent) : [];
+        }
+
+        // Ambil data mentah
+        const rawGenres = getJsonData('data-genres');
+        const rawGenresExtended = getJsonData('data-genres-extended');
+
+        // Format ulang sesuai struktur Chart.js (Labels & Counts)
+        const genreData = {
+            labels: rawGenres.map(g => g.name),
+            counts: rawGenres.map(g => g.count)
         };
-        const genreArtistsMapExtended = {{ genre_artists_map_extended | tojson | safe }};
-    </script>    
+
+        const genreDataExtended = {
+            labels: rawGenresExtended.map(g => g.name),
+            counts: rawGenresExtended.map(g => g.count)
+        };
+
+        // Ambil Map (Langsung jadi object karena sudah dict di Python)
+        const genreArtistsMap = getJsonData('data-map-normal');
+        const genreArtistsMapExtended = getJsonData('data-map-extended');
+    </script> 
     <script src="{{ url_for('static', path='script/dashboard.js') }}"></script>
 </body>
 </html>
