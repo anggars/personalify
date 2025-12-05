@@ -473,51 +473,16 @@ async function generateImage(selectedCategory) {
     // --- 5. STYLE FIX (GENRE PILLS + LIST ITEM ALIGNMENT) ---
     const styleFix = document.createElement('style');
     styleFix.innerHTML = `
-        /* 1. Reset List Animation */
-        .list-container li { 
-            opacity: 1 !important; 
-            animation: none !important; 
-            margin-bottom: 0 !important; /* Reset margin liar */
-        }
+        .list-container li { opacity: 1 !important; animation: none !important; }
         
-        /* 2. [BARU] FIX LIST ARTIS/TRACK (Biar gak naik turun di HP) */
-        .list-item {
-            /* Pastikan Flexbox aktif & Center Vertikal */
-            display: flex !important;
-            align-items: center !important; 
-            
-            /* Reset tinggi & spasi */
-            min-height: 50px !important; /* Jaga tinggi minimal biar konsisten */
-            padding: 8px 0 !important;   /* Padding atas-bawah eksplisit */
-            box-sizing: border-box !important;
-            
-            /* Matikan kemungkinan transform aneh */
-            transform: none !important; 
-        }
-
-        /* Fix Angka Ranking (1, 2, 3...) */
-        .list-item .rank {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            height: 100% !important; 
-            line-height: 1 !important; /* Paksa line-height 1 */
-            margin-top: 2px !important; /* Koreksi optik dikit */
-        }
-
-        /* Fix Info Container (Nama Artis + Meta) */
-        .list-item .info {
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: center !important; /* Center text block */
-            margin-left: 12px !important; /* Jarak aman dari ranking/gambar */
-        }
-
-        /* 3. FIX GENRE PILLS (Yg tadi udah bener) */
+        /* CSS Genre Pills - FINAL FIX */
         .genre-pills .genre-label {
+            /* 1. FLEXBOX MUTLAK */
             display: inline-flex !important; 
-            align-items: center !important;
-            justify-content: center !important;
+            align-items: center !important;     /* Center Vertikal */
+            justify-content: center !important; /* Center Horizontal */
+            
+            /* 2. STYLE DASAR */
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
             box-shadow: none !important; 
@@ -527,14 +492,31 @@ async function generateImage(selectedCategory) {
             color: #FFFFFF !important;
             font-size: 0.6rem !important;
             white-space: nowrap !important;
+            
+            /* 3. DIMENSI FIX */
             height: 18px !important; 
             box-sizing: border-box !important;
+            
+            /* 4. RESET PADDING & MARGIN (Biar Desktop & HP sama-sama 0) */
             padding-left: 8px !important;
             padding-right: 8px !important;
             padding-top: 0 !important;
-            padding-bottom: 0 !important; /* Reset 0 biar imbang */
-            line-height: 1 !important; 
+            padding-bottom: 0 !important; /* KITA SAMAIN 0 AJA */
             margin-top: 0 !important;
+
+            /* 5. KUNCI LINE HEIGHT */
+            /* Jangan 'normal', pake angka pasti biar browser gak ngarang */
+            line-height: 1 !important; 
+        }
+
+        /* 6. TWEAK KHUSUS (Jaga-jaga kalo masih bandel) */
+        /* Kalau Desktop ( > 768px ) masih kerasa kurang pas, ubah padding-top di sini */
+        @media (min-width: 769px) {
+            .genre-pills .genre-label {
+               /* Kalau masih kerasa turun, bisa tambah padding-bottom: 1px */
+               /* Tapi harusnya 0 udah 'Normal' kayak gambar kedua lu */
+               padding-bottom: 0 !important;
+            }
         }
     `;
     contentWrapper.appendChild(styleFix);
