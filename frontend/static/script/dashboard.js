@@ -587,6 +587,11 @@ async function generateImage(selectedCategory) {
             link.download = `personalify-${selectedCategory}-${new Date().getTime()}.png`;
             link.href = dataUrl;
             link.click();
+            if (selectedCategory === 'genres') {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000); // Refresh halaman setelah 1 detik
+            }
 
         } catch (err) {
             console.error("Gagal generate image:", err);
@@ -1603,4 +1608,5 @@ document.querySelectorAll('.footer-toggler, .show-more').forEach(btn => {
     btn.addEventListener('click', () => {
         setTimeout(setupMarquee, 600); 
     });
+
 });
