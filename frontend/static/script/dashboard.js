@@ -505,7 +505,11 @@ async function generateImage(selectedCategory) {
 
         /* === FIX KHUSUS UNTUK SCREENSHOT html-to-image === */
         #personalify-screenshot .genre-pills .genre-label {
-            line-height: 18px !important; /* Mobile tidak naik ke atas */
+            line-height: 18px !important; /* fix utama mobile */
+        }
+
+        #personalify-screenshot .genre-pills {
+            padding-top: 3px !important;  /* ganjel atas biar 1-3 turun */
         }
     `;
     contentWrapper.appendChild(styleFix);
