@@ -4,7 +4,3 @@
 
 # Paksa backend dihitung sebagai Python
 backend/**/*.py linguist-language=Python
-
-*.js linguist-vendored
-*.css linguist-vendored
-*.html linguist-vendored
