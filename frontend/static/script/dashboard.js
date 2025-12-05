@@ -136,6 +136,15 @@ function typeEffect(element, text, speed = 30) {
     });
 }
 
+// --- TAMBAHAN BARU: Helper buat bikin warna transparan (Liquid Effect) ---
+function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// --- UPDATE FUNGSI INI ---
 function updateGenreChart(newLabels, newCounts) {
     if (!genreChartInstance) return;
 
@@ -148,7 +157,13 @@ function updateGenreChart(newLabels, newCounts) {
 
     genreChartInstance.data.labels = newLabels;
     genreChartInstance.data.datasets[0].data = newCounts;
-    genreChartInstance.data.datasets[0].backgroundColor = fullColorList;
+    
+    // === EDIT BAGIAN INI BIAR GLASS EFFECT ===
+    // Ubah warna jadi transparan (0.6) + kasih border tipis
+    genreChartInstance.data.datasets[0].backgroundColor = fullColorList.map(c => hexToRgba(c, 0.6));
+    genreChartInstance.data.datasets[0].borderColor = 'rgba(255, 255, 255, 0.2)';
+    genreChartInstance.data.datasets[0].borderWidth = 1; // Border tipis 1px
+    // ========================================
 
     genreChartInstance.update();
 }
@@ -1137,7 +1152,20 @@ window.onload = function() {
                 labels: currentGenreData.labels,
                 datasets: [{
                     data: currentGenreData.counts,
-                    backgroundColor: chartColors
+                    
+                    // === GANTI BLOK BACKGROUNDCOLOR LAMA DENGAN INI ===
+                    // 1. Warna isi jadi transparan (0.6)
+                    backgroundColor: chartColors.map(c => hexToRgba(c, 0.8)),
+                    
+                    // 2. Border inset putih tipis (efek kaca)
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1, 
+                    
+                    // 3. Efek Hover: Jadi lebih solid (0.8) & border putih tegas
+                    hoverBackgroundColor: chartColors.map(c => hexToRgba(c, 1)),
+                    hoverBorderColor: '#ffffff',
+                    hoverBorderWidth: 2
+                    // =================================================
                 }]
             },
             options: {
