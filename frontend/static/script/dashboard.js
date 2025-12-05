@@ -470,18 +470,54 @@ async function generateImage(selectedCategory) {
     contentWrapper.appendChild(headerClone);
     contentWrapper.appendChild(clone);
 
-    // --- 5. STYLE FIX (TERMASUK PILLS FIX YG SUDAH BENAR) ---
+    // --- 5. STYLE FIX (GENRE PILLS + LIST ITEM ALIGNMENT) ---
     const styleFix = document.createElement('style');
     styleFix.innerHTML = `
-        .list-container li { opacity: 1 !important; animation: none !important; }
+        /* 1. Reset List Animation */
+        .list-container li { 
+            opacity: 1 !important; 
+            animation: none !important; 
+            margin-bottom: 0 !important; /* Reset margin liar */
+        }
         
-        .genre-pills .genre-label {
-            /* 1. FLEXBOX MUTLAK */
-            display: inline-flex !important; 
-            align-items: center !important;     /* Center Vertikal */
-            justify-content: center !important; /* Center Horizontal */
+        /* 2. [BARU] FIX LIST ARTIS/TRACK (Biar gak naik turun di HP) */
+        .list-item {
+            /* Pastikan Flexbox aktif & Center Vertikal */
+            display: flex !important;
+            align-items: center !important; 
             
-            /* 2. STYLE DASAR */
+            /* Reset tinggi & spasi */
+            min-height: 50px !important; /* Jaga tinggi minimal biar konsisten */
+            padding: 8px 0 !important;   /* Padding atas-bawah eksplisit */
+            box-sizing: border-box !important;
+            
+            /* Matikan kemungkinan transform aneh */
+            transform: none !important; 
+        }
+
+        /* Fix Angka Ranking (1, 2, 3...) */
+        .list-item .rank {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 100% !important; 
+            line-height: 1 !important; /* Paksa line-height 1 */
+            margin-top: 2px !important; /* Koreksi optik dikit */
+        }
+
+        /* Fix Info Container (Nama Artis + Meta) */
+        .list-item .info {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important; /* Center text block */
+            margin-left: 12px !important; /* Jarak aman dari ranking/gambar */
+        }
+
+        /* 3. FIX GENRE PILLS (Yg tadi udah bener) */
+        .genre-pills .genre-label {
+            display: inline-flex !important; 
+            align-items: center !important;
+            justify-content: center !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
             box-shadow: none !important; 
@@ -491,21 +527,13 @@ async function generateImage(selectedCategory) {
             color: #FFFFFF !important;
             font-size: 0.6rem !important;
             white-space: nowrap !important;
-            
-            /* 3. DIMENSI FIX */
             height: 18px !important; 
             box-sizing: border-box !important;
-            
-            /* 4. RESET PADDING VERTIKAL (HAPUS PADDING BAWAH 2PX) */
             padding-left: 8px !important;
             padding-right: 8px !important;
-            padding-top: 0 !important;    /* Atas 0 */
-            padding-bottom: 0 !important; /* Bawah 0 -> Biar seimbang di HP & Laptop */
-            
-            /* 5. RESET LINE HEIGHT */
-            /* Ini trik biar font gak punya 'ruang kosong' bawaan */
+            padding-top: 0 !important;
+            padding-bottom: 0 !important; /* Reset 0 biar imbang */
             line-height: 1 !important; 
-            
             margin-top: 0 !important;
         }
     `;
