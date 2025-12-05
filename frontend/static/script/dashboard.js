@@ -380,7 +380,7 @@ async function generateImage(selectedCategory) {
     });
     loadingOverlay.innerHTML = `
         <div style="margin-bottom: 10px; font-size: 1.2rem;">Generating your image...</div>
-        <div class="loading-dots" style="font-size: 1.5rem;">🡻</div>
+        <div class="loading-dots" style="font-size: 1.5rem;">⚡</div>
     `;
     document.body.appendChild(loadingOverlay);
 
@@ -496,6 +496,9 @@ async function generateImage(selectedCategory) {
             padding-bottom: 2px !important; /* Fix Teks Naik */
             line-height: normal !important;
             margin-top: 0 !important;
+        }
+        @media (max-width: 768px) {
+            padding-bottom: 0 !important;
         }
     `;
     contentWrapper.appendChild(styleFix);
