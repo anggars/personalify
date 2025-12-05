@@ -3,6 +3,41 @@ FILE INI KHUSUS BUAT BOOSTING STATISTIK PYTHON DI GITHUB.
 TIDAK DIPAKAI OLEH APLIKASI, AMAN DIHAPUS KAPAN SAJA.
 """
 
+import os
+
+def generate_massive_python_file():
+    # Lokasi file target di folder backend lu
+    target_file = "personalify/backend/app/stats_booster_ultimate.py"
+    
+    # Pastikan folder ada
+    os.makedirs(os.path.dirname(target_file), exist_ok=True)
+    
+    print("Sedang membuat file Python raksasa...")
+    
+    with open(target_file, "w") as f:
+        f.write('"""\nFILE INI DIGENERATE OTOMATIS BUAT BOOST STATS GITHUB.\n')
+        f.write('ISINYA CUMA KODE DUMMY BIAR PYTHON JADI MAYORITAS.\n"""\n\n')
+        
+        f.write('class PythonDominator:\n')
+        f.write('    def __init__(self):\n')
+        f.write('        self.data = []\n\n')
+        
+        # Loop ini bakal bikin 20.000 method dummy
+        # Ini bakal nambahin sekitar 80.000 baris kode & size file drastis
+        for i in range(20000):
+            f.write(f'    def method_penambah_persentase_{i}(self):\n')
+            f.write(f'        """Docstring buat nambah bytes di method {i}"""\n')
+            f.write(f'        variable_dummy = "Python is the best language {i}"\n')
+            f.write(f'        self.data.append(variable_dummy * 10)\n')
+            f.write(f'        return len(self.data)\n\n')
+
+        f.write('if __name__ == "__main__":\n')
+        f.write('    dominator = PythonDominator()\n')
+        f.write('    print("Python stats boosted!")\n')
+
+    print(f"Selesai! File '{target_file}' berhasil dibuat.")
+    print("Sekarang tinggal commit & push ke GitHub.")
+
 def python_supremacy():
     # Kita isi variable ini dengan teks panjang dari daftar lagu The Beatles lu.
     # Lalu kita kalikan 5000 kali biar filenya jadi bergiga-giga bytes (secara logika).
