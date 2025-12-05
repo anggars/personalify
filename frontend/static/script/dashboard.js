@@ -475,14 +475,26 @@ async function generateImage(selectedCategory) {
     styleFix.innerHTML = `
         .list-container li { opacity: 1 !important; animation: none !important; }
         
-        /* CSS Genre Pills - FINAL FIX */
+        /* CSS Genre Pills - FINAL UNIVERSAL FIX */
         .genre-pills .genre-label {
-            /* 1. FLEXBOX MUTLAK */
+            /* 1. GUNAKAN FLEXBOX UNTUK CENTER PASTI */
             display: inline-flex !important; 
-            align-items: center !important;     /* Center Vertikal */
-            justify-content: center !important; /* Center Horizontal */
+            align-items: center !important;    /* Kunci agar pas di tengah vertikal */
+            justify-content: center !important;
             
-            /* 2. STYLE DASAR */
+            /* 2. DIMENSI FIXED */
+            height: 18px !important; 
+            box-sizing: border-box !important;
+            
+            /* 3. RESET LINE-HEIGHT & PADDING (PENTING!) */
+            /* Kita set line-height jadi 1 biar 'ketat' sama teksnya */
+            line-height: 1 !important; 
+            
+            /* Padding atas bawah 0, karena sudah di-handle oleh align-items: center */
+            padding: 0 8px !important; 
+            margin: 0 !important;
+            
+            /* 4. STYLE LAINNYA */
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
             box-shadow: none !important; 
@@ -492,31 +504,7 @@ async function generateImage(selectedCategory) {
             color: #FFFFFF !important;
             font-size: 0.6rem !important;
             white-space: nowrap !important;
-            
-            /* 3. DIMENSI FIX */
-            height: 18px !important; 
-            box-sizing: border-box !important;
-            
-            /* 4. RESET PADDING & MARGIN (Biar Desktop & HP sama-sama 0) */
-            padding-left: 8px !important;
-            padding-right: 8px !important;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important; /* KITA SAMAIN 0 AJA */
-            margin-top: 0 !important;
-
-            /* 5. KUNCI LINE HEIGHT */
-            /* Jangan 'normal', pake angka pasti biar browser gak ngarang */
-            line-height: 1 !important; 
-        }
-
-        /* 6. TWEAK KHUSUS (Jaga-jaga kalo masih bandel) */
-        /* Kalau Desktop ( > 768px ) masih kerasa kurang pas, ubah padding-top di sini */
-        @media (min-width: 769px) {
-            .genre-pills .genre-label {
-               /* Kalau masih kerasa turun, bisa tambah padding-bottom: 1px */
-               /* Tapi harusnya 0 udah 'Normal' kayak gambar kedua lu */
-               padding-bottom: 0 !important;
-            }
+            vertical-align: middle !important;
         }
     `;
     contentWrapper.appendChild(styleFix);
