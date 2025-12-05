@@ -495,9 +495,9 @@ footer.fade-in {
     height: 100%;
     
     /* Background gelap blur */
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     
     display: none;
     justify-content: center;
@@ -511,7 +511,7 @@ footer.fade-in {
 
 /* Animasi Muncul */
 .modal-overlay[style*="display: flex"] {
-    animation: fadeInModal 0.3s ease-out;
+    animation: fadeInModal 0.4s ease-out;
 }
 
 .modal-content {
