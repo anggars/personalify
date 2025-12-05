@@ -317,9 +317,9 @@ li {
     padding: 10px 24px;
     
     /* === ULTRA LIQUID GLASS === */
-    background-color: rgba(255, 255, 255, 0.025); /* 2.5% Opacity */
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background-color: rgba(255, 255, 255, 0.015); /* 2.5% Opacity */
+    backdrop-filter: blur(4.5px);
+    -webkit-backdrop-filter: blur(4.5px);
     border: 1px solid rgba(255, 255, 255, 0.08);
         box-shadow: 
         /* Highlight Atas (Putih Terang & Pudar ke bawah) -> Ini yang bikin efek 'netes' */

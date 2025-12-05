@@ -373,6 +373,8 @@ document.addEventListener('keydown', function(event) {
 async function generateImage(selectedCategory) {
     hideSaveOptions();
     closeCurrentEmbed();
+    document.body.style.overflow = 'hidden'; 
+    document.body.style.touchAction = 'none';
     
     // --- 1. PASANG TIRAI (OVERLAY) BIAR USER GAK LIAT "DAPUR" ---
     // Ini solusi biar tampilan "dobel" atau berantakan gak kelihatan
@@ -383,19 +385,25 @@ async function generateImage(selectedCategory) {
         left: '0',
         width: '100vw',
         height: '100vh',
-        backgroundColor: '#121212', // Warna background tema lu
-        zIndex: '9999999', // Paling depan
+        backgroundColor: '#121212',
+        zIndex: '2147483647', // Max Z-Index biar paling atas
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        color: '#1DB954', // Hijau Spotify
+        color: '#ffffff', // Putih Solid
         fontFamily: "'Plus Jakarta Sans', sans-serif",
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        transition: 'opacity 0.3s ease'
     });
+    
+    loadingOverlay.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    loadingOverlay.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+    
     loadingOverlay.innerHTML = `
-        <div style="margin-bottom: 10px; font-size: 1.2rem;">Generating your image...</div>
-        <div class="loading-dots" style="font-size: 1.5rem;">⚡</div>
+        <div style="margin-bottom: 15px; font-size: 1.2rem; text-align: center;">Processing Capture...</div>
+        <div class="loading-dots" style="font-size: 2rem;">⚡</div>
+        <div style="margin-top: 10px; font-size: 0.8rem; color: #888;">Please wait...</div>
     `;
     document.body.appendChild(loadingOverlay);
 
@@ -589,25 +597,49 @@ async function generateImage(selectedCategory) {
     }
 
     function cleanup() {
-        // Hapus Container Screenshot
+        // 1. Hapus Container Screenshot
         if (document.body.contains(container)) {
             document.body.removeChild(container);
         }
         
-        // Restore Layout Asli
+        // 2. PERBAIKAN: Hapus class pengunci layout desktop dengan force
         document.body.classList.remove('force-desktop-view');
         document.body.classList.remove('download-mode');
         
-        // Restore Section Display
-        // Ini biar pas tirai dibuka, tampilan balik normal (gak blank/salah section)
-        checkScreenSize(); // Ini function bawaan lu buat reset display based on screen size
+        // 3. Balikin kemampuan scroll body
+        document.body.style.overflow = '';
+        document.body.style.touchAction = '';
+        
+        // 4. RESET SEMUA SECTION: Hapus inline style & class
+        for (const key in sections) {
+            // Reset display (biar kembali ke CSS asli)
+            sections[key].style.display = "";
+            sections[key].classList.remove("active");
+        }
 
-        // PENTING: Cabut Tirai (Overlay)
+        // 5. PAKSA RE-CHECK LAYOUT (Dengan delay lebih panjang)
+        setTimeout(() => {
+            // Panggil checkScreenSize untuk apply layout yang benar
+            checkScreenSize();
+            
+            // Di mobile, paksa section yang sesuai muncul
+            if (window.innerWidth <= 768) {
+                const currentCategory = categoryFilterSelect.value;
+                updateCategoryDisplay(); // Re-apply filter category
+            }
+        }, 150);
+
+        // 6. Cabut Tirai (Overlay) dengan smooth transition
         if (document.body.contains(loadingOverlay)) {
-            // Kasih delay dikit biar transisi smooth
+            // Fade out dulu
+            loadingOverlay.style.opacity = '0';
+            loadingOverlay.style.transition = 'opacity 0.3s ease';
+            
             setTimeout(() => {
-                document.body.removeChild(loadingOverlay);
-            }, 500);
+                if (document.body.contains(loadingOverlay)) {
+                    document.body.removeChild(loadingOverlay);
+                }
+            }, 300);
         }
     }
 
