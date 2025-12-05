@@ -493,12 +493,14 @@ async function generateImage(selectedCategory) {
             padding-left: 8px !important;
             padding-right: 8px !important;
             padding-top: 0 !important;
-            padding-bottom: 2px !important; /* Fix Teks Naik */
+            padding-bottom: 2px !important;
             line-height: normal !important;
             margin-top: 0 !important;
         }
         @media (max-width: 768px) {
-            padding-bottom: 0 !important;
+            .genre-pills .genre-label {
+                padding-bottom: 0 !important;
+            }
         }
     `;
     contentWrapper.appendChild(styleFix);
