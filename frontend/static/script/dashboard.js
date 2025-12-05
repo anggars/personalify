@@ -11,6 +11,49 @@ const sections = {
     genres: document.getElementById("genres-section")
 };
 const modal = document.getElementById("save-modal-overlay");
+const fontConfig = {
+    // Menggunakan Variable Font agar satu file mencakup semua ketebalan (200-800)
+    // Ini lebih hemat dan cepat daripada fetch banyak file static.
+    woff2Url: 'https://cdn.jsdelivr.net/npm/@fontsource-variable/plus-jakarta-sans@5.0.19/files/plus-jakarta-sans-latin-wght-normal.woff2'
+};
+
+let cachedFontCSS = null;
+
+async function prepareFont() {
+    if (cachedFontCSS) return cachedFontCSS;
+    
+    try {
+        console.log("Fetching font for screenshot...");
+        const response = await fetch(fontConfig.woff2Url);
+        if (!response.ok) throw new Error("Network response was not ok");
+        
+        const blob = await response.blob();
+        
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64data = reader.result;
+                cachedFontCSS = `
+                    @font-face {
+                        font-family: 'Plus Jakarta Sans';
+                        font-style: normal;
+                        font-weight: 200 800;
+                        font-display: swap;
+                        src: url(${base64data}) format('woff2');
+                        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+                    }
+                `;
+                console.log("Font prepared successfully.");
+                resolve(cachedFontCSS);
+            };
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        console.warn("Font fetch failed, falling back to system fonts:", e);
+        return ""; 
+    }
+}
+prepareFont();
 
 /**
  * FUNGSI BARU: Efek Ketik (Typing Effect)
@@ -312,62 +355,81 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-function generateImage(selectedCategory) {
+async function generateImage(selectedCategory) {
     hideSaveOptions();
-
-    // IMPORTANT: Tutup embed yang terbuka sebelum screenshot
     closeCurrentEmbed();
+    
+    // --- 1. PASANG TIRAI (OVERLAY) BIAR USER GAK LIAT "DAPUR" ---
+    // Ini solusi biar tampilan "dobel" atau berantakan gak kelihatan
+    const loadingOverlay = document.createElement('div');
+    Object.assign(loadingOverlay.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: '#121212', // Warna background tema lu
+        zIndex: '9999999', // Paling depan
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        color: '#1DB954', // Hijau Spotify
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        fontWeight: 'bold'
+    });
+    loadingOverlay.innerHTML = `
+        <div style="margin-bottom: 10px; font-size: 1.2rem;">Generating your image...</div>
+        <div class="loading-dots" style="font-size: 1.5rem;">🡻</div>
+    `;
+    document.body.appendChild(loadingOverlay);
 
+    // --- 2. LOGIKA LAYOUT (TETAP PAKE FORCE DESKTOP SESUAI REQUEST) ---
+    // Karena udah ketutup tirai, bebas mau nambah class apa aja
     document.body.classList.add('force-desktop-view');
     document.body.classList.add('download-mode');
 
-    // Sembunyikan semua section
-    for (const key in sections) {
-        sections[key].style.display = "none";
+    // Sembunyikan section lain (Logika lama lu)
+    for (const key in sections) { 
+        // Simpan display asli biar bisa direstore nanti (opsional, tapi aman)
+        sections[key].dataset.originalDisplay = sections[key].style.display;
+        sections[key].style.display = "none"; 
     }
     const sectionToCapture = sections[selectedCategory];
     sectionToCapture.style.display = "block";
 
-    // Sembunyikan item > 10
-    const allItems = sectionToCapture.querySelectorAll('ol.list-container > li');
-    allItems.forEach((item, index) => {
+    // Clone Section
+    const clone = sectionToCapture.cloneNode(true);
+    
+    // Bersihin Clone (Limit 10 & Hapus Show More)
+    const allCloneItems = clone.querySelectorAll('ol.list-container > li');
+    allCloneItems.forEach((item, index) => {
         if (index >= 10) item.style.display = 'none';
     });
-    const showMoreContainer = sectionToCapture.querySelector('.show-more-container');
-    if (showMoreContainer) showMoreContainer.style.display = 'none';
+    const showMoreClone = clone.querySelector('.show-more-container');
+    if (showMoreClone) showMoreClone.style.display = 'none';
 
-    const clone = sectionToCapture.cloneNode(true);
-
+    // --- FIX GENRE CHART (CANVAS -> IMAGE) ---
     if (selectedCategory === 'genres') {
         const originalCanvas = document.getElementById('genreChart');
         const clonedCanvas = clone.querySelector('#genreChart');
         if (originalCanvas && clonedCanvas) {
             const chartImage = new Image();
             chartImage.src = originalCanvas.toDataURL('image/png');
-
-            // --- INI PERBAIKAN UTAMANYA ---
-            // 1. Pastikan gambar diperlakukan sebagai elemen block.
             chartImage.style.display = 'block';
-
-            // 2. Kunci aspek rasio agar tidak gepeng.
             chartImage.style.width = `${originalCanvas.offsetWidth}px`;
             chartImage.style.height = `${originalCanvas.offsetHeight}px`;
-
-            // 3. Salin margin vertikal (atas & bawah) untuk menjaga jarak.
+            
             const computedStyle = window.getComputedStyle(originalCanvas);
             chartImage.style.marginTop = computedStyle.marginTop;
             chartImage.style.marginBottom = computedStyle.marginBottom;
-
-            // 4. Paksa margin horizontal menjadi 'auto' untuk memusatkan gambar.
             chartImage.style.marginLeft = 'auto';
             chartImage.style.marginRight = 'auto';
-            // --- AKHIR PERBAIKAN ---
-
             clonedCanvas.parentNode.replaceChild(chartImage, clonedCanvas);
         }
     }
 
-    // --- LOGIKA PEMBUATAN CONTAINER GAMBAR ---
+    // --- 3. CONTAINER SETUP (Off-Screen tapi Rendered) ---
     const STORY_WIDTH = 720;
     const STORY_HEIGHT = 1280;
 
@@ -378,142 +440,177 @@ function generateImage(selectedCategory) {
     container.style.color = "#fff";
     container.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
     container.style.overflow = 'hidden';
-    container.style.position = 'relative';
+    
+    // Tetap fixed, tapi di belakang layar (z-index minus)
+    // Walaupun ada overlay, ini tetap perlu biar html-to-image gak bingung
+    container.style.position = 'fixed'; 
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.zIndex = '-9999';
 
+    // --- 4. ABSOLUTE CENTER WRAPPER (Sesuai Request) ---
     const contentWrapper = document.createElement("div");
+    contentWrapper.style.width = '100%';
     contentWrapper.style.padding = "80px 40px 40px 40px";
     contentWrapper.style.boxSizing = "border-box";
-    contentWrapper.style.width = '100%';
+    
+    // Center Absolute
     contentWrapper.style.position = 'absolute';
     contentWrapper.style.top = '50%';
     contentWrapper.style.left = '50%';
     contentWrapper.style.transform = 'translate(-50%, -50%)';
-
+    
+    // Header
     const pageHeader = document.querySelector('header');
     const headerClone = pageHeader.cloneNode(true);
     headerClone.style.textAlign = 'center';
     headerClone.style.marginBottom = '1.5rem';
+    headerClone.querySelectorAll('.typing-cursor').forEach(c => c.remove());
+    
     contentWrapper.appendChild(headerClone);
     contentWrapper.appendChild(clone);
+
+    // --- 5. STYLE FIX (TERMASUK PILLS FIX YG SUDAH BENAR) ---
     const styleFix = document.createElement('style');
     styleFix.innerHTML = `
-        .list-container li {
-            opacity: 1 !important;
-            animation: none !important;
-        }
-
-        /* ▼▼▼ GANTI DENGAN BLOK INI ▼▼▼ */
+        .list-container li { opacity: 1 !important; animation: none !important; }
+        
         .genre-pills .genre-label {
-            /* 1. Paksa layout jadul */
-            display: inline-block !important;
-            
-            /* 2. HAPUS EFEK KACA (INI BIANG KEROKNYA) */
+            display: inline-flex !important; 
+            align-items: center !important;
+            justify-content: center !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
             box-shadow: none !important; 
-            
-            /* 3. Ganti background jadi solid (biar gak aneh) */
             background: #2a2a2a !important; 
-            
-            /* 4. Jaga border & radius-nya */
             border-radius: 10px !important;
             border: 1px solid var(--genre-color, #555);
-
-            /* 5. Jaga teks tetap putih & ukuran font */
             color: #FFFFFF !important;
             font-size: 0.6rem !important;
-
-            /* * 6. KUNCI PERBAIKAN: Trik 'line-height' == 'height'
-             * Ini adalah trik CSS kuno untuk vertical-align
-             * yang html2canvas seharusnya mengerti.
-             */
-            
-            /* Tentukan tinggi pill secara eksplisit */
+            white-space: nowrap !important;
             height: 18px !important; 
-            
-            /* Set line-height SAMA PERSIS dengan height */
-            line-height: 18px !important; 
-            
-            /* HAPUS padding vertikal agar tidak mengganggu kalkulasi */
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
-            
-            /* Padding horizontal tetap ada */
+            box-sizing: border-box !important;
             padding-left: 8px !important;
             padding-right: 8px !important;
-            
-            /* Jaga-jaga */
-            vertical-align: middle !important; 
+            padding-top: 0 !important;
+            padding-bottom: 2px !important; /* Fix Teks Naik */
+            line-height: normal !important;
+            margin-top: 0 !important;
         }
     `;
     contentWrapper.appendChild(styleFix);
 
+    // Footer
     const footer = document.createElement("div");
-    footer.innerHTML = `Personalify © 2025 • <a href="https://developer.spotify.com/" target="_blank" style="color: #888; text-decoration: none;">Powered by Spotify API</a>`;
+    footer.innerHTML = `Personalify © 2025 • Powered by Spotify API`;
     footer.style.paddingTop = "2rem";
-    footer.style.marginTop = "auto";
+    footer.style.textAlign = "center";
     footer.style.fontSize = "0.75rem";
     footer.style.color = "#888";
-    footer.style.textAlign = "center";
+    footer.style.marginTop = "auto";
     contentWrapper.appendChild(footer);
 
     container.appendChild(contentWrapper);
 
-    function renderCanvas() {
+    // Fungsi Render
+    async function renderCanvas() {
         document.body.appendChild(container);
 
-        const contentHeight = contentWrapper.offsetHeight;
+        // Zoom Logic
+        const contentHeight = contentWrapper.scrollHeight;
         if (contentHeight > STORY_HEIGHT) {
             const scale = STORY_HEIGHT / contentHeight;
             contentWrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        } else {
+            contentWrapper.style.transform = `translate(-50%, -50%)`;
         }
 
         try {
-            const clonedEmotion = container.querySelector('.emotion-recap');
-            if (clonedEmotion) {
-                clonedEmotion.style.fontSize = '1rem';
-            }
-        } catch (err) {
-            // safe-fail
-        }
+            const fontCSS = await prepareFont();
+            await document.fonts.ready;
+            // Delay dikit biar layout settle di balik layar
+            await new Promise(r => setTimeout(r, 500)); 
 
-        html2canvas(container, {
-            scale: 2, useCORS: true, backgroundColor: '#121212'
-        }).then(canvas => {
+            const dataUrl = await htmlToImage.toPng(container, {
+                quality: 1.0,
+                pixelRatio: 2,
+                cacheBust: true,
+                fontEmbedCSS: fontCSS,
+                backgroundColor: '#121212',
+                width: STORY_WIDTH,
+                height: STORY_HEIGHT,
+                style: {
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    visibility: 'visible'
+                },
+                filter: (node) => (node.tagName !== 'BUTTON')
+            });
+
             const link = document.createElement("a");
             link.download = `personalify-${selectedCategory}-${new Date().getTime()}.png`;
-            link.href = canvas.toDataURL("image/png");
+            link.href = dataUrl;
             link.click();
-            document.body.classList.remove('force-desktop-view');
-            document.body.classList.remove('download-mode');
-            document.body.removeChild(container);
-            checkScreenSize();
-        }).catch(err => {
-            console.error("html2canvas failed:", err);
-            document.body.classList.remove('force-desktop-view');
-            document.body.classList.remove('download-mode');
-            if (document.body.contains(container)) {
-                 document.body.removeChild(container);
-            }
-            checkScreenSize();
-        });
+
+        } catch (err) {
+            console.error("Gagal generate image:", err);
+            alert("Gagal membuat gambar. Coba refresh halaman.");
+        } finally {
+            cleanup();
+        }
     }
 
-    const imgs = clone.querySelectorAll('img');
+    function cleanup() {
+        // Hapus Container Screenshot
+        if (document.body.contains(container)) {
+            document.body.removeChild(container);
+        }
+        
+        // Restore Layout Asli
+        document.body.classList.remove('force-desktop-view');
+        document.body.classList.remove('download-mode');
+        
+        // Restore Section Display
+        // Ini biar pas tirai dibuka, tampilan balik normal (gak blank/salah section)
+        checkScreenSize(); // Ini function bawaan lu buat reset display based on screen size
+
+        // PENTING: Cabut Tirai (Overlay)
+        if (document.body.contains(loadingOverlay)) {
+            // Kasih delay dikit biar transisi smooth
+            setTimeout(() => {
+                document.body.removeChild(loadingOverlay);
+            }, 500);
+        }
+    }
+
+    // Preload Images Logic
+    const imgs = container.querySelectorAll('img');
     if (imgs.length === 0) {
         renderCanvas();
     } else {
         let loadedCount = 0;
+        const totalImgs = imgs.length;
+        const timeout = setTimeout(() => {
+            if (loadedCount < totalImgs) renderCanvas();
+        }, 4000);
+
         imgs.forEach(img => {
-            const newImg = new Image();
-            newImg.crossOrigin = "anonymous";
-            newImg.src = img.src;
-            const checkDone = () => {
+            const originalSrc = img.src;
+            img.removeAttribute('src'); 
+            img.crossOrigin = "anonymous";
+            
+            const onJsLoad = () => {
                 loadedCount++;
-                if (loadedCount === imgs.length) renderCanvas();
+                if (loadedCount === totalImgs) {
+                    clearTimeout(timeout);
+                    renderCanvas();
+                }
             };
-            newImg.onload = checkDone;
-            newImg.onerror = checkDone;
+            img.onload = onJsLoad;
+            img.onerror = onJsLoad;
+            img.src = originalSrc;
+            if (img.complete && img.naturalHeight !== 0) {
+                img.onload();
+            }
         });
     }
 }
