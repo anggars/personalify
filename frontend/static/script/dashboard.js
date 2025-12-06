@@ -587,12 +587,6 @@ async function generateImage(selectedCategory) {
             link.download = `personalify-${selectedCategory}-${new Date().getTime()}.png`;
             link.href = dataUrl;
             link.click();
-            if (selectedCategory === 'genres') {
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000); // Refresh halaman setelah 1 detik
-            }
-
         } catch (err) {
             console.error("Gagal generate image:", err);
             alert("Gagal membuat gambar. Coba refresh halaman.");
@@ -607,45 +601,56 @@ async function generateImage(selectedCategory) {
             document.body.removeChild(container);
         }
         
-        // 2. PERBAIKAN: Hapus class pengunci layout desktop dengan force
+        // 2. Hapus class pengunci layout desktop
         document.body.classList.remove('force-desktop-view');
         document.body.classList.remove('download-mode');
         
-        // 3. Balikin kemampuan scroll body
+        // 3. Reset scroll body
         document.body.style.overflow = '';
         document.body.style.touchAction = '';
+
+        // [PENTING] Paksa browser untuk "Reflow" (baca ulang layout)
+        // Ini agar perubahan class di atas langsung diterapkan sebelum lanjut
+        void document.body.offsetWidth; 
         
-        // 4. RESET SEMUA SECTION: Hapus inline style & class
+        // 4. RESET SEMUA SECTION
         for (const key in sections) {
-            // Reset display (biar kembali ke CSS asli)
-            sections[key].style.display = "";
+            // Hapus inline style display agar kembali ke CSS bawaan (mobile: none, desktop: block)
+            // Kita gunakan removeProperty untuk memastikan bersih total
+            sections[key].style.removeProperty('display');
             sections[key].classList.remove("active");
         }
 
-        // 5. PAKSA RE-CHECK LAYOUT (Dengan delay lebih panjang)
-        setTimeout(() => {
-            // Panggil checkScreenSize untuk apply layout yang benar
-            checkScreenSize();
-            
-            // Di mobile, paksa section yang sesuai muncul
-            if (window.innerWidth <= 768) {
-                const currentCategory = categoryFilterSelect.value;
-                updateCategoryDisplay(); // Re-apply filter category
-            }
-        }, 150);
-
-        // 6. Cabut Tirai (Overlay) dengan smooth transition
+        // 5. Hapus Overlay
         if (document.body.contains(loadingOverlay)) {
-            // Fade out dulu
             loadingOverlay.style.opacity = '0';
-            loadingOverlay.style.transition = 'opacity 0.3s ease';
-            
             setTimeout(() => {
                 if (document.body.contains(loadingOverlay)) {
                     document.body.removeChild(loadingOverlay);
                 }
             }, 300);
         }
+
+        // 6. RE-APPLY LAYOUT MOBILE
+        // Gunakan setTimeout agar browser punya napas untuk render ulang DOM
+        setTimeout(() => {
+            // A. Resize Chart Genre (PENTING: Biar canvas gak nahan lebar layout)
+            if (genreChartInstance) {
+                genreChartInstance.resize();
+            }
+
+            // B. Panggil checkScreenSize untuk menerapkan logika mobile/desktop yang benar
+            checkScreenSize();
+            
+            // C. Double check khusus mobile: Pastikan section yang dipilih aktif kembali
+            if (window.innerWidth <= 768) {
+                // Pastikan wrapper filter terlihat
+                if(categoryFilterWrapper) categoryFilterWrapper.style.display = "inline-block";
+                
+                // Panggil ulang fungsi display kategori
+                updateCategoryDisplay();
+            }
+        }, 100); 
     }
 
     // Preload Images Logic
