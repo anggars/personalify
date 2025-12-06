@@ -925,3 +925,31 @@ footer.fade-in {
 .fading-out {
     opacity: 0 !important;
 }
+
+.dash-spinner-small {
+    display: inline-block;   /* Supaya sejajar sama teks (gak bikin baris baru) */
+    width: 1em;            /* Ukuran menyesuaikan ukuran font (sekitar 18-20px) */
+    height: 1em;
+    vertical-align: text-bottom; /* Biar pas di tengah-tengah tinggi huruf */
+    margin-left: 5px;        /* Jarak dikit dari teks */
+    animation: rotate 2s linear infinite;
+}
+
+.dash-spinner-small .path {
+    stroke: #ffffff;         /* Warna Putih (Sesuai Request) */
+    stroke-width: 5;         /* Agak tebal biar kelihatan di ukuran kecil */
+    stroke-linecap: round;
+    fill: none;
+    animation: dash 1.5s ease-in-out infinite;
+}
+
+/* Keyframes (Kalau belum ada di file ini, copas aja) */
+@keyframes rotate {
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes dash {
+    0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+    50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+    100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+}
