@@ -162,11 +162,48 @@ async function searchArtist() {
 
 // --- 3. Load Lagu ---
 async function loadSongs(artistId, artistName) {
-    document.getElementById('selectedArtistName').innerText = `${artistName}`;
-    artistList.style.display = 'none'; 
-    songSection.style.display = 'block';
+    const selectedArtistEl = document.getElementById('selectedArtistName');
     
-    analysisResult.style.display = 'none';
+    // 1. Inject struktur HTML wrapper & track
+    selectedArtistEl.innerHTML = `
+        <div class="track-title-wrapper" id="selectedArtistWrapper" style="margin-bottom: 0;">
+            <div class="track-marquee-track" id="selectedArtistTrack">
+                <span class="track-title-text" style="font-size: 1.2rem; color: var(--primary);">${artistName}</span>
+            </div>
+        </div>
+    `;
+
+    // 2. Logic Marquee
+    setTimeout(() => {
+        const wrapper = document.getElementById('selectedArtistWrapper');
+        const track = document.getElementById('selectedArtistTrack');
+        const textEl = track ? track.querySelector('.track-title-text') : null;
+
+        if (wrapper && track && textEl) {
+            // Cek kalau kepanjangan
+            if (textEl.scrollWidth > wrapper.clientWidth) {
+                wrapper.classList.add('masked');
+                track.classList.add('animate');
+
+                const clone = textEl.cloneNode(true);
+                const spacer1 = document.createElement('span'); spacer1.className = 'track-title-spacer';
+                const spacer2 = document.createElement('span'); spacer2.className = 'track-title-spacer';
+                
+                track.appendChild(spacer1);
+                track.appendChild(clone);
+                track.appendChild(spacer2);
+
+                const duration = (textEl.scrollWidth * 2) / 50; 
+                track.style.setProperty('--duration', `${Math.max(duration, 10)}s`);
+            }
+        }
+    }, 100);
+
+    // === INI BARIS YANG HILANG SEBELUMNYA ===
+    artistList.style.display = 'none';   // Sembunyikan list artis
+    songSection.style.display = 'block'; // Munculkan list lagu
+    analysisResult.style.display = 'none'; // Sembunyikan hasil analisis lama
+    // ========================================
     
     // Gunakan class .status-msg neutral (bukan error) untuk loading container wrapper
     songList.innerHTML = '<div style="grid-column: 1/-1;">' + getSpinnerHtml("Loading songs...") + '</div>';
@@ -189,15 +226,13 @@ async function loadSongs(artistId, artistName) {
             const imgUrl = song.image || 'https://via.placeholder.com/50?text=Music';
             
             // LOGIKA TAMPILAN ALBUM
-            // Kalau ada album, tampilkan "Album • Tanggal"
-            // Kalau gak ada album (null), tampilkan "Tanggal" aja (atau kosong kalau tanggal juga gak ada)
             let metaText = '';
             if (song.album && song.date) {
                 metaText = `${song.album} • ${song.date}`;
             } else if (song.album) {
                 metaText = song.album;
             } else if (song.date) {
-                metaText = song.date; // Cuma tanggal (biasanya Single)
+                metaText = song.date;
             }
 
             // HTML STRUKTUR BARU (Support Marquee)
@@ -220,6 +255,8 @@ async function loadSongs(artistId, artistName) {
             btn.addEventListener('touchstart', (e) => updateGlow(e, btn));
             btn.addEventListener('touchmove', (e) => updateGlow(e, btn));
             songList.appendChild(btn);
+            
+            // Logika Marquee List Lagu
             setTimeout(() => {
                 const wrapper = btn.querySelector('.song-title-wrapper');
                 const titleEl = btn.querySelector('.song-title');
@@ -229,37 +266,29 @@ async function loadSongs(artistId, artistName) {
                 const wrapperWidth = wrapper.clientWidth;
                 const textWidth = titleEl.scrollWidth;
 
-                // 1. Kalau gak kepanjangan, biarin aja
                 if (textWidth <= wrapperWidth) {
                     wrapper.classList.remove("masked");
                     return;
                 }
 
-                // 2. Kalau kepanjangan, aktifkan mode seamless
                 wrapper.classList.add("masked");
 
                 const track = document.createElement("div");
                 track.classList.add("marquee-track");
-
-                // === TEKNIK 4 ELEMEN (A+S+A+S) ===
-                // Biar pas geser 50% ketemu posisi awal lagi
                 
                 const originalTitle = titleEl.cloneNode(true);
                 const cloneTitle = titleEl.cloneNode(true);
 
-                // Spacer 1
                 const spacer1 = document.createElement("span");
-                spacer1.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;"; // 4 spasi biar lega
+                spacer1.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;"; 
                 spacer1.style.display = "inline-block";
                 
-                // Spacer 2 (Wajib ada biar seimbang)
                 const spacer2 = document.createElement("span");
                 spacer2.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;"; 
                 spacer2.style.display = "inline-block";
 
                 wrapper.innerHTML = "";
                 
-                // Susun: [Judul] [Spasi] [Judul] [Spasi]
                 track.appendChild(originalTitle);
                 track.appendChild(spacer1);
                 track.appendChild(cloneTitle);
@@ -267,16 +296,14 @@ async function loadSongs(artistId, artistName) {
                 
                 wrapper.appendChild(track);
 
-                // Hitung Durasi (Speed konstan: 30px per detik)
-                // scrollWidth track sekarang adalah 2x panjang set, jadi kita ambil setengahnya
                 const singleSetWidth = track.scrollWidth / 2;
                 const duration = singleSetWidth / 30; 
 
-                // Set durasi animasi
                 track.style.setProperty("--duration", duration + "s");
             }, 50);
         });
     } catch (err) {
+        console.error(err);
         songList.innerHTML = '<p class="status-msg error">Error loading songs.</p>';
     }
 }
@@ -322,7 +349,11 @@ async function analyzeSong(songId, clickedElement) {
                     </div>
                 </div>
                 
-                <p class="track-artist">${data.track_info.artist}</p>
+                <div class="track-title-wrapper" id="resultArtistWrapper" style="margin-bottom: 0;">
+                    <div class="track-marquee-track" id="resultArtistTrack">
+                        <p class="track-artist" style="margin:0; white-space:nowrap;">${data.track_info.artist}</p>
+                    </div>
+                </div>
             </div>
             
             <div class="lyrics-box">${processedLyrics}</div>
@@ -388,6 +419,29 @@ async function analyzeSong(songId, clickedElement) {
                     // Kita kali 2 karena sekarang track-nya jadi 2x lipat panjangnya
                     const duration = (textWidth * 2) / 50; 
                     track.style.setProperty('--duration', `${Math.max(duration, 15)}s`);
+                }
+            }
+            // --- LOGIKA MARQUEE NAMA ARTIS (TAMBAHAN) ---
+            const artistWrapper = document.getElementById('resultArtistWrapper');
+            const artistTrack = document.getElementById('resultArtistTrack');
+            const artistTextEl = artistTrack ? artistTrack.querySelector('.track-artist') : null;
+
+            if (artistWrapper && artistTrack && artistTextEl) {
+                // Cek overflow
+                if (artistTextEl.scrollWidth > artistWrapper.clientWidth) {
+                    artistWrapper.classList.add('masked');
+                    artistTrack.classList.add('animate');
+                    
+                    const clone = artistTextEl.cloneNode(true);
+                    const spacer1 = document.createElement('span'); spacer1.className = 'track-title-spacer';
+                    const spacer2 = document.createElement('span'); spacer2.className = 'track-title-spacer';
+                    
+                    artistTrack.appendChild(spacer1);
+                    artistTrack.appendChild(clone);
+                    artistTrack.appendChild(spacer2);
+
+                    const duration = (artistTextEl.scrollWidth * 2) / 50; 
+                    artistTrack.style.setProperty('--duration', `${Math.max(duration, 12)}s`);
                 }
             }
         }, 100);
