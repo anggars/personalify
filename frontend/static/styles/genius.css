@@ -23,8 +23,9 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    touch-action: manipulation;
-    overscroll-behavior: none;
+    touch-action: pan-y;
+    overscroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 main.main-content {
