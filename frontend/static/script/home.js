@@ -1,6 +1,43 @@
-/**
- * FUNGSI: Efek Ketik (Typing Effect)
- */
+document.addEventListener('gesturestart', function(e) {
+    e.preventDefault(); // Matikan zoom cubit
+});
+
+document.addEventListener('touchmove', function(e) {
+    if (e.scale !== 1) {
+        e.preventDefault(); // Matikan zoom saat jari bergerak
+    }
+}, { passive: false });
+
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function(e) {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        e.preventDefault(); // Matikan zoom double-tap
+    }
+    lastTouchEnd = now;
+}, false);
+
+document.addEventListener('wheel', function(e) {
+    if (e.ctrlKey) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+document.addEventListener('keydown', function(e) {
+    // Cek tombol Ctrl atau Command (buat jaga-jaga)
+    if ((e.ctrlKey || e.metaKey) && 
+        (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '_')) {
+        e.preventDefault();
+    }
+});
+
+document.addEventListener('gesturestart', function(e) {
+    e.preventDefault();
+});
+document.addEventListener('gesturechange', function(e) {
+    e.preventDefault();
+});
+
 function typeEffect(element, text, speed = 30) {
     return new Promise((resolve) => {
         let index = 0;

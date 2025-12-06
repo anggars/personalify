@@ -27,6 +27,8 @@ body {
     box-sizing: border-box;
     overflow-x: hidden;
     overflow-y: scroll; /* Scroll diurus browser (native) */
+    touch-action: manipulation;
+    overscroll-behavior: none;
 }
 
 main.main-content {
