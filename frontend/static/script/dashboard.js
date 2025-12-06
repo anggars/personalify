@@ -1159,6 +1159,28 @@ window.onload = function() {
             '#4D4D4D', '#6B5B95', '#88B04B', '#F7CAC9', '#92A8D1',
             '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
         ];
+        
+        // === NEW: MAP WARNA GLOBAL (Top 10 & Top 20) ===
+        window.genreColorMapTop10 = new Map();
+        window.genreColorMapTop20 = new Map();
+
+        genreData.labels.forEach((label, index) => {
+            window.genreColorMapTop10.set(label, chartColors[index % chartColors.length]);
+        });
+
+        genreDataExtended.labels.forEach((label, index) => {
+            window.genreColorMapTop20.set(label, chartColors[index % chartColors.length]);
+        });
+
+        // === GLOBAL APPLY FUNCTION ===
+        window.applyGenrePillColors = function(isExtended = false) {
+            const colorMap = isExtended ? window.genreColorMapTop20 : window.genreColorMapTop10;
+            document.querySelectorAll('.genre-label').forEach(pill => {
+                const name = pill.textContent.trim();
+                const color = colorMap.get(name) || "#666";
+                pill.style.setProperty('--genre-color', color);
+            });
+        };
 
         currentGenreData = {
             labels: genreData.labels,
@@ -1173,19 +1195,7 @@ window.onload = function() {
             genreColorMap.set(label, chartColors[index % chartColors.length]);
         });
 
-        // 2. Ambil SEMUA pills genre di halaman (termasuk di Top Artists)
-        const allGenrePills = document.querySelectorAll('.genre-label');
-        
-        // 3. Terapkan warna
-        allGenrePills.forEach(pill => {
-            const genreName = pill.textContent.trim();
-            const color = genreColorMap.get(genreName);
-            
-            if (color) {
-                // Terapkan warna ke Teks dan Border
-                pill.style.setProperty('--genre-color', color);
-            }
-        });
+        applyGenrePillColors(false); // default: Top 10 mode
 
         // Buat Chart
         genreChartInstance = new Chart(ctx, {
@@ -1243,6 +1253,7 @@ window.onload = function() {
             }
         });
         genreChartInstance.update();
+        applyGenrePillColors(false);
 
         // Setup interaktivitas list genre
         const genreListItems = document.querySelectorAll('#genres-section li');
@@ -1299,7 +1310,7 @@ window.onload = function() {
 
                 updateGenreList(genreDataExtended.labels, genreDataExtended.counts);
             }
-
+            applyGenrePillColors(true);
             loadEmotionAnalysis(true);
             easterEggClicked = true;
         });
@@ -1340,6 +1351,27 @@ function updateGenreList(labels, counts) {
         '#4D4D4D', '#6B5B95', '#88B04B', '#F7CAC9', '#92A8D1',
         '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
     ];
+
+    const genreColorMapTop10 = new Map();
+    const genreColorMapTop20 = new Map();
+
+    genreData.labels.forEach((label, index) => {
+        genreColorMapTop10.set(label, chartColors[index % chartColors.length]);
+    });
+
+    genreDataExtended.labels.forEach((label, index) => {
+        genreColorMapTop20.set(label, chartColors[index % chartColors.length]);
+    });
+
+    // === Fungsi untuk apply warna ke pills ===
+    function applyGenrePillColors(isExtended = false) {
+        const mapToUse = isExtended ? genreColorMapTop20 : genreColorMapTop10;
+        document.querySelectorAll('.genre-label').forEach(pill => {
+            const name = pill.textContent.trim();
+            const color = mapToUse.get(name) || "#666";
+            pill.style.setProperty('--genre-color', color);
+        });
+    }
 
     genreList.innerHTML = labels.map((label, index) => {
         const artists = genreArtistsMapExtended[label] || [];
