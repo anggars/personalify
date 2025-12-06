@@ -379,33 +379,63 @@ async function generateImage(selectedCategory) {
     // --- 1. PASANG TIRAI (OVERLAY) BIAR USER GAK LIAT "DAPUR" ---
     // Ini solusi biar tampilan "dobel" atau berantakan gak kelihatan
     const loadingOverlay = document.createElement('div');
-    Object.assign(loadingOverlay.style, {
-        position: 'fixed',
-        top: '0',
-        left: '0',
-        width: '100vw',
-        height: '100vh',
-        backgroundColor: '#121212',
-        zIndex: '2147483647', // Max Z-Index biar paling atas
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        color: '#ffffff', // Putih Solid
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-        fontWeight: 'bold',
-        transition: 'opacity 0.3s ease'
-    });
+Object.assign(loadingOverlay.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: '#121212',
+    zIndex: '2147483647', // Max Z-Index
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    color: '#ffffff',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    fontWeight: 'bold',
+    transition: 'opacity 0.3s ease'
+});
+
+loadingOverlay.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+loadingOverlay.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+
+// 1. Inject Style untuk Animasi Spinner (Sama persis dengan file CSS kamu)
+const spinnerStyle = document.createElement('style');
+spinnerStyle.textContent = `
+    @keyframes overlay-rotate { 100% { transform: rotate(360deg); } }
+    @keyframes overlay-dash {
+        0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+        50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+        100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+    }
+    .overlay-spinner {
+        width: 25px; /* Ukuran diperbesar sedikit biar jelas */
+        height: 25px;
+        animation: overlay-rotate 2s linear infinite;
+    }
+    .overlay-spinner .path {
+        stroke: #ffffff; /* Warna Putih */
+        stroke-width: 4;
+        stroke-linecap: round;
+        fill: none;
+        animation: overlay-dash 1.5s ease-in-out infinite;
+    }
+`;
+document.head.appendChild(spinnerStyle);
+
+// 2. Masukkan HTML Spinner
+loadingOverlay.innerHTML = `
+    <div style="margin-bottom: 20px; font-size: 1.2rem; text-align: center;">Processing Image...</div>
     
-    loadingOverlay.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-    loadingOverlay.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
-    
-    loadingOverlay.innerHTML = `
-        <div style="margin-bottom: 15px; font-size: 1.2rem; text-align: center;">Processing Capture...</div>
-        <div class="loading-dots" style="font-size: 2rem;">⚡</div>
-        <div style="margin-top: 10px; font-size: 0.8rem; color: #888;">Please wait...</div>
-    `;
-    document.body.appendChild(loadingOverlay);
+    <svg class="overlay-spinner" viewBox="0 0 50 50">
+        <circle class="path" cx="25" cy="25" r="20"></circle>
+    </svg>
+
+    <div style="margin-top: 20px; font-size: 0.8rem; color: #888;">Please wait!</div>
+`;
+
+document.body.appendChild(loadingOverlay);
 
     // --- 2. LOGIKA LAYOUT (TETAP PAKE FORCE DESKTOP SESUAI REQUEST) ---
     // Karena udah ketutup tirai, bebas mau nambah class apa aja
@@ -699,9 +729,9 @@ async function loadEmotionAnalysis(isExtended = false) {
     if (currentText.includes("being analyzed") || currentText.includes("getting ready") || isExtended) {
         // Tambahkan loading indicator hanya jika bukan extended
         if (!isExtended) {
-            emotionElement.innerHTML = 'Your music vibe is being analyzed... <span class="loading-dots">⚡</span>';
+            emotionElement.innerHTML = 'Your music vibe is being analyzed... <svg class="dash-spinner-small" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none"></circle></svg>';
         } else {
-            emotionElement.innerHTML = 'Analyzing extended music collection... <span class="loading-dots">⚡</span>';
+            emotionElement.innerHTML = 'Analyzing extended music collection... <svg class="dash-spinner-small" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none"></circle></svg>';
         }
 
         try {
