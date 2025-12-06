@@ -15,25 +15,6 @@ const getSpinnerHtml = (text) => `
     </div>
 `;
 
-document.addEventListener('gesturestart', function(e) {
-    e.preventDefault(); // Matikan zoom cubit
-});
-
-document.addEventListener('touchmove', function(e) {
-    if (e.scale !== 1) {
-        e.preventDefault(); // Matikan zoom saat jari bergerak
-    }
-}, { passive: false });
-
-let lastTouchEnd = 0;
-document.addEventListener('touchend', function(e) {
-    const now = (new Date()).getTime();
-    if (now - lastTouchEnd <= 300) {
-        e.preventDefault(); // Matikan zoom double-tap
-    }
-    lastTouchEnd = now;
-}, false);
-
 document.addEventListener('wheel', function(e) {
     if (e.ctrlKey) {
         e.preventDefault();
@@ -46,13 +27,6 @@ document.addEventListener('keydown', function(e) {
         (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '_')) {
         e.preventDefault();
     }
-});
-
-document.addEventListener('gesturestart', function(e) {
-    e.preventDefault();
-});
-document.addEventListener('gesturechange', function(e) {
-    e.preventDefault();
 });
 
 function updateGlow(e, el) {

@@ -15,8 +15,9 @@ body {
     text-align: center;
     overflow-x: hidden;
     overflow-y: scroll;
-    touch-action: manipulation;
-    overscroll-behavior: none;
+    touch-action: pan-y;
+    overscroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* === FIX FONT JEPANG BIAR SEJAJAR === */
