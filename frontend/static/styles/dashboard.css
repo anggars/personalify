@@ -653,7 +653,7 @@ footer.fade-in {
     gap: 5px;
 }
 .name-container .name {
-    line-height: 1;
+    line-height: 1.2;
 }
 .genre-color-label {
     display: inline-block;
@@ -961,6 +961,7 @@ footer.fade-in {
     100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
 
 }
+
 
 
 
