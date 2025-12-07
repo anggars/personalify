@@ -44,7 +44,7 @@ The Personalify system consists of several components connected through service-
               |                           |                           |
               v                           v                           v
       +---------------+             +----------+              +------------------+
-      |   Neon    |             | Upstash  |              |  MongoDB Atlas   |
+      |     Neon      |             | Upstash  |              |  MongoDB Atlas   |
       | (PostgreSQL)  |             | (Redis)  |              |  (Sync History)  |
       +-------+-------+             +----------+              +------------------+
               |
