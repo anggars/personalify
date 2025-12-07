@@ -661,7 +661,8 @@ footer.fade-in {
     height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
-    margin-right: 0;
+    margin-right: 2.5px;
+    justify-items: center
     position: static;
 }
 #genres-section li.disabled .name {
@@ -960,5 +961,6 @@ footer.fade-in {
     100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
 
 }
+
 
 
