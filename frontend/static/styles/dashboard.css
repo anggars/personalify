@@ -650,7 +650,7 @@ footer.fade-in {
 .name-container {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
 }
 .name-container .name {
     line-height: 1;
@@ -960,4 +960,5 @@ footer.fade-in {
     100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
 
 }
+
 
