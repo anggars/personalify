@@ -1,36 +1,35 @@
 services:
-  # --- DATABASE LOKAL DIMATIKAN (Pake Cloud) ---
-  # postgresfy:
-  #   image: postgres:16
-  #   container_name: postgresfy
-  #   environment:
-  #     POSTGRES_USER: admin
-  #     POSTGRES_PASSWORD: admin123
-  #     POSTGRES_DB: streamdb
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - personalify
+#  postgresfy:
+#     image: postgres:16
+#     container_name: postgresfy
+#     environment:
+#       POSTGRES_USER: admin
+#       POSTGRES_PASSWORD: admin123
+#       POSTGRES_DB: streamdb
+#     ports:
+#      - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     networks:
+#       - personalify
 
-  # mangofy:
-  #   image: mongo:7
-  #   container_name: mongofy
-  #   ports:
-  #     - "27017:27017"
-  #   volumes:
-  #     - mongo_data:/data/db
-  #   networks:
-  #     - personalify
+  mangofy:
+     image: mongo:7
+     container_name: mongofy
+     ports:
+       - "27017:27017"
+     volumes:
+       - mongo_data:/data/db
+     networks:
+       - personalify
 
-  # redisfy:
-  #   image: redis:7
-  #   container_name: redisfy
-  #   ports:
-  #     - "6379:6379"
-  #   networks:
-  #     - personalify
+#  redisfy:
+#     image: redis:7
+#     container_name: redisfy
+#     ports:
+#       - "6379:6379"
+#     networks:
+#       - personalify
 
   backend:
     build:
@@ -44,17 +43,17 @@ services:
       - ./frontend:/frontend
     env_file:
       - .env
-    # depends_on:
-    #   - postgresfy
-    #   - mangofy
-    #   - redisfy
+    depends_on:
+    #  - postgresfy
+      - mangofy
+    #  - redisfy
     command: sh -c "sleep 5 && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     networks:
       - personalify
 
-# volumes:
-#   postgres_data:
-#   mongo_data:
+volumes:
+  # postgres_data:
+   mongo_data:
 
 networks:
   personalify:
