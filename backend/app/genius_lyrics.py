@@ -27,7 +27,7 @@ def get_random_headers():
     ua = random.choice(USER_AGENTS)
     return {
         "User-Agent": ua,
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
         "Connection": "keep-alive",
@@ -66,10 +66,10 @@ def get_page_html(url):
         if r.status_code == 200:
             return r.text
         else:
-            print(f"DIRECT BLOCKED (Status: {r.status_code}) - Vercel IP Blocked from Genius.")
+            print(f"DIRECT FALLBACK FAILED (Status: {r.status_code}). IP Vercel potentially blocked.")
             return None
     except Exception as e:
-        print(f"DIRECT ERROR ({e})")
+        print(f"DIRECT ACCESS ERROR: {e}")
         return None
 
 def search_artist_id(query):
