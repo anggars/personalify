@@ -220,13 +220,13 @@ li {
     width: max-content !important; 
     max-width: none !important;
     overflow: visible !important;
-    text-overflow: clip !important; /* Hilangkan titik-titik pas gerak */
-    
-    /* Animasi jalan otomatis setelah delay 2 detik */
+    text-overflow: clip !important;
+    will-change: transform;
     animation: smart-scroll var(--scroll-duration, 8s) linear infinite alternate;
     animation-delay: 2s; 
-    
-    padding-right: 50px; /* Jarak kosong di ujung biar gak nempel banget */
+    transform: translate3d(0, 0, 0); 
+    backface-visibility: hidden;
+    padding-right: 50px;
 }
 @keyframes smart-scroll {
     0%, 15% { transform: translateX(0); }
@@ -274,29 +274,17 @@ li {
     /* 3. PERBAIKAN: Gunakan variable untuk border & tebalkan */
     border: 1px solid var(--genre-color); 
     
-    /* 4. Backdrop blur & Shadow */
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    box-shadow: 
-        inset 0 1px 1px rgba(255, 255, 255, 0.1),
-        0 2px 4px rgba(0, 0, 0, 0.3);
-    
-    /* 5. Transisi (termasuk border-color) */
+    /* 4. Transisi (termasuk border-color) */
     transition: all 0.2s ease, border-color 0.2s ease;
 }
 .genre-pills .genre-label:hover {
     background: rgba(255, 255, 255, 0.2);
     
-    /* 6. PERBAIKAN: Border-color tetap pakai variable saat di-hover */
+    /* 5. PERBAIKAN: Border-color tetap pakai variable saat di-hover */
     border-color: var(--genre-color); 
     
-    /* 7. PERBAIKAN: Teks tetap putih saat di-hover */
+    /* 6. PERBAIKAN: Teks tetap putih saat di-hover */
     color: #FFFFFF;
-    
-    transform: translateY(-1px);
-    box-shadow: 
-        inset 0 1px 1px rgba(255, 255, 255, 0.2),
-        0 4px 8px rgba(0, 0, 0, 0.4);
 }
 .more-genres {
     display: none;
