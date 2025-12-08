@@ -1640,9 +1640,12 @@ function setupMarquee() {
     const titles = document.querySelectorAll('#artists-section .info .name, #tracks-section .info .name');
     
     const trackMetas = document.querySelectorAll('#tracks-section .info .meta');
-    const albumMetas = Array.from(trackMetas).filter(el => 
-        el.textContent.trim().startsWith("Album:")
-    );
+    const albumMetas = Array.from(trackMetas).filter(el => {
+        const text = el.textContent.trim();
+        return text.startsWith("Album:") || 
+               text.startsWith("EP:") || 
+               text.startsWith("Maxi-Single:");
+    });
 
     const allowedElements = [...titles, ...albumMetas];
 
