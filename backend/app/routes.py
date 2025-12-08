@@ -143,7 +143,12 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
             result["tracks"].append({
                 "id": track["id"], "name": track["name"],
                 "artists": [a["name"] for a in track.get("artists", [])],
-                "album": track["album"]["name"], "popularity": track["popularity"],
+                "album": {
+                    "name": track["album"]["name"],
+                    "type": track["album"]["album_type"],
+                    "total_tracks": track["album"]["total_tracks"]
+                },
+                "popularity": track["popularity"],
                 "preview_url": track.get("preview_url"), "image": album_image_url
             })
 
@@ -295,7 +300,11 @@ def sync_top_data(
             "id": track["id"], 
             "name": track["name"],
             "artists": [a["name"] for a in track.get("artists", [])],
-            "album": track["album"]["name"], 
+            "album": {
+                "name": track["album"]["name"],
+                "type": track["album"]["album_type"],
+                "total_tracks": track["album"]["total_tracks"]
+            },
             "popularity": track["popularity"],
             "preview_url": track.get("preview_url"), 
             "image": album_image_url
