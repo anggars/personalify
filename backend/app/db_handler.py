@@ -3,21 +3,15 @@ import psycopg2
 from psycopg2.extras import execute_values
 from urllib.parse import urlparse
 
-# Load .env hanya jika DATABASE_URL belum ada (biar di Render tidak override)
 if not os.getenv("DATABASE_URL"):
     from dotenv import load_dotenv
     load_dotenv()
 
 def get_conn():
-    """
-    Membuat koneksi database yang cerdas.
-    Bisa menangani DATABASE_URL (untuk Render/Supabase)
-    atau variabel terpisah (untuk Docker lokal).
-    """
     DATABASE_URL = os.getenv("DATABASE_URL")
 
     if DATABASE_URL:
-        # Jika ada DATABASE_URL, kita parse secara manual untuk Supabase
+
         result = urlparse(DATABASE_URL)
         print(f"DB CONNECTING TO (CLOUD): {result.hostname}:{result.port}")
         db_params = {
@@ -29,7 +23,7 @@ def get_conn():
         }
         return psycopg2.connect(**db_params)
     else:
-        # Jika tidak ada, gunakan variabel terpisah untuk lokal
+
         db_params = {
             "host": os.getenv("POSTGRES_HOST", "postgresfy"),
             "port": os.getenv("POSTGRES_PORT", "5432"),
@@ -137,13 +131,13 @@ def save_user_artist(spotify_id, artist_id):
                 ON CONFLICT DO NOTHING
             """, (spotify_id, artist_id))
             conn.commit()
-            
+
 def save_artists_batch(artists_data):
     """Menyimpan banyak artis sekaligus."""
     if not artists_data: return
     with get_conn() as conn:
         with conn.cursor() as cur:
-            # Kolom: id, name, popularity, image_url
+
             execute_values(cur, """
                 INSERT INTO artists (id, name, popularity, image_url)
                 VALUES %s
@@ -159,7 +153,7 @@ def save_tracks_batch(tracks_data):
     if not tracks_data: return
     with get_conn() as conn:
         with conn.cursor() as cur:
-            # Kolom: id, name, popularity, preview_url
+
             execute_values(cur, """
                 INSERT INTO tracks (id, name, popularity, preview_url)
                 VALUES %s
@@ -171,11 +165,10 @@ def save_tracks_batch(tracks_data):
             conn.commit()
 
 def save_user_associations_batch(table_name, column_name, spotify_id, item_ids):
-    """Menyimpan banyak relasi user-lagu atau user-artis sekaligus."""
     if not item_ids: return
     with get_conn() as conn:
         with conn.cursor() as cur:
-            # Membuat data tuple (spotify_id, item_id)
+
             data_to_insert = [(spotify_id, item_id) for item_id in item_ids]
             execute_values(cur, f"""
                 INSERT INTO {table_name} (spotify_id, {column_name})
@@ -185,53 +178,39 @@ def save_user_associations_batch(table_name, column_name, spotify_id, item_ids):
             conn.commit()
 
 def get_aggregate_stats():
-    """
-    Fungsi Python baru untuk mengambil statistik dari database PostgreSQL.
-    """
     stats = {}
     with get_conn() as conn:
         with conn.cursor() as cur:
-            
-            # Hitung total users
+
             cur.execute("SELECT COUNT(*) FROM users")
             stats["total_users"] = cur.fetchone()[0]
-            
-            # Hitung total artists
+
             cur.execute("SELECT COUNT(*) FROM artists")
             stats["total_unique_artists"] = cur.fetchone()[0]
-            
-            # Hitung total tracks
+
             cur.execute("SELECT COUNT(*) FROM tracks")
             stats["total_unique_tracks"] = cur.fetchone()[0]
-            
-            # Ambil 5 artis terpopuler di seluruh database
+
             cur.execute("SELECT name, popularity FROM artists ORDER BY popularity DESC LIMIT 5")
             stats["most_popular_artists"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
-            
-            # Ambil 5 track terpopuler di seluruh database
+
             cur.execute("SELECT name, popularity FROM tracks ORDER BY popularity DESC LIMIT 5")
             stats["most_popular_tracks"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
-            
+
     return stats
 
 def get_user_db_details(spotify_id: str):
-    """
-    Mengambil detail spesifik user dari database PostgreSQL.
-    Ini adalah query JOIN murni.
-    """
     details = {}
     with get_conn() as conn:
         with conn.cursor() as cur:
-            
-            # 1. Ambil info user
+
             cur.execute("SELECT display_name FROM users WHERE spotify_id = %s", (spotify_id,))
             user_result = cur.fetchone()
             if not user_result:
                 raise Exception(f"User with spotify_id '{spotify_id}' not found in database.")
             details["display_name"] = user_result[0]
             details["spotify_id"] = spotify_id
-            
-            # 2. Ambil top 5 artists (contoh: berdasarkan popularity)
+
             cur.execute("""
                 SELECT a.name, a.popularity
                 FROM artists a
@@ -242,7 +221,6 @@ def get_user_db_details(spotify_id: str):
             """, (spotify_id,))
             details["db_top_artists"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
 
-            # 3. Ambil top 5 tracks (contoh: berdasarkan popularity)
             cur.execute("""
                 SELECT t.name, t.popularity
                 FROM tracks t
@@ -252,5 +230,5 @@ def get_user_db_details(spotify_id: str):
                 LIMIT 5
             """, (spotify_id,))
             details["db_top_tracks"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
-            
+
     return details

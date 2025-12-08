@@ -18,7 +18,6 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    /*justify-content: center;*/
     min-height: 100dvh;
     padding: 2rem;
     text-align: center;
@@ -69,13 +68,12 @@ p {
     line-height: 1.6;
     margin-left: auto;
     margin-right: auto;
-    font-weight: 500; /* Sedikit lebih tebal dari normal */
+    font-weight: 500; 
 }
 
-/* === ATURAN UNTUK MOBILE === */
 @media (max-width: 768px) {
     body {
-        padding: 2rem; /* Jarak tepi disesuaikan */
+        padding: 2rem; 
     }
 
     .logo {
@@ -99,51 +97,42 @@ p {
     }
 }
 
-/* === STYLE BARU: LIQUID GLASS BUTTON === */
-
 .button {
     position: relative;
     overflow: hidden; 
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    
+
     padding: 12px 24px;
     text-decoration: none;
     font-weight: 700; 
     font-size: 1rem;
     border-radius: 50px;
     transition: all 0.3s ease;
-    
-    /* === ULTRA LIQUID GLASS === */
-    /* Background nyaris hilang (1%) */
+
     background: rgba(255, 255, 255, 0.075); 
-    
-    /* Blur sedikit dinaikkan biar smooth */
+
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    
-    /* Border dipertipis transparansinya biar elegan */
+
     border: 1px solid rgba(255, 255, 255, 0.08);
-    
+
     color: var(--text); 
     box-shadow: 
-        /* Highlight Atas (Putih Terang & Pudar ke bawah) -> Ini yang bikin efek 'netes' */
+
         inset 0 2px 4px 0 rgba(255, 255, 255, 0.35), 
-        
-        /* Highlight Pinggir Tipis (Crisp) */
+
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
-        
-        /* Shadow Luar (Depth) */
+
         0 4px 15px rgba(0, 0, 0, 0.2);
     z-index: 1;
 }
 
-/* Update Hover state biar gak jadi putih susu */
 .button:hover {
-    /* Pas hover, opacity naik dikit jadi 8% (masih bening) */
+
     background: rgba(255, 255, 255, 0.08); 
-    
+
     border-color: rgba(255, 255, 255, 0.12);
     transform: scale(1.05) translateY(-2px);
     box-shadow: 
@@ -152,121 +141,101 @@ p {
         0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
-/* Pseudo-element Aurora (Kini menjadi Radial Glow Lokal) */
 .button::before {
     content: '';
     position: absolute;
-    /* UKURAN DIPERLAMA: 80% dari tombol (membuat spotlight kecil) */
+
     width: 100%; 
     height: 100%;
-    
-    /* POSISI SUMBER CAHAYA: Mengikuti variabel JS */
-    /* 40% adalah offset dari 80% */
+
     left: calc(var(--mouse-x, 50%) - 50%); 
     top: calc(var(--mouse-y, 50%) - 50%);
 
-    /* GRADIENT RADIAL SATU WARNA (Spotify Green - Sangat Tipis) */
     background: radial-gradient(
         circle at center,
-        rgba(29, 185, 84, 0.4), /* Hijau Terang (Maksimum opacity 0.4) */
-        rgba(29, 185, 84, 0.05) 50%, /* Hijau pudar (Sangat tipis, opacity 0.05) */
+        rgba(29, 185, 84, 0.4), 
+        rgba(29, 185, 84, 0.05) 50%, 
         transparent 100%            
     );
-    
-    filter: blur(10px); /* Blur diperkecil (10px) agar cahaya terfokus */
+
+    filter: blur(10px); 
     opacity: 0;         
     z-index: -1;
     transition: opacity 0.4s ease;
     pointer-events: none;
 }
 
-/* Efek Hover Tombol */
 .button:hover::before {
-    /* Hanya munculkan, tanpa animasi putar */
+
     opacity: 1;
     animation: none; 
 }
 
-/* (4) Style untuk Teks & Spinner (Updated) */
 .button .button-text {
     transition: opacity 0.2s ease-out;
     position: relative;
     top: -1.55px;
 }
 
-/* === DYNAMIC ELASTIC SPINNER (SVG) === */
 .button .spinner {
     position: absolute;
     top: 50%;
     left: 50%;
-    
-    /* Ukuran pas: 18px */
+
     width: 18px; 
     height: 18px;
-    
-    /* Centering manual biar aman dari konflik transform rotate */
+
     margin-top: -9px; 
     margin-left: -9px;
-    
-    /* Animasi Muter Kanvas (Linear Constant) */
+
     animation: rotate 2s linear infinite;
-    
-    opacity: 0; /* Sembunyi default */
+
+    opacity: 0; 
     transition: opacity 0.2s ease-out;
 }
 
-/* Lingkaran di dalamnya */
 .button .spinner .path {
-    stroke: #ffffff; /* Warna Putih Bersih */
-    
-    /* Ketebalan: 5 (biar gak ketipisan, setara ~2px visual) */
+    stroke: #ffffff; 
+
     stroke-width: 5; 
-    stroke-linecap: round; /* Ujung bulat modern */
-    
-    /* Animasi "Kejar-Kejaran" (Melar & Menyusut) */
+    stroke-linecap: round; 
+
     animation: dash 1.5s ease-in-out infinite;
 }
 
-/* Keyframe 1: Muterin Wadahnya */
 @keyframes rotate {
     100% { transform: rotate(360deg); }
 }
 
-/* Keyframe 2: Mainin Panjang Garisnya (Efek Liquid/Elastic) */
 @keyframes dash {
     0% {
-        stroke-dasharray: 1, 150;  /* Mulai dari titik (pendek) */
+        stroke-dasharray: 1, 150;  
         stroke-dashoffset: 0;
     }
     50% {
-        stroke-dasharray: 90, 150; /* Melar jadi 7/8 lingkaran */
+        stroke-dasharray: 90, 150; 
         stroke-dashoffset: -35;    
     }
     100% {
-        stroke-dasharray: 90, 150; /* Tetap panjang... */
-        stroke-dashoffset: -124;   /* ...tapi 'buntut'nya ditarik (jadi memendek lagi) */
+        stroke-dasharray: 90, 150; 
+        stroke-dashoffset: -124;   
     }
 }
 
-/* (5) EFEK PAS DIKLIK: Class .loading */
 .button.loading .button-text {
-    opacity: 0; /* Teks hilang */
+    opacity: 0; 
 }
 
 .button.loading .spinner {
-    opacity: 1; /* Spinner muncul */
+    opacity: 1; 
 }
 
 .button.loading {
     pointer-events: none;
-    /* Balikin ke style original: Cuma reset scale, background TETAP transparan */
     transform: scale(1) translateY(0); 
 }
 
 footer {
-    /*position: absolute;
-    bottom: 0;
-    left: 0;*/
     width: 100%;
     margin-top: 3rem;
     text-align: center;
@@ -302,48 +271,39 @@ footer.fade-in {
     }
 }
 
-/* 1. Initial State: H1, Tombol, Footer siap-siap Fade In (Opacity 0) */
 .hero h1, 
 .hero .button, 
 footer {
     opacity: 0;
-    transform: translateY(20px); /* Sedikit turun biar ada efek naik */
+    transform: translateY(20px); 
     transition: opacity 1s ease-out, transform 1s ease-out;
 }
 
-/* 2. Initial State: Paragraf hidden total (karena mau diketik) */
 .hero p {
     visibility: hidden;
 }
 
-/* 3. Class Pemicu Muncul (dipanggil JS) */
 .visible {
     opacity: 1 !important;
     transform: translateY(0) !important;
 }
 
-/* --- Footer Dynamic Styles --- */
-
-/* Transisi untuk efek menghilang/muncul */
 #dynamic-footer-link {
     transition: opacity 0.5s ease-in-out;
     opacity: 1;
 }
 
-/* Class helper untuk menyembunyikan elemen */
 .fading-out {
     opacity: 0 !important;
 }
 
-/* Pastikan link di footer punya style yang benar */
 .footer-link {
-    color: #888; /* Abu-abu default */
+    color: #888; 
     text-decoration: none;
     transition: color 0.3s ease;
     cursor: pointer;
 }
 
-/* Hover jadi Hijau Spotify */
 .footer-link:hover {
     color: #1DB954 !important;
 }

@@ -59,18 +59,11 @@ emotion_texts = {
 _analysis_cache = {}
 
 def prepare_text_for_analysis(text: str) -> str:
-    """
-    Menerjemahkan teks non-Inggris ke Inggris menggunakan deep-translator.
-    FIXED: Menghapus blok .detect() yang error, langsung pakai source='auto'.
-    """
     if not text or not text.strip():
         print("NLP HANDLER: EMPTY TEXT, NOTHING TO TRANSLATE.")
         return ""
 
     try:
-        # Kita HAPUS blok .detect() yang error.
-        # Kita HAPUS juga cek 'if detected_lang == 'en''.
-        # Kita langsung serahkan ke 'source=auto' karena dia lebih pintar.
 
         print(f"NLP HANDLER: ENSURING TEXT IS IN ENGLISH (TRANSLATE IF NEEDED)...")
 
@@ -79,7 +72,7 @@ def prepare_text_for_analysis(text: str) -> str:
             translated_text = translator.translate(text)
 
             if translated_text and len(translated_text.strip()) > 0:
-                # Kita ubah log-nya jadi lebih generik
+
                 print(f"NLP HANDLER: TEXT READY FOR ANALYSIS (FULL):\n{translated_text}")
                 return translated_text
             else:
@@ -87,7 +80,7 @@ def prepare_text_for_analysis(text: str) -> str:
                 return text
 
         except Exception as translate_error:
-            # Jika 'source=auto' pun gagal, kita tangkap di sini
+
             print(f"NLP HANDLER: ERROR DURING TRANSLATION: {translate_error}. USING ORIGINAL TEXT.")
             return text
 
@@ -97,9 +90,6 @@ def prepare_text_for_analysis(text: str) -> str:
         return text
 
 def get_emotion_from_text(text: str):
-    """
-    Menganalisis teks menggunakan InferenceClient API.
-    """
     if not hf_client:
         print("NLP HANDLER: HF CLIENT NOT READY. ANALYSIS CANCELLED.")
         return None
@@ -107,7 +97,6 @@ def get_emotion_from_text(text: str):
         print("NLP HANDLER: INPUT TEXT EMPTY. ANALYSIS CANCELLED.")
         return None
 
-    # Cek cache
     if text in _analysis_cache:
         print("NLP HANDLER: FETCHING RESULT FROM CACHE.")
         return _analysis_cache[text]
@@ -115,7 +104,6 @@ def get_emotion_from_text(text: str):
     try:
         print(f"NLP HANDLER: CALLING HF API FOR ANALYSIS...")
 
-        # Batasi panjang teks ke 510 karakter untuk model
         text_to_analyze = text[:510]
 
         results = hf_client.text_classification(text_to_analyze, top_k=28)
@@ -123,7 +111,7 @@ def get_emotion_from_text(text: str):
         if results and isinstance(results, list):
             details_lines = ["NLP HANDLER: SUCCESSFUL. FULL EMOTION DETAILS:"]
             for res in results:
-                # Tambahkan setiap emosi sebagai baris dalam list
+
                 details_lines.append(f"  > {res['label']:<15} : {res['score']:.4f}")
             print("\n".join(details_lines))
             _analysis_cache[text] = results
@@ -137,20 +125,15 @@ def get_emotion_from_text(text: str):
         return None
 
 def analyze_lyrics_emotion(lyrics: str):
-    """
-    Analisis emosi dari lirik lagu.
-    """
     if not lyrics or not lyrics.strip():
         return {"error": "Lyrics input cannot be empty."}
 
-    # Terjemahkan jika perlu
     text = prepare_text_for_analysis(lyrics.strip())
 
     if not text or len(text.strip()) == 0:
         print("NLP HANDLER: TRANSLATION RESULTED IN EMPTY TEXT.")
         return {"error": "Translation resulted in empty text."}
 
-    # Analisis
     emotions = get_emotion_from_text(text)
 
     if not emotions:
@@ -167,30 +150,21 @@ def analyze_lyrics_emotion(lyrics: str):
         return {"error": "Error parsing analysis results."}
 
 def generate_emotion_paragraph(track_names, extended=False):
-    """
-    Membuat paragraf emosi dari daftar judul lagu.
-    FIXED: Sekarang support parameter 'extended'.
-    """
     if not track_names:
         return "Couldn't analyze music mood."
 
-    # Gunakan jumlah yang sesuai
     num_tracks = len(track_names) if extended else min(10, len(track_names))
     tracks_to_analyze = track_names[:num_tracks]
 
     print(f"NLP HANDLER: ANALYZING {num_tracks} TRACKS (EXTENDED={extended})")
 
-    # Gabungkan judul
     combined_text = "\n".join(tracks_to_analyze)
-
-    # CRITICAL: Terjemahkan dulu
     text = prepare_text_for_analysis(combined_text)
 
     if not text or len(text.strip()) == 0:
         print("NLP HANDLER: TEXT FOR ANALYSIS EMPTY AFTER TRANSLATION.")
         return "Vibe analysis failed (empty text after translation)."
 
-    # Analisis
     emotions = get_emotion_from_text(text)
 
     if not emotions:
@@ -201,7 +175,6 @@ def generate_emotion_paragraph(track_names, extended=False):
     except Exception:
         return "Vibe analysis failed (parsing error)."
 
-    # Deduplikasi dan ambil top 3
     unique = []
     seen = set()
     for e in em_list:
@@ -214,7 +187,6 @@ def generate_emotion_paragraph(track_names, extended=False):
             if len(unique) >= 3:
                 break
 
-    # Padding jika kurang dari 3
     if len(unique) < 3:
         pad_defaults = [
             {"label": "neutral", "score": 0.5},

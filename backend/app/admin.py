@@ -1,18 +1,13 @@
 import os
 import csv
 import io
-from app.db_handler import get_aggregate_stats, get_user_db_details, get_conn # (Ini fungsi baru, kita buat di Langkah 2)
-from app.mongo_handler import get_all_synced_user_ids # (Ini fungsi baru, kita buat di Langkah 3)
-from app.cache_handler import r as redis_client # Import koneksi Redis yang ada
+from app.db_handler import get_aggregate_stats, get_user_db_details, get_conn 
+from app.mongo_handler import get_all_synced_user_ids 
+from app.cache_handler import r as redis_client 
 
 def get_system_wide_stats():
-    """
-    Fungsi utama untuk mengumpulkan statistik dari semua database.
-    Ini adalah 100% logika Python murni.
-    """
     print("ADMIN_STATS: COLLECTING SYSTEM-WIDE STATISTICS...")
-    
-    # 1. Ambil statistik agregat dari PostgreSQL
+
     try:
         db_stats = get_aggregate_stats()
         print(f"ADMIN_STATS: SUCCESSFULLY RETRIEVED DATA FROM POSTGRESQL.")
@@ -27,7 +22,6 @@ def get_system_wide_stats():
             "most_popular_tracks": []
         }
 
-    # 2. Ambil statistik dari MongoDB
     try:
         mongo_users = get_all_synced_user_ids()
         db_stats["mongo_synced_users_count"] = len(mongo_users)
@@ -38,14 +32,13 @@ def get_system_wide_stats():
         db_stats["mongo_synced_users_count"] = -1
         db_stats["mongo_synced_user_list"] = [f"Error: {e}"]
 
-    # 3. Ambil statistik dari Redis
     try:
-        # Gunakan 'scan' untuk performa lebih baik, tapi 'keys' lebih simpel di sini
+
         redis_keys = redis_client.keys("top:*:*")
         db_stats["redis_cached_keys_count"] = len(redis_keys)
-        
+
         db_stats["redis_sample_keys"] = redis_keys[:5]
-        
+
         print(f"ADMIN_STATS: SUCCESSFULLY RETRIEVED DATA FROM REDIS.")
     except Exception as e:
         print(f"ADMIN_STATS: FAILED TO RETRIEVE DATA FROM REDIS: {e}")
@@ -56,9 +49,6 @@ def get_system_wide_stats():
     return db_stats
 
 def get_user_report(spotify_id: str):
-    """
-    Mengambil data laporan untuk satu user spesifik.
-    """
     print(f"ADMIN_STATS: FETCHING REPORT FOR USER: {spotify_id}")
     try:
         user_details = get_user_db_details(spotify_id)
@@ -73,22 +63,17 @@ def get_user_report(spotify_id: str):
             "db_top_artists": [],
             "db_top_tracks": []
         }
-        
+
 def export_users_to_csv():
-    """
-    Fungsi Admin: Export data user LENGKAP dengan Top Artists & Tracks
-    dari PostgreSQL ke format CSV (Lightweight/Tanpa Pandas).
-    """
     print("ADMIN: STARTING TO EXPORT USERS DATA (FULL DETAIL MODE)...")
-    
+
     try:
         output = io.StringIO()
         writer = csv.writer(output)
-        
+
         with get_conn() as conn:
             with conn.cursor() as cur:
-                # QUERY RAHASIA: Menggunakan Subquery & String Aggregation
-                # Biar 1 User tetap 1 Baris, tapi kolomnya kaya data.
+
                 query = """
                 SELECT 
                     u.id, 
@@ -105,8 +90,7 @@ def export_users_to_csv():
                              LIMIT 10
                          ) a), 
                     'No Data') as top_artists_list,
-                    
-                    -- Ambil Top 10 Lagu, gabung jadi satu string
+
                     COALESCE(
                         (SELECT STRING_AGG(t.name, ' | ') 
                          FROM (
@@ -117,27 +101,25 @@ def export_users_to_csv():
                              LIMIT 10
                          ) t), 
                     'No Data') as top_tracks_list
-                    
+
                 FROM users u
                 ORDER BY u.id ASC;
                 """
-                
+
                 cur.execute(query)
-                
-                # 1. Tulis Header Manual (karena query kompleks, description kadang beda)
+
                 headers = ["ID", "Spotify ID", "Display Name", "Top 10 Artists", "Top 10 Tracks"]
                 writer.writerow(headers)
-                
-                # 2. Tulis Data
+
                 while True:
                     rows = cur.fetchmany(1000)
                     if not rows:
                         break
                     writer.writerows(rows)
-        
+
         csv_string = output.getvalue()
         output.close()
-        
+
         print(f"ADMIN: EXPORT COMPLETED.")
         return csv_string
 
