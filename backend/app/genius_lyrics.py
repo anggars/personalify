@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
 IS_LOCAL = os.getenv("VERCEL") is None
-WORKER_URL = "https://genius.anggars.workers.dev"
+WORKER_URL = "https://genius.anggars.deno.net"
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
