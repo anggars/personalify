@@ -133,7 +133,6 @@ def get_songs_by_artist(artist_id):
 
 def get_lyrics_by_id(song_id):
     try:
-
         res = requests.get(
             f"{GENIUS_API_URL}/songs/{song_id}",
             headers=get_headers(),
@@ -146,54 +145,52 @@ def get_lyrics_by_id(song_id):
         title = song["title"]
         artist = song["primary_artist"]["name"]
         song_url = song["url"]
-
+        html = None
         if not IS_LOCAL:
-            wr = requests.get(f"{WORKER_URL}?url={song_url}", timeout=20)
-            if wr.status_code != 200:
-                print("WORKER FAIL:", wr.status_code)
-                return None
-            html = wr.text
-        else:
+            try:
+                print(f"ATTEMPTING WORKER FOR: {song_url}")
+                wr = requests.get(f"{WORKER_URL}?url={song_url}", timeout=20)
+                if wr.status_code == 200:
+                    html = wr.text
+                else:
+                    print(f"WORKER FAIL ({wr.status_code})... TRYING DIRECT.")
+            except Exception as e:
+                print(f"WORKER ERROR ({e})... TRYING DIRECT.")
+
+        if not html:
+            print(f"ATTEMPTING DIRECT FETCH: {song_url}")
             html = get_page_html(song_url)
-            if not html:
-                return None
+
+        if not html:
+            print("ALL FETCH METHODS FAILED.")
+            return None
 
         soup = BeautifulSoup(html, "html.parser")
 
         containers = soup.select("div[data-lyrics-container]")
-
         all_lines = []
 
         for c in containers:
-
-            if "translation" in c.get_text().lower():
-                continue
-
-            for br in c.find_all("br"):
-                br.replace_with("\n")
-
+            if "translation" in c.get_text().lower(): continue
+            for br in c.find_all("br"): br.replace_with("\n")
+            
             block = c.get_text("\n").strip()
-
-            if not block:
-                continue
-
+            if not block: continue
+            
             lines = block.split("\n")
-
             for line in lines:
                 stripped = line.strip()
-                if stripped:
-                    all_lines.append(stripped)
-                else:
-                    all_lines.append("")  
+                if stripped: all_lines.append(stripped)
+                else: all_lines.append("") 
 
         lyrics_raw = "\n".join(all_lines)
 
         if not lyrics_raw.strip():
             old = soup.find("div", class_="lyrics")
-            if old:
-                lyrics_raw = old.get_text("\n")
+            if old: lyrics_raw = old.get_text("\n")
 
         if not lyrics_raw.strip():
+            print("LYRICS PARSING FAILED (EMPTY).")
             return None
 
         cleaned = clean_lyrics(lyrics_raw)
@@ -206,5 +203,5 @@ def get_lyrics_by_id(song_id):
         }
 
     except Exception as e:
-        print("LYRICS ERROR:", e)
+        print(f"LYRICS CRASH: {e}")
         return None
