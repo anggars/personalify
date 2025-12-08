@@ -48,12 +48,29 @@ def clean_lyrics(text):
 
 def get_page_html(url):
     try:
-        r = requests.get(url, headers=get_headers(), timeout=15)
+        custom_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Referer": "https://genius.com/",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "same-origin",
+            "TE": "trailers"
+        }
+        
+        r = requests.get(url, headers=custom_headers, timeout=15)
+        
         if r.status_code == 200:
             return r.text
-    except:
-        pass
-    return None
+        else:
+            print(f"DIRECT FETCH BLOCKED: {r.status_code}")
+            return None
+            
+    except Exception as e:
+        print(f"DIRECT FETCH ERROR: {e}")
+        return None
 
 def search_artist_id(query):
     try:
