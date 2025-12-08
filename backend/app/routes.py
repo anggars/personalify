@@ -9,7 +9,6 @@ from fastapi.templating import Jinja2Templates
 from typing import Optional
 from app.nlp_handler import generate_emotion_paragraph, analyze_lyrics_emotion
 from app.admin import get_system_wide_stats, get_user_report, export_users_to_csv
-
 from app.db_handler import (
     save_user,
     save_artists_batch,
@@ -20,21 +19,13 @@ from app.cache_handler import cache_top_data, get_cached_top_data, clear_top_dat
 from app.mongo_handler import save_user_sync, get_user_history
 from app.genius_lyrics import search_artist_id, get_songs_by_artist, get_lyrics_by_id
 
-
 router = APIRouter()
-# --- Perbaikan Path Template ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# Naik 2 level ke root project, lalu masuk ke frontend/templates
 templates_dir = os.path.join(current_dir, "..", "..", "frontend", "pages")
-templates_dir = os.path.abspath(templates_dir)  # Normalize path
+templates_dir = os.path.abspath(templates_dir)  
 templates = Jinja2Templates(directory=templates_dir)
-# --- Akhir Perbaikan ---
 
 def get_redirect_uri(request: Request):
-    """
-    Fungsi helper untuk mendapatkan redirect URI yang tepat
-    berdasarkan host yang mengakses
-    """
     host = str(request.headers.get("x-forwarded-host", request.headers.get("host", "")))
     if "vercel.app" in host:
         return os.getenv("SPOTIFY_REDIRECT_URI_VERCEL", "https://personalify.vercel.app/callback")
@@ -58,15 +49,12 @@ def login(request: Request):
     })
     return RedirectResponse(url=f"https://accounts.spotify.com/authorize?{query_params}")
 
-# Ganti bagian callback function di routes.py dengan ini:
-
 @router.get("/callback", tags=["Auth"])
 def callback(request: Request, code: str = Query(..., description="Spotify Authorization Code")):
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
     redirect_uri = get_redirect_uri(request)
 
-    # Step 1: Tukar code ke token
     payload = {
         "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
         "client_id": client_id, "client_secret": client_secret
@@ -80,7 +68,6 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     if not access_token:
         raise HTTPException(status_code=400, detail="Access token not found in response.")
 
-    # Step 2: Ambil profil user
     headers = {"Authorization": f"Bearer {access_token}"}
     user_res = requests.get("https://api.spotify.com/v1/me", headers=headers)
     if user_res.status_code != 200:
@@ -90,7 +77,6 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     display_name = user_profile.get("display_name", "Unknown")
     save_user(spotify_id, display_name)
 
-    # Step 3: Sync untuk semua time_range
     time_ranges = ["short_term", "medium_term", "long_term"]
     for time_range in time_ranges:
         artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
@@ -98,9 +84,6 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20", headers=headers)
         tracks = track_resp.json().get("items", [])
 
-        # --- PROSES BATCH DIMULAI ---
-
-        # 1. Kumpulkan semua data ke dalam list terlebih dahulu
         artists_to_save = []
         artist_ids = []
         for artist in artists:
@@ -123,15 +106,11 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                 track.get("preview_url")
             ))
 
-        # 2. Kirim data sekaligus ke database dalam beberapa panggilan saja
         save_artists_batch(artists_to_save)
         save_tracks_batch(tracks_to_save)
         save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
         save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
 
-        # --- PROSES BATCH SELESAI ---
-
-        # 3. Siapkan data untuk cache (setelah semua data tersimpan)
         result = {"user": display_name, "artists": [], "tracks": []}
         for artist in artists:
              result["artists"].append({
@@ -152,13 +131,10 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                 "preview_url": track.get("preview_url"), "image": album_image_url
             })
 
-        # 4. SKIP ANALISIS EMOSI DI CALLBACK - Berikan teks default saja
         result['emotion_paragraph'] = "Your music vibe is being analyzed..."
-
         cache_top_data("top", spotify_id, time_range, result)
         save_user_sync(spotify_id, time_range, result)
 
-    # Step 4: Redirect ke dashboard LANGSUNG (lebih cepat!)
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
     frontend_url = f"{request.url.scheme}://{original_host}"
     return RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
@@ -169,37 +145,23 @@ async def analyze_emotions_background(
     time_range: str = Body("short_term", embed=True, description="Time range"),
     extended: bool = Body(False, embed=True, description="Use extended track list (20 tracks)")
 ):
-    """
-    Endpoint terpisah untuk analisis emosi yang bisa dipanggil dari frontend
-    setelah dashboard sudah dimuat.
-    """
+
     try:
-        # Ambil data dari cache
         cached_data = get_cached_top_data("top", spotify_id, time_range)
         if not cached_data:
             return {"error": "No data found for analysis"}
-
-        # Lakukan analisis emosi dengan jumlah track yang berbeda
         tracks_to_analyze = cached_data.get("tracks", [])
-
-        # --- PERBAIKAN LOGIKA UTAMA ADA DI SINI ---
         if extended:
-            # Jika ini permintaan 'extended' (dari easter egg), gunakan semua track
             track_names = [track['name'] for track in tracks_to_analyze]
         else:
-            # Jika ini analisis standar, gunakan hanya 10 track pertama
             track_names = [track['name'] for track in tracks_to_analyze[:10]]
-
         emotion_paragraph = generate_emotion_paragraph(track_names, extended=extended)
 
-        # --- LOGIKA PENYIMPANAN YANG DIPERBAIKI ---
         if extended:
-            # Jika ini permintaan 'extended', JANGAN simpan hasilnya.
-            # Cukup kembalikan untuk ditampilkan sementara di browser.
+
             print("EXTENDED ANALYSIS REQUESTED. RETURNING TEMPORARY RESULT WITHOUT CACHING.")
         else:
-            # Jika ini analisis standar (Top 10 saat halaman dibuka),
-            # baru simpan hasilnya ke cache dan database.
+
             print("STANDARD ANALYSIS. UPDATING CACHE AND DATABASE.")
             cached_data['emotion_paragraph'] = emotion_paragraph
             cache_top_data("top", spotify_id, time_range, cached_data)
@@ -216,43 +178,36 @@ def sync_top_data(
     access_token: str = Query(..., description="Spotify Access Token"),
     time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"], description="Time range")
 ):
-    # 1. Validasi Token dengan Cek Profil User Dulu
+
     headers = {"Authorization": f"Bearer {access_token}"}
     res = requests.get("https://api.spotify.com/v1/me", headers=headers)
 
-    # [FIX UTAMA] Tangani Token Expired (401) agar tidak jadi Internal Server Error
     if res.status_code == 401:
         print(f"SYNC ERROR: TOKEN EXPIRED FOR ACCESS_TOKEN={access_token[:10]}...")
-        # Lempar 401 agar frontend tahu user harus login ulang
+
         raise HTTPException(status_code=401, detail="Spotify token expired. Please login again.")
-    
+
     if res.status_code != 200:
         print(f"SYNC ERROR: FAILED TO FETCH USER PROFILE. STATUS: {res.status_code}")
         raise HTTPException(status_code=res.status_code, detail=res.json())
 
-    # Jika token aman, lanjut proses normal
     user_profile = res.json()
     spotify_id = user_profile["id"]
     display_name = user_profile.get("display_name", "Unknown")
     save_user(spotify_id, display_name)
 
-    # 2. Ambil Data Artists & Tracks dari Spotify
     artist_url = f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20"
     track_url = f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20"
 
     artist_resp = requests.get(artist_url, headers=headers)
     track_resp = requests.get(track_url, headers=headers)
 
-    # Validasi lagi response dari Spotify
     if artist_resp.status_code != 200 or track_resp.status_code != 200:
-        # Jika salah satu gagal (misal token mati di tengah jalan), lempar 401
         raise HTTPException(status_code=401, detail="Failed to sync data. Token might be expired.")
 
     artists = artist_resp.json().get("items", [])
     tracks = track_resp.json().get("items", [])
 
-    # --- PROSES BATCH DATABASE (POSTGRESQL) ---
-    
     artists_to_save = []
     artist_ids = []
     for artist in artists:
@@ -275,16 +230,12 @@ def sync_top_data(
             track.get("preview_url")
         ))
 
-    # Simpan ke DB
     save_artists_batch(artists_to_save)
     save_tracks_batch(tracks_to_save)
     save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
     save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
-
-    # --- SIAPKAN DATA RESPONSE & CACHE (REDIS) ---
-
     result = {"user": display_name, "artists": [], "tracks": []}
-    
+
     for artist in artists:
          result["artists"].append({
             "id": artist["id"], 
@@ -293,7 +244,7 @@ def sync_top_data(
             "popularity": artist["popularity"], 
             "image": artist["images"][0]["url"] if artist.get("images") else ""
         })
-        
+
     for track in tracks:
         album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
         result["tracks"].append({
@@ -310,12 +261,10 @@ def sync_top_data(
             "image": album_image_url
         })
 
-    # Generate Emotion Paragraph (NLP)
     track_names = [track['name'] for track in result.get("tracks", [])]
     emotion_paragraph = generate_emotion_paragraph(track_names)
     result['emotion_paragraph'] = emotion_paragraph
 
-    # Simpan ke Redis & MongoDB
     cache_top_data("top", spotify_id, time_range, result)
     save_user_sync(spotify_id, time_range, result)
 
@@ -368,9 +317,8 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
             return RedirectResponse(url="/?error=session_expired")
 
         emotion_paragraph = data.get("emotion_paragraph", "Vibe analysis is getting ready...")
-        analytics = data.get("analytics") # Ambil analytics jika ada
+        analytics = data.get("analytics") 
 
-        # Logic Genre (Copy paste logic genre kamu yg lama)
         genre_count_top10 = {}
         genre_artists_map_top10 = {}
         for artist in data.get("artists", [])[:10]:
@@ -409,40 +357,29 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
 
     except Exception as e:
         print(f"DASHBOARD CRASH: {e}")
-        # Jika ada error aneh di dashboard, lempar 500 (nanti ditangkap main.py -> Redirect Home)
+
         raise HTTPException(status_code=500, detail="Internal Dashboard Error")
 
 @router.get("/about", response_class=HTMLResponse, tags=["Pages"])
-def about_page(request: Request): # <-- TAMBAHKAN spotify_id
-    """
-    Menyajikan halaman "About" baru.
-    """
+def about_page(request: Request): 
     return templates.TemplateResponse("about.html", {"request": request})
 
 @router.get("/admin/system-stats", tags=["Admin"])
 def get_stats():
-    """
-    Endpoint admin tersembunyi untuk melihat statistik
-    ala struk dot matrix.
-    """
     try:
         stats = get_system_wide_stats()
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        # Lebar struk total 40 karakter
+
         RECEIPT_WIDTH = 40
-        
-        # Helper untuk padding
+
         def format_line(key, value):
             key_str = str(key)
             value_str = str(value)
-            # 2 spasi untuk padding (1 di awal, 1 di akhir)
-            # 2 spasi pemisah
+
             padding = RECEIPT_WIDTH - len(key_str) - len(value_str) - 2 - 2
             if padding < 1: padding = 1
             return f" {key_str}{'.' * padding}{value_str} "
 
-        # Mulai membangun struk
         receipt_lines = []
         receipt_lines.append("*" * RECEIPT_WIDTH)
         receipt_lines.append("      PERSONALIFY SYSTEM AUDIT      ")
@@ -450,49 +387,43 @@ def get_stats():
         receipt_lines.append(f" DATE: {now}")
         receipt_lines.append("=" * RECEIPT_WIDTH)
 
-        # --- Bagian PostgreSQL ---
         receipt_lines.append("\n--- POSTGRESQL (MAIN DB) ---")
         receipt_lines.append(format_line("Total Users", stats.get('total_users', 'N/A')))
         receipt_lines.append(format_line("Total Artists", stats.get('total_unique_artists', 'N/A')))
         receipt_lines.append(format_line("Total Tracks", stats.get('total_unique_tracks', 'N/A')))
-        
+
         receipt_lines.append("\n  Top 5 Artists (All Users):")
         for item in stats.get('most_popular_artists', ["N/A"]):
             receipt_lines.append(f"    - {item}")
-            
+
         receipt_lines.append("\n  Top 5 Tracks (All Users):")
         for item in stats.get('most_popular_tracks', ["N/A"]):
             receipt_lines.append(f"    - {item}")
 
-        # --- Bagian MongoDB ---
         receipt_lines.append("\n" + "=" * RECEIPT_WIDTH)
         receipt_lines.append("--- MONGODB (SYNC HISTORY) ---")
         receipt_lines.append(format_line("Synced Users Count", stats.get('mongo_synced_users_count', 'N/A')))
-        
+
         receipt_lines.append("\n  Synced User List:")
         for item in stats.get('mongo_synced_user_list', ["N/A"]):
             receipt_lines.append(f"    - {item}")
 
-        # --- Bagian Redis ---
         receipt_lines.append("\n" + "=" * RECEIPT_WIDTH)
         receipt_lines.append("--- REDIS (CACHE) ---")
         receipt_lines.append(format_line("Cached Keys Count", stats.get('redis_cached_keys_count', 'N/A')))
-        
+
         receipt_lines.append("\n  Sample Cached Keys:")
         for item in stats.get('redis_sample_keys', ["N/A"]):
             receipt_lines.append(f"    - {item}")
 
-        # --- Footer ---
         receipt_lines.append("\n" + "*" * RECEIPT_WIDTH)
         receipt_lines.append("         THANK YOU - ADMIN        ")
         receipt_lines.append("*" * RECEIPT_WIDTH)
 
-        # Gabungkan semua baris
         report_string = "\n".join(receipt_lines)
-        
-        # Kembalikan sebagai 'text/plain'
+
         return Response(content=report_string, media_type="text/plain")
-        
+
     except Exception as e:
         print(f"ADMIN_STATS: FAILED TO RETRIEVE SYSTEM-WIDE STATS AT ENDPOINT: {e}")
         return Response(
@@ -503,15 +434,11 @@ def get_stats():
 
 @router.get("/admin/clear-cache", tags=["Admin"])
 def clear_cache():
-    """
-    Endpoint admin tersembunyi untuk menghapus
-    semua cache 'top:*:*' dari Redis, ala struk.
-    """
     try:
         deleted_count = clear_top_data_cache()
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         RECEIPT_WIDTH = 40
-        
+
         def format_line(key, value):
             key_str = str(key)
             value_str = str(value)
@@ -532,9 +459,9 @@ def clear_cache():
         receipt_lines.append("=" * RECEIPT_WIDTH)
 
         report_string = "\n".join(receipt_lines)
-        
+
         return Response(content=report_string, media_type="text/plain")
-        
+
     except Exception as e:
         print(f"ADMIN_STATS: FAILED TO CLEAR CACHE: {e}")
         return Response(
@@ -543,19 +470,13 @@ def clear_cache():
             status_code=500
         )
 
-# ... (tepat setelah fungsi clear_cache()) ...
-
 @router.get("/admin/user-report/{spotify_id}", tags=["Admin"])
 def get_user_stats(spotify_id: str):
-    """
-    Endpoint admin tersembunyi untuk melihat laporan
-    database untuk user tertentu, ala struk.
-    """
     try:
         details = get_user_report(spotify_id)
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         RECEIPT_WIDTH = 40
-        
+
         def format_line(key, value):
             key_str = str(key)
             value_str = str(value)
@@ -572,17 +493,17 @@ def get_user_stats(spotify_id: str):
 
         if "error" in details:
              receipt_lines.append(f"\n  ERROR: {details['error']}\n")
-        
+
         receipt_lines.append(format_line("User", details.get('display_name', 'N/A')))
         receipt_lines.append(format_line("Spotify ID", details.get('spotify_id', 'N/A')))
-        
+
         receipt_lines.append("\n  Top 5 Artists (from DB):")
         artists = details.get('db_top_artists', [])
         if not artists:
             receipt_lines.append("    - No artists found in DB -")
         for item in artists:
             receipt_lines.append(f"    - {item}")
-            
+
         receipt_lines.append("\n  Top 5 Tracks (from DB):")
         tracks = details.get('db_top_tracks', [])
         if not tracks:
@@ -595,9 +516,9 @@ def get_user_stats(spotify_id: str):
         receipt_lines.append("*" * RECEIPT_WIDTH)
 
         report_string = "\n".join(receipt_lines)
-        
+
         return Response(content=report_string, media_type="text/plain")
-        
+
     except Exception as e:
         print(f"ADMIN_STATS: FAILED TO RETRIEVE USER REPORT AT ENDPOINT: {e}")
         return Response(
@@ -608,13 +529,8 @@ def get_user_stats(spotify_id: str):
 
 @router.get("/admin/export-users", tags=["Admin"])
 def download_user_export():
-    """
-    Endpoint untuk mendownload data user sebagai file CSV.
-    Menggunakan teknik streaming (tanpa pandas) agar ringan.
-    """
     csv_content = export_users_to_csv()
-    
-    # Return sebagai file attachment
+
     return Response(
         content=csv_content,
         media_type="text/csv",
@@ -623,14 +539,10 @@ def download_user_export():
         }
     )
 
-# Ganti endpoint agar sesuai dengan frontend (POST /analyze-lyrics)
 @router.post("/analyze-lyrics", tags=["NLP"])
 def analyze_lyrics_emotion_endpoint(
-    lyrics: str = Body(..., embed=True, description="Lirik lagu untuk dianalisis")
+    lyrics: str = Body(..., embed=True, description="Song lyrics to analyze")
 ):
-    """
-    Analisis emosi dari lirik lagu menggunakan model Hugging Face GoEmotions.
-    """
     return analyze_lyrics_emotion(lyrics)
 
 @router.get("/lyrics", response_class=HTMLResponse, tags=["Pages"])
@@ -640,12 +552,10 @@ def lyrics_page(request: Request, spotify_id: str = None):
     """
     return templates.TemplateResponse("lyrics.html", {"request": request, "spotify_id": spotify_id})
 
-# --- HALAMAN GENIUS (BARU) ---
 @router.get("/lyrics/genius", response_class=HTMLResponse, tags=["Pages"])
 async def read_genius_page(request: Request):
     return templates.TemplateResponse("genius.html", {"request": request})
 
-# --- API ENDPOINTS GENIUS ---
 @router.get("/api/genius/search-artist")
 def api_search_artist(q: str):
     return {"artists": search_artist_id(q)}
@@ -658,22 +568,16 @@ def api_get_artist_songs(artist_id: int):
 def api_get_lyrics_emotion(song_id: int):
     data = get_lyrics_by_id(song_id)
     if not data:
-        raise HTTPException(status_code=404, detail="Lirik tidak ditemukan")
-    
-    # --- [FIXED] LOGGING YANG BENAR ---
-    # Akses langsung ke key 'title' dan 'artist', jangan lewat 'track_info'
+        raise HTTPException(status_code=404, detail="Lyrics not found!")
     print("="*50)
     print(f"ANALYSIS REQUEST: {data.get('title')} - {data.get('artist')}")
     print("-" * 20)
     print(f"LYRICS CONTENT:\n{data.get('lyrics')}")
     print("="*50)
-    # ----------------------------------
-
-    # Analisis Emosi
     emotion = analyze_lyrics_emotion(data['lyrics'])
-    
+
     return {
-        "track_info": data, # Nah, baru di sini dia dibungkus jadi track_info buat dikirim ke frontend
+        "track_info": data, 
         "lyrics": data['lyrics'],
         "emotion_analysis": emotion
     }

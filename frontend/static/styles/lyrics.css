@@ -1,4 +1,3 @@
-/* ====== LYRIC ANALYZER STYLES ====== */
 :root {
     --primary: #1DB954;
     --bg: #121212;
@@ -15,34 +14,25 @@ body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     background-color: #121212;
     color: #ffffff;
-    
-    /* UBAH LOGIKA LAYOUT BODY: */
-    /* Gunakan min-height: 100dvh agar minimal setinggi layar HP */
     min-height: 100dvh; 
     display: flex;
     flex-direction: column;
-    
     padding: 2rem;
-    padding-bottom: 0; /* Hapus padding bawah body, biar footer yang ngatur */
+    padding-bottom: 0; 
     box-sizing: border-box;
     overflow-x: hidden;
-    overflow-y: scroll; /* Scroll diurus browser (native) */
+    overflow-y: scroll; 
     touch-action: pan-y;
     overscroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
 }
 
 main.main-content {
-    /* Main mengambil sisa ruang kosong, mendorong footer ke bawah */
     flex: 1; 
-    
     display: flex;
     flex-direction: column;
     align-items: center;
-    
-    /* Ubah ke flex-start agar saat konten panjang, dia mulai dari atas */
     justify-content: flex-start; 
-    
     width: 100%;
 }
 
@@ -64,32 +54,28 @@ header p.subtitle {
     margin-bottom: 2.5rem;
 }
 
-/* === STYLE LINK DI SUBTITLE (REVISI: Polos & Tidak Bold) === */
 header p.subtitle a {
-    color: #888888; /* Abu-abu */
+    color: #888888; 
     text-decoration: none;
-    font-weight: 500; /* Samakan dengan teks biasa (tidak bold) */
+    font-weight: 500; 
     transition: color 0.2s ease;
-    border: none; /* Hapus garis */
+    border: none; 
 }
 
 header p.subtitle a:hover {
-    color: var(--primary); /* Jadi Hijau saat hover */
+    color: var(--primary); 
     text-decoration: none;
-    border: none; /* Pastikan garis ijo hilang */
+    border: none; 
 }
 
 .container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Input tetap di tengah box container */
-    
+    justify-content: center; 
     width: 100%;
     max-width: 700px;
     margin: 0 auto;
-    
-    /* Biarkan container mengisi ruang di dalam main */
     flex-grow: 1; 
     min-height: auto; 
 }
@@ -103,9 +89,7 @@ header p.subtitle a:hover {
     padding: 1.5rem;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    
     border: 1px solid rgba(255, 255, 255, 0.08);
-    
     box-shadow: 
         inset 0 2px 4px 0 rgba(255, 255, 255, 0.2), 
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.1),
@@ -154,18 +138,15 @@ header p.subtitle a:hover {
     box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
 }
 
-/* Lebar scrollbar */
 .lyrics-form textarea::-webkit-scrollbar {
     width: 10px;
 }
 
-/* Bagian track (latar belakang scrollbar) */
 .lyrics-form textarea::-webkit-scrollbar-track {
     background: #181818; 
     border-radius: 5px;
 }
 
-/* Bagian thumb (gagang scrollbar yang digerakkan) */
 .lyrics-form textarea::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.1);
     border-radius: 5px; 
@@ -177,11 +158,10 @@ header p.subtitle a:hover {
         0 2px 4px rgba(0,0,0,0.2);
 }
 
-/* Efek saat thumb di-hover */
 .lyrics-form textarea::-webkit-scrollbar-thumb:hover {
     background-color: rgba(255, 255, 255, 0.25); 
     box-shadow: 
-        inset 0 1px 1px rgba(255, 255, 255, 0.9), /* Kilau makin terang */
+        inset 0 1px 1px rgba(255, 255, 255, 0.9), 
         inset 0 0 8px rgba(255, 255, 255, 0.3),
         0 2px 6px rgba(0,0,0,0.3);
 }
@@ -203,7 +183,7 @@ header p.subtitle a:hover {
 }
 
 #lyricsInput::placeholder {
-  white-space: pre-line; /* biar \n kebaca jadi enter */
+  white-space: pre-line; 
 }
 
 .analysis-controls {
@@ -219,10 +199,8 @@ header p.subtitle a:hover {
 }
 
 .lyrics-form button {
-    align-self: stretch; /* tombol ikut lebar container */
+    align-self: stretch; 
 }
-
-/* === UPDATE TOMBOL ANALYZE (ULTRA LIQUID GLASS) === */
 
 .button-primary {
     position: relative;
@@ -230,23 +208,17 @@ header p.subtitle a:hover {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 100%; /* (Di lyrics.css width-nya auto/ikut container, sesuaikan saja) */
-    
+    width: 100%; 
     padding: 12px 24px;
     border-radius: 50px;
-    
-    /* Border lebih tipis */
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.15), 
         inset 0 2px 10px 0 rgba(255, 255, 255, 0.05),
         0 12px 40px rgba(0, 0, 0, 0.6);
-    
-    /* === ULTRA LIQUID GLASS === */
-    background: rgba(255, 255, 255, 0.05); /* 5% Opacity */
+    background: rgba(255, 255, 255, 0.05); 
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    
     color: #FFFFFF;
     font-weight: 700;
     font-size: 1rem;
@@ -262,7 +234,6 @@ header p.subtitle a:hover {
 }
 
 .button-primary:hover {
-    /* Hover state */
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.3);
     box-shadow: 
@@ -277,17 +248,14 @@ header p.subtitle a:hover {
     position: absolute;
     width: 100%;
     height: 100%;
-    
     left: calc(var(--mouse-x, 50%) - 50%); 
     top: calc(var(--mouse-y, 50%) - 50%);
-    
     background: radial-gradient(
         circle at center,
         rgba(29, 185, 84, 0.4), 
         rgba(29, 185, 84, 0.05) 50%, 
         transparent 100%            
     );
-    
     filter: blur(10px);
     opacity: 0;
     z-index: -1;
@@ -300,7 +268,6 @@ header p.subtitle a:hover {
     animation: none; 
 }
 
-/* (5) Style untuk Teks & Spinner di dalam tombol */
 .button-primary .button-text {
     position: relative;
     z-index: 2;
@@ -339,34 +306,27 @@ header p.subtitle a:hover {
     100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
 }
 
-/* Pastikan spinner muncul saat tombol loading */
 .button-primary.loading .button-text { opacity: 0; }
 .button-primary.loading .spinner { opacity: 1; }
-
-/* === CONTAINER LOADING UNTUK HASIL (Di Tengah) === */
 .loading-state-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    
-    /* FIX: Padding kecil & Hapus min-height biar gak kegedean */
+
     padding: 20px 0; 
     min-height: auto;
-    
+
     color: var(--primary);
     font-weight: 600;
 }
 
-/* Override Spinner di tengah halaman (Posisi Relative & Hijau) */
 .loading-state-container .spinner {
     position: relative; 
     top: auto; left: auto; 
-    
-    /* Margin bawah dikit ke teks */
+
     margin: 0 0 12px 0; 
-    
-    /* Ukuran disesuaikan (mirip spinner lama) */
+
     width: 32px; 
     height: 32px;
     opacity: 1; 
@@ -404,15 +364,14 @@ header p.subtitle a:hover {
 
 .emotion-bar-bg {
     flex: 1 1 0;
-    background: #282828 !important; /* Solid Gelap */
+    background: #282828 !important; 
     border-radius: 50px;
-    height: 12px; /* Tinggi Fix */
+    height: 12px; 
     overflow: hidden;
     position: relative;
     min-width: 80px;
     max-width: 100%;
-    
-    /* Shadow Dalam (Cekung) */
+
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
 }
 
@@ -429,28 +388,24 @@ header p.subtitle a:hover {
 
 .emotion-bar {
     background: rgba(255, 255, 255, 0.15) !important;
-    
-    /* Blur Effect */
+
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    
+
     height: 100%;
     border-radius: 50px;
     min-width: 0;
     display: block;
     transition: width 0.5s ease-out;
-    
-    /* === FIX: BIAR GAK KEPOTONG === */
-    box-sizing: border-box !important; /* Wajib ada biar border masuk ke dalem */
-    
-    /* Border tipis */
+
+    box-sizing: border-box !important; 
+
     border: 1px solid rgba(255, 255, 255, 0.15);
 
-    /* Highlight Kaca Cair (Persis Genius) */
     box-shadow: 
-        inset 0 1px 1px rgba(255, 255, 255, 0.9), /* Kilau Atas */
-        inset 0 0 3px rgba(255, 255, 255, 0.2),   /* Kilau Tengah */
-        0 0 5px rgba(255, 255, 255, 0.15);        /* Glow Luar */
+        inset 0 1px 1px rgba(255, 255, 255, 0.9), 
+        inset 0 0 3px rgba(255, 255, 255, 0.2),   
+        0 0 5px rgba(255, 255, 255, 0.15);        
 }
 
 .emotion-score {
@@ -483,18 +438,16 @@ header p.subtitle a:hover {
 
 footer {
     width: 100%;
-    
-    /* GANTI margin-top fix (4rem) menjadi auto */
-    /* Ini kuncinya: footer akan didorong ke paling bawah oleh 'flex: 1' di main */
+
     margin-top: -0.25rem; 
-    
-    padding: 2rem 0; /* Padding atas bawah yang enak dilihat */
-    
+
+    padding: 2rem 0; 
+
     text-align: center;
     font-size: 0.75rem;
     color: #888;
-    background: transparent; /* Atau #121212 */
-    
+    background: transparent; 
+
     opacity: 0;
     transition: opacity 0.5s ease-out 0.5s;
     line-height: 1.35;
@@ -517,9 +470,6 @@ footer.fade-in {
     100% { transform: rotate(360deg); }
 }
 
-/* =================================== */
-/* ====== MOBILE RESPONSIVE STYLES ====== */
-/* =================================== */
 @media (max-width: 768px) {
     body {
         padding: 1.5rem;
@@ -563,7 +513,7 @@ footer.fade-in {
         width: 100%;
         display: flex;
         flex-direction: column;
-        align-items: center; /* Di mobile, kita kembalikan ke center */
+        align-items: center; 
         justify-content: center;
     }
 
@@ -599,7 +549,7 @@ footer.fade-in {
         text-align: center;
         font-size: 1.25rem;
     }
-    
+
     .button-primary {
         width: auto;
         text-align: center;
@@ -639,10 +589,6 @@ footer.fade-in {
         padding-bottom: 0;
     }
 }
-
-/* ================================================== */
-/* ====== PENYEMPURNAAN FINAL: ANIMASI & JARAK ====== */
-/* ================================================== */
 
 .lyrics-form textarea {
     transition: transform 0.2s ease;
@@ -691,7 +637,7 @@ footer.fade-in {
   display: inline-block;
   width: 10px;
   height: 1em;
-  background-color: #1DB954; /* Warna hijau */
+  background-color: #1DB954; 
   margin-left: 3px;
   vertical-align: middle;
   animation: blink-caret 0.75s step-end infinite;
@@ -717,61 +663,44 @@ header h1, header p.subtitle, .container {
     }
 }
 
-
-/* ================================================== */
-/* ====== PERBAIKAN LAYOUT DESKTOP (Sticky Footer) ====== */
-/* ================================================== */
-
 @media (min-width: 769px) {
 
-    /* 1. Paksa body untuk jadi full-height flex container */
     body {
         display: flex;
         flex-direction: column;
         min-height: 100vh;
-        box-sizing: border-box; /* Agar padding 2rem tidak merusak */
+        box-sizing: border-box; 
     }
 
-    /* 2. Paksa <main> untuk mengisi sisa ruang & center konten */
     main.main-content {
         flex-grow: 1;
-        
+
         display: flex;
         flex-direction: column;
-        align-items: center; /* Tetap center horizontal */
-        justify-content: center; /* Center vertikal */
+        align-items: center; 
+        justify-content: center; 
         width: 100%;
     }
 
-    /* 3. Pastikan .container tidak merusak layout */
     .container {
-        /*
-         * Kita biarkan style asli .container (termasuk justify-content: center)
-         * agar box-nya tetap di tengah.
-         */
-         width: 100%; /* Pastikan .container mengisi .main-content */
+
+         width: 100%; 
     }
 }
 
-/* --- Dynamic Footer Animation --- */
-
-/* Transisi untuk wrapper bawah */
 #dynamic-footer-link {
     transition: opacity 0.5s ease-in-out;
     opacity: 1;
 }
 
-/* Class helper untuk menyembunyikan elemen saat transisi */
 .fading-out {
     opacity: 0 !important;
 }
 
-/* Pastikan hover link tetap konsisten */
 .footer-link:hover {
-    color: #FEE133 !important; /* Tetap Kuning (sesuai style lyrics kamu) atau ganti #1DB954 jika mau hijau */
+    color: #FEE133 !important; 
 }
 
-/* === STATUS MESSAGE (Error & Loading Text) === */
 .status-msg {
     text-align: center;
     width: 100%;
@@ -782,10 +711,9 @@ header h1, header p.subtitle, .container {
 }
 
 .status-msg.error {
-    color: #ff6b6b; /* Merah soft */
+    color: #ff6b6b; 
 }
 
-/* Update jarak agar pesan error tidak terlalu mepet atau jauh */
 #results-section {
     margin-top: 1.5rem !important; 
 }

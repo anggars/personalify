@@ -5,7 +5,6 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
 
-/* Style Dasar (dari home.css) */
 body {
     background-color: #121212;
     color: #ffffff;
@@ -20,12 +19,11 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
-/* === FIX FONT JEPANG BIAR SEJAJAR === */
 .jp-text {
     font-family: 'Noto Sans JP', sans-serif;
-    font-size: 0.85em; /* Kecilin dikit (85%) biar tingginya pas sama Latin */
-    vertical-align: 1px; /* Geser naik dikit 1px biar lurus tengah */
-    line-height: 1; /* Paksa barisnya rapat */
+    font-size: 0.85em; 
+    vertical-align: 1px; 
+    line-height: 1; 
     font-weight: 500;
 }
 
@@ -37,21 +35,20 @@ body {
     justify-content: center;
 }
 
-/* Jarak Header (agar sama dengan lyrics/dashboard) */
 header.hero {
     text-align: center;
     margin-top: -0.5rem;
 }
 header.hero h1 {
-    font-size: 2.5rem; /* Ukuran sama dengan Lyrics/Dashboard */
+    font-size: 2.5rem; 
     font-weight: 800;
-    color: #1DB954; /* Warna hijau */
+    color: #1DB954; 
     margin-top: 1.5rem;
     margin-bottom: 0.9rem;
-    visibility: hidden; /* Sembunyikan untuk animasi ketik */
+    visibility: hidden; 
 }
 header.hero p {
-    font-size: 1.2rem; /* Ukuran sama dengan Lyrics/Dashboard */
+    font-size: 1.2rem; 
     color: #B3B3B3;
     max-width: 600px;
     margin-top: 0;
@@ -60,7 +57,7 @@ header.hero p {
     margin-left: auto;
     margin-right: auto;
     font-weight: 500;
-    visibility: hidden; /* Sembunyikan untuk animasi ketik */
+    visibility: hidden; 
 }
 
 header.hero h1.visible,
@@ -68,12 +65,11 @@ header.hero p.visible {
     visibility: visible;
 }
 
-/* Kursor typing */
 .typing-cursor {
   display: inline-block;
   width: 10px;
   height: 1em;
-  background-color: #1DB954; /* Warna hijau */
+  background-color: #1DB954; 
   margin-left: 3px;
   vertical-align: middle;
   animation: blink-caret 0.75s step-end infinite;
@@ -83,7 +79,6 @@ header.hero p.visible {
   50% { background-color: #1DB954; }
 }
 
-/* Animasi Fade In untuk Konten */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -95,7 +90,6 @@ header.hero p.visible {
     }
 }
 
-/* Layout Konten (Container & Section) */
 .container {
     display: flex;
     flex-direction: column;
@@ -105,8 +99,7 @@ header.hero p.visible {
     max-width: 700px;
     margin: 0 auto;
     width: 100%;
-    
-    /* Sembunyikan untuk animasi fade-in */
+
     visibility: hidden;
     opacity: 0;
 }
@@ -140,7 +133,6 @@ header.hero p.visible {
     z-index: 2;
 }
 
-/* Judul di dalam section (H2) */
 .about-title-section {
     color: #1DB954;
     font-size: 1.25rem;
@@ -152,16 +144,14 @@ header.hero p.visible {
     text-align: center;
 }
 
-/* Aturan Teks Paragraf */
 .section p {
     color: #b3b3b3;
     font-size: 1rem;
     line-height: 1.7;
     margin-bottom: 0rem;
-    text-align: justify; /* Rata Kiri-Kanan */
+    text-align: justify; 
 }
 
-/* Link di dalam paragraf */
 .section p a.footer-link {
     color: #888;
     text-decoration: none;
@@ -169,8 +159,7 @@ header.hero p.visible {
     transition: color 0.2s ease;
 }
 
-/* Warna Hover Tech Stack */
-.section p a.tech-fastapi:hover    { color: #009688; } /* FastAPI Teal */
+.section p a.tech-fastapi:hover    { color: #009688; } 
 .section p a.tech-spotify:hover    { color: #1DB954; }
 .section p a.tech-docker:hover     { color: #2496ED; }
 .section p a.tech-postgres:hover   { color: #336791; }
@@ -180,7 +169,6 @@ header.hero p.visible {
 .section p a.tech-vercel:hover     { color: #ffffff; }
 .section p a.tech-render:hover     { color: #4D9DE0; }
 
-/* === ATURAN IKON SOSMED (VERSI SUPER MATTE / FLAT) === */
 .icon-social-links {
     display: flex;
     flex-wrap: wrap;
@@ -202,41 +190,35 @@ header.hero p.visible {
     color: #b3b3b3; 
     font-size: 1.2rem;
     text-decoration: none;
-    transition: all 0.3s ease-out; /* Ganti easing biar lebih smooth/kalem */
+    transition: all 0.3s ease-out; 
     position: relative;
 }
 
-/* Efek Umum saat Hover */
 .icon-social-links a:hover {
     background-color: #252525;
     transform: scale(1);
 }
 
-/* --- WARNA BRAND (VERY LOW OPACITY SHADOW) --- */
-
-/* GitHub */
 .icon-social-links a.github:hover {
     color: #e6edf3;
     border-color: #444; 
-    /* Shadow 5% opacity - nyaris gak ada */
+
     box-shadow: 0 2px 4px rgba(240, 246, 252, 0.05); 
 }
 
-/* LinkedIn */
 .icon-social-links a.linkedin:hover {
     color: #0077b5;
     border-color: #0077b5;
     box-shadow: 0 2px 4px rgba(0, 119, 181, 0.08);
 }
 
-/* --- KHUSUS INSTAGRAM --- */
 .icon-social-links a.instagram:hover {
     border: 1px solid transparent;
-    /* Gradient background tetep, tapi shadow super tipis */
+
     background: 
         linear-gradient(#252525, #252525) padding-box,
         radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%) border-box;
-    
+
     box-shadow: 0 2px 4px rgba(214, 36, 159, 0.08);
 }
 
@@ -248,63 +230,55 @@ header.hero p.visible {
     color: transparent;
 }
 
-/* Spotify */
 .icon-social-links a.spotify:hover {
     color: #1DB954;
     border-color: #1DB954;
     box-shadow: 0 2px 4px rgba(29, 185, 84, 0.08);
 }
 
-/* X (Twitter) */
 .icon-social-links a.x-twitter:hover {
     color: #d6d9db; 
     border-color: #d6d9db;
     box-shadow: 0 2px 4px rgba(255, 255, 255, 0.05);
 }
 
-/* YouTube */
 .icon-social-links a.youtube:hover {
     color: #FF0000;
     border-color: #FF0000;
     box-shadow: 0 2px 4px rgba(255, 0, 0, 0.08);
 }
 
-/* SoundCloud */
 .icon-social-links a.soundcloud:hover {
     color: #ff5500;
     border-color: #ff5500;
     box-shadow: 0 2px 4px rgba(255, 85, 0, 0.08);
 }
 
-/* Medium */
 .icon-social-links a.medium:hover {
     color: #00ab6c;
     border-color: #00ab6c;
     box-shadow: 0 2px 4px rgba(0, 171, 108, 0.08);
 }
 
-/* Telegram */
 .icon-social-links a.telegram:hover {
     color: #0088cc;
     border-color: #0088cc;
     box-shadow: 0 2px 4px rgba(0, 136, 204, 0.08);
 }
 
-/* Blog */
 .icon-social-links a.blog:hover {
     color: #FEE133;
     border-color: #FEE133;
     box-shadow: 0 2px 4px rgba(254, 225, 51, 0.08);
 }
 
-/* === FOOTER (dari home.css) === */
 footer {
     width: 100%;
     margin-top: 1.75rem;
     text-align: center;
     font-size: 0.75rem;
     color: #888;
-    opacity: 0; /* Untuk fade-in */
+    opacity: 0; 
     transition: opacity 0.5s ease-out;
     line-height: 1.35;
 }
@@ -320,13 +294,12 @@ footer.fade-in {
 }
 
 .footer-link:hover {
-    color: #2496ED; /* Docker Blue */
+    color: #2496ED; 
 }
 
-/* === MOBILE RESPONSIVE (FIX) === */
 @media (max-width: 768px) {
     body {
-        padding: 1.5rem; /* Samakan dengan home.css */
+        padding: 1.5rem; 
     }
 
     header.hero h1 {
@@ -334,50 +307,48 @@ footer.fade-in {
         margin-top: 1.25rem;
     }
     header.hero p {
-        font-size: 1rem; /* Ukuran <p> di lyrics.css mobile */
+        font-size: 1rem; 
         margin-bottom: 1.85rem;
     }
 
     .section {
-        padding: 1.5rem; /* Padding box di mobile */
+        padding: 1.5rem; 
     }
-    
+
     .section p {
         font-size: 1rem;
     }
-    
+
     .icon-social-links {
-        display: grid; /* Ganti dari flex ke grid */
-        grid-template-columns: repeat(5, 1fr); /* Paksa 5 kolom */
-        gap: 0.75rem; /* Jarak antar ikon (bisa di-tweak) */
+        display: grid; 
+        grid-template-columns: repeat(5, 1fr); 
+        gap: 0.75rem; 
     }
 
     .icon-social-links a {
-        width: 44px; /* Semula: 40px (biar agak besar) */
-        height: 44px; /* Semula: 40px */
+        width: 44px; 
+        height: 44px; 
         font-size: 1rem;
         justify-self: center;
     }
-    
+
     .about-title-section {
         font-size: 1.25rem;
     }
-    
-    /* Perbaiki jarak footer di mobile */
+
     footer {
-        padding-bottom: 0; /* Hapus padding ganda */
+        padding-bottom: 0; 
         margin-top: 1.75rem;
         margin-bottom: 0.5rem;
         line-height: 1.35;
     }
 }
 
-/* Styling untuk link audio easter egg */
 #tuning-link,
 #math-rock-link,
 #midwest-emo-link {
-    color: inherit; /* Ambil warna dari <b> (putih) */
-    text-decoration: none; /* Hapus underline */
+    color: inherit; 
+    text-decoration: none; 
     cursor: pointer;
     transition: color 0.2s ease;
 }
@@ -385,11 +356,8 @@ footer.fade-in {
 #tuning-link:hover,
 #math-rock-link:hover,
 #midwest-emo-link:hover {
-    color: #1DB954; /* Jadi hijau pas di-hover */
+    color: #1DB954; 
 }
-
-/* === STYLING BUBBLE VIDEO (VERSI DYNAMIC ISLAND) === */
-/* Cari bagian .video-bubble-toast */
 
 .video-bubble-toast {
     position: fixed; 
@@ -397,9 +365,8 @@ footer.fade-in {
     bottom: auto;
     left: 50%;
     width: auto; 
-    
-    /* === ULTRA LIQUID GLASS === */
-    background: rgba(255, 255, 255, 0.01); /* 1% Opacity */
+
+    background: rgba(255, 255, 255, 0.01); 
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -407,23 +374,23 @@ footer.fade-in {
         inset 0 2px 4px 0 rgba(255, 255, 255, 0.35), 
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
         0 4px 20px rgba(0, 0, 0, 0.5);
-    
+
     border-radius: 12px; 
-    
+
     display: flex;
     align-items: center; 
     gap: 0.75rem; 
     padding: 0.75rem; 
-    
+
     z-index: 1000;
     text-decoration: none; 
     overflow: hidden; 
-    
+
     opacity: 0;
     visibility: hidden;
     transform: translateX(-50%) scale(0.2);
     transform-origin: top center;
-    
+
     transition: opacity 0.3s ease-in, 
                 transform 0.3s ease-in, 
                 visibility 0s ease-in 0.3s,
@@ -434,23 +401,20 @@ footer.fade-in {
 .video-bubble-toast.show {
     opacity: 1;
     visibility: visible;
-    transform: translateX(-50%) scale(1); /* Mengembang ke ukuran normal */
+    transform: translateX(-50%) scale(1); 
     transition: opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
                 transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-                visibility 0s ease-out 0s, /* <-- KUNCI 2 */
+                visibility 0s ease-out 0s, 
                 background 0.3s ease, 
                 border-color 0.3s ease;
 }
 
-/* === EFEK AURORA HOVER (SAMA DENGAN HOME & GENIUS) === */
-
-/* 1. Reset Pseudo-element untuk Aurora */
 .video-bubble-toast::before {
     content: '';
     position: absolute;
     width: 100%; 
     height: 100%;
-    
+
     left: calc(var(--mouse-x, 50%) - 50%); 
     top: calc(var(--mouse-y, 50%) - 50%);
 
@@ -460,7 +424,7 @@ footer.fade-in {
         rgba(29, 185, 84, 0.05) 50%, 
         transparent 100%            
     );
-    
+
     filter: blur(10px); 
     opacity: 0;         
     z-index: -1;
@@ -468,9 +432,8 @@ footer.fade-in {
     pointer-events: none;
 }
 
-/* 2. Efek Hover pada Container Bubble */
 .video-bubble-toast:hover {
-    /* Hover: sedikit lebih terlihat (2%) */
+
     background: rgba(255, 255, 255, 0.02); 
     border-color: rgba(255, 255, 255, 0.3);
     box-shadow: 
@@ -479,13 +442,11 @@ footer.fade-in {
         0 8px 30px rgba(0, 0, 0, 0.6);
 }
 
-/* 3. Efek Hover pada Aurora (Muncul & Muter) */
 .video-bubble-toast:hover::before {
     opacity: 1;
     animation: none;
 }
 
-/* === STYLING ELEMEN DI DALAM BUBBLE === */
 .bubble-artwork {
     width: 56px;
     height: 56px;
@@ -498,10 +459,9 @@ footer.fade-in {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    text-align: center; /* BARU: Default text-align center */
+    text-align: center; 
 }
 
-/* BARU: Override bubble YouTube agar text-align left */
 #video-bubble .bubble-content {
     text-align: left;
 }
@@ -510,29 +470,26 @@ footer.fade-in {
     font-weight: 700;
     font-size: 0.9rem;
     color: #ffffff;
-    white-space: nowrap; /* BARU: Semua judul jangan wrap */
+    white-space: nowrap; 
 }
 
-/* PERBAIKAN: Styling untuk container "jendela" marquee */
 .bubble-title.marquee {
-    width: 162px; /* Lebar "jendela" (sesuai P. Channel di desktop) */
+    width: 162px; 
     overflow: hidden;
     display: block;
     white-space: nowrap;
 }
 
-/* BARU: Styling untuk wrapper "konten" marquee */
 .marquee-content {
-    width: fit-content; /* Lebar = 2x span */
+    width: fit-content; 
     display: flex;
-    animation: marquee 12s linear infinite; /* Animasi di wrapper */
+    animation: marquee 12s linear infinite; 
 }
 
-/* PERBAIKAN: Styling untuk teks di dalam marquee */
 .bubble-title.marquee span {
     display: inline-block;
     white-space: nowrap;
-    /* Hapus padding-left dan animasi dari sini */
+
 }
 
 .video-bubble-toast .bubble-channel {
@@ -542,7 +499,6 @@ footer.fade-in {
     margin-top: 2px;
 }
 
-/* === STYLING ELEMEN DI DALAM BUBBLE === */
 .bubble-artwork {
     width: 56px;
     height: 56px;
@@ -551,103 +507,81 @@ footer.fade-in {
     flex-shrink: 0;
 }
 
-/* ▼▼▼ TAMBAHKAN BLOK BARU INI ▼▼▼ */
-/* PERBAIKAN: Override khusus thumbnail YouTube (16:9) */
 #video-bubble .bubble-artwork {
-    width: 99.5px; /* Lebar 16:9 (dihitung dari tinggi 56px -> 56 * 1.777) */
+    width: 99.5px; 
     height: 56px;
     object-fit: cover;
 }
 
 @media (max-width: 768px) {
     .video-bubble-toast {
-        /* PERUBAHAN: Pindah ke atas di mobile */
+
         top: 1.5rem; 
         bottom: auto;
-        
-        /* Pastikan transform awal sama (kecil) */
+
         transform: translateX(-50%) scale(0.2);
     }
 
     .video-bubble-toast.show {
-        /* Pastikan transform akhir sama (normal) */
+
         transform: translateX(-50%) scale(1); 
     }
 
-    /* Kecilkan 'jendela' marquee di mobile */
     .bubble-title.marquee {
         width: 162px; 
     }
-    
-    /* Perkecil thumbnail 16:9 di mobile agar proporsional */
+
     #video-bubble .bubble-artwork {
         width: 80px; 
         height: 45px;
     }
 
-    /* Samakan tinggi thumbnail 1:1 di mobile */
     .bubble-artwork {
         width: 45px;
         height: 45px;
     }
 }
 
-/* === DYNAMIC FOOTER TECH STACK COLORS === */
-
-/* Default Transition */
 #tech-link {
     text-decoration: none;
-    color: #888; /* Warna default */
+    color: #888; 
     transition: color 0.3s ease;
-    border-right: 2px solid transparent; /* Tempat kursor ngetik (opsional) */
+    border-right: 2px solid transparent; 
 }
 
-/* === Warna Hover Tech Stack & Footer === */
-
-/* FastAPI (Teal) */
 .section p a.tech-fastapi:hover,
 #tech-link.tech-fastapi:hover { color: #009688 !important; }
 
-/* Spotify (Green) */
 .section p a.tech-spotify:hover,
 #tech-link.tech-spotify:hover { color: #1DB954 !important; }
 
-/* Docker (Blue) */
 .section p a.tech-docker:hover,
 #tech-link.tech-docker:hover { color: #2496ED !important; }
 
-/* Vercel (White) */
 .section p a.tech-vercel:hover,
 #tech-link.tech-vercel:hover { color: #ffffff !important; }
 
-/* Neon & Postgres (Neon Green) */
 .section p a.tech-postgres:hover,
 .section p a.tech-neon:hover,
 #tech-link.tech-neon:hover { color: #00E599 !important; }
 
-/* MongoDB (Leaf Green) */
 .section p a.tech-mongo:hover,
 #tech-link.tech-mongo:hover { color: #4DB33D !important; }
 
-/* Upstash & Redis (Redis Red) */
 .section p a.tech-redis:hover,
 .section p a.tech-upstash:hover,
 #tech-link.tech-upstash:hover { color: #DC382D !important; }
 
-/* Cloudflare (Orange) - Menggantikan Render */
 .section p a.tech-render:hover,
 .section p a.tech-cloudflare:hover,
 #tech-link.tech-cloudflare:hover { color: #F38020 !important; }
 
-/* Genius (Yellow) */
 .section p a.tech-genius:hover,
 #tech-link.tech-genius:hover { color: #FFFF64 !important; }
 
-/* Hugging Face (Yellow/Gold) */
 .section p a.tech-huggingface:hover,
 #tech-link.tech-huggingface:hover { color: #FFD21E !important; }
 
-/* Mencegah layout lompat saat ganti teks */
 #tech-prefix {
     display: inline-block;
 }

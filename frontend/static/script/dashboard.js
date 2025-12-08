@@ -12,8 +12,6 @@ const sections = {
 };
 const modal = document.getElementById("save-modal-overlay");
 const fontConfig = {
-    // Menggunakan Variable Font agar satu file mencakup semua ketebalan (200-800)
-    // Ini lebih hemat dan cepat daripada fetch banyak file static.
     woff2Url: 'https://cdn.jsdelivr.net/npm/@fontsource-variable/plus-jakarta-sans@5.0.19/files/plus-jakarta-sans-latin-wght-normal.woff2'
 };
 
@@ -26,7 +24,6 @@ document.addEventListener('wheel', function(e) {
 }, { passive: false });
 
 document.addEventListener('keydown', function(e) {
-    // Cek tombol Ctrl atau Command (buat jaga-jaga)
     if ((e.ctrlKey || e.metaKey) && 
         (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '_')) {
         e.preventDefault();
@@ -69,25 +66,14 @@ async function prepareFont() {
 }
 prepareFont();
 
-/**
- * FUNGSI BARU: Efek Ketik (Typing Effect)
- * Menampilkan teks satu per satu, dan bisa menangani tag HTML (seperti <b>)
- * * @param {HTMLElement} element - Elemen HTML (misal: <p>) untuk diisi teks.
- * @param {string} text - Teks lengkap yang ingin ditampilkan (termasuk HTML).
- * @param {number} speed - Kecepatan mengetik dalam milidetik (opsional).
- */
-
 function updateGlow(e, el) {
-    // Tentukan sumber koordinat: (e.touches[0] untuk touch, e untuk mouse)
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     
-    // Safety check jika koordinat tidak ditemukan (misal: multi-touch)
     if (clientX === undefined) return; 
 
     const rect = el.getBoundingClientRect();
     const x = (clientX - rect.left) / rect.width * 100;
-    // Gunakan el.clientHeight untuk Y agar perhitungan posisi vertikal lebih stabil
     const y = (clientY - rect.top) / el.clientHeight * 100; 
     
     el.style.setProperty('--mouse-x', `${x}%`);
@@ -95,18 +81,15 @@ function updateGlow(e, el) {
 };
 
 function typeEffect(element, text, speed = 30) {
-    // 1. Fungsi ini sekarang mengembalikan Promise
     return new Promise((resolve) => {
         let index = 0;
         let currentHtml = '';
         
-        // Hapus kursor lama jika ada
         const oldCursor = element.querySelector('.typing-cursor');
         if (oldCursor) {
             oldCursor.remove();
         }
         
-        // Bersihkan teks sebelumnya
         element.innerHTML = '';
 
         function typeWriter() {
@@ -114,43 +97,33 @@ function typeEffect(element, text, speed = 30) {
                 let char = text.charAt(index);
 
                 if (char === '<') {
-                    // Jika ini adalah tag HTML, temukan akhirnya
                     let tagEnd = text.indexOf('>', index);
                     if (tagEnd !== -1) {
-                        // Ambil seluruh tag dan tambahkan sekaligus
                         let tag = text.substring(index, tagEnd + 1);
                         currentHtml += tag;
-                        index = tagEnd + 1; // Lompat ke setelah tag
+                        index = tagEnd + 1;
                     } else {
-                        // Tag tidak lengkap, anggap sebagai teks biasa
                         currentHtml += char;
                         index++;
                     }
                 } else {
-                    // Teks biasa, tambahkan per karakter
                     currentHtml += char;
                     index++;
                 }
 
-                // Tampilkan HTML saat ini + kursor
                 element.innerHTML = currentHtml + '<span class="typing-cursor"></span>';
                 
-                // Lanjutkan ke karakter berikutnya
                 setTimeout(typeWriter, speed);
             } else {
-                // Selesai mengetik, hapus kursor
                 element.innerHTML = currentHtml;
-                // 2. Beri tahu Promise-nya bahwa kita sudah selesai
                 resolve();
             }
         }
 
-        // Mulai efek ketik
         typeWriter();
     });
 }
 
-// --- TAMBAHAN BARU: Helper buat bikin warna transparan (Liquid Effect) ---
 function hexToRgba(hex, alpha) {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -158,7 +131,6 @@ function hexToRgba(hex, alpha) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// --- UPDATE FUNGSI INI ---
 function updateGenreChart(newLabels, newCounts) {
     if (!genreChartInstance) return;
 
@@ -172,12 +144,9 @@ function updateGenreChart(newLabels, newCounts) {
     genreChartInstance.data.labels = newLabels;
     genreChartInstance.data.datasets[0].data = newCounts;
     
-    // === EDIT BAGIAN INI BIAR GLASS EFFECT ===
-    // Ubah warna jadi transparan (0.6) + kasih border tipis
     genreChartInstance.data.datasets[0].backgroundColor = fullColorList.map(c => hexToRgba(c, 0.6));
     genreChartInstance.data.datasets[0].borderColor = 'rgba(255, 255, 255, 0.2)';
-    genreChartInstance.data.datasets[0].borderWidth = 1; // Border tipis 1px
-    // ========================================
+    genreChartInstance.data.datasets[0].borderWidth = 1;
 
     genreChartInstance.update();
 }
@@ -185,18 +154,15 @@ function updateGenreChart(newLabels, newCounts) {
 function updateCategoryDisplay() {
     const value = categoryFilterSelect.value;
     
-    // (PERBAIKAN) Reset class 'no-animation' di genres DULU
     const genreItems = sections.genres.querySelectorAll('li.no-animation');
     genreItems.forEach(item => {
         item.classList.remove('no-animation');
     });
 
-    // Sembunyikan semua section
     for (const key in sections) {
         sections[key].classList.remove("active");
     }
 
-    // Tampilkan section yang dipilih
     if (sections[value]) {
         sections[value].classList.add("active");
     }
@@ -235,7 +201,6 @@ function toggleMore(index, el) {
     el.textContent = isVisible ? "+ more" : "− less";
 }
 
-// =================== NEW SPOTIFY INTEGRATION FUNCTIONS ===================
 
 function openArtistProfile(artistId) {
     const spotifyUrl = `https://open.spotify.com/artist/${artistId}`;
@@ -284,12 +249,9 @@ function toggleTrackEmbed(trackId, clickedDiv) {
 function closeParentEmbed(event, rankElement) {
     const listItem = rankElement.closest('.list-item.track-item');
 
-    // Hanya jalankan fungsi jika embed sedang terbuka
     if (listItem && listItem.classList.contains('embed-shown')) {
-        // Ini SANGAT PENTING untuk mencegah embed terbuka lagi
         event.stopPropagation();
 
-        // Logika untuk menutup embed
         listItem.classList.remove('embed-shown');
         const placeholder = listItem.querySelector('.embed-placeholder');
         if (placeholder) {
@@ -301,7 +263,6 @@ function closeParentEmbed(event, rankElement) {
     }
 }
 
-// Fungsi ini untuk memastikan fitur "Save as Image" tetap bekerja
 function closeCurrentEmbed() {
     if (currentlyActiveListItem) {
         currentlyActiveListItem.classList.remove('embed-shown');
@@ -313,9 +274,6 @@ function closeCurrentEmbed() {
     }
 }
 
-// Fungsi lama 'restoreTrackList' sudah tidak diperlukan lagi,
-// karena logikanya sudah terintegrasi di dalam 'toggleTrackEmbed' yang baru.
-// Anda bisa menghapusnya jika ada.
 
 function showSaveOptions() {
     modal.style.display = 'flex';
@@ -374,12 +332,9 @@ function customTooltip(tooltipModel) {
 }
 
 document.addEventListener('keydown', function(event) {
-    // Ambil elemen modal
     const modal = document.getElementById("save-modal-overlay");
     
-    // Cek: 1. Apakah tombol yang ditekan adalah 'Escape'? DAN 2. Apakah modal sedang tampil ('display: flex')?
     if (event.key === 'Escape' && modal.style.display === 'flex') {
-        // Jika ya, panggil fungsi untuk menutup modal
         hideSaveOptions();
     }
 });
@@ -390,8 +345,6 @@ async function generateImage(selectedCategory) {
     document.body.style.overflow = 'hidden'; 
     document.body.style.touchAction = 'none';
     
-    // --- 1. PASANG TIRAI (OVERLAY) BIAR USER GAK LIAT "DAPUR" ---
-    // Ini solusi biar tampilan "dobel" atau berantakan gak kelihatan
     const loadingOverlay = document.createElement('div');
 Object.assign(loadingOverlay.style, {
     position: 'fixed',
@@ -400,7 +353,7 @@ Object.assign(loadingOverlay.style, {
     width: '100vw',
     height: '100vh',
     backgroundColor: '#121212',
-    zIndex: '2147483647', // Max Z-Index
+    zIndex: '2147483647', 
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
@@ -414,7 +367,6 @@ Object.assign(loadingOverlay.style, {
 loadingOverlay.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 loadingOverlay.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
 
-// 1. Inject Style untuk Animasi Spinner (Sama persis dengan file CSS kamu)
 const spinnerStyle = document.createElement('style');
 spinnerStyle.textContent = `
     @keyframes overlay-rotate { 100% { transform: rotate(360deg); } }
@@ -424,12 +376,12 @@ spinnerStyle.textContent = `
         100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
     }
     .overlay-spinner {
-        width: 25px; /* Ukuran diperbesar sedikit biar jelas */
+        width: 25px; 
         height: 25px;
         animation: overlay-rotate 2s linear infinite;
     }
     .overlay-spinner .path {
-        stroke: #ffffff; /* Warna Putih */
+        stroke: #ffffff;
         stroke-width: 4;
         stroke-linecap: round;
         fill: none;
@@ -438,7 +390,6 @@ spinnerStyle.textContent = `
 `;
 document.head.appendChild(spinnerStyle);
 
-// 2. Masukkan HTML Spinner
 loadingOverlay.innerHTML = `
     <div style="margin-bottom: 20px; font-size: 1.2rem; text-align: center;">Processing Image...</div>
     
@@ -451,24 +402,18 @@ loadingOverlay.innerHTML = `
 
 document.body.appendChild(loadingOverlay);
 
-    // --- 2. LOGIKA LAYOUT (TETAP PAKE FORCE DESKTOP SESUAI REQUEST) ---
-    // Karena udah ketutup tirai, bebas mau nambah class apa aja
     document.body.classList.add('force-desktop-view');
     document.body.classList.add('download-mode');
 
-    // Sembunyikan section lain (Logika lama lu)
     for (const key in sections) { 
-        // Simpan display asli biar bisa direstore nanti (opsional, tapi aman)
         sections[key].dataset.originalDisplay = sections[key].style.display;
         sections[key].style.display = "none"; 
     }
     const sectionToCapture = sections[selectedCategory];
     sectionToCapture.style.display = "block";
 
-    // Clone Section
     const clone = sectionToCapture.cloneNode(true);
     
-    // Bersihin Clone (Limit 10 & Hapus Show More)
     const allCloneItems = clone.querySelectorAll('ol.list-container > li');
     allCloneItems.forEach((item, index) => {
         if (index >= 10) item.style.display = 'none';
@@ -476,7 +421,6 @@ document.body.appendChild(loadingOverlay);
     const showMoreClone = clone.querySelector('.show-more-container');
     if (showMoreClone) showMoreClone.style.display = 'none';
 
-    // --- FIX GENRE CHART (CANVAS -> IMAGE) ---
     if (selectedCategory === 'genres') {
         const originalCanvas = document.getElementById('genreChart');
         const clonedCanvas = clone.querySelector('#genreChart');
@@ -496,7 +440,6 @@ document.body.appendChild(loadingOverlay);
         }
     }
 
-    // --- 3. CONTAINER SETUP (Off-Screen tapi Rendered) ---
     const STORY_WIDTH = 720;
     const STORY_HEIGHT = 1280;
 
@@ -508,26 +451,21 @@ document.body.appendChild(loadingOverlay);
     container.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
     container.style.overflow = 'hidden';
     
-    // Tetap fixed, tapi di belakang layar (z-index minus)
-    // Walaupun ada overlay, ini tetap perlu biar html-to-image gak bingung
     container.style.position = 'fixed'; 
     container.style.top = '0';
     container.style.left = '0';
     container.style.zIndex = '-9999';
 
-    // --- 4. ABSOLUTE CENTER WRAPPER (Sesuai Request) ---
     const contentWrapper = document.createElement("div");
     contentWrapper.style.width = '100%';
     contentWrapper.style.padding = "80px 40px 40px 40px";
     contentWrapper.style.boxSizing = "border-box";
     
-    // Center Absolute
     contentWrapper.style.position = 'absolute';
     contentWrapper.style.top = '50%';
     contentWrapper.style.left = '50%';
     contentWrapper.style.transform = 'translate(-50%, -50%)';
     
-    // Header
     const pageHeader = document.querySelector('header');
     const headerClone = pageHeader.cloneNode(true);
     headerClone.style.textAlign = 'center';
@@ -537,7 +475,6 @@ document.body.appendChild(loadingOverlay);
     contentWrapper.appendChild(headerClone);
     contentWrapper.appendChild(clone);
 
-    // --- 5. STYLE FIX (GENRE PILLS + LIST ITEM ALIGNMENT) ---
     const styleFix = document.createElement('style');
     styleFix.innerHTML = `
         .list-container li { 
@@ -545,7 +482,6 @@ document.body.appendChild(loadingOverlay);
             animation: none !important; 
         }
 
-        /* DEFAULT (UI Desktop / Browser) — stabil & sesuai kondisi awal lu */
         .genre-pills .genre-label {
             display: inline-flex !important;
             align-items: center !important;
@@ -561,7 +497,7 @@ document.body.appendChild(loadingOverlay);
             white-space: nowrap !important;
 
             height: 18px !important;
-            line-height: 1 !important;  /* BALIKKAN DESKTOP KE NORMAL */
+            line-height: 1 !important;
 
             padding-left: 8px !important;
             padding-right: 8px !important;
@@ -570,18 +506,16 @@ document.body.appendChild(loadingOverlay);
             margin-top: 0 !important;
         }
 
-        /* === FIX KHUSUS UNTUK SCREENSHOT html-to-image === */
         #personalify-screenshot .genre-pills .genre-label {
-            line-height: 18px !important; /* fix utama mobile */
+            line-height: 18px !important;
         }
 
         #personalify-screenshot .genre-pills {
-            padding-top: 3px !important;  /* ganjel atas biar 1-3 turun */
+            padding-top: 3px !important;
         }
     `;
     contentWrapper.appendChild(styleFix);
 
-    // Footer
     const footer = document.createElement("div");
     footer.innerHTML = `Personalify © 2025 • Powered by Spotify API`;
     footer.style.paddingTop = "2rem";
@@ -593,11 +527,9 @@ document.body.appendChild(loadingOverlay);
 
     container.appendChild(contentWrapper);
 
-    // Fungsi Render
     async function renderCanvas() {
         document.body.appendChild(container);
 
-        // Zoom Logic
         const contentHeight = contentWrapper.scrollHeight;
         if (contentHeight > STORY_HEIGHT) {
             const scale = STORY_HEIGHT / contentHeight;
@@ -609,7 +541,6 @@ document.body.appendChild(loadingOverlay);
         try {
             const fontCSS = await prepareFont();
             await document.fonts.ready;
-            // Delay dikit biar layout settle di balik layar
             await new Promise(r => setTimeout(r, 500)); 
 
             const dataUrl = await htmlToImage.toPng(container, {
@@ -640,32 +571,23 @@ document.body.appendChild(loadingOverlay);
     }
 
     function cleanup() {
-        // 1. Hapus Container Screenshot
         if (document.body.contains(container)) {
             document.body.removeChild(container);
         }
         
-        // 2. Hapus class pengunci layout desktop
         document.body.classList.remove('force-desktop-view');
         document.body.classList.remove('download-mode');
         
-        // 3. Reset scroll body
         document.body.style.overflow = '';
         document.body.style.touchAction = '';
 
-        // [PENTING] Paksa browser untuk "Reflow" (baca ulang layout)
-        // Ini agar perubahan class di atas langsung diterapkan sebelum lanjut
         void document.body.offsetWidth; 
         
-        // 4. RESET SEMUA SECTION
         for (const key in sections) {
-            // Hapus inline style display agar kembali ke CSS bawaan (mobile: none, desktop: block)
-            // Kita gunakan removeProperty untuk memastikan bersih total
             sections[key].style.removeProperty('display');
             sections[key].classList.remove("active");
         }
 
-        // 5. Hapus Overlay
         if (document.body.contains(loadingOverlay)) {
             loadingOverlay.style.opacity = '0';
             setTimeout(() => {
@@ -675,29 +597,21 @@ document.body.appendChild(loadingOverlay);
             }, 300);
         }
 
-        // 6. RE-APPLY LAYOUT MOBILE
-        // Gunakan setTimeout agar browser punya napas untuk render ulang DOM
         setTimeout(() => {
-            // A. Resize Chart Genre (PENTING: Biar canvas gak nahan lebar layout)
             if (genreChartInstance) {
                 genreChartInstance.resize();
             }
 
-            // B. Panggil checkScreenSize untuk menerapkan logika mobile/desktop yang benar
             checkScreenSize();
             
-            // C. Double check khusus mobile: Pastikan section yang dipilih aktif kembali
             if (window.innerWidth <= 768) {
-                // Pastikan wrapper filter terlihat
                 if(categoryFilterWrapper) categoryFilterWrapper.style.display = "inline-block";
                 
-                // Panggil ulang fungsi display kategori
                 updateCategoryDisplay();
             }
         }, 100); 
     }
 
-    // Preload Images Logic
     const imgs = container.querySelectorAll('img');
     if (imgs.length === 0) {
         renderCanvas();
@@ -734,14 +648,11 @@ document.getElementById('save-artists-btn').addEventListener('click', () => gene
 document.getElementById('save-tracks-btn').addEventListener('click', () => generateImage('tracks'));
 document.getElementById('save-genres-btn').addEventListener('click', () => generateImage('genres'));
 
-// Function untuk load analisis emosi di background
 async function loadEmotionAnalysis(isExtended = false) {
     const emotionElement = document.querySelector('.emotion-recap');
     const currentText = emotionElement.textContent;
 
-    // Cek apakah masih menggunakan teks placeholder ATAU jika diminta extended analysis
     if (currentText.includes("being analyzed") || currentText.includes("getting ready") || isExtended) {
-        // Tambahkan loading indicator hanya jika bukan extended
         if (!isExtended) {
             emotionElement.innerHTML = 'Your music vibe is being analyzed... <svg class="dash-spinner-small" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none"></circle></svg>';
         } else {
@@ -749,15 +660,12 @@ async function loadEmotionAnalysis(isExtended = false) {
         }
 
         try {
-            // Ambil spotify_id dari URL
             const urlParts = window.location.pathname.split('/');
             const spotifyId = urlParts[urlParts.length - 1];
 
-            // Ambil time_range dari URL parameter
             const urlParams = new URLSearchParams(window.location.search);
             const timeRange = urlParams.get('time_range') || 'short_term';
 
-            // Panggil endpoint analisis emosi dengan parameter extended
             const response = await fetch('/analyze-emotions-background', {
                 method: 'POST',
                 headers: {
@@ -766,7 +674,7 @@ async function loadEmotionAnalysis(isExtended = false) {
                 body: JSON.stringify({
                     spotify_id: spotifyId,
                     time_range: timeRange,
-                    extended: isExtended  // Parameter baru untuk analisis extended
+                    extended: isExtended 
                 })
             });
 
@@ -778,22 +686,18 @@ async function loadEmotionAnalysis(isExtended = false) {
             const data = await response.json();
 
             if (data.emotion_paragraph) {
-                // Ganti teks dengan hasil analisis MENGGUNAKAN EFEK KETIK
                 typeEffect(emotionElement, data.emotion_paragraph);
             } else {
-                // Tampilkan pesan error juga dengan efek ketik
                 typeEffect(emotionElement, "Vibe analysis is currently unavailable.");
             }
 
         } catch (error) {
             console.warn("Could not load emotion analysis:", error);
-            // Tampilkan pesan error juga dengan efek ketik
             typeEffect(emotionElement, "Vibe analysis is currently unavailable.");
         }
     }
 }
 
-// CSS untuk loading dots animation
 const style = document.createElement('style');
 style.textContent = `
 .loading-dots {
@@ -805,7 +709,6 @@ style.textContent = `
     50% { opacity: 1; }
 }
 
-/* === SPOTIFY INTEGRATION STYLES === */
 .artist-item {
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.1s ease;
@@ -832,7 +735,6 @@ style.textContent = `
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* Track Item Styles */
 .track-item {
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.1s ease;
@@ -869,7 +771,6 @@ style.textContent = `
     background: #1ed760;
 }
 
-/* Spotify Embed Container Styles */
 .spotify-embed-container {
     background: #1e1e1e;
     border: 1px solid #1DB954;
@@ -882,9 +783,8 @@ style.textContent = `
     box-shadow: 0 4px 20px rgba(29, 185, 84, 0.2);
 }
 
-/* Tambahkan ini untuk wrapper li baru */
 .embed-list-item {
-    list-style: none !important; /* Hilangkan bullet/nomor dari list */
+    list-style: none !important;
     padding: 0 !important;
     margin: 0 !important;
 }
@@ -949,7 +849,6 @@ style.textContent = `
     transform: scale(1.1);
 }
 
-/* Loading dots animation */
 .loading-dots {
     animation: pulse 1.5s infinite;
 }
@@ -959,44 +858,33 @@ style.textContent = `
     50% { opacity: 1; }
 }
 
-/* === SOLUSI BARU UNTUK EMBED SPOTIFY === */
 
-/* Wrapper untuk konten asli (artwork + info) */
 .track-content {
     display: flex;
     align-items: center;
-    gap: 1rem;      /* Jarak antar elemen sama seperti sebelumnya */
-    flex-grow: 1;   /* Memastikan ia mengisi sisa ruang */
-    min-width: 0;   /* Mencegah overflow pada teks panjang */
+    gap: 1rem;
+    flex-grow: 1;
+    min-width: 0;
 }
 
-/* Wadah untuk embed, tersembunyi secara default */
 .embed-placeholder {
     display: none;
-    flex-grow: 1;   /* Mengisi ruang yang sama dengan .track-content */
+    flex-grow: 1;
     min-width: 0;
     margin-left: -0.5rem;
 }
 
-/*
- * INI BAGIAN UTAMANYA:
- * Saat sebuah .track-item memiliki class 'embed-shown'...
- */
-
-/* 1. Sembunyikan konten asli lagu */
 .track-item.embed-shown .track-content {
     display: none;
 }
 
-/* 2. Tampilkan wadah embed */
 .track-item.embed-shown .embed-placeholder {
-    display: block; /* atau flex, jika perlu alignment lebih lanjut */
+    display: block;
     font-size: 0;
     margin-top: -0.2rem;
     margin-bottom: -0.3rem;
 }
 
-/* Aturan styling untuk iframe agar pas */
 .embed-placeholder iframe {
     width: 100%;
     height: 80px;
@@ -1010,17 +898,14 @@ style.textContent = `
 #artists-section li:hover {
     background-color: rgba(255, 255, 255, 0.05); 
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    border-radius: 8px; /* Pastikan radius juga diaplikasikan */
+    border-radius: 8px;
 }
 
-/* === EFEK HOVER BARU UNTUK EMBED === */
 
-/* Wadah embed perlu posisi relative untuk menampung overlay */
 .embed-placeholder {
     position: relative;
 }
 
-/* Membuat lapisan overlay hijau transparan */
 .embed-placeholder::after {
     content: '';
     position: absolute;
@@ -1030,89 +915,72 @@ style.textContent = `
     height: 100%;
 
     background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 8px; /* Menyesuaikan sudut iframe */
+    border-radius: 8px;
 
-    /* Awalnya tidak terlihat dan tidak bisa diklik */
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;
 }
 
-/* Saat baris <li> di-hover, tampilkan overlay-nya */
 #tracks-section li:hover .embed-placeholder::after {
     opacity: 1;
 }
 
-/* === STYLING TOMBOL CLOSE EMBED === */
 
-/* Wrapper ini diperlukan untuk positioning tombol */
 .embed-wrapper {
     position: relative;
-    /* Pastikan iframe tidak menutupi tombol */
     line-height: 0;
 }
 
-/* Tombol close itu sendiri */
 .embed-close-btn {
-    /* Positioning */
     position: absolute;
-    top: 6px; /* Naikkan dikit */
-    right: 6px; /* Geser ke kanan dikit */
-    z-index: 5; /* Pastikan di atas iframe */
+    top: 6px;
+    right: 6px;
+    z-index: 5;
 
-    /* Tampilan Tombol */
-    background-color: rgba(255, 255, 255, 0.25); /* Putih transparan */
+    background-color: rgba(255, 255, 255, 0.25);
     color: #ffffff;
     border: none;
-    border-radius: 50%; /* Bulat sempurna */
+    border-radius: 50%;
     width: 20px;
     height: 20px;
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
 
-    /* Menengahkan simbol '×' */
     display: flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
     
-    /* Efek Transisi dan Visibilitas Awal */
-    opacity: 0; /* Tersembunyi secara default */
+    opacity: 0;
     transform: scale(0.8);
     transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
-    pointer-events: none; /* Tidak bisa diklik saat tersembunyi */
+    pointer-events: none;
 }
 
-/*
- * INI BAGIAN UTAMANYA:
- * Saat kursor hover di atas list item yang sedang aktif...
- */
 .list-item.embed-shown:hover .embed-close-btn {
-    opacity: 1; /* ...tampilkan tombol close */
+    opacity: 1;
     transform: scale(1);
-    pointer-events: auto; /* ...dan buat bisa diklik */
+    pointer-events: auto;
 }
 
-/* Efek hover kecil pada tombolnya sendiri */
 .embed-close-btn:hover {
     background-color: #333;
     transform: scale(1.1);
 }
 
-/* Feedback visual saat angka menjadi tombol close */
 .list-item.embed-shown .rank {
     cursor: pointer;
-    color: #1DB954; /* Warna hijau Spotify */
+    color: #1DB954;
     transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .list-item.embed-shown .rank:hover {
-    color: #ffffff; /* Jadi putih saat disentuh */
+    color: #ffffff;
     text-shadow: 0 0 8px rgba(29, 185, 84, 0.7);
 }
 
-/* Mobile responsive untuk embed */
 @media (max-width: 768px) {
     .list-item, .track-content {
         gap: 0.5rem;
@@ -1128,7 +996,6 @@ style.textContent = `
     }
 }
 
-/* Fix untuk "Sticky Hover" di HP/Tablet */
 @media (hover: none) {
     #tracks-section li:hover,
     #artists-section li:hover,
@@ -1138,9 +1005,8 @@ style.textContent = `
         box-shadow: none;
     }
 
-    /* Bonus: menonaktifkan hover di rank number juga */
     .list-item.embed-shown .rank:hover {
-        color: #1DB954; /* Kembali ke warna aktif, bukan warna hover */
+        color: #1DB954;
         text-shadow: none;
     }
 
@@ -1151,50 +1017,38 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Panggil function setelah halaman dimuat
 document.addEventListener('DOMContentLoaded', async function() {
-    // 1. Temukan semua elemen header
     const titleEl = document.querySelector('header h1');
     const subtitleEl = document.querySelector('header .subtitle');
     const emotionEl = document.querySelector('header .emotion-recap');
 
-    // 2. Cek apakah elemen-elemen itu ada
     if (!titleEl || !subtitleEl || !emotionEl) {
         console.warn("Elemen header untuk efek ketik tidak ditemukan.");
-        // Jika tidak ada, jalankan saja fungsi utamanya
         setTimeout(() => loadEmotionAnalysis(false), 1000);
         return;
     }
 
-    // 3. Simpan teks asli yang dikirim dari server
     const originalTitle = titleEl.textContent;
     const originalSubtitle = subtitleEl.textContent;
-    const originalEmotion = emotionEl.innerHTML; // (Teks placeholder)
+    const originalEmotion = emotionEl.innerHTML;
 
-    // 4. Kosongkan teksnya agar tidak "flash" (muncul sekejap)
     titleEl.textContent = '';
     subtitleEl.textContent = '';
     emotionEl.innerHTML = '';
 
-    // 5. Jalankan sekuens mengetik satu per satu
-    // (await) akan menunggu satu fungsi selesai sebelum lanjut
-    await typeEffect(titleEl, originalTitle, 50);     // Kecepatan 50ms (lebih cepat)
-    await typeEffect(subtitleEl, originalSubtitle, 30); // Kecepatan 30ms (normal)
-    await typeEffect(emotionEl, originalEmotion, 30);   // Kecepatan 30ms (normal)
+    await typeEffect(titleEl, originalTitle, 50);
+    await typeEffect(subtitleEl, originalSubtitle, 30);
+    await typeEffect(emotionEl, originalEmotion, 30);
 
-    // 6. Tampilkan footer
     const footerEl = document.querySelector('footer');
     if (footerEl) footerEl.classList.add('fade-in');
 
-    // 7. Setelah semua teks placeholder diketik, baru kita panggil
-    //    analisis emosi yang sebenarnya (sesuai delay asli 1 detik)
     setTimeout(() => loadEmotionAnalysis(false), 1000);
 });
 
 window.onload = function() {
     Chart.defaults.global.legend.display = false;
 
-    // --- 1. SETUP CHART GENRE ---
     const ctx = document.getElementById('genreChart');
     if (ctx) {
         const chartColors = [
@@ -1204,7 +1058,6 @@ window.onload = function() {
             '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F'
         ];
         
-        // === NEW: MAP WARNA GLOBAL (Top 10 & Top 20) ===
         window.genreColorMapTop10 = new Map();
         window.genreColorMapTop20 = new Map();
 
@@ -1216,7 +1069,6 @@ window.onload = function() {
             window.genreColorMapTop20.set(label, chartColors[index % chartColors.length]);
         });
 
-        // === GLOBAL APPLY FUNCTION ===
         window.applyGenrePillColors = function(isExtended = false) {
             const colorMap = isExtended ? window.genreColorMapTop20 : window.genreColorMapTop10;
             document.querySelectorAll('.genre-label').forEach(pill => {
@@ -1233,15 +1085,13 @@ window.onload = function() {
 
         currentGenreArtistsMap = genreArtistsMap;
 
-        // 1. Buat Peta Warna (Genre -> Color) dari data chart
         const genreColorMap = new Map();
         genreDataExtended.labels.forEach((label, index) => { 
             genreColorMap.set(label, chartColors[index % chartColors.length]);
         });
 
-        applyGenrePillColors(false); // default: Top 10 mode
+        applyGenrePillColors(false);
 
-        // Buat Chart
         genreChartInstance = new Chart(ctx, {
             type: 'pie',
             data: {
@@ -1249,19 +1099,14 @@ window.onload = function() {
                 datasets: [{
                     data: currentGenreData.counts,
                     
-                    // === GANTI BLOK BACKGROUNDCOLOR LAMA DENGAN INI ===
-                    // 1. Warna isi jadi transparan (0.6)
                     backgroundColor: chartColors.map(c => hexToRgba(c, 0.8)),
                     
-                    // 2. Border inset putih tipis (efek kaca)
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                     borderWidth: 1, 
                     
-                    // 3. Efek Hover: Jadi lebih solid (0.8) & border putih tegas
                     hoverBackgroundColor: chartColors.map(c => hexToRgba(c, 1)),
                     hoverBorderColor: '#ffffff',
                     hoverBorderWidth: 2
-                    // =================================================
                 }]
             },
             options: {
@@ -1290,7 +1135,6 @@ window.onload = function() {
             }
         });
 
-        // Sembunyikan slice > 10 di awal
         genreChartInstance.getDatasetMeta(0).data.forEach((slice, index) => {
             if (index >= 10) {
                 slice.hidden = true;
@@ -1299,7 +1143,6 @@ window.onload = function() {
         genreChartInstance.update();
         applyGenrePillColors(false);
 
-        // Setup interaktivitas list genre
         const genreListItems = document.querySelectorAll('#genres-section li');
         genreListItems.forEach((item) => {
             const itemIndex = parseInt(item.getAttribute('data-index'));
@@ -1321,13 +1164,11 @@ window.onload = function() {
 
     checkScreenSize();
 
-    // --- 2. EASTER EGG LOGIC (FIXED) ---
     let easterEggClicked = false;
     document.querySelectorAll('.footer-toggler').forEach(toggler => {
         toggler.addEventListener('click', function() {
             if (easterEggClicked) return;
 
-            // Tampilkan item Artists & Tracks yang tersembunyi
             ['artists-section', 'tracks-section'].forEach(sectionId => {
                 const section = document.getElementById(sectionId);
                 if (section) {
@@ -1339,7 +1180,6 @@ window.onload = function() {
                 }
             });
 
-            // Update Genre Chart & List (Top 20)
             if (genreChartInstance && genreDataExtended) {
                 currentGenreData = genreDataExtended;
                 currentGenreArtistsMap = genreArtistsMapExtended;
@@ -1360,9 +1200,6 @@ window.onload = function() {
         });
     });
 
-    // --- 3. FETCH DATA (SUDAH DIPERBAIKI) ---
-    // Bagian ini sebelumnya yang bikin error (nongol duluan).
-    // Sekarang kita fetch datanya tapi JANGAN update teks emosi secara paksa.
     const urlParts = window.location.pathname.split('/');
     const spotifyId = urlParts[urlParts.length - 1];
     const urlParams = new URLSearchParams(window.location.search);
@@ -1372,19 +1209,15 @@ window.onload = function() {
       .then(res => {
           if (res.status === 401) {
               window.location.href = "/?error=session_expired";
-              return null; // Stop proses
+              return null; 
           }
           return res.json();
       })
       .then(data => {
-          // KITA KOSONGKAN BAGIAN INI.
-          // Biarkan animasi typing di DOMContentLoaded yang menangani teksnya.
-          // Jangan ada kode: document.querySelector(...).innerHTML = ...
       })
       .catch(err => console.error("Error fetching top data:", err));
 };
 
-// Fungsi helper untuk update genre list
 function updateGenreList(labels, counts) {
     const genreList = document.querySelector('#genres-section .list-container');
     if (!genreList) return;
@@ -1407,7 +1240,6 @@ function updateGenreList(labels, counts) {
         genreColorMapTop20.set(label, chartColors[index % chartColors.length]);
     });
 
-    // === Fungsi untuk apply warna ke pills ===
     function applyGenrePillColors(isExtended = false) {
         const mapToUse = isExtended ? genreColorMapTop20 : genreColorMapTop10;
         document.querySelectorAll('.genre-label').forEach(pill => {
@@ -1421,19 +1253,15 @@ function updateGenreList(labels, counts) {
         const artists = genreArtistsMapExtended[label] || [];
         const artistText = artists.length > 0 ? `: ${artists.join(', ')}` : '';
 
-        // === PERBAIKAN DI BLOK INI ===
-        let animStyle = ''; // Untuk delay
-        let animClass = ''; // Untuk mematikan animasi
+        let animStyle = '';
+        let animClass = ''; 
 
         if (index < 10) {
-            // Pakai CLASS, bukan style (biar 1-10 gak fade in ulang pas easter egg)
             animClass = 'no-animation';
         } else {
-            // Item 11-20 tetap pakai inline style untuk delay
             const delay = (index - 10) * 0.1;
             animStyle = `animation-delay: ${delay}s;`;
         }
-        // === AKHIR PERBAIKAN ===
 
         return `
             <li data-index="${index}" class="${animClass}" style="${animStyle}">
@@ -1453,7 +1281,6 @@ function updateGenreList(labels, counts) {
         `;
     }).join('');
 
-    // Pasang ulang event listener
     document.querySelectorAll('#genres-section li').forEach((item) => {
         const itemIndex = parseInt(item.getAttribute('data-index'));
         item.addEventListener('click', function() {
@@ -1469,9 +1296,6 @@ function updateGenreList(labels, counts) {
 
 document.addEventListener('DOMContentLoaded', function() {
     
-    /* =========================================
-       LOGIC 1: Typewriter (Spotify <-> HF)
-       ========================================= */
     const providerLink = document.getElementById('provider-link');
     const providerData = [
         { text: 'Spotify API', url: 'https://developer.spotify.com/', type: 'spotify' },
@@ -1482,7 +1306,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let isDeleting = false;
     let txt = '';
     
-    // Config Speed
     const typingSpeed = 100; 
     const deletingSpeed = 50;
     const pauseTime = 2500; 
@@ -1504,12 +1327,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isDeleting && txt === fullTxt) {
             delta = pauseTime; 
             isDeleting = true;
-            updateProviderStyle(i); // Pastikan link benar saat teks utuh
+            updateProviderStyle(i);
         } else if (isDeleting && txt === '') {
             isDeleting = false;
             typeLoop++;
             delta = 500;
-            // Ganti link & warna saat teks kosong (sebelum ngetik baru)
             updateProviderStyle(typeLoop % providerData.length);
         }
 
@@ -1526,57 +1348,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Jalankan Typewriter
     if(providerLink) typeWriter();
 
-
-    /* =========================================
-       LOGIC 2: Fade (Lyrics <-> Aritsu)
-       ========================================= */
     const dynamicContainer = document.getElementById('dynamic-footer-link');
-    let isLyricsState = false; // Kita mulai dari false biar logic di bawah langsung switch ke true
+    let isLyricsState = false;
 
-    // Set tampilan awal
     if(dynamicContainer) {
         dynamicContainer.innerHTML = '<a href="/lyrics" class="footer-link">Lyrics Analyzer</a>';
     
         setInterval(() => {
-            // 1. Fade Out
             dynamicContainer.classList.add('fading-out');
 
-            // 2. Ganti Konten
             setTimeout(() => {
                 if (isLyricsState) {
-                    // Balik ke Lyrics (Semua jadi Link Hijau)
                     dynamicContainer.innerHTML = '<a href="/lyrics" class="footer-link">Lyrics Analyzer</a>';
                 } else {
-                    // Ganti ke Aritsu (Teks biasa + Link Hijau di Nama)
-                    // Perhatikan: "Created by" diluar tag <a>
                     dynamicContainer.innerHTML = 'Created by <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>';
                 }
 
                 isLyricsState = !isLyricsState;
                 
-                // 3. Fade In
                 dynamicContainer.classList.remove('fading-out');
-            }, 500); // Tunggu CSS transition selesai
+            }, 500);
 
-        }, 5000); // Ganti setiap 5 detik
+        }, 5000);
     }
 
-    // --- NEW: CURSOR FOLLOW GLOW LOGIC (Dashboard) ---
     const downloadBtn = document.querySelector('.download-btn');
     const modalButtons = document.querySelectorAll('.modal-options button');
     const listItems = document.querySelectorAll('.list-container li');
     const elementsToGlow = [downloadBtn, ...modalButtons, ...listItems];
     elementsToGlow.forEach(el => {
         if (el) {
-            // [LOGIC MOUSE LAMA TETAP ADA]
             el.addEventListener('mousemove', (e) => updateGlow(e, el));
             el.addEventListener('mouseleave', () => {
             });
             
-            // [BARU: TOUCH EVENTS]
             el.addEventListener('touchstart', (e) => updateGlow(e, el));
             el.addEventListener('touchmove', (e) => updateGlow(e, el));
             el.addEventListener('touchend', () => {
@@ -1587,11 +1394,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const footerEl = document.querySelector('footer');
     const container = document.getElementById('dashboard');
 
-    // Cek dulu elemennya ada gak
     if (!footerEl || !downloadBtn) return;
 
     const observer = new IntersectionObserver((entries) => {
-        // Hanya jalankan logic di layar HP
         if (window.innerWidth > 768) {
             downloadBtn.classList.remove('hide-on-scroll');
             if (container) container.classList.remove('footer-visible');
@@ -1600,43 +1405,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                // Footer MULAI MUNCUL di layar -> Sembunyikan Tombol
                 downloadBtn.classList.add('hide-on-scroll');
                 if (container) container.classList.add('footer-visible');
             } else {
-                // Footer KELUAR dari layar -> Munculkan Tombol
                 downloadBtn.classList.remove('hide-on-scroll');
                 if (container) container.classList.remove('footer-visible');
             }
         });
     }, {
-        root: null,   // viewport browser
-        threshold: 0.1 // Trigger saat 10% footer nongol dikit aja
+        root: null,
+        threshold: 0.1
     });
 
     observer.observe(footerEl);
 });
 
-/* =========================================
-   LOGIC: SMART MARQUEE (FINAL)
-   - Hapus animasi hover CSS (DONE via CSS)
-   - Tunggu Font Ready (Akurasi Tinggi)
-   - Buffer 15px (Anti gerak teks pendek)
-   ========================================= */
 function setupMarquee() {
-    // 1. CLEANUP: Reset semua animasi & masking lama
     document.querySelectorAll('.scroll-active').forEach(el => {
         el.classList.remove('scroll-active');
         el.style.removeProperty('--scroll-distance');
         el.style.removeProperty('--scroll-duration');
         
-        // Hapus mask dari parent (biar gak ngeblur pas diem)
         if (el.parentElement.classList.contains('mask-active')) {
             el.parentElement.classList.remove('mask-active');
         }
     });
 
-    // 2. TARGET: Pilih elemen yang BOLEH gerak
     const titles = document.querySelectorAll('#artists-section .info .name, #tracks-section .info .name');
     
     const trackMetas = document.querySelectorAll('#tracks-section .info .meta');
@@ -1649,38 +1443,30 @@ function setupMarquee() {
 
     const allowedElements = [...titles, ...albumMetas];
 
-    // 3. EKSEKUSI (Tunggu Font Siap)
     document.fonts.ready.then(() => {
         allowedElements.forEach(el => {
-            // Ambil ukuran (bulatkan ke atas)
             const scrollWidth = Math.ceil(el.scrollWidth);
             const clientWidth = Math.ceil(el.clientWidth);
 
-            // LOGIC FIX: Buffer cuma 2px (biar Desktop Sensitif)
-            // Kalau selisih > 2px, langsung jalan!
-            if (scrollWidth > clientWidth + 2) {
+            if (scrollWidth > clientWidth) {
                 
-                const distance = scrollWidth - clientWidth + 30; // Jarak geser + space
+                const distance = scrollWidth - clientWidth + 20;
                 
-                // Kecepatan santai (makin kecil pembagi, makin pelan)
                 const duration = Math.max(distance / 25, 6);   
                 
                 el.style.setProperty('--scroll-distance', `-${distance}px`);
                 el.style.setProperty('--scroll-duration', `${duration}s`);
                 
-                // 1. Aktifkan Animasi Gerak
                 el.classList.add('scroll-active');
 
-                // 2. Aktifkan Fadeout Masking (Cuma kalau gerak!)
                 el.parentElement.classList.add('mask-active');
             }
         });
     });
 }
 
-// === TRIGGERS ===
 document.addEventListener('DOMContentLoaded', setupMarquee);
-window.addEventListener('load', setupMarquee); // Backup kalau font telat
+window.addEventListener('load', setupMarquee);
 
 let resizeTimer;
 window.addEventListener('resize', () => {

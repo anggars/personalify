@@ -2,7 +2,6 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-# Load .env hanya jika DATABASE_URL belum ada
 if not os.getenv("DATABASE_URL"):
     from dotenv import load_dotenv
     load_dotenv()
@@ -12,7 +11,6 @@ from fastapi.responses import RedirectResponse
 
 app = FastAPI()
 
-# --- Middleware 1: CORS ---
 origins = [
     "https://personalify.vercel.app",
     "http://127.0.0.1:8000",
@@ -27,7 +25,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Middleware 2: Redirect Otomatis ke Vercel ---
 @app.middleware("http")
 async def redirect_if_not_vercel_or_local(request: Request, call_next):
     host = request.headers.get("host", "")
@@ -42,18 +39,16 @@ async def redirect_if_not_vercel_or_local(request: Request, call_next):
     response = await call_next(request)
     return response
 
-# --- NEW: GLOBAL ERROR HANDLER (Redirect ke Login jika Error/Expired) ---
 @app.exception_handler(401)
 async def unauthorized_handler(request: Request, exc):
-    # Kalau token expired (401), lempar ke home dengan pesan error
+
     return RedirectResponse(url="/?error=session_expired")
 
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc):
-    # Kalau server crash (500), lempar ke home juga
+
     print(f"CRITICAL ERROR: {exc}")
     return RedirectResponse(url="/?error=server_error")
-# -----------------------------------------------------------------------
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 static_dir = os.path.join(current_dir, "..", "..", "frontend", "static")

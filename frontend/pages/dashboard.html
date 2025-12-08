@@ -180,17 +180,14 @@
     </script>
 
     <script>
-        // Fungsi helper buat ambil data
         function getJsonData(id) {
             const el = document.getElementById(id);
             return el ? JSON.parse(el.textContent) : [];
         }
 
-        // Ambil data mentah
         const rawGenres = getJsonData('data-genres');
         const rawGenresExtended = getJsonData('data-genres-extended');
-
-        // Format ulang sesuai struktur Chart.js (Labels & Counts)
+        
         const genreData = {
             labels: rawGenres.map(g => g.name),
             counts: rawGenres.map(g => g.count)
@@ -201,7 +198,6 @@
             counts: rawGenresExtended.map(g => g.count)
         };
 
-        // Ambil Map (Langsung jadi object karena sudah dict di Python)
         const genreArtistsMap = getJsonData('data-map-normal');
         const genreArtistsMapExtended = getJsonData('data-map-extended');
     </script> 

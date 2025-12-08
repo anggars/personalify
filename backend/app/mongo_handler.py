@@ -3,30 +3,25 @@ from pymongo import MongoClient
 from datetime import datetime
 from dotenv import load_dotenv
 
-# Memuat .env agar tetap berfungsi di lokal
 load_dotenv()
-
-# --- BLOK KONEKSI PINTAR ---
 MONGO_URI = os.getenv("MONGO_URI")
 
 if MONGO_URI:
-    # Jika ada MONGO_URI (saat di Vercel), gunakan itu
+
     print(f"MONGO HANDLER: CONNECTING TO CLOUD ATLAS VIA URI.")
     client = MongoClient(MONGO_URI)
-    db = client.get_database("personalify_sync_history") # Nama DB Anda di Atlas
+    db = client.get_database("personalify_sync_history") 
+
 else:
-    # Jika tidak ada (saat di lokal), gunakan host dan port dari .env
+
     mongo_host = os.getenv("MONGO_HOST", "mangofy")
     mongo_port = int(os.getenv("MONGO_PORT", 27017))
     print(f"MONGO HANDLER: CONNECTING TO LOCAL MONGO AT {mongo_host}:{mongo_port}.")
     client = MongoClient(mongo_host, mongo_port)
-    db = client["personalify_db"] # Nama DB lokal Anda
-
-# --- AKHIR BLOK KONEKSI PINTAR ---
-
+    db = client["personalify_db"] 
 
 def save_user_sync(spotify_id, time_range, data):
-    # Menggunakan koleksi untuk setiap user agar lebih terorganisir
+
     collection = db[spotify_id]
     collection.update_one(
         {'time_range': time_range},
@@ -49,10 +44,4 @@ def get_user_sync(spotify_id, time_range):
     return collection.find_one({"time_range": time_range}, {"_id": 0})
 
 def get_all_synced_user_ids():
-    """
-    Fungsi Python baru untuk mengambil daftar semua user yang
-    datanya tersimpan di MongoDB.
-    """
-    # Di arsitektur Anda, setiap user adalah nama koleksi,
-    # jadi kita cukup panggil list_collection_names()
     return db.list_collection_names()

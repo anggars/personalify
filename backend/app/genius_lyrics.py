@@ -8,11 +8,6 @@ GENIUS_API_URL = "https://api.genius.com"
 IS_LOCAL = os.getenv("VERCEL") is None
 WORKER_URL = "https://vercel.anggars.workers.dev"
 
-
-# =====================================================
-# HELPERS
-# ==================================================== 
-
 def get_headers():
     return {
         "Authorization": f"Bearer {GENIUS_TOKEN}",
@@ -23,9 +18,8 @@ def get_headers():
         )
     }
 
-
 def clean_lyrics(text):
-    # Hilangkan [Verse], [Chorus], dll
+
     text = re.sub(r"\[.*?\]", "", text)
 
     lines = text.split("\n")
@@ -34,15 +28,12 @@ def clean_lyrics(text):
     for line in lines:
         s = line.strip()
 
-        # Skip baris yang kosong → kita tidak mau line break
         if not s:
             continue
 
-        # Blok contributors
         if re.match(r"^\d+\s+contributors?$", s.lower()):
             continue
 
-        # blok kata terlarang
         blocked = [
             "translation", "translated", "lyrics",
             "click", "contribute", "read more",
@@ -53,9 +44,7 @@ def clean_lyrics(text):
 
         cleaned.append(s)
 
-    # HASIL: hanya 1 newline antar baris
     return "\n".join(cleaned)
-
 
 def get_page_html(url):
     try:
@@ -65,11 +54,6 @@ def get_page_html(url):
     except:
         pass
     return None
-
-
-# =====================================================
-# SEARCH ARTIST
-# =====================================================
 
 def search_artist_id(query):
     try:
@@ -102,11 +86,6 @@ def search_artist_id(query):
 
     except:
         return []
-
-
-# =====================================================
-# SONG LIST
-# =====================================================
 
 def get_songs_by_artist(artist_id):
     songs = []
@@ -152,14 +131,9 @@ def get_songs_by_artist(artist_id):
     except:
         return songs
 
-
-# =====================================================
-# GET LYRICS
-# =====================================================
-
 def get_lyrics_by_id(song_id):
     try:
-        # metadata Genius API
+
         res = requests.get(
             f"{GENIUS_API_URL}/songs/{song_id}",
             headers=get_headers(),
@@ -173,7 +147,6 @@ def get_lyrics_by_id(song_id):
         artist = song["primary_artist"]["name"]
         song_url = song["url"]
 
-        # fetch HTML (worker / local)
         if not IS_LOCAL:
             wr = requests.get(f"{WORKER_URL}?url={song_url}", timeout=20)
             if wr.status_code != 200:
@@ -187,42 +160,34 @@ def get_lyrics_by_id(song_id):
 
         soup = BeautifulSoup(html, "html.parser")
 
-        # FIX UTAMA: ambil SEMUA container
         containers = soup.select("div[data-lyrics-container]")
 
         all_lines = []
 
         for c in containers:
-            # skip terjemahan
+
             if "translation" in c.get_text().lower():
                 continue
 
-            # ganti <br> dengan newline
             for br in c.find_all("br"):
                 br.replace_with("\n")
 
-            # Ambil text container
             block = c.get_text("\n").strip()
 
-            # Jika kontainer kosong → skip
             if not block:
                 continue
 
-            # pecah per-baris
             lines = block.split("\n")
 
-            # masukkan baris satu per satu (TANPA bikin enter 2x)
             for line in lines:
                 stripped = line.strip()
                 if stripped:
                     all_lines.append(stripped)
                 else:
-                    all_lines.append("")  # baris kosong
+                    all_lines.append("")  
 
-        # gabungkan semua baris
         lyrics_raw = "\n".join(all_lines)
 
-        # fallback format lama
         if not lyrics_raw.strip():
             old = soup.find("div", class_="lyrics")
             if old:

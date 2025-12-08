@@ -1,4 +1,3 @@
-/* === BASE STYLE === */
 :root {
     --primary: #1DB954; 
     --bg: #121212;
@@ -33,10 +32,9 @@ main.main-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    
-    /* UBAH INI: Dari center jadi flex-start biar Header balik ke ATAS */
+
     justify-content: flex-start; 
-    
+
     width: 100%;
 }
 
@@ -66,16 +64,13 @@ header p.subtitle a:hover {
     width: 100%;
     max-width: 700px;
     margin: 0 auto;
-    
+
     display: flex;
     flex-direction: column;
     align-items: center;
-    
-    /* LOGIKA BARU: */
-    /* 1. Isi container (input search) ditaruh di tengah container */
+
     justify-content: center;
-    
-    /* 2. Container dikasih tinggi minimal biar search box-nya turun ke tengah visual */
+
     min-height: 60vh; 
 }
 
@@ -88,20 +83,16 @@ header p.subtitle a:hover {
     padding: 1.5rem;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    
+
     border: 1px solid rgba(255, 255, 255, 0.08);
-    
+
     box-shadow: 
         inset 0 2px 4px 0 rgba(255, 255, 255, 0.2), 
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.1),
         0 4px 15px rgba(0, 0, 0, 0.2);
     position: relative;
     z-index: 1;
-    
-    /* HAPUS baris opacity & animation di sini, biar container yang di-animasi oleh JS */
-    /* opacity: 0;  <-- Hapus */
-    /* animation: fadeInUp 1s ease-out forwards; <-- Hapus */
-    
+
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -119,7 +110,6 @@ header p.subtitle a:hover {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* === INPUT FIELD === */
 .genius-input {
     width: 100%;
     padding: 18px;
@@ -138,27 +128,23 @@ header p.subtitle a:hover {
     box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
 }
 
-/* === UPDATE TOMBOL SEARCH (ULTRA LIQUID GLASS) === */
-
 .button-primary {
     position: relative;
     overflow: hidden; 
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 100%; /* (Di lyrics.css width-nya auto/ikut container, sesuaikan saja) */
-    
+    width: 100%; 
+
     padding: 12px 24px;
     border-radius: 50px;
-    
-    /* Border lebih tipis */
+
     border: 1px solid rgba(255, 255, 255, 0.08);
-    
-    /* === ULTRA LIQUID GLASS === */
-    background: rgba(255, 255, 255, 0.05); /* 5% Opacity */
+
+    background: rgba(255, 255, 255, 0.05); 
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    
+
     color: #FFFFFF;
     font-weight: 700;
     font-size: 1rem;
@@ -174,7 +160,7 @@ header p.subtitle a:hover {
 }
 
 .button-primary:hover {
-    /* Hover state */
+
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.3);
     box-shadow: 
@@ -184,23 +170,22 @@ header p.subtitle a:hover {
     transform: none; 
 }
 
-/* Pseudo-element Aurora */
 .button-primary::before {
     content: '';
     position: absolute;
     width: 100%;
     height: 100%;
-    
+
     left: calc(var(--mouse-x, 50%) - 50%); 
     top: calc(var(--mouse-y, 50%) - 50%);
-    
+
     background: radial-gradient(
         circle at center,
         rgba(29, 185, 84, 0.4), 
         rgba(29, 185, 84, 0.05) 50%, 
         transparent 100%            
     );
-    
+
     filter: blur(10px);
     opacity: 0;
     z-index: -1;
@@ -220,7 +205,6 @@ header p.subtitle a:hover {
     top: -1.5px; 
 }
 
-/* === SVG SPINNER STYLES === */
 .spinner {
     position: absolute;
     top: 50%;
@@ -256,17 +240,15 @@ header p.subtitle a:hover {
 .button-primary.loading .spinner { opacity: 1; }
 .button-primary.loading { pointer-events: none; transform: scale(1); }
 
-/* === UPDATE: LOADING STATE (Biar Lebih Rapat/Proporsional) === */
 .loading-state-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    
-    /* KURANGI PADDING: Dari 25px jadi 10px biar gak boros tempat */
+
     padding: 10px 0; 
     min-height: auto; 
-    
+
     color: var(--primary);
     font-weight: 600;
 }
@@ -274,20 +256,18 @@ header p.subtitle a:hover {
 .loading-state-container .spinner {
     position: relative; 
     top: auto; left: auto; 
-    /* Kurangi margin bawah spinner ke teks */
+
     margin: 0 0 8px 0; 
     width: 32px; 
     height: 32px;
     opacity: 1; 
 }
 
-/* === BARU: CLASS UNTUK PESAN ERROR/STATUS (Biar Margin Gak Gede) === */
 .status-msg {
     grid-column: 1 / -1; 
     text-align: center; 
     width: 100%; 
-    
-    /* Reset margin bawaan <p> yg biasanya 1em (16px) */
+
     margin: 5px 0; 
     font-size: 0.95rem;
 }
@@ -300,16 +280,14 @@ header p.subtitle a:hover {
     color: var(--muted);
 }
 
-/* Update margin container hasil agar tidak terlalu jauh dari input */
 #artistList, #songSection, #analysisResult {
-    margin-top: 1.25rem !important; /* Semula 30px, kita kunci di 1.5rem (sekitar 24px) */
+    margin-top: 1.25rem !important; 
 }
 
 .loading-state-container .spinner .path {
     stroke: var(--primary);
 }
 
-/* === ARTIST LIST === */
 .grid-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -317,10 +295,9 @@ header p.subtitle a:hover {
 }
 
 .artist-card {
-    position: relative; /* Wajib buat Aurora */
-    overflow: hidden;   /* Wajib buat Aurora */
-    
-    /* Layout */
+    position: relative; 
+    overflow: hidden;   
+
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -331,15 +308,12 @@ header p.subtitle a:hover {
     cursor: pointer; 
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 
-    /* === LIQUID GLASS STYLE === */
-    background: rgba(255, 255, 255, 0.06); /* 6% Opacity */
+    background: rgba(255, 255, 255, 0.06); 
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
 
-    /* Border Tipis */
     border: 1px solid rgba(255, 255, 255, 0.08);
-    
-    /* Efek Timbul/Kaca Cair (Inset Shadows) */
+
     box-shadow: 
         inset 0 2px 4px 0 rgba(255, 255, 255, 0.2), 
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.1),
@@ -347,7 +321,7 @@ header p.subtitle a:hover {
 }
 .artist-card:hover {
     transform: translateY(-0.1px);
-    /* Pas hover, border & shadow makin tegas */
+
     border-color: rgba(255, 255, 255, 0.2);
     box-shadow: 
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.35), 
@@ -361,15 +335,13 @@ header p.subtitle a:hover {
     object-fit: cover; 
     margin-top: 5px;
     margin-bottom: 12px;
-    position: relative; z-index: 2; /* Di atas glow */
+    position: relative; z-index: 2; 
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
-/* Text Artist Wrapper */
-.artist-card div {
-    position: relative; z-index: 2; /* Teks di atas glow */
-}
 
-/* === ARTIST MARQUEE STYLES (FIXED & RENAMED) === */
+.artist-card div {
+    position: relative; z-index: 2; 
+}
 
 .artist-name-wrapper {
     width: 100%;
@@ -389,7 +361,6 @@ header p.subtitle a:hover {
     white-space: nowrap;
 }
 
-/* Masking: Awal Solid (Hitam), Ujung Fade Out */
 .artist-name-wrapper.masked {
     mask-image: linear-gradient(to right, black 0%, black 85%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black 0%, black 85%, transparent 100%);
@@ -404,12 +375,10 @@ header p.subtitle a:hover {
     gap: 0;
 }
 
-/* GANTI NAMA ANIMASI JADI 'artistScroll' BIAR GAK BENTROK */
 .artist-card:hover .artist-marquee-track {
     animation: artistScroll var(--duration, 10s) linear infinite;
 }
 
-/* Keyframes Khusus Artis (Geser 50%) */
 @keyframes artistScroll {
     from { transform: translateX(0); }
     to   { transform: translateX(-50%); } 
@@ -420,23 +389,18 @@ header p.subtitle a:hover {
     min-width: 30px; 
 }
 
-/* === SONG LIST === */
-
-/* -- HEADER ARTIS (PERBAIKAN UTAMA) -- */
 .section-header {
-    /* 1. Pindahkan garis ke ATAS */
+
     border-top: 1px solid #333;
-    border-bottom: none; /* Hapus garis bawah */
-    
-    /* 2. Atur jarak agar proporsional */
-    margin-top: 1rem;      /* Jarak dari tombol Search ke Garis */
-    padding-top: 1rem;   /* Jarak dari Garis ke Nama Artis */
-    margin-bottom: 1.2rem; /* Jarak dari Nama Artis ke Grid Lagu */
-    
+    border-bottom: none; 
+
+    margin-top: 1rem;      
+    padding-top: 1rem;   
+    margin-bottom: 1.2rem; 
+
     text-align: center;
 }
 
-/* Teks Nama Artis */
 .section-header h3 {
     color: var(--primary);
     margin: 0;
@@ -448,18 +412,14 @@ header p.subtitle a:hover {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 10px;
-    
-    /* FIX 1: Tinggi pas untuk 5 baris + 3px toleransi border */
+
     max-height: 398px; 
-    
+
     overflow-y: auto; 
-    padding-right: 8px; /* Ruang untuk scrollbar */
-    
-    /* FIX 2: Tambah padding bawah agar border item terakhir tidak kepotong */
+    padding-right: 8px; 
+
     padding-bottom: 4px; 
-    
-    /* FIX 3: Fitur AUTO RAPIH (Scroll Snap) */
-    /* Ini bikin scroll otomatis berhenti pas di awal baris */
+
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
 }
@@ -493,7 +453,7 @@ header p.subtitle a:hover {
 .lyrics-box::-webkit-scrollbar-thumb:hover { 
     background-color: rgba(255, 255, 255, 0.25); 
     box-shadow: 
-        inset 0 1px 1px rgba(255, 255, 255, 0.9), /* Kilau makin terang */
+        inset 0 1px 1px rgba(255, 255, 255, 0.9), 
         inset 0 0 8px rgba(255, 255, 255, 0.3),
         0 2px 6px rgba(0,0,0,0.3);
 }
@@ -501,9 +461,9 @@ header p.subtitle a:hover {
 .lyrics-box::-webkit-scrollbar-corner { background:transparent; }
 
 .song-btn {
-    position: relative; /* Wajib buat Aurora */
-    overflow: hidden;   /* Wajib buat Aurora */
-    
+    position: relative; 
+    overflow: hidden;   
+
     display: flex; 
     align-items: center; 
     gap: 12px;
@@ -514,20 +474,16 @@ header p.subtitle a:hover {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     box-sizing: border-box;
     height: 71px;
-    
-    /* Child Snap Align */
+
     scroll-snap-align: start;
     scroll-margin-top: 1px; 
 
-    /* === LIQUID GLASS STYLE === */
-    background: rgba(255, 255, 255, 0.06); /* 6% Opacity */
+    background: rgba(255, 255, 255, 0.06); 
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
 
-    /* Border Tipis */
     border: 1px solid rgba(255, 255, 255, 0.08);
 
-    /* Efek Timbul */
     box-shadow: 
         inset 0 2px 4px 0 rgba(255, 255, 255, 0.2), 
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.1),
@@ -545,61 +501,51 @@ header p.subtitle a:hover {
 }
 
 .song-btn.active {
-    /* Background Hijau Transparan */
+
     background: rgba(29, 185, 84, 0.15) !important; 
-    
-    /* Border Hijau Terang */
+
     border: 1px solid #1DB954 !important;
-    
-    /* Glow Hijau */
+
     box-shadow: 
-        /* Highlight Atas (Putih) */
+
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.35), 
-        
-        /* Glow Hijau Keluar (Lebih Soft) */
+
         0 0 10px rgba(29, 185, 84, 0.15), 
-        
-        /* Shadow Hitam Bawah */
+
         0 4px 10px rgba(0,0,0,0.5) !important;
-        
+
     transform: translateY(-0.1px);
 }
 
-/* Pastikan konten di dalam tombol ada di atas glow */
 .song-btn > * {
     position: relative;
     z-index: 2;
 }
 
-/* === COMMON: AURORA GLOW (Cursor Follow) === */
-/* Ini Pseudo-element yang bakal gerak ngikutin mouse */
 .artist-card::before,
 .song-btn::before {
     content: '';
     position: absolute;
     width: 100%; 
     height: 100%;
-    
-    /* Posisi dihitung via JS */
+
     left: calc(var(--mouse-x, 50%) - 50%); 
     top: calc(var(--mouse-y, 50%) - 50%);
 
-    /* Gradient Hijau Spotify */
     background: radial-gradient(
         circle at center,
-        rgba(29, 185, 84, 0.35), /* Hijau tengah */
-        rgba(29, 185, 84, 0.05) 50%, /* Hijau pudar */
+        rgba(29, 185, 84, 0.35), 
+        rgba(29, 185, 84, 0.05) 50%, 
         transparent 70%            
     );
-    
+
     filter: blur(8px);
     opacity: 0;         
-    z-index: 0; /* Di belakang konten */
+    z-index: 0; 
     transition: opacity 0.3s ease;
     pointer-events: none;
 }
 
-/* Munculkan glow pas hover */
 .artist-card:hover::before,
 .song-btn:hover::before {
     opacity: 1;
@@ -610,15 +556,12 @@ header p.subtitle a:hover {
     font-size: 0.9rem;
     font-weight: 600;
     line-height: 1.3;
-    
-    /* Solusi Standar (Anti Kuning): 1 Baris dengan titik-titik (...) */
-    white-space: nowrap;      /* Paksa teks satu baris */
-    overflow: hidden;         /* Sembunyikan teks yang kepanjangan */
-    text-overflow: ellipsis;  /* Tambahkan "..." di ujung */
-    display: block;           /* Pastikan elemen bersifat blok */
-}
 
-/* === FIX: JUDUL LAGU MARQUEE (RUNNING TEXT) === */
+    white-space: nowrap;      
+    overflow: hidden;         
+    text-overflow: ellipsis;  
+    display: block;           
+}
 
 .song-title-wrapper {
     overflow: hidden;
@@ -626,7 +569,6 @@ header p.subtitle a:hover {
     position: relative;
 }
 
-/* Mask hanya dipakai kalau overflow */
 .song-title-wrapper.masked {
     mask-image: linear-gradient(to right, black 90%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
@@ -637,10 +579,8 @@ header p.subtitle a:hover {
     white-space: nowrap;
 }
 
-/* === FIX MARQUEE LAGU (SEAMLESS) === */
-
 .song-btn:hover .marquee-track {
-    /* Animasi jalan pas hover */
+
     animation: marqueeScroll var(--duration, 10s) linear infinite;
 }
 
@@ -649,16 +589,14 @@ header p.subtitle a:hover {
     white-space: nowrap;
     will-change: transform;
     align-items: center;
-    gap: 0; /* Gap diatur manual via spacer */
+    gap: 0; 
 }
 
-/* UBAH INI: Dari calc(-var) jadi -50% biar loop sempurna */
 @keyframes marqueeScroll {
     from { transform: translateX(0); }
     to   { transform: translateX(-50%); } 
 }
 
-/* Style untuk info Album & Tanggal biar rapi */
 .album-info {
     font-size: 0.75rem;
     color: #aaa;
@@ -671,16 +609,14 @@ header p.subtitle a:hover {
 .text-btn { background: none; border: 1px solid #555; color: #aaa; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
 .text-btn:hover { color: #fff; border-color: #fff; }
 
-/* === RESULT AREA === */
 #resultContent { 
-    /* Jarak proporsional dari grid ke hasil */
+
     margin-top: 1rem; 
     padding-bottom: 0rem;
     border-top: 1px dashed #333; 
     padding-top: 1.2rem;
 }
 
-/* Header Lagu & Artis */
 .track-header {
     text-align: center;
     margin-bottom: 1.5rem;
@@ -693,31 +629,28 @@ header p.subtitle a:hover {
     font-size: 1.2rem; 
 }
 
-/* Wrapper utama judul di halaman hasil */
 .track-title-wrapper {
     overflow: hidden;
     white-space: nowrap;
     position: relative;
-    max-width: 100%; /* Pastikan tidak melebar keluar */
+    max-width: 100%; 
     display: flex;
-    justify-content: center; /* Default tengah */
+    justify-content: center; 
     margin-bottom: 0.5rem;
 }
 
-/* Jika teks kepanjangan dan perlu di-mask (fade di pinggir) */
 .track-title-wrapper.masked {
     mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
-    justify-content: flex-start; /* Ubah jadi start biar scroll dari kiri */
+    justify-content: flex-start; 
 }
 
-/* Container yang bergerak */
 .track-marquee-track {
     display: inline-flex;
     white-space: nowrap;
     will-change: transform;
     align-items: center;
-    /* Animasi default mati, nyala kalau ada class .animate */
+
 }
 
 .track-marquee-track.animate {
@@ -733,10 +666,9 @@ header p.subtitle a:hover {
     align-items: center;
 }
 
-/* Spacer antar teks saat running text */
 .track-title-spacer {
     display: inline-block;
-    width: 30px; /* Perkecil dikit biar ga kejauhan */
+    width: 30px; 
 }
 
 @keyframes resultMarquee {
@@ -744,36 +676,29 @@ header p.subtitle a:hover {
     to   { transform: translateX(-50%);}
 }
 
-/* Penyesuaian Header agar wrapper bisa kerja */
 .track-header {
     text-align: center;
     margin-bottom: 1.5rem;
-    overflow: hidden; /* Jaga-jaga */
+    overflow: hidden; 
 }
 
-/* === BARIS LIRIK (Kembali ke Style Asli) === */
 .lyric-line {
-    /* Hapus semua margin biar rapat lagi */
+
     margin: 0;
-    
-    /* Hapus padding bottom yang bikin renggang */
+
     padding-bottom: 0; 
-    
-    /* Kembalikan warna jadi abu-abu (bukan putih terang) */
+
     color: #ccc; 
-    
-    /* Samakan line-height dengan .lyrics-box asli */
+
     line-height: 1.6;
-    
+
     font-size: 1rem;
-    
-    /* Tetap aktifkan snap biar auto-scroll */
+
     scroll-snap-align: start;
 }
 
-/* Spacer untuk jeda antar bait (opsional, kecilin aja) */
 .lyric-spacer {
-    height: 16px; /* Cukup segini buat pemisah bait */
+    height: 16px; 
     scroll-snap-align: none;
 }
 
@@ -791,57 +716,48 @@ header p.subtitle a:hover {
     max-height: 300px; overflow-y: auto; margin-bottom: 25px;
 }
 
-/* Emotion Bars */
 .emotion-bar-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
 .emotion-bar-row:last-child { margin-bottom: 0; }
 
 .emotion-label { font-weight: 700; color: #fff; text-transform: capitalize; letter-spacing: 0.5px; white-space: nowrap; overflow: visible; }
-/* === CONTAINER (Tetap Gelap Solid) === */
+
 .emotion-bar-bg {
     flex: 1 1 0;
-    background: #282828; /* Solid Gelap */
+    background: #282828; 
     border-radius: 50px;
     height: 12px;
     overflow: hidden;
     position: relative;
     min-width: 80px;
     max-width: 100%;
-    
-    /* Tambahin shadow dalem dikit biar kayak 'rel' yang cekung */
+
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
 }
 
-/* === ISI BAR (Liquid Glass / Kaca Cair) === */
 .emotion-bar {
-    /* 1. Base Transparan (Bening) */
+
     background: rgba(255, 255, 255, 0.15); 
-    
-    /* 2. Blur */
+
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    
+
     height: 100%;
     border-radius: 50px;
     min-width: 0;
     display: block;
     transition: width 0.5s ease-out;
-    
-    /* 3. Border Tipis Transparan */
+
     border: 1px solid rgba(255, 255, 255, 0.15);
 
-    /* 4. MAGIC: Highlight Kaca Cair */
     box-shadow: 
-        /* Bibir Atas Putih Terang (Efek Cairan Kental) */
+
         inset 0 1px 1px rgba(255, 255, 255, 0.9),
-        
-        /* Pantulan Halus di Tengah */
+
         inset 0 0 3px rgba(255, 255, 255, 0.2),
-        
-        /* Glow Luar Tipis */
+
         0 0 5px rgba(255, 255, 255, 0.15);
 }
 
-/* Shimmer (Tetap dipertahankan) */
 .emotion-bar-bg::after {
     content: ''; 
     position: absolute; 
@@ -858,11 +774,9 @@ header p.subtitle a:hover {
 @keyframes shimmer { 100% { transform: translateX(250%); } }
 .emotion-score { min-width: 40px; text-align: right; color: #b3b3b3; font-size: 0.9rem; font-weight: 500; }
 
-/* Typing Cursor */
 .typing-cursor { display: inline-block; width: 10px; height: 1em; background-color: var(--primary); margin-left: 3px; vertical-align: middle; animation: blink-caret 0.75s step-end infinite; }
 @keyframes blink-caret { from, to { background-color: transparent; } 50% { background-color: var(--primary); } }
 
-/* Footer */
 footer {
     margin-top: 1.75rem;
     text-align: center;
@@ -879,34 +793,28 @@ footer.fade-in { opacity: 1; }
 .fading-out { opacity: 0 !important; transition: opacity 0.5s ease-in-out; }
 #tech-link.hf-mode:hover { color: #FFD21E !important; }
 
-/* === MOBILE RESPONSIVE (FIX FOOTER KEPOTONG) === */
 @media (max-width: 768px) {
 body {
         padding: 1.5rem;
-        
-        /* FIX REFRESH: Gunakan min-height, bukan height mati */
-        /* Ini membiarkan browser menangani scroll secara native (mengaktifkan pull-to-refresh) */
+
         min-height: 100dvh;
         height: auto;
-        
-        /* Aktifkan scroll di body */
+
         overflow-y: auto; 
-        
-        /* Hapus padding bawah yang bikin space kosong */
+
         padding-bottom: 0;
-        
-        /* Gunakan Flexbox untuk mendorong footer ke bawah */
+
         display: flex;
         flex-direction: column;
     }
 
     main.main-content {
-        /* Main mengambil sisa ruang, mendorong footer ke bawah */
+
         flex: 1;
         width: 100%;
         display: flex;
         flex-direction: column;
-        justify-content: flex-start; /* Mulai dari atas */
+        justify-content: flex-start; 
     }
 
     header h1 {
@@ -970,22 +878,14 @@ body {
     }
 }
 
-/* === FIX: HILANGKAN BACKGROUND PUTIH SAAT AUTOFILL === */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus, 
 input:-webkit-autofill:active {
-    /* 1. Timpa background putih dengan warna gelap input asli (#181818) */
     -webkit-box-shadow: 0 0 0 30px #181818 inset !important;
-    
-    /* 2. Ubah warna teks jadi putih */
     -webkit-text-fill-color: #ffffff !important;
-    
-    /* 3. Pastikan font tetap sesuai desain */
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-size: 1.05rem !important;
-    
-    /* 4. Pertahankan border radius (opsional, browser kadang mereset ini) */
     transition: background-color 5000s ease-in-out 0s;
-    caret-color: white; /* Warna kursor ketik */
+    caret-color: white; 
 }
