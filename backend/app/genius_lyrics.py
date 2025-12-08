@@ -24,13 +24,21 @@ def get_headers():
     }
 
 def get_random_headers():
+    ua = random.choice(USER_AGENTS)
     return {
-        "User-Agent": random.choice(USER_AGENTS),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Referer": "https://genius.com/",
-        "DNT": "1",
-        "Upgrade-Insecure-Requests": "1"
+        "User-Agent": ua,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Cache-Control": "max-age=0",
+        "Referer": "https://www.google.com/",
+        "Cookie": f"_genius_session={os.urandom(16).hex()};"
     }
 
 def clean_lyrics(text):
@@ -41,7 +49,6 @@ def clean_lyrics(text):
         s = line.strip()
         if not s: continue
         if re.match(r"^\d+\s+contributors?$", s.lower()): continue
-        
         blocked = [
             "translation", "translated", "lyrics",
             "click", "contribute", "read more",
@@ -53,14 +60,17 @@ def clean_lyrics(text):
 
 def get_page_html(url):
     try:
-        r = requests.get(url, headers=get_random_headers(), timeout=15)
+        session = requests.Session()
+        r = session.get(url, headers=get_random_headers(), timeout=15)
+        
         if r.status_code == 200:
             return r.text
         else:
-            print(f"DIRECT BLOCKED ({r.status_code})")
+            print(f"DIRECT BLOCKED (Status: {r.status_code}) - Vercel IP Blocked from Genius.")
+            return None
     except Exception as e:
-        print(f"DIRECT ERROR: {e}")
-    return None
+        print(f"DIRECT ERROR ({e})")
+        return None
 
 def search_artist_id(query):
     try:
@@ -110,6 +120,7 @@ def get_songs_by_artist(artist_id):
                 })
             if not data.get("next_page"): break
             page = data["next_page"]
+        print(f"TOTAL SONGS FETCHED: {len(songs)}")
         return songs
     except: return songs
 
@@ -120,7 +131,9 @@ def get_lyrics_by_id(song_id):
             headers=get_headers(),
             timeout=10
         )
-        if res.status_code != 200: return None
+        if res.status_code != 200:
+            print(f"METADATA FETCH FAILED: {res.status_code}")
+            return None
 
         song = res.json()["response"]["song"]
         title = song["title"]
@@ -128,35 +141,32 @@ def get_lyrics_by_id(song_id):
         song_url = song["url"]
 
         html = None
-        
         if not IS_LOCAL:
             try:
-                print(f"ATTEMPTING WORKER: {WORKER_URL}?url={song_url}")
+                print(f"ATTEMPTING WORKER FETCH: {WORKER_URL}")
                 wr = requests.get(
                     f"{WORKER_URL}?url={song_url}", 
                     headers=get_random_headers(),
                     timeout=15
                 )
-                
                 if wr.status_code == 200:
                     html = wr.text
                 else:
-                    print(f"WORKER FAILED ({wr.status_code})... ATTEMPTING DIRECT FETCH.")
+                    print(f"WORKER FAILED (Status: {wr.status_code}). ATTEMPTING DIRECT FALLBACK.")
             except Exception as e:
-                print(f"WORKER ERROR ({e})... ATTEMPTING DIRECT FETCH.")
+                print(f"WORKER ERROR ({e}). ATTEMPTING DIRECT FALLBACK.")
 
         if not html:
             print(f"ATTEMPTING DIRECT FETCH: {song_url}")
             html = get_page_html(song_url)
 
         if not html:
-            print("ALL PATHS FAILED. UNABLE TO RETRIEVE LYRICS.")
+            print("ALL ACCESS PATHS FAILED. UNABLE TO RETRIEVE LYRICS.")
             return None
 
         soup = BeautifulSoup(html, "html.parser")
         containers = soup.select("div[data-lyrics-container]")
         all_lines = []
-
         for c in containers:
             if "translation" in c.get_text().lower(): continue
             for br in c.find_all("br"): br.replace_with("\n")
@@ -169,12 +179,13 @@ def get_lyrics_by_id(song_id):
                     else: all_lines.append("") 
 
         lyrics_raw = "\n".join(all_lines)
-
         if not lyrics_raw.strip():
             old = soup.find("div", class_="lyrics")
             if old: lyrics_raw = old.get_text("\n")
 
-        if not lyrics_raw.strip(): return None
+        if not lyrics_raw.strip():
+            print("PARSING ERROR: LYRICS CONTENT EMPTY.")
+            return None
 
         return {
             "lyrics": clean_lyrics(lyrics_raw),
@@ -184,5 +195,5 @@ def get_lyrics_by_id(song_id):
         }
 
     except Exception as e:
-        print(f"LYRICS CRASH: {e}")
+        print(f"GENIUS SCRAPER CRASH: {e}")
         return None
