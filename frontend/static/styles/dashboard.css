@@ -662,7 +662,7 @@ footer.fade-in {
     border-radius: 50%;
     flex-shrink: 0;
     margin-right: 2.5px;
-    justify-items: center
+    justify-items: center;
     position: static;
 }
 #genres-section li.disabled .name {
