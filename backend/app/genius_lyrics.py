@@ -1,44 +1,15 @@
 import os
 import requests
 import re
-import random
 from bs4 import BeautifulSoup
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 GENIUS_API_URL = "https://api.genius.com"
-IS_LOCAL = os.getenv("VERCEL") is None
-WORKER_URL = os.getenv("WORKER_URL", "https://butikyqcpeqtuabvbied.supabase.co/functions/v1/genius")
-
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
-]
 
 def get_headers():
     return {
         "Authorization": f"Bearer {GENIUS_TOKEN}",
         "User-Agent": "CompuServe Classic/1.22"
-    }
-
-def get_random_headers():
-    ua = random.choice(USER_AGENTS)
-    return {
-        "User-Agent": ua,
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Cache-Control": "max-age=0",
-        "Referer": "https://www.google.com/",
-        "Cookie": f"_genius_session={os.urandom(16).hex()};"
     }
 
 def clean_lyrics(text):
@@ -60,16 +31,22 @@ def clean_lyrics(text):
 
 def get_page_html(url):
     try:
-        session = requests.Session()
-        r = session.get(url, headers=get_random_headers(), timeout=15)
+        translate_url = f"https://translate.google.com/translate?sl=auto&tl=en&u={url}&client=webapp"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        
+        print(f"ATTEMPTING GOOGLE TRANSLATE PROXY: {url}")
+        r = requests.get(translate_url, headers=headers, timeout=20)
         
         if r.status_code == 200:
             return r.text
         else:
-            print(f"DIRECT FALLBACK FAILED (Status: {r.status_code}). IP Vercel potentially blocked.")
+            print(f"GOOGLE TRANSLATE BLOCKED ({r.status_code})")
             return None
+            
     except Exception as e:
-        print(f"DIRECT ACCESS ERROR: {e}")
+        print(f"GOOGLE TRANSLATE ERROR: {e}")
         return None
 
 def search_artist_id(query):
@@ -140,33 +117,17 @@ def get_lyrics_by_id(song_id):
         artist = song["primary_artist"]["name"]
         song_url = song["url"]
 
-        html = None
-        if not IS_LOCAL:
-            try:
-                print(f"ATTEMPTING WORKER FETCH: {WORKER_URL}")
-                wr = requests.get(
-                    f"{WORKER_URL}?url={song_url}", 
-                    headers=get_random_headers(),
-                    timeout=15
-                )
-                if wr.status_code == 200:
-                    html = wr.text
-                else:
-                    print(f"WORKER FAILED (Status: {wr.status_code}). ATTEMPTING DIRECT FALLBACK.")
-            except Exception as e:
-                print(f"WORKER ERROR ({e}). ATTEMPTING DIRECT FALLBACK.")
+        html = get_page_html(song_url)
 
         if not html:
-            print(f"ATTEMPTING DIRECT FETCH: {song_url}")
-            html = get_page_html(song_url)
-
-        if not html:
-            print("ALL ACCESS PATHS FAILED. UNABLE TO RETRIEVE LYRICS.")
+            print("FAILED TO RETRIEVE LYRICS HTML.")
             return None
 
         soup = BeautifulSoup(html, "html.parser")
+        
         containers = soup.select("div[data-lyrics-container]")
         all_lines = []
+        
         for c in containers:
             if "translation" in c.get_text().lower(): continue
             for br in c.find_all("br"): br.replace_with("\n")
@@ -179,6 +140,7 @@ def get_lyrics_by_id(song_id):
                     else: all_lines.append("") 
 
         lyrics_raw = "\n".join(all_lines)
+        
         if not lyrics_raw.strip():
             old = soup.find("div", class_="lyrics")
             if old: lyrics_raw = old.get_text("\n")
