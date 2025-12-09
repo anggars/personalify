@@ -13,7 +13,8 @@ from app.db_handler import (
     save_user,
     save_artists_batch,
     save_tracks_batch,
-    save_user_associations_batch
+    save_user_associations_batch,
+    log_system
 )
 from app.cache_handler import cache_top_data, get_cached_top_data, clear_top_data_cache
 from app.mongo_handler import save_user_sync, get_user_history
@@ -76,6 +77,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     spotify_id = user_profile["id"]
     display_name = user_profile.get("display_name", "Unknown")
     save_user(spotify_id, display_name)
+    log_system("INFO", f"User Login: {display_name} ({spotify_id})", "AUTH")
 
     time_ranges = ["short_term", "medium_term", "long_term"]
     for time_range in time_ranges:
@@ -135,6 +137,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         cache_top_data("top", spotify_id, time_range, result)
         save_user_sync(spotify_id, time_range, result)
 
+    log_system("SUCCESS", f"Data sync completed for {display_name}", "SYNC")
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
     frontend_url = f"{request.url.scheme}://{original_host}"
     return RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
@@ -543,6 +546,7 @@ def download_user_export():
 def analyze_lyrics_emotion_endpoint(
     lyrics: str = Body(..., embed=True, description="Song lyrics to analyze")
 ):
+    log_system("INFO", f"NLP Analysis Request: {text[:50]}...", "NLP")
     return analyze_lyrics_emotion(lyrics)
 
 @router.get("/lyrics", response_class=HTMLResponse, tags=["Pages"])
@@ -568,6 +572,7 @@ def api_get_artist_songs(artist_id: int):
 def api_get_lyrics_emotion(song_id: int):
     data = get_lyrics_by_id(song_id)
     if not data:
+        log_system("WARN", f"Lyrics not found for Song ID: {song_id}", "GENIUS")
         raise HTTPException(status_code=404, detail="Lyrics not found!")
     print("="*50)
     print(f"ANALYSIS REQUEST: {data.get('title')} - {data.get('artist')}")
@@ -575,6 +580,7 @@ def api_get_lyrics_emotion(song_id: int):
     print(f"LYRICS CONTENT:\n{data.get('lyrics')}")
     print("="*50)
     emotion = analyze_lyrics_emotion(data['lyrics'])
+    log_system("INFO", f"Lyrics found: {data['title']} by {data['artist']}", "GENIUS")
 
     return {
         "track_info": data, 

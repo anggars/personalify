@@ -9,139 +9,89 @@ export default async function handler(req: Request) {
   if (url.searchParams.get('mode') === 'data') {
     const start = Date.now();
     let status = 'DOWN';
-
     if (UPSTASH_URL && UPSTASH_TOKEN) {
       try {
         const r = await fetch(`${UPSTASH_URL}/ping`, { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } });
         status = r.ok ? 'HEALTHY' : 'ERROR';
       } catch { status = 'DOWN'; }
     }
-
     const latency = Date.now() - start;
-
-    if (UPSTASH_URL && UPSTASH_TOKEN) {
-      try {
-        const logMsg = `[MONITOR] Heartbeat check: ${status} (${latency}ms)`;
-        await fetch(UPSTASH_URL, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(["RPUSH", "system:logs", logMsg]) 
-
-        });
-
-        await fetch(UPSTASH_URL, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(["LTRIM", "system:logs", -50, -1])
-        });
-      } catch {}
-    }
-
-    return new Response(JSON.stringify({ status, latency, timestamp: new Date().toISOString() }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(JSON.stringify({ status, latency }), { headers: {'Content-Type': 'application/json'} });
   }
 
   const html = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
-      <title>Live Monitor</title>
+      <title>Monitor</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
-        :root { --bg: #121212; --card: #1e1e1e; --accent: #1db954; --shadow-inset: inset 6px 6px 14px #0f0f0f, inset -6px -6px 14px #2d2d2d; --shadow-out: 6px 6px 14px #0f0f0f, -6px -6px 14px #2d2d2d; }
-        body { background: var(--bg); color: #fff; font-family: monospace; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
 
-        .nav { display: flex; gap: 10px; margin-bottom: 30px; background: var(--card); padding: 10px; border-radius: 15px; box-shadow: var(--shadow-out); }
-        .nav a { color: #888; text-decoration: none; padding: 8px 16px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; transition: 0.3s; }
-        .nav a:hover, .nav a.active { background: var(--bg); color: var(--accent); box-shadow: var(--shadow-inset); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        :root { --glass-bg: rgba(255, 255, 255, 0.05); --glass-border: rgba(255, 255, 255, 0.1); --glass-blur: blur(20px); --accent: #1db954; --text: #ffffff; --text-muted: #b3b3b3; }
+        body { margin: 0; background: radial-gradient(circle at top left, #1e1e1e, #000000); font-family: 'Inter', sans-serif; color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
 
-        .container { width: 100%; max-width: 700px; }
-        .monitor { background: var(--card); padding: 2rem; border-radius: 25px; box-shadow: var(--shadow-inset); border: 1px solid #252525; }
+        .nav-pill { position: fixed; top: 20px; display: flex; gap: 5px; background: rgba(0, 0, 0, 0.3); backdrop-filter: var(--glass-blur); padding: 8px; border-radius: 50px; border: 1px solid var(--glass-border); z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .nav-a { color: var(--text-muted); text-decoration: none; padding: 8px 20px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; transition: 0.3s; }
+        .nav-a:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .nav-a.active { background: var(--accent); color: #000; box-shadow: 0 0 15px rgba(29, 185, 84, 0.4); }
 
-        .screen {
-          background: #000; height: 150px; border-radius: 15px; margin: 1.5rem 0; position: relative; overflow: hidden;
-          box-shadow: inset 0 0 20px #000; border: 1px solid #333; display: flex; align-items: flex-end;
-        }
+        .glass-card { width: 90%; max-width: 500px; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); border-radius: 24px; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); animation: floatUp 0.8s ease; }
 
-        #graph { display: flex; align-items: flex-end; width: 100%; height: 100%; gap: 2px; padding: 0 5px; }
-        .bar { background: var(--accent); width: 100%; transition: height 0.2s; opacity: 0.8; }
+        .screen { background: #000; height: 160px; border-radius: 16px; margin: 20px 0; position: relative; overflow: hidden; border: 1px solid #333; display: flex; align-items: flex-end; padding: 0 5px; gap: 3px; }
+        .bar { width: 100%; background: var(--accent); opacity: 0.8; border-radius: 2px 2px 0 0; transition: height 0.2s ease; }
 
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .stat { background: #121212; padding: 15px; border-radius: 15px; box-shadow: var(--shadow-inset); text-align: center; }
-        .val { font-size: 1.5rem; font-weight: bold; color: var(--accent); margin-top: 5px; }
-        .lbl { font-size: 0.7rem; color: #666; }
+        .stat-row { display: flex; justify-content: space-between; margin-top: 10px; }
+        .stat-item { text-align: center; width: 48%; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+        .lbl { font-size: 0.7rem; color: var(--text-muted); font-weight: 700; margin-bottom: 5px; }
+        .val { font-size: 1.2rem; font-weight: 700; }
+        @keyframes floatUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
       </style>
     </head>
     <body>
-      <div class="nav">
-        <a href="/api/status">STATUS</a>
-        <a href="/api/monitor" class="active">MONITOR</a>
-        <a href="/api/cache">CACHE</a>
-        <a href="/api/log">LOGS</a>
+      <div class="nav-pill">
+        <a href="/api/status" class="nav-a">Status</a>
+        <a href="/api/monitor" class="nav-a active">Monitor</a>
+        <a href="/api/cache" class="nav-a">Cache</a>
+        <a href="/api/log" class="nav-a">Logs</a>
       </div>
 
-      <div class="container">
-        <div class="monitor">
-          <h2 style="margin:0; text-align:center; color:#fff; letter-spacing:2px; border-bottom:1px solid #333; padding-bottom:15px;">
-            REAL-TIME LATENCY <span style="color:var(--accent); font-size:0.6em; vertical-align:middle;">● LIVE</span>
-          </h2>
-
-          <div class="screen">
-            <div id="graph">
-              </div>
-          </div>
-
-          <div class="grid">
-            <div class="stat"><div class="lbl">STATUS</div><div class="val" id="statusVal">INIT...</div></div>
-            <div class="stat"><div class="lbl">CURRENT LATENCY</div><div class="val" id="latencyVal">0ms</div></div>
-          </div>
+      <div class="glass-card">
+        <h2 style="margin:0; text-align:center; font-weight:800; font-size:1.2rem;">Live Latency</h2>
+        <div class="screen" id="chart"></div>
+        <div class="stat-row">
+           <div class="stat-item">
+             <div class="lbl">STATUS</div>
+             <div class="val" id="status" style="color:var(--accent)">INIT</div>
+           </div>
+           <div class="stat-item">
+             <div class="lbl">LATENCY</div>
+             <div class="val" id="lat">0ms</div>
+           </div>
         </div>
       </div>
 
       <script>
-        const graph = document.getElementById('graph');
-        const maxBars = 40;
-
-        for(let i=0; i<maxBars; i++) {
-          const bar = document.createElement('div');
-          bar.className = 'bar';
-          bar.style.height = '2px';
-          graph.appendChild(bar);
+        const chart = document.getElementById('chart');
+        const bars = [];
+        for(let i=0; i<30; i++) {
+          const b = document.createElement('div'); b.className='bar'; b.style.height='2%'; chart.appendChild(b); bars.push(b);
         }
-
-        async function update() {
+        async function loop() {
           try {
-
             const res = await fetch('/api/monitor?mode=data');
             const data = await res.json();
+            document.getElementById('status').innerText = data.status;
+            document.getElementById('lat').innerText = data.latency + 'ms';
 
-            document.getElementById('statusVal').innerText = data.status;
-            document.getElementById('latencyVal').innerText = data.latency + 'ms';
-
-            const color = data.status === 'HEALTHY' ? '#1db954' : '#ff4444';
-            document.getElementById('statusVal').style.color = color;
-            document.getElementById('latencyVal').style.color = color;
-
-            const bars = document.getElementsByClassName('bar');
-            for(let i=0; i<maxBars-1; i++) {
-              bars[i].style.height = bars[i+1].style.height;
-              bars[i].style.backgroundColor = bars[i+1].style.backgroundColor;
-            }
-
-            let h = Math.min(data.latency * 2, 100); 
-            if(h < 2) h = 2;
-
-            bars[maxBars-1].style.height = h + '%';
-            bars[maxBars-1].style.backgroundColor = color;
-
-          } catch (e) {
-            console.log("Fetch error", e);
-          }
+            for(let i=0; i<29; i++) { bars[i].style.height = bars[i+1].style.height; }
+            let h = Math.min(data.latency * 2, 100);
+            if(h<5) h=5;
+            bars[29].style.height = h + '%';
+            bars[29].style.background = data.status==='HEALTHY' ? '#1db954' : '#ff4444';
+          } catch {}
         }
-
-        setInterval(update, 1500);
-        update();
+        setInterval(loop, 1000);
       </script>
     </body>
     </html>

@@ -1,9 +1,8 @@
 export const config = { runtime: 'edge' };
 
 export default async function handler(req: Request) {
-  const city = req.headers.get('x-vercel-ip-city') || 'Unknown City';
-  const region = req.headers.get('x-vercel-ip-country-region') || 'Global';
-  const requestId = req.headers.get('x-vercel-id') || 'dev-mode';
+  const city = req.headers.get('x-vercel-ip-city') || 'Jakarta';
+  const region = req.headers.get('x-vercel-ip-country-region') || 'ID';
   const now = new Date();
 
   const html = `
@@ -13,57 +12,130 @@ export default async function handler(req: Request) {
       <title>System Status</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
-        :root { --bg: #121212; --text: #e0e0e0; --accent: #1db954; --card-bg: #1e1e1e; --shadow-inset: inset 6px 6px 14px #0f0f0f, inset -6px -6px 14px #2d2d2d; --shadow-out: 6px 6px 14px #0f0f0f, -6px -6px 14px #2d2d2d; }
-        body { background: var(--bg); color: var(--text); font-family: monospace; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
-        .nav { display: flex; gap: 10px; margin-bottom: 30px; background: var(--card-bg); padding: 10px; border-radius: 15px; box-shadow: var(--shadow-out); }
-        .nav a { color: #888; text-decoration: none; padding: 8px 16px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; transition: 0.3s; }
-        .nav a:hover, .nav a.active { background: var(--bg); color: var(--accent); box-shadow: var(--shadow-inset); }
+        :root {
+          --glass-bg: rgba(255, 255, 255, 0.05);
+          --glass-border: rgba(255, 255, 255, 0.1);
+          --glass-blur: blur(20px);
+          --accent: #1db954;
+          --text: #ffffff;
+          --text-muted: #b3b3b3;
+        }
 
-        .container { width: 100%; max-width: 700px; }
-        .box { background: var(--card-bg); padding: 2.5rem; border-radius: 25px; box-shadow: var(--shadow-inset); border: 1px solid #252525; }
+        body {
+          margin: 0;
+          background: radial-gradient(circle at top left, #1e1e1e, #000000);
+          font-family: 'Inter', -apple-system, sans-serif; 
+          color: var(--text);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center; 
+          min-height: 100vh;
+          overflow: hidden;
+        }
 
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 2px solid #252525; padding-bottom: 15px; }
-        h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); }
-        .pill { background: var(--bg); padding: 5px 15px; border-radius: 20px; font-size: 0.75rem; box-shadow: var(--shadow-inset); display: flex; align-items: center; gap: 8px; font-weight: bold; color: var(--accent); }
-        .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
+        .nav-pill {
+          position: fixed;
+          top: 20px;
+          display: flex;
+          gap: 5px;
+          background: rgba(0, 0, 0, 0.3);
+          backdrop-filter: var(--glass-blur);
+          padding: 8px;
+          border-radius: 50px;
+          border: 1px solid var(--glass-border);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+          z-index: 100;
+        }
+
+        .nav-a {
+          color: var(--text-muted);
+          text-decoration: none;
+          padding: 8px 20px;
+          border-radius: 30px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .nav-a:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .nav-a.active { background: var(--accent); color: #000; box-shadow: 0 0 15px rgba(29, 185, 84, 0.4); }
+
+        .glass-card {
+          width: 90%;
+          max-width: 480px;
+          background: var(--glass-bg);
+          backdrop-filter: var(--glass-blur);
+          -webkit-backdrop-filter: var(--glass-blur);
+          border: 1px solid var(--glass-border);
+          border-radius: 24px;
+          padding: 40px;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+          animation: floatUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        h1 { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; }
+
+        .status-badge {
+          background: rgba(29, 185, 84, 0.2);
+          color: var(--accent);
+          padding: 6px 12px;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          border: 1px solid rgba(29, 185, 84, 0.3);
+          display: flex; align-items: center; gap: 6px;
+        }
+        .dot { width: 6px; height: 6px; background: currentColor; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
 
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .metric { background: var(--bg); padding: 15px; border-radius: 15px; box-shadow: var(--shadow-inset); text-align: center; }
-        .label { font-size: 0.7rem; color: #888; text-transform: uppercase; margin-bottom: 5px; }
-        .val { font-size: 0.95rem; font-weight: 600; }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .metric {
+          background: rgba(255,255,255,0.03);
+          border-radius: 16px;
+          padding: 20px;
+          border: 1px solid rgba(255,255,255,0.05);
+          transition: 0.2s;
+        }
+        .metric:hover { background: rgba(255,255,255,0.06); transform: translateY(-2px); }
+
+        .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600; }
+        .value { font-size: 1.1rem; font-weight: 600; color: #fff; }
+        .big-val { font-size: 1.8rem; font-weight: 700; color: #fff; }
+
+        @keyframes floatUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
       </style>
     </head>
     <body>
-      <div class="nav">
-        <a href="/api/status" class="active">STATUS</a>
-        <a href="/api/monitor">MONITOR</a>
-        <a href="/api/cache">CACHE</a>
-        <a href="/api/log">LOGS</a>
+      <div class="nav-pill">
+        <a href="/api/status" class="nav-a active">Status</a>
+        <a href="/api/monitor" class="nav-a">Monitor</a>
+        <a href="/api/cache" class="nav-a">Cache</a>
+        <a href="/api/log" class="nav-a">Logs</a>
       </div>
 
-      <div class="container">
-        <div class="box">
-          <div class="header">
-            <h1>System Status</h1>
-            <div class="pill"><div class="dot"></div> OPERATIONAL</div>
+      <div class="glass-card">
+        <div class="header">
+          <h1>System Overview</h1>
+          <div class="status-badge"><div class="dot"></div> ONLINE</div>
+        </div>
+
+        <div class="grid">
+          <div class="metric">
+            <div class="label">Region</div>
+            <div class="value">${region}</div>
           </div>
-          <div class="grid">
-            <div class="metric">
-              <div class="label">Region</div>
-              <div class="val">${region}</div>
-            </div>
-            <div class="metric">
-              <div class="label">City</div>
-              <div class="val">${city}</div>
-            </div>
-            <div class="metric" style="grid-column: span 2;">
-              <div class="label">Server Time</div>
-              <div class="val" style="color: var(--accent); font-size: 1.1rem;">${now.toLocaleTimeString()}</div>
-              <div class="label" style="margin-top:4px;">${now.toLocaleDateString()}</div>
-            </div>
+          <div class="metric">
+            <div class="label">City</div>
+            <div class="value">${city}</div>
+          </div>
+          <div class="metric" style="grid-column: span 2;">
+            <div class="label">Local Time</div>
+            <div class="big-val">${now.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})}</div>
+            <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">${now.toLocaleDateString('en-US', {weekday:'long', day:'numeric', month:'long'})}</div>
           </div>
         </div>
       </div>

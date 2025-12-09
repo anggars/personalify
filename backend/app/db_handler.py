@@ -232,3 +232,32 @@ def get_user_db_details(spotify_id: str):
             details["db_top_tracks"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
 
     return details
+
+import requests
+import json
+import threading
+from datetime import datetime
+
+_VERCEL_URL = os.getenv("VERCEL_URL")
+if _VERCEL_URL:
+    _LOG_API_URL = f"https://{_VERCEL_URL}/api/log"
+else:
+    _LOG_API_URL = "http://localhost:3000/api/log"
+
+def _send_log_background(level, message, source):
+    try:
+        payload = {
+            "level": level,
+            "message": message,
+            "source": source
+        }
+
+        requests.post(_LOG_API_URL, json=payload, timeout=0.5)
+    except:
+        pass
+
+def log_system(level, message, source="BACKEND"):
+
+    print(f"[{level}] {source}: {message}")
+
+    threading.Thread(target=_send_log_background, args=(level, message, source)).start()

@@ -6,15 +6,31 @@ export default async function handler(req: Request) {
   const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
   const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-  if (url.searchParams.get('mode') === 'stream') {
-    if(!UPSTASH_URL || !UPSTASH_TOKEN) return new Response(JSON.stringify([]));
-
-    const res = await fetch(UPSTASH_URL, {
-      method: 'POST', headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(["LRANGE", "system:logs", -20, -1])
+  async function redisCmd(cmd: any[]) {
+    if(!UPSTASH_URL || !UPSTASH_TOKEN) return null;
+    const r = await fetch(UPSTASH_URL, {
+      method: 'POST', headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify(cmd)
     });
-    const data = await res.json();
-    return new Response(JSON.stringify(data.result || []), { headers: {'Content-Type': 'application/json'} });
+    return (await r.json()).result;
+  }
+
+  if (req.method === 'POST') {
+    try {
+      const body = await req.json();
+
+      const logStr = `[${body.level || 'INFO'}] ${body.source || 'SYS'}: ${body.message} | ${new Date().toISOString().split('T')[1].split('.')[0]}`;
+
+      await redisCmd(["RPUSH", "system:logs", logStr]);
+
+      await redisCmd(["LTRIM", "system:logs", -100, -1]);
+
+      return new Response('OK', {status: 200});
+    } catch { return new Response('ERR', {status: 500}); }
+  }
+
+  if (url.searchParams.get('mode') === 'stream') {
+    const logs = await redisCmd(["LRANGE", "system:logs", -50, -1]);
+    return new Response(JSON.stringify(logs || []), { headers: {'Content-Type': 'application/json'} });
   }
 
   const html = `
@@ -24,79 +40,90 @@ export default async function handler(req: Request) {
       <title>System Logs</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
-        :root { --bg: #121212; --card: #1e1e1e; --accent: #1db954; --shadow-inset: inset 6px 6px 14px #0f0f0f, inset -6px -6px 14px #2d2d2d; --shadow-out: 6px 6px 14px #0f0f0f, -6px -6px 14px #2d2d2d; }
-        body { background: var(--bg); color: #ccc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
 
-        .nav { display: flex; gap: 10px; margin-bottom: 30px; background: var(--card); padding: 10px; border-radius: 15px; box-shadow: var(--shadow-out); }
-        .nav a { color: #888; text-decoration: none; padding: 8px 16px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; transition: 0.3s; }
-        .nav a:hover, .nav a.active { background: var(--bg); color: var(--accent); box-shadow: var(--shadow-inset); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap'); 
 
-        .container { width: 100%; max-width: 700px; height: 70vh; }
-        .term {
-          background: var(--card); height: 100%; border-radius: 20px; padding: 20px;
-          box-shadow: var(--shadow-inset); border: 1px solid #252525; overflow-y: auto; display: flex; flex-direction: column;
+        :root { --glass-bg: rgba(255, 255, 255, 0.05); --glass-border: rgba(255, 255, 255, 0.1); --glass-blur: blur(20px); --accent: #1db954; --text: #ffffff; --text-muted: #b3b3b3; }
+        body { margin: 0; background: radial-gradient(circle at top left, #1e1e1e, #000000); font-family: 'Inter', sans-serif; color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
+
+        .nav-pill { position: fixed; top: 20px; display: flex; gap: 5px; background: rgba(0, 0, 0, 0.3); backdrop-filter: var(--glass-blur); padding: 8px; border-radius: 50px; border: 1px solid var(--glass-border); z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .nav-a { color: var(--text-muted); text-decoration: none; padding: 8px 20px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; transition: 0.3s; }
+        .nav-a:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .nav-a.active { background: var(--accent); color: #000; box-shadow: 0 0 15px rgba(29, 185, 84, 0.4); }
+
+        .glass-terminal {
+          width: 90%; max-width: 800px; height: 70vh;
+          background: rgba(0, 0, 0, 0.6); 
+          backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); border-radius: 20px;
+          padding: 20px; display: flex; flex-direction: column;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.5); animation: floatUp 0.8s ease;
         }
-        .header { color: var(--accent); font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; display:flex; justify-content:space-between; }
-        .log-area { flex-grow: 1; overflow-y: auto; }
-        .line { padding: 4px 0; border-bottom: 1px solid #222; font-size: 0.85rem; }
-        .line:last-child { animation: highlight 1s ease; }
-        @keyframes highlight { from { background: #111; } to { background: transparent; } }
+
+        .term-header { display: flex; justify-content: space-between; padding-bottom: 15px; border-bottom: 1px solid #333; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+        .log-area { flex-grow: 1; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding-right: 10px; }
+
+        .line { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 10px; }
+        .ts { color: #666; font-size: 0.75rem; min-width: 70px; }
+        .msg { color: #ddd; }
+
+        .lvl-INFO { color: #4facfe; }
+        .lvl-WARN { color: #ffd200; }
+        .lvl-ERROR { color: #ff4444; }
+        .src { opacity: 0.6; font-size: 0.75rem; border: 1px solid #444; padding: 0 4px; border-radius: 4px; margin-right: 6px; }
 
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        @keyframes floatUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
       </style>
     </head>
     <body>
-      <div class="nav">
-        <a href="/api/status">STATUS</a>
-        <a href="/api/monitor">MONITOR</a>
-        <a href="/api/cache">CACHE</a>
-        <a href="/api/log" class="active">LOGS</a>
+      <div class="nav-pill">
+        <a href="/api/status" class="nav-a">Status</a>
+        <a href="/api/monitor" class="nav-a">Monitor</a>
+        <a href="/api/cache" class="nav-a">Cache</a>
+        <a href="/api/log" class="nav-a active">Logs</a>
       </div>
 
-      <div class="container">
-        <div class="term">
-          <div class="header">
-            <span>>> SYSTEM LOGS</span>
-            <span style="font-size:0.8rem; opacity:0.7">LIVE STREAM</span>
-          </div>
-          <div class="log-area" id="logs">
-            <div class="line" style="color:#666">Connecting to log stream...</div>
-          </div>
+      <div class="glass-terminal">
+        <div class="term-header">
+          <span>Console Stream</span>
+          <span style="color:var(--accent)">● Live</span>
+        </div>
+        <div class="log-area" id="logs">
+          <div class="line" style="color:#666">Initializing log stream connection...</div>
         </div>
       </div>
 
       <script>
-        const logContainer = document.getElementById('logs');
-
+        const container = document.getElementById('logs');
         async function fetchLogs() {
           try {
             const res = await fetch('/api/log?mode=stream');
             const logs = await res.json();
 
-            if(logs.length > 0) {
+            if(logs.length) {
+              container.innerHTML = '';
+              logs.forEach(l => {
 
-              logContainer.innerHTML = '';
-              logs.forEach(log => {
                 const div = document.createElement('div');
                 div.className = 'line';
-                div.innerText = log;
 
-                if(log.includes('ERROR') || log.includes('DOWN')) div.style.color = '#ff4444';
-                if(log.includes('CACHE')) div.style.color = '#1db954';
-                if(log.includes('MONITOR')) div.style.color = '#ffb02e';
-                logContainer.appendChild(div);
+                let color = '#ccc';
+                if(l.includes('INFO')) color = '#4facfe';
+                if(l.includes('WARN')) color = '#ffd200';
+                if(l.includes('ERROR') || l.includes('FAIL')) color = '#ff4444';
+
+                div.innerHTML = \`<span style="color:\${color}">\${l}</span>\`;
+                container.appendChild(div);
               });
-
-              logContainer.scrollTop = logContainer.scrollHeight;
-            } else {
-              logContainer.innerHTML = '<div class="line" style="color:#666">No logs found in Redis yet...</div>';
+              container.scrollTop = container.scrollHeight;
             }
-          } catch(e) { console.error(e); }
+          } catch {}
         }
-
-        setInterval(fetchLogs, 3000);
+        setInterval(fetchLogs, 2000);
         fetchLogs();
       </script>
     </body>
