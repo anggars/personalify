@@ -106,7 +106,7 @@ export default async function handler(req: Request) {
       <div class="glass-terminal">
         <div class="term-header">
           <span>System Stream</span>
-          <span style="color:var(--accent)">● Live</span>
+          <span style="color:var(--accent)">Live</span>
         </div>
         <div class="log-area" id="logs">
           <div class="line" style="color:#666">Waiting for logs...</div>
@@ -120,30 +120,31 @@ export default async function handler(req: Request) {
           try {
             const res = await fetch('/api/log?mode=stream');
             const logs = await res.json();
-
+            
             if(logs.length) {
               container.innerHTML = '';
               logs.forEach(rawLog => {
-
+                
                 let time = '--:--:--';
                 let content = rawLog;
+                
+                if (rawLog.includes('|')) {
+                    const parts = rawLog.split('|');
+                    const potentialTime = parts[parts.length - 1].trim();
 
-                const lastPipe = rawLog.lastIndexOf(' | ');
-
-                if (lastPipe !== -1) {
-                   content = rawLog.substring(0, lastPipe); 
-
-                   time = rawLog.substring(lastPipe + 3);   
-
+                    if (potentialTime.includes(':')) {
+                        time = potentialTime;
+                        content = parts.slice(0, -1).join('|').trim();
+                    }
                 }
 
                 let colorClass = '';
-                if(content.includes('[INFO]')) colorClass = 'lvl-INFO';
-                if(content.includes('[WARN]')) colorClass = 'lvl-WARN';
-                if(content.includes('[ERROR]')) colorClass = 'lvl-ERROR';
-                if(content.includes('[AUTH]')) colorClass = 'lvl-AUTH';
-                if(content.includes('[SEARCH]')) colorClass = 'lvl-SEARCH';
-                if(content.includes('[LYRICS]')) colorClass = 'lvl-LYRICS';
+                if(content.includes('INFO')) colorClass = 'lvl-INFO';
+                if(content.includes('WARN')) colorClass = 'lvl-WARN';
+                if(content.includes('ERROR') || content.includes('FAIL')) colorClass = 'lvl-ERROR';
+                if(content.includes('AUTH')) colorClass = 'lvl-AUTH';
+                if(content.includes('SEARCH')) colorClass = 'lvl-SEARCH';
+                if(content.includes('LYRICS')) colorClass = 'lvl-LYRICS';
 
                 const div = document.createElement('div');
                 div.className = 'line';
@@ -154,7 +155,7 @@ export default async function handler(req: Request) {
                 \`;
                 container.appendChild(div);
               });
-
+              
               container.scrollTop = container.scrollHeight;
             }
           } catch(e) { console.error(e); }
