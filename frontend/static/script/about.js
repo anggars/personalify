@@ -144,7 +144,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         { phrase: "Main Database by", name: "Neon", url: "https://neon.tech/", class: "tech-neon" },
         { phrase: "History stored in", name: "MongoDB Atlas", url: "https://www.mongodb.com/atlas", class: "tech-mongo" },
         { phrase: "Cached by", name: "Upstash", url: "https://upstash.com/", class: "tech-upstash" },
-        { phrase: "Lyrics proxy on", name: "Cloudflare", url: "https://workers.cloudflare.com/", class: "tech-cloudflare" },
     ];
     let techLoop = 0;
     let isDeleting = false;
