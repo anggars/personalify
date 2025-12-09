@@ -25,18 +25,45 @@ export default async function handler(req: Request) {
     <head>
       <title>Monitor</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="icon" href="https://assets.vercel.com/image/upload/front/favicon/vercel/favicon.ico">
       <style>
 
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         :root { --glass-bg: rgba(255, 255, 255, 0.05); --glass-border: rgba(255, 255, 255, 0.1); --glass-blur: blur(20px); --accent: #1db954; --text: #ffffff; --text-muted: #b3b3b3; }
-        body { margin: 0; background: radial-gradient(circle at top left, #1e1e1e, #000000); font-family: 'Inter', sans-serif; color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
+        
+        body { 
+            margin: 0; 
+            background: radial-gradient(circle at top left, #1e1e1e, #000000); 
+            font-family: 'Inter', sans-serif; 
+            color: var(--text); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            /* FIX SCROLL */
+            overflow-y: auto; 
+            overflow-x: hidden;
+            padding-bottom: 30px;
+        }
 
         .nav-pill { position: fixed; top: 20px; display: flex; gap: 5px; background: rgba(0, 0, 0, 0.3); backdrop-filter: var(--glass-blur); padding: 8px; border-radius: 50px; border: 1px solid var(--glass-border); z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .nav-a { color: var(--text-muted); text-decoration: none; padding: 8px 20px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; transition: 0.3s; }
         .nav-a:hover { color: #fff; background: rgba(255,255,255,0.1); }
         .nav-a.active { background: var(--accent); color: #000; box-shadow: 0 0 15px rgba(29, 185, 84, 0.4); }
 
-        .glass-card { width: 90%; max-width: 500px; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); border-radius: 24px; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); animation: floatUp 0.8s ease; }
+        .glass-card { 
+            width: 90%; 
+            max-width: 500px; 
+            background: var(--glass-bg); 
+            backdrop-filter: var(--glass-blur); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 24px; 
+            padding: 40px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
+            animation: floatUp 0.8s ease;
+            margin-top: 80px; /* Kasih jarak dari atas */
+        }
 
         .screen { background: #000; height: 160px; border-radius: 16px; margin: 20px 0; position: relative; overflow: hidden; border: 1px solid #333; display: flex; align-items: flex-end; padding: 0 5px; gap: 3px; }
         .bar { width: 100%; background: var(--accent); opacity: 0.8; border-radius: 2px 2px 0 0; transition: height 0.2s ease; }
