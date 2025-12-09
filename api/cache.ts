@@ -46,6 +46,11 @@ export default async function handler(req: Request) {
 
         * { box-sizing: border-box; }
 
+        html {
+          height: 100%;
+          overflow-y: auto; 
+        }
+
         body {
           margin: 0;
           background-color: #000000;
@@ -55,8 +60,7 @@ export default async function handler(req: Request) {
           flex-direction: column;
           align-items: center;
           justify-content: center; 
-          min-height: 100vh;
-          overflow-y: hidden;
+          overflow-y: visible;
           overflow-x: hidden;
           padding: 60px 20px 20px 20px; 
         }
