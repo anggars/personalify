@@ -77,7 +77,6 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     spotify_id = user_profile["id"]
     display_name = user_profile.get("display_name", "Unknown")
     save_user(spotify_id, display_name)
-    log_system("INFO", f"User Login: {display_name} ({spotify_id})", "AUTH")
 
     time_ranges = ["short_term", "medium_term", "long_term"]
     for time_range in time_ranges:
@@ -137,9 +136,9 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         cache_top_data("top", spotify_id, time_range, result)
         save_user_sync(spotify_id, time_range, result)
 
-    log_system("SUCCESS", f"Data sync completed for {display_name}", "SYNC")
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
     frontend_url = f"{request.url.scheme}://{original_host}"
+    log_system("AUTH", f"User Login Success: {display_name} ({country})", "SPOTIFY")
     return RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
 
 @router.post("/analyze-emotions-background", tags=["Background"])
@@ -546,7 +545,8 @@ def download_user_export():
 def analyze_lyrics_emotion_endpoint(
     lyrics: str = Body(..., embed=True, description="Song lyrics to analyze")
 ):
-    log_system("INFO", f"NLP Analysis Request: {text[:50]}...", "NLP")
+    snippet = text[:30] + "..." if len(text) > 30 else text
+    log_system("NLP", f"Analyzing Text: '{snippet}'", "HUGGINGFACE")
     return analyze_lyrics_emotion(lyrics)
 
 @router.get("/lyrics", response_class=HTMLResponse, tags=["Pages"])
@@ -562,6 +562,7 @@ async def read_genius_page(request: Request):
 
 @router.get("/api/genius/search-artist")
 def api_search_artist(q: str):
+    log_system("SEARCH", f"Searching Artist: '{q}'", "GENIUS")
     return {"artists": search_artist_id(q)}
 
 @router.get("/api/genius/artist-songs/{artist_id}")
@@ -572,16 +573,15 @@ def api_get_artist_songs(artist_id: int):
 def api_get_lyrics_emotion(song_id: int):
     data = get_lyrics_by_id(song_id)
     if not data:
-        log_system("WARN", f"Lyrics not found for Song ID: {song_id}", "GENIUS")
+        log_system("WARN", f"Lyrics Not Found: ID {song_id}", "GENIUS")
         raise HTTPException(status_code=404, detail="Lyrics not found!")
+    log_system("LYRICS", f"Fetched: {data.get('title')}", "SCRAPER")
     print("="*50)
     print(f"ANALYSIS REQUEST: {data.get('title')} - {data.get('artist')}")
     print("-" * 20)
     print(f"LYRICS CONTENT:\n{data.get('lyrics')}")
     print("="*50)
     emotion = analyze_lyrics_emotion(data['lyrics'])
-    log_system("INFO", f"Lyrics found: {data['title']} by {data['artist']}", "GENIUS")
-
     return {
         "track_info": data, 
         "lyrics": data['lyrics'],
