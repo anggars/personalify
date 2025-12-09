@@ -45,11 +45,6 @@ export default async function handler(req: Request) {
 
         * { box-sizing: border-box; }
 
-        html {
-          height: 100%;
-          overflow-y: auto; 
-        }
-
         body {
           margin: 0;
           background-color: #000000;
@@ -59,7 +54,8 @@ export default async function handler(req: Request) {
           flex-direction: column;
           align-items: center;
           justify-content: center; 
-          overflow-y: visible;
+          min-height: 100vh;
+          overflow-y: hidden;
           overflow-x: hidden;
           padding: 60px 20px 20px 20px; 
         }
@@ -73,7 +69,6 @@ export default async function handler(req: Request) {
         .nav-a { color: var(--text-muted); text-decoration: none; padding: 8px 16px; border-radius: 30px; font-size: 0.8rem; font-weight: 600; transition: 0.2s; }
         .nav-a:hover { color: #fff; background: rgba(255,255,255,0.1); }
         .nav-a.active { background: var(--accent); color: #000; }
-        .dot { width: 6px; height: 6px; background: currentColor; border-radius: 50%; box-shadow: 0 0 5px currentColor; }
 
         .glass-terminal {
           width: 100%; 
@@ -153,8 +148,8 @@ export default async function handler(req: Request) {
 
       <div class="glass-terminal">
         <div class="term-header">
-          <span>System Logs</span>
-          <span class="dot" style="color:var(--accent)">Live</span>
+          <span>System Stream</span>
+          <span style="color:var(--accent)">Live</span>
         </div>
         <div class="log-area" id="logs">
           <div class="line" style="color:#666">Waiting for logs...</div>

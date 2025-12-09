@@ -33,11 +33,6 @@ export default async function handler(req: Request) {
 
         * { box-sizing: border-box; }
 
-        html {
-          height: 100%;
-          overflow-y: auto; 
-        }
-
         body {
           margin: 0;
           background-color: #000000;
@@ -47,7 +42,8 @@ export default async function handler(req: Request) {
           flex-direction: column;
           align-items: center;
           justify-content: center; 
-          overflow-y: visible;
+          min-height: 100vh;
+          overflow-y: hidden;
           overflow-x: hidden;
           padding: 60px 20px 20px 20px; 
         }
@@ -88,10 +84,8 @@ export default async function handler(req: Request) {
             gap: 2px; 
         }
         .bar { flex: 1; background: var(--accent); opacity: 0.8; border-radius: 2px 2px 0 0; transition: height 0.2s ease; min-width: 2px; }
-
         .stat-row { display: flex; justify-content: space-between; gap: 15px; margin-top: 10px; }
         .stat-item { flex: 1; text-align: center; background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #2a2a2a; }
-
         .lbl { font-size: 0.7rem; color: var(--text-muted); font-weight: 700; margin-bottom: 5px; }
         .val { font-size: 1.1rem; font-weight: 700; }
 
@@ -140,7 +134,6 @@ export default async function handler(req: Request) {
             const data = await res.json();
             document.getElementById('status').innerText = data.status;
             document.getElementById('lat').innerText = data.latency + 'ms';
-
             for(let i=0; i<29; i++) { bars[i].style.height = bars[i+1].style.height; }
             let h = Math.min(data.latency * 2, 100);
             if(h<5) h=5;
