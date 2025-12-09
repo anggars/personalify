@@ -13,6 +13,7 @@ export default async function handler(req: Request) {
     <head>
       <title>System Status</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="icon" href="https://assets.vercel.com/image/upload/front/favicon/vercel/favicon.ico">
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
@@ -35,7 +36,10 @@ export default async function handler(req: Request) {
           align-items: center;
           justify-content: center; 
           min-height: 100vh;
-          overflow: hidden;
+          /* FIX: Ganti hidden jadi auto biar bisa scroll di HP */
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding-bottom: 40px;
         }
 
         .nav-pill {
@@ -76,7 +80,8 @@ export default async function handler(req: Request) {
           padding: 40px;
           box-shadow: 0 20px 50px rgba(0,0,0,0.5);
           animation: floatUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-          margin-top: 60px; 
+          margin-top: 80px; 
+          margin-bottom: 20px;
         }
 
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
