@@ -18,8 +18,6 @@ export default async function handler(req: Request) {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
         :root {
-          --glass-bg: rgba(20, 20, 20, 0.6);
-          --glass-border: rgba(255, 255, 255, 0.1);
           --accent: #1db954;
           --text: #ffffff;
           --text-muted: #888888;
@@ -29,16 +27,15 @@ export default async function handler(req: Request) {
 
         body {
           margin: 0;
-          background-color: #000000; 
+          background-color: #000000;
           font-family: 'Inter', -apple-system, sans-serif; 
           color: var(--text);
           display: flex;
           flex-direction: column;
           align-items: center;
+          justify-content: center; 
           min-height: 100vh;
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding: 80px 20px 40px 20px; 
+          padding: 20px;
         }
 
         .nav-pill {
@@ -71,13 +68,14 @@ export default async function handler(req: Request) {
 
         .card-section {
           width: 100%;
-          max-width: 500px;
-          background: #111; 
+          max-width: 480px;
+          background: #111;
           border: 1px solid #333;
           border-radius: 16px;
           padding: 30px;
           box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-          animation: fadeIn 0.5s ease;
+          animation: scaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          margin-top: 40px; 
         }
 
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
@@ -108,15 +106,13 @@ export default async function handler(req: Request) {
         .value { font-size: 1rem; font-weight: 600; color: #fff; word-break: break-word; }
         .big-val { font-size: 1.6rem; font-weight: 700; color: #fff; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
         @media (max-width: 768px) {
-           body { padding: 90px 15px 30px 15px; } 
-           .card-section { padding: 20px; width: 100%; }
-           h1 { font-size: 1.2rem; }
+           body { padding: 15px; }
+           .card-section { padding: 20px; }
            .nav-pill { width: 90%; justify-content: space-evenly; }
            .nav-a { padding: 6px 10px; font-size: 0.75rem; }
-           .big-val { font-size: 1.4rem; }
         }
       </style>
     </head>

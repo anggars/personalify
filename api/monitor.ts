@@ -41,9 +41,9 @@ export default async function handler(req: Request) {
             display: flex; 
             flex-direction: column; 
             align-items: center; 
+            justify-content: center; 
             min-height: 100vh; 
-            overflow-y: auto; 
-            padding: 80px 20px 40px 20px;
+            padding: 20px;
         }
 
         .nav-pill { 
@@ -58,13 +58,14 @@ export default async function handler(req: Request) {
 
         .card-section { 
             width: 100%; 
-            max-width: 500px; 
+            max-width: 480px; 
             background: #111; 
             border: 1px solid #333; 
             border-radius: 16px; 
             padding: 30px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-            animation: fadeIn 0.5s ease;
+            animation: scaleUp 0.4s ease;
+            margin-top: 40px;
         }
 
         .screen { 
@@ -88,14 +89,13 @@ export default async function handler(req: Request) {
         .lbl { font-size: 0.7rem; color: var(--text-muted); font-weight: 700; margin-bottom: 5px; }
         .val { font-size: 1.1rem; font-weight: 700; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
         @media (max-width: 768px) {
-            body { padding: 90px 15px 30px 15px; }
+            body { padding: 15px; }
             .card-section { padding: 20px; }
             .nav-pill { width: 90%; justify-content: space-evenly; }
             .nav-a { padding: 6px 10px; font-size: 0.75rem; }
-            .val { font-size: 1rem; }
         }
       </style>
     </head>

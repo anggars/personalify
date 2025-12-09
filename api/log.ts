@@ -53,9 +53,9 @@ export default async function handler(req: Request) {
             display: flex; 
             flex-direction: column; 
             align-items: center; 
+            justify-content: center; 
             min-height: 100vh; 
-            overflow-y: auto;
-            padding: 80px 20px 40px 20px;
+            padding: 20px;
         }
 
         .nav-pill { 
@@ -79,7 +79,8 @@ export default async function handler(req: Request) {
           display: flex; 
           flex-direction: column;
           box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
-          animation: fadeIn 0.5s ease;
+          animation: scaleUp 0.4s ease;
+          margin-top: 40px;
         }
 
         .term-header { 
@@ -110,7 +111,6 @@ export default async function handler(req: Request) {
         }
 
         .sep { color: #333; }
-
         .msg { color: #ccc; word-break: break-all; white-space: pre-wrap; }
 
         .lvl-INFO { color: #4facfe; }
@@ -122,10 +122,11 @@ export default async function handler(req: Request) {
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
         @media (max-width: 768px) {
-            body { padding: 90px 10px 20px 10px; }
+            body { padding: 15px; }
             .glass-terminal { height: 65vh; padding: 15px; }
             .nav-pill { width: 90%; justify-content: space-evenly; }
             .nav-a { padding: 6px 10px; font-size: 0.75rem; }

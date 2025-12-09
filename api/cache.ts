@@ -43,7 +43,7 @@ export default async function handler(req: Request) {
 
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         :root { --accent: #1db954; --text: #ffffff; --text-muted: #888888; }
-        
+
         * { box-sizing: border-box; }
 
         body { 
@@ -51,12 +51,13 @@ export default async function handler(req: Request) {
             background: #000000; 
             font-family: 'Inter', sans-serif; 
             color: var(--text); 
+
             display: flex; 
             flex-direction: column; 
             align-items: center; 
+            justify-content: center; 
             min-height: 100vh; 
-            overflow-y: auto;
-            padding: 80px 20px 40px 20px;
+            padding: 20px;
         }
 
         .nav-pill { 
@@ -71,13 +72,14 @@ export default async function handler(req: Request) {
 
         .card-section { 
             width: 100%; 
-            max-width: 500px; 
+            max-width: 480px; 
             background: #111; 
             border: 1px solid #333; 
             border-radius: 16px; 
             padding: 30px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-            animation: fadeIn 0.5s ease;
+            animation: scaleUp 0.4s ease;
+            margin-top: 40px;
         }
 
         .badge { background: #000; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; border: 1px solid #333; color: var(--accent); }
@@ -85,10 +87,10 @@ export default async function handler(req: Request) {
         .lbl { font-size: 0.8rem; color: var(--text-muted); }
         .val { font-weight: 600; font-size: 0.9rem; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
         @media (max-width: 768px) {
-            body { padding: 90px 15px 30px 15px; }
+            body { padding: 15px; }
             .card-section { padding: 20px; }
             .nav-pill { width: 90%; justify-content: space-evenly; }
             .nav-a { padding: 6px 10px; font-size: 0.75rem; }
