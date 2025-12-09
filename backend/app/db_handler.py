@@ -236,7 +236,7 @@ def get_user_db_details(spotify_id: str):
 import requests
 import json
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import os
 
 UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL")
@@ -247,8 +247,8 @@ def _send_log_direct(level, message, source):
         return 
 
     try:
-
-        timestamp = datetime.now().strftime("%H:%M:%S")
+        wib = timezone(timedelta(hours=7))
+        timestamp = datetime.now(wib).strftime("%H:%M:%S")
 
         log_entry = f"[{level}] {source}: {message} | {timestamp}"
 

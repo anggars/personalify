@@ -5,6 +5,9 @@ export default async function handler(req: Request) {
   const region = req.headers.get('x-vercel-ip-country-region') || 'ID';
   const now = new Date();
 
+  const timeString = now.toLocaleTimeString('en-GB', { hour12: false, timeZone: 'Asia/Jakarta' });
+  const dateString = now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', timeZone: 'Asia/Jakarta' });
+
   const html = `
     <!DOCTYPE html>
     <html lang="en">
@@ -74,6 +77,7 @@ export default async function handler(req: Request) {
           padding: 40px;
           box-shadow: 0 20px 50px rgba(0,0,0,0.5);
           animation: floatUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+          margin-top: 60px; 
         }
 
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
@@ -133,9 +137,9 @@ export default async function handler(req: Request) {
             <div class="value">${city}</div>
           </div>
           <div class="metric" style="grid-column: span 2;">
-            <div class="label">Local Time</div>
-            <div class="big-val">${now.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})}</div>
-            <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">${now.toLocaleDateString('en-US', {weekday:'long', day:'numeric', month:'long'})}</div>
+            <div class="label">Local Time (WIB)</div>
+            <div class="big-val">${timeString}</div>
+            <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">${dateString}</div>
           </div>
         </div>
       </div>
