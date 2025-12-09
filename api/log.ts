@@ -17,7 +17,7 @@ export default async function handler(req: Request) {
   if (req.method === 'POST') {
     try {
       const body = await req.json();
-      const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+      const time = new Date().toLocaleTimeString('en-GB', { hour12: false, timeZone: 'Asia/Jakarta' });
       const logStr = `[${body.level || 'INFO'}] ${body.source || 'SYS'}: ${body.message} | ${time}`;
       await redisCmd(["RPUSH", "system:logs", logStr]);
       await redisCmd(["LTRIM", "system:logs", -100, -1]); 
@@ -50,11 +50,19 @@ export default async function handler(req: Request) {
         .nav-a.active { background: var(--accent); color: #000; box-shadow: 0 0 15px rgba(29, 185, 84, 0.4); }
 
         .glass-terminal {
-          width: 90%; max-width: 800px; height: 75vh;
-          background: rgba(0, 0, 0, 0.6); 
-          backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); border-radius: 24px;
-          padding: 30px; display: flex; flex-direction: column;
-          box-shadow: 0 20px 50px rgba(0,0,0,0.5); animation: floatUp 0.8s ease;
+          width: 90%; 
+          max-width: 800px; 
+          height: 70vh;
+          background: var(--glass-bg); 
+          backdrop-filter: var(--glass-blur); 
+          border: 1px solid var(--glass-border); 
+          border-radius: 24px;
+          padding: 30px; 
+          display: flex; 
+          flex-direction: column;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
+          animation: floatUp 0.8s ease;
+          margin-top: 80px; 
         }
 
         .term-header { display: flex; justify-content: space-between; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; font-size: 0.9rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
@@ -120,18 +128,16 @@ export default async function handler(req: Request) {
           try {
             const res = await fetch('/api/log?mode=stream');
             const logs = await res.json();
-            
+
             if(logs.length) {
               container.innerHTML = '';
               logs.forEach(rawLog => {
-                
                 let time = '--:--:--';
                 let content = rawLog;
-                
+
                 if (rawLog.includes('|')) {
                     const parts = rawLog.split('|');
                     const potentialTime = parts[parts.length - 1].trim();
-
                     if (potentialTime.includes(':')) {
                         time = potentialTime;
                         content = parts.slice(0, -1).join('|').trim();
@@ -155,10 +161,9 @@ export default async function handler(req: Request) {
                 \`;
                 container.appendChild(div);
               });
-              
               container.scrollTop = container.scrollHeight;
             }
-          } catch(e) { console.error(e); }
+          } catch(e) {}
         }
 
         setInterval(fetchLogs, 2000);
