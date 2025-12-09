@@ -545,7 +545,7 @@ def download_user_export():
 def analyze_lyrics_emotion_endpoint(
     lyrics: str = Body(..., embed=True, description="Song lyrics to analyze")
 ):
-    snippet = text[:30] + "..." if len(text) > 30 else text
+    snippet = lyrics[:30] + "..." if len(lyrics) > 30 else lyrics
     log_system("NLP", f"Analyzing Text: '{snippet}'", "HUGGINGFACE")
     return analyze_lyrics_emotion(lyrics)
 
