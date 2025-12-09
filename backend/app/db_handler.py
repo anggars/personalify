@@ -237,27 +237,39 @@ import requests
 import json
 import threading
 from datetime import datetime
+import os
 
-_VERCEL_URL = os.getenv("VERCEL_URL")
-if _VERCEL_URL:
-    _LOG_API_URL = f"https://{_VERCEL_URL}/api/log"
-else:
-    _LOG_API_URL = "http://localhost:3000/api/log"
+UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL")
+UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN")
 
-def _send_log_background(level, message, source):
+def _send_log_direct(level, message, source):
+    if not UPSTASH_URL or not UPSTASH_TOKEN:
+        return 
+
     try:
-        payload = {
-            "level": level,
-            "message": message,
-            "source": source
-        }
 
-        requests.post(_LOG_API_URL, json=payload, timeout=0.5)
-    except:
-        pass
+        timestamp = datetime.now().strftime("%H:%M:%S")
+
+        log_entry = f"[{level}] {source}: {message} | {timestamp}"
+
+        requests.post(
+            UPSTASH_URL,
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+            json=["RPUSH", "system:logs", log_entry],
+            timeout=1
+        )
+
+        requests.post(
+            UPSTASH_URL,
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+            json=["LTRIM", "system:logs", -100, -1],
+            timeout=1
+        )
+    except Exception as e:
+        print(f"LOG ERROR: {e}")
 
 def log_system(level, message, source="BACKEND"):
 
     print(f"[{level}] {source}: {message}")
 
-    threading.Thread(target=_send_log_background, args=(level, message, source)).start()
+    threading.Thread(target=_send_log_direct, args=(level, message, source)).start()
