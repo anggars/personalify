@@ -4,7 +4,6 @@ export default async function handler(req: Request) {
   const city = req.headers.get('x-vercel-ip-city') || 'Jakarta';
   const region = req.headers.get('x-vercel-ip-country-region') || 'ID';
   const now = new Date();
-
   const timeString = now.toLocaleTimeString('en-GB', { hour12: false, timeZone: 'Asia/Jakarta' });
   const dateString = now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', timeZone: 'Asia/Jakarta' });
 
