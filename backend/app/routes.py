@@ -138,7 +138,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
 
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
     frontend_url = f"{request.url.scheme}://{original_host}"
-    log_system("AUTH", f"User Login Success: {display_name} ({country})", "SPOTIFY")
+    log_system("AUTH", f"User Login Success: {display_name}", "SPOTIFY")
     return RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
 
 @router.post("/analyze-emotions-background", tags=["Background"])
