@@ -46,18 +46,19 @@ export default async function handler(req: Request) {
 
         * { box-sizing: border-box; }
 
-        body { 
-            margin: 0; 
-            background: #000000; 
-            font-family: 'Inter', sans-serif; 
-            color: var(--text); 
-
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            min-height: 100vh; 
-            padding: 20px;
+        body {
+          margin: 0;
+          background-color: #000000;
+          font-family: 'Inter', -apple-system, sans-serif; 
+          color: var(--text);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center; 
+          min-height: 100vh;
+          overflow-y: hidden;
+          overflow-x: hidden;
+          padding: 60px 20px 20px 20px; 
         }
 
         .nav-pill { 
