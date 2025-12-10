@@ -1,3 +1,4 @@
 *.csv linguist-vendored
+*.ipynb linguist-vendored
 
 backend/**/*.py linguist-language=Python
