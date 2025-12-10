@@ -5,11 +5,12 @@
   "main": "api/proxy.js",
   "scripts": {
     "dev": "vercel dev",
-    "build": "",
+    "build": "tsc",
     "start": "echo 'Serverless'"
   },
   "dependencies": {},
   "devDependencies": {
-    "vercel": "^33.0.0"
+    "vercel": "^33.0.0",
+    "typescript": "^5.0.0"
   }
 }
