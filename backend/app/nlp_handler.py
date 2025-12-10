@@ -9,20 +9,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
-HF_MODEL = "SamLowe/roberta-base-go_emotions"
+MODEL_ROBERTA = "SamLowe/roberta-base-go_emotions"
+MODEL_DISTILBERT = "joeddav/distilbert-base-uncased-go-emotions-student"
 
 if not HF_API_KEY:
     print("="*50)
-    print("WARNING: HUGGING_FACE_API_KEY NOT FOUND IN .ENV FILE.")
-    print("EMOTION ANALYSIS WILL NOT WORK WITHOUT API KEY.")
+    print("WARNING: HUGGING_FACE_API_KEY NOT FOUND.")
     print("="*50)
     hf_client = None
 else:
     try:
-        hf_client = InferenceClient(model=HF_MODEL, token=HF_API_KEY)
+        hf_client = InferenceClient(token=HF_API_KEY)
         print("NLP HANDLER: HUGGING FACE INFERENCE CLIENT READY.")
     except Exception as e:
-        print(f"NLP HANDLER: FAILED TO INITIALIZE INFERENCE CLIENT. ERROR: {e}")
+        print(f"NLP HANDLER: FAILED TO INITIALIZE CLIENT. ERROR: {e}")
         hf_client = None
 
 emotion_texts = {
@@ -64,15 +64,12 @@ def prepare_text_for_analysis(text: str) -> str:
         return ""
 
     try:
-
         print(f"NLP HANDLER: ENSURING TEXT IS IN ENGLISH (TRANSLATE IF NEEDED)...")
-
         try:
             translator = GoogleTranslator(source='auto', target='en')
             translated_text = translator.translate(text)
 
             if translated_text and len(translated_text.strip()) > 0:
-
                 print(f"NLP HANDLER: TEXT READY FOR ANALYSIS (FULL):\n{translated_text}")
                 return translated_text
             else:
@@ -80,7 +77,6 @@ def prepare_text_for_analysis(text: str) -> str:
                 return text
 
         except Exception as translate_error:
-
             print(f"NLP HANDLER: ERROR DURING TRANSLATION: {translate_error}. USING ORIGINAL TEXT.")
             return text
 
@@ -91,10 +87,9 @@ def prepare_text_for_analysis(text: str) -> str:
 
 def get_emotion_from_text(text: str):
     if not hf_client:
-        print("NLP HANDLER: HF CLIENT NOT READY. ANALYSIS CANCELLED.")
+        print("NLP HANDLER: HF CLIENT NOT READY.")
         return None
     if not text or not text.strip():
-        print("NLP HANDLER: INPUT TEXT EMPTY. ANALYSIS CANCELLED.")
         return None
 
     if text in _analysis_cache:
@@ -102,26 +97,43 @@ def get_emotion_from_text(text: str):
         return _analysis_cache[text]
 
     try:
-        print(f"NLP HANDLER: CALLING HF API FOR ANALYSIS...")
-
+        print(f"NLP HANDLER: RUNNING HYBRID ANALYSIS (ROBERTA + DISTILBERT)...")
         text_to_analyze = text[:510]
 
-        results = hf_client.text_classification(text_to_analyze, top_k=28)
+        print(" > Calling RoBERTa...")
+        results_roberta = hf_client.text_classification(text_to_analyze, model=MODEL_ROBERTA, top_k=28)
+        
+        print(" > Calling DistilBERT...")
+        results_distilbert = hf_client.text_classification(text_to_analyze, model=MODEL_DISTILBERT, top_k=28)
 
-        if results and isinstance(results, list):
-            details_lines = ["NLP HANDLER: SUCCESSFUL. FULL EMOTION DETAILS:"]
-            for res in results:
+        combined_scores = {}
 
-                details_lines.append(f"  > {res['label']:<15} : {res['score']:.4f}")
-            print("\n".join(details_lines))
-            _analysis_cache[text] = results
-            return results
-        else:
-            print(f"NLP HANDLER: UNEXPECTED RESULT FORMAT: {results}")
-            return None
+        for item in results_roberta:
+            label = item['label']
+            score = item['score']
+            combined_scores[label] = combined_scores.get(label, 0) + score
+
+        for item in results_distilbert:
+            label = item['label']
+            score = item['score']
+            combined_scores[label] = combined_scores.get(label, 0) + score
+
+        final_results = []
+        for label, total_score in combined_scores.items():
+            avg_score = total_score / 2
+            final_results.append({"label": label, "score": avg_score})
+
+        final_results.sort(key=lambda x: x['score'], reverse=True)
+
+        print("\nNLP HANDLER: HYBRID RESULT (Top 5):")
+        for res in final_results[:5]:
+            print(f"  > {res['label']:<15} : {res['score']:.4f}")
+
+        _analysis_cache[text] = final_results
+        return final_results
 
     except Exception as e:
-        print(f"NLP HANDLER: ERROR API CALL: {e}")
+        print(f"NLP HANDLER: ERROR DURING HYBRID ANALYSIS: {e}")
         return None
 
 def analyze_lyrics_emotion(lyrics: str):
@@ -202,8 +214,5 @@ def generate_emotion_paragraph(track_names, extended=False):
 
     top3 = unique[:3]
     formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
-
-    if extended and num_tracks > 10:
-        return f"Shades of {formatted}."
 
     return f"Shades of {formatted}."
