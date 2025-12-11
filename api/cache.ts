@@ -56,7 +56,7 @@ export default async function handler(req: Request) {
           align-items: center;
           justify-content: center; 
           min-height: 100vh;
-          overflow-y: scroll;
+          overflow-y: hidden;
           overflow-x: hidden;
           padding: 60px 20px 20px 20px; 
         }
