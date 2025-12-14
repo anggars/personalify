@@ -362,7 +362,7 @@ footer.fade-in {
 
 .video-bubble-toast {
     position: fixed; 
-    top: 4.25rem; 
+    top: 4rem; 
     bottom: auto;
     left: 50%;
     width: auto; 
@@ -506,7 +506,7 @@ footer.fade-in {
 
 @media (max-width: 768px) {
     .video-bubble-toast {
-        top: 4rem; 
+        top: 3.75rem; 
         bottom: auto;
         transform: translateX(-50%) scale(0.2);
     }
