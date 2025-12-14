@@ -5,17 +5,49 @@
     <title>About Personalify</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='assets/Spotify_Primary_Logo_RGB_White.ico') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">  
     <link rel="stylesheet" href="{{ url_for('static', path='styles/about.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='styles/navbar.css') }}">
 </head>
 <body>
-
     <main class="main-content">
+        <nav class="apple-nav">
+            <div class="nav-content">
+                <ul class="nav-list">
+                    <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                        <a href="/">Home</a>
+                    </li>
+
+                    {% if user %}
+                        <li class="nav-item dropdown {% if '/dashboard' in request.path %}active{% endif %}">
+                            <a href="#">Dashboard</a>
+                            <div class="dropdown-content">
+                                <a href="/dashboard/{{ spotify_id }}?time_range=short_term">My Stats</a>
+                                <a href="/logout" style="color: #ff453a;">Logout</a>
+                            </div>
+                        </li>
+                    {% else %}
+                        <li class="nav-item {% if '/login' in request.path %}active{% endif %}">
+                            <a href="/login">Dashboard</a>
+                        </li>
+                    {% endif %}
+
+                    <li class="nav-item dropdown {% if '/lyrics' in request.path or '/lyrics/genius' in request.path %}active{% endif %}">
+                        <a href="#">Lyrics Analyzer</a>
+                        <div class="dropdown-content">
+                            <a href="/lyrics">Manual Input</a>
+                            <a href="/lyrics/genius">Genius Search</a>
+                        </div>
+                    </li>
+
+                    <li class="nav-item {% if '/about' in request.path %}active{% endif %}">
+                        <a href="/about">About</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
         
         <header class="hero">
             <h1>About Personalify</h1>
@@ -156,5 +188,6 @@
     </footer>
 
     <script src="{{ url_for('static', path='script/about.js') }}"></script>
+    <script src="{{ url_for('static', path='script/navbar.js') }}"></script>
 </body>
 </html>

@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='styles/home.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='styles/navbar.css') }}">
     
     <style>
         @keyframes slideDownFade {
@@ -23,7 +24,7 @@
         }
         #error-toast {
             position: fixed;
-            top: 2rem;
+            top: 4.25rem;
             left: 50%;
             transform: translateX(-50%);
             margin: 0;          
@@ -72,7 +73,7 @@
         }
         @media (max-width: 768px) {
             #error-toast {
-                top: 1.5rem;
+                top: 4rem;
             }
         }
     </style>
@@ -82,6 +83,41 @@
     <div id="error-toast">
         Session expired. Please login again!
     </div>
+    <nav class="apple-nav">
+        <div class="nav-content">
+            <ul class="nav-list">
+                <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                    <a href="/">Home</a>
+                </li>
+
+                {% if user and user_id %} 
+                    <li class="nav-item dropdown {% if '/dashboard' in request.path %}active{% endif %}">
+                        <a href="#">Dashboard</a>
+                        <div class="dropdown-content">
+                            <a href="/dashboard/{{ spotify_id }}?time_range=short_term">My Stats</a>
+                            <a href="/logout" style="color: #ff453a;">Logout</a>
+                        </div>
+                    </li>
+                {% else %}
+                    <li class="nav-item {% if '/login' in request.path %}active{% endif %}">
+                        <a href="/login">Dashboard</a>
+                    </li>
+                {% endif %}
+
+                <li class="nav-item dropdown {% if '/lyrics' in request.path or '/lyrics/genius' in request.path %}active{% endif %}">
+                    <a href="#">Lyrics Analyzer</a>
+                    <div class="dropdown-content">
+                        <a href="/lyrics">Manual Input</a>
+                        <a href="/lyrics/genius">Genius Search</a>
+                    </div>
+                </li>
+
+                <li class="nav-item {% if '/about' in request.path %}active{% endif %}">
+                    <a href="/about">About</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
 
     <main class="main-content">
     <img src="{{ url_for('static', path='assets/Spotify_Primary_Logo_RGB_Green.ico') }}" alt="Personalify Logo" class="logo">
@@ -114,6 +150,7 @@
     </footer>
 
     <script src="{{ url_for('static', path='script/home.js') }}"></script>
+    <script src="{{ url_for('static', path='script/navbar.js') }}"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {

@@ -35,7 +35,10 @@ def get_redirect_uri(request: Request):
 
 @router.get("/", response_class=HTMLResponse, tags=["Root"])
 def root(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
+    spotify_id = request.cookies.get("spotify_id")
+    if request.query_params.get("error") == "logged_out":
+        spotify_id = None
+    return templates.TemplateResponse("home.html", {"request": request, "spotify_id": spotify_id})
 
 @router.get("/login", tags=["Auth"])
 def login(request: Request):
@@ -49,6 +52,13 @@ def login(request: Request):
         "redirect_uri": redirect_uri, "scope": scope
     })
     return RedirectResponse(url=f"https://accounts.spotify.com/authorize?{query_params}")
+
+@router.get("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    response = RedirectResponse(url="/?error=logged_out", status_code=303)
+    response.delete_cookie("spotify_id")
+    return response
 
 @router.get("/callback", tags=["Auth"])
 def callback(request: Request, code: str = Query(..., description="Spotify Authorization Code")):
@@ -139,7 +149,9 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
     frontend_url = f"{request.url.scheme}://{original_host}"
     log_system("AUTH", f"User Login Success: {display_name}", "SPOTIFY")
-    return RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
+    response = RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
+    response.set_cookie(key="spotify_id", value=spotify_id, httponly=True)
+    return response
 
 @router.post("/analyze-emotions-background", tags=["Background"])
 async def analyze_emotions_background(
@@ -346,6 +358,7 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         return templates.TemplateResponse("dashboard.html", {
             "request": request,
             "user": data["user"],
+            "spotify_id": spotify_id,
             "artists": data["artists"],
             "tracks": data["tracks"],
             "genres": genre_list_top10,
@@ -364,7 +377,11 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
 
 @router.get("/about", response_class=HTMLResponse, tags=["Pages"])
 def about_page(request: Request): 
-    return templates.TemplateResponse("about.html", {"request": request})
+    spotify_id = request.cookies.get("spotify_id")
+    return templates.TemplateResponse("about.html", {
+        "request": request,
+        "spotify_id": spotify_id
+        })
 
 @router.get("/admin/system-stats", tags=["Admin"])
 def get_stats():
@@ -550,15 +567,20 @@ def analyze_lyrics_emotion_endpoint(
     return analyze_lyrics_emotion(lyrics)
 
 @router.get("/lyrics", response_class=HTMLResponse, tags=["Pages"])
-def lyrics_page(request: Request, spotify_id: str = None):
-    """
-    Serves the lyric analyzer page.
-    """
-    return templates.TemplateResponse("lyrics.html", {"request": request, "spotify_id": spotify_id})
+def lyrics_page(request: Request):
+    spotify_id = request.cookies.get("spotify_id")
+    return templates.TemplateResponse("lyrics.html", {
+        "request": request,
+        "spotify_id": spotify_id
+        })
 
 @router.get("/lyrics/genius", response_class=HTMLResponse, tags=["Pages"])
 async def read_genius_page(request: Request):
-    return templates.TemplateResponse("genius.html", {"request": request})
+    spotify_id = request.cookies.get("spotify_id")
+    return templates.TemplateResponse("genius.html", {
+        "request": request,
+        "spotify_id": spotify_id
+    })
 
 @router.get("/api/genius/search-artist")
 def api_search_artist(q: str):

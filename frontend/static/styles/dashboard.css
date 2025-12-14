@@ -16,6 +16,7 @@ body {
     touch-action: pan-y;
     overscroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
+    padding-top: 55px !important;
 }
 
 h1 {
@@ -73,6 +74,7 @@ h1 {
 .filters select {
     appearance: none;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 600;
     padding-top: 8px; 
     padding-bottom: 10px;
     padding-left: 1rem;
@@ -153,7 +155,7 @@ body.download-mode canvas {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     border-radius: 8px;
 }
-li {
+.list-container li {
     padding: 0.75rem 0;
     border-bottom: 1px solid #333;
 }
@@ -236,7 +238,7 @@ li {
     font-weight: 500;
     font-size: 0.68rem;
     color: #908f8fff;
-    margin-top: 0.25rem;
+    margin-top: 0.18rem;
 }
 
 .scroll-active:hover {
@@ -288,7 +290,9 @@ li {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 24px;
+    text-align: center;
+    font-size: 0.85rem;
+    padding: 12px 22px;
     background-color: rgba(255, 255, 255, 0.015); 
     backdrop-filter: blur(4.5px);
     -webkit-backdrop-filter: blur(4.5px);
@@ -854,4 +858,27 @@ footer.fade-in {
     50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
     100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
 
+}
+
+.dashboard-container .apple-nav, 
+.nav-list, 
+.nav-item {
+    border-bottom: none !important; /* Matiin border extra */
+    box-shadow: none !important;    /* Matiin shadow extra kalo ada */
+}
+
+.dashboard-container .nav-item a {
+    height: 44px; /* Samain sama tinggi navbar global */
+    line-height: 44px; /* Biar text di tengah vertikal */
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid transparent; /* Slot buat garis */
+}
+
+.dashboard-container .nav-item a.active {
+    color: #1DB954;
+    border-bottom: 2px solid #1DB954; /* Garis ijo */
+    margin-bottom: -1px; /* Trik biar nempel sama border container */
 }

@@ -25,6 +25,7 @@ body {
     touch-action: pan-y;
     overscroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
+    padding-top: 55px !important;
 }
 
 main.main-content {
