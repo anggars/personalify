@@ -86,15 +86,14 @@
     <nav class="apple-nav">
         <div class="nav-content">
             <ul class="nav-list">
-                <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                <li class="nav-item">
                     <a href="/">Home</a>
                 </li>
 
-                {% if user and user_id %} 
+                {% if user and user_id %}
                     <li class="nav-item dropdown {% if '/dashboard' in request.path %}active{% endif %}">
                         <a href="#">Dashboard</a>
                         <div class="dropdown-content">
-                            <a href="/dashboard/{{ spotify_id }}?time_range=short_term">My Stats</a>
                             <a href="/logout" style="color: #ff453a;">Logout</a>
                         </div>
                     </li>
@@ -158,8 +157,11 @@
             
             if (urlParams.has('error')) {
                 const errType = urlParams.get('error');
+                if (errType === 'logged_out') {
+                    window.history.replaceState({}, document.title, "/");
+                    return; 
+                }
                 const toast = document.getElementById('error-toast');
-                
                 if (errType === 'session_expired') {
                     toast.textContent = "⚠️ Session expired. Please login again!";
                 } else if (errType === 'server_error') {
@@ -167,7 +169,6 @@
                 } else {
                     toast.textContent = "⚠️ " + errType;
                 }
-                
                 toast.style.display = 'block';
                 toast.style.animation = 'slideDownFade 0.5s ease-out forwards';
                 window.history.replaceState({}, document.title, "/");

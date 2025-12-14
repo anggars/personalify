@@ -1,28 +1,23 @@
-/* GLOBAL RESET BIAR KONSISTEN */
 * {
     box-sizing: border-box;
 }
 
 body {
-    /* Wajib sama dengan tinggi navbar biar konten gak ketutupan */
     padding-top: 44px; 
     margin: 0;
 }
 
-/* --- Navbar Style --- */
 .apple-nav {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    height: 44px; /* Tinggi Fix */
+    height: 44px; 
     z-index: 9999;
-    
     background-color: rgba(22, 22, 23, 0.8);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Default ada border */
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
@@ -43,17 +38,13 @@ body {
     gap: 30px;
 }
 
-/* ... (Sisa CSS nav-item, hover, dropdown lu yang lama simpen aja di bawah sini) ... */
 .nav-item {
     position: relative;
     height: 100%;
     display: flex;
     align-items: center;
 }
-/* Pastikan nav-item > a dkk masih ada sesuai file lama lu */
-/* ... */
 
-/* Link Style */
 .nav-item > a {
     text-decoration: none;
     color: #e8e8ed;
@@ -64,16 +55,14 @@ body {
     align-items: center;
     gap: 4px;
     padding: 0 5px;
-    height: 100%; /* Biar area hover full tinggi navbar */
+    height: 100%; 
 }
 
-/* Hover Effect */
 .nav-item > a:hover {
     color: #FFFFFF;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
-/* ACTIVE STATE (Hijau + Garis Bawah) */
 .nav-item.active > a {
     color: #1DB954 !important;
     text-shadow: 0 0 15px rgba(29, 185, 84, 0.4);
@@ -82,7 +71,6 @@ body {
     font-weight: 500;
 }
 
-/* Garis hijau di bawah (indikator active) */
 .nav-item.active > a::after {
     content: '';
     position: absolute;
@@ -94,22 +82,19 @@ body {
     box-shadow: 0 0 10px #1DB954;
 }
 
-/* --- DROPDOWN CSS --- */
 .dropdown-content {
-    display: none; /* Default hidden */
+    display: none; 
     position: absolute;
-    top: 100%; /* Muncul pas di bawah navbar */
+    top: 100%; 
     left: 50%;
     transform: translateX(-50%);
     min-width: 160px;
-    
-    background: rgba(30, 30, 30, 0.95); /* Gelap pekat dikit biar teks kebaca */
+    background: rgba(30, 30, 30, 0.95); 
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    
-    border-radius: 0 0 12px 12px; /* Sudut bawah bulet */
+    border-radius: 0 0 12px 12px; 
     padding: 5px 0;
     z-index: 9998;
     flex-direction: column;
@@ -136,7 +121,6 @@ body {
     text-shadow: none;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .nav-list {
         gap: 20px;

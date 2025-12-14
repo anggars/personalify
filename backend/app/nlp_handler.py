@@ -125,9 +125,8 @@ def get_emotion_from_text(text: str):
 
         final_results.sort(key=lambda x: x['score'], reverse=True)
 
-        print("\nNLP HANDLER: HYBRID RESULT (Top 5):")
-        for res in final_results[:5]:
-            print(f"  > {res['label']:<15} : {res['score']:.4f}")
+        log_str = ", ".join([f"{res['label']}: {res['score']:.4f}" for res in final_results])
+        print(f"NLP HANDLER: HYBRID RESULT (ALL) -> {log_str}")
 
         _analysis_cache[text] = final_results
         return final_results

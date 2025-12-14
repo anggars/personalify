@@ -17,7 +17,7 @@ body {
     touch-action: pan-y;
     overscroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
-    padding-top: 55px !important;
+    padding-top: 60px !important;
 }
 
 .jp-text {
@@ -300,7 +300,7 @@ footer.fade-in {
 
 @media (max-width: 768px) {
     body {
-        padding: 1.5rem; 
+        padding: 1.5rem;
     }
 
     header.hero h1 {
