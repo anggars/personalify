@@ -78,6 +78,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         soundToPlay.play();
     }
     function showBubble(bubbleToShow) {
+        const errorToast = document.getElementById('error-toast');
+        if (errorToast) {
+            errorToast.style.display = 'none'; 
+            errorToast.style.animation = 'none';
+            const mainTitle = document.querySelector('h1');
+            if (mainTitle) mainTitle.style.opacity = '1';
+        }
         if (activeBubbleTimer) clearTimeout(activeBubbleTimer);
         allBubbles.forEach(bubble => {
             if (bubble !== bubbleToShow) {
@@ -95,7 +102,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 marqueeWrapper.style.animation = `marquee ${marqueeDurationSeconds}s linear infinite`;
             }
         }
-        bubbleToShow.classList.add('show');
+        setTimeout(() => {
+            bubbleToShow.classList.add('show');
+        }, 10);
         activeBubbleTimer = setTimeout(() => {
             bubbleToShow.classList.remove('show');
         }, bubbleDuration);
