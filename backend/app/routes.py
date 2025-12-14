@@ -55,9 +55,12 @@ def login(request: Request):
 
 @router.get("/logout")
 async def logout(request: Request):
-    request.session.clear()
+    try:
+        request.session.clear()
+    except Exception as e:
+        print(f"LOGOUT WARNING: {e}") 
     response = RedirectResponse(url="/?error=logged_out", status_code=303)
-    response.delete_cookie("spotify_id")
+    response.delete_cookie("spotify_id", path="/")
     return response
 
 @router.get("/callback", tags=["Auth"])
@@ -604,6 +607,9 @@ def api_get_lyrics_emotion(song_id: int):
     print(f"LYRICS CONTENT:\n{data.get('lyrics')}")
     print("="*50)
     emotion = analyze_lyrics_emotion(data['lyrics'])
+    print("-" * 20)
+    print(f"ANALYSIS RESULT: {emotion}") 
+    print("="*50)
     return {
         "track_info": data, 
         "lyrics": data['lyrics'],
