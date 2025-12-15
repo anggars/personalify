@@ -92,7 +92,7 @@ body {
     top: 100%; 
     left: 50%;
     transform: translateX(-50%);
-    min-width: 125px;
+    min-width: 90px;
     background-color: rgba(22, 22, 23, 0.99) !important;
     -webkit-backdrop-filter: blur(40px) saturate(180%);
     backdrop-filter: blur(40px) saturate(180%);
@@ -102,7 +102,7 @@ body {
         inset 0 -2px 4px 0 rgba(255, 255, 255, 0.25),
         inset 0 -1px 1px 0 rgba(255, 255, 255, 0.35);
     border-radius: 0 0 12px 12px; 
-    padding: 2.99px 0;
+    padding: 3px 0;
     z-index: 9998;
     flex-direction: column;
 }
@@ -121,12 +121,14 @@ body {
     white-space: nowrap;
     height: auto;
     display: block;
+    -webkit-text-stroke: 0.1px #ccc;
 }
 
 .dropdown-content a:hover {
     background: rgba(255, 255, 255, 0.05);
     color: #1DB954;
     text-shadow: none;
+    -webkit-text-stroke: 0.1px #1DB954;
 }
 
 @keyframes slideDownFade {
@@ -176,5 +178,9 @@ body.toast-active .dropdown-content {
     }
     #error-toast {
         top: 4.25rem;
+    }
+    .dropdown-content {
+        min-width: 60px;
+        padding: 1px 0;
     }
 }
