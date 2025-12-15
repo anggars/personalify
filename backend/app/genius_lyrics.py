@@ -1,6 +1,7 @@
 import os
 import requests
 import re
+import time
 from bs4 import BeautifulSoup
 
 GENIUS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
@@ -30,24 +31,27 @@ def clean_lyrics(text):
     return "\n".join(cleaned)
 
 def get_page_html(url):
-    try:
-        translate_url = f"https://translate.google.com/translate?sl=auto&tl=en&u={url}&client=webapp"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
-        
-        print(f"ATTEMPTING GOOGLE TRANSLATE PROXY: {url}")
-        r = requests.get(translate_url, headers=headers, timeout=20)
-        
-        if r.status_code == 200:
-            return r.text
-        else:
-            print(f"GOOGLE TRANSLATE BLOCKED ({r.status_code})")
-            return None
+    translate_url = f"https://translate.google.com/translate?sl=auto&tl=en&u={url}&client=webapp"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    for attempt in range(3):
+        try:
+            print(f"ATTEMPTING GOOGLE TRANSLATE PROXY (Try {attempt+1}/3): {url}")
+            r = requests.get(translate_url, headers=headers, timeout=20)
             
-    except Exception as e:
-        print(f"GOOGLE TRANSLATE ERROR: {e}")
-        return None
+            if r.status_code == 200:
+                return r.text
+            else:
+                print(f"GOOGLE TRANSLATE BLOCKED ({r.status_code}). Retrying in 1s...")
+                time.sleep(1) # Tunggu 1 detik sebelum coba lagi
+                
+        except Exception as e:
+            print(f"GOOGLE TRANSLATE ERROR (Try {attempt+1}): {e}")
+            time.sleep(1) # Tunggu 1 detik kalau error koneksi
+
+    print("FAILED TO RETRIEVE HTML AFTER 3 ATTEMPTS.")
+    return None
 
 def search_artist_id(query):
     try:
