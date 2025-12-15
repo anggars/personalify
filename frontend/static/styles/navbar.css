@@ -65,10 +65,11 @@ body {
 
 .nav-item.active > a {
     color: #1DB954 !important;
-    text-shadow: 0 0 8px rgba(29, 185, 84, 0.25);
+    text-shadow: 0 0 8px rgba(29, 185, 84, 0.1);
     position: relative;
     font-size: 14px;
     font-weight: 500;
+    -webkit-text-stroke: 0.6px #1DB954;
 }
 
 .nav-item.active > a::after {
