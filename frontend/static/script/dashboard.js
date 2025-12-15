@@ -662,10 +662,8 @@ async function loadEmotionAnalysis(isExtended = false) {
         try {
             const urlParts = window.location.pathname.split('/');
             const spotifyId = urlParts[urlParts.length - 1];
-
             const urlParams = new URLSearchParams(window.location.search);
             const timeRange = urlParams.get('time_range') || 'short_term';
-
             const response = await fetch('/analyze-emotions-background', {
                 method: 'POST',
                 headers: {
@@ -684,7 +682,6 @@ async function loadEmotionAnalysis(isExtended = false) {
             }
 
             const data = await response.json();
-
             if (data.emotion_paragraph) {
                 typeEffect(emotionElement, data.emotion_paragraph);
             } else {
@@ -913,10 +910,8 @@ style.textContent = `
     left: 0;
     width: 100%;
     height: 100%;
-
     background-color: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
-
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;
@@ -937,7 +932,6 @@ style.textContent = `
     top: 6px;
     right: 6px;
     z-index: 5;
-
     background-color: rgba(255, 255, 255, 0.25);
     color: #ffffff;
     border: none;
@@ -947,12 +941,10 @@ style.textContent = `
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
-
     display: flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
-    
     opacity: 0;
     transform: scale(0.8);
     transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
@@ -1015,31 +1007,26 @@ style.textContent = `
     }
 }
 `;
-document.head.appendChild(style);
 
+document.head.appendChild(style);
 document.addEventListener('DOMContentLoaded', async function() {
     const titleEl = document.querySelector('header h1');
     const subtitleEl = document.querySelector('header .subtitle');
     const emotionEl = document.querySelector('header .emotion-recap');
-
     if (!titleEl || !subtitleEl || !emotionEl) {
         console.warn("Elemen header untuk efek ketik tidak ditemukan.");
         setTimeout(() => loadEmotionAnalysis(false), 1000);
         return;
     }
-
     const originalTitle = titleEl.textContent;
     const originalSubtitle = subtitleEl.textContent;
     const originalEmotion = emotionEl.innerHTML;
-
     titleEl.textContent = '';
     subtitleEl.textContent = '';
     emotionEl.innerHTML = '';
-
     await typeEffect(titleEl, originalTitle, 50);
     await typeEffect(subtitleEl, originalSubtitle, 30);
     await typeEffect(emotionEl, originalEmotion, 30);
-
     const footerEl = document.querySelector('footer');
     if (footerEl) footerEl.classList.add('fade-in');
 
@@ -1060,15 +1047,12 @@ window.onload = function() {
         
         window.genreColorMapTop10 = new Map();
         window.genreColorMapTop20 = new Map();
-
         genreData.labels.forEach((label, index) => {
             window.genreColorMapTop10.set(label, chartColors[index % chartColors.length]);
         });
-
         genreDataExtended.labels.forEach((label, index) => {
             window.genreColorMapTop20.set(label, chartColors[index % chartColors.length]);
         });
-
         window.applyGenrePillColors = function(isExtended = false) {
             const colorMap = isExtended ? window.genreColorMapTop20 : window.genreColorMapTop10;
             document.querySelectorAll('.genre-label').forEach(pill => {
@@ -1077,14 +1061,11 @@ window.onload = function() {
                 pill.style.setProperty('--genre-color', color);
             });
         };
-
         currentGenreData = {
             labels: genreData.labels,
             counts: genreData.counts
         };
-
         currentGenreArtistsMap = genreArtistsMap;
-
         const genreColorMap = new Map();
         genreDataExtended.labels.forEach((label, index) => { 
             genreColorMap.set(label, chartColors[index % chartColors.length]);
@@ -1098,12 +1079,9 @@ window.onload = function() {
                 labels: currentGenreData.labels,
                 datasets: [{
                     data: currentGenreData.counts,
-                    
                     backgroundColor: chartColors.map(c => hexToRgba(c, 0.8)),
-                    
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                     borderWidth: 1, 
-                    
                     hoverBackgroundColor: chartColors.map(c => hexToRgba(c, 1)),
                     hoverBorderColor: '#ffffff',
                     hoverBorderWidth: 2
@@ -1119,7 +1097,6 @@ window.onload = function() {
                             if (!tooltipItem) return '';
                             const genre = data.labels[tooltipItem.index];
                             const artists = currentGenreArtistsMap[genre] || [];
-
                             if (artists.length > 0) {
                                 const maxArtistsToShow = 6;
                                 let artistList = artists.slice(0, maxArtistsToShow).map(artist => `• ${artist}`);
@@ -1134,7 +1111,6 @@ window.onload = function() {
                 }
             }
         });
-
         genreChartInstance.getDatasetMeta(0).data.forEach((slice, index) => {
             if (index >= 10) {
                 slice.hidden = true;
@@ -1142,7 +1118,6 @@ window.onload = function() {
         });
         genreChartInstance.update();
         applyGenrePillColors(false);
-
         const genreListItems = document.querySelectorAll('#genres-section li');
         genreListItems.forEach((item) => {
             const itemIndex = parseInt(item.getAttribute('data-index'));
@@ -1168,7 +1143,6 @@ window.onload = function() {
     document.querySelectorAll('.footer-toggler').forEach(toggler => {
         toggler.addEventListener('click', function() {
             if (easterEggClicked) return;
-
             ['artists-section', 'tracks-section'].forEach(sectionId => {
                 const section = document.getElementById(sectionId);
                 if (section) {
@@ -1183,15 +1157,12 @@ window.onload = function() {
             if (genreChartInstance && genreDataExtended) {
                 currentGenreData = genreDataExtended;
                 currentGenreArtistsMap = genreArtistsMapExtended;
-
                 genreChartInstance.data.labels = genreDataExtended.labels;
                 genreChartInstance.data.datasets[0].data = genreDataExtended.counts;
-
                 genreChartInstance.getDatasetMeta(0).data.forEach((slice) => {
                     slice.hidden = false;
                 });
                 genreChartInstance.update();
-
                 updateGenreList(genreDataExtended.labels, genreDataExtended.counts);
             }
             applyGenrePillColors(true);
@@ -1204,7 +1175,6 @@ window.onload = function() {
     const spotifyId = urlParts[urlParts.length - 1];
     const urlParams = new URLSearchParams(window.location.search);
     const timeRange = urlParams.get('time_range') || 'short_term';
-
     fetch(`/top-data?spotify_id=${spotifyId}&time_range=${timeRange}`)
       .then(res => {
           if (res.status === 401) {
@@ -1252,17 +1222,14 @@ function updateGenreList(labels, counts) {
     genreList.innerHTML = labels.map((label, index) => {
         const artists = genreArtistsMapExtended[label] || [];
         const artistText = artists.length > 0 ? `: ${artists.join(', ')}` : '';
-
         let animStyle = '';
         let animClass = ''; 
-
         if (index < 10) {
             animClass = 'no-animation';
         } else {
             const delay = (index - 10) * 0.1;
             animStyle = `animation-delay: ${delay}s;`;
         }
-
         return `
             <li data-index="${index}" class="${animClass}" style="${animStyle}">
                 <div class="list-item">
@@ -1295,35 +1262,27 @@ function updateGenreList(labels, counts) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    
     const providerLink = document.getElementById('provider-link');
     const providerData = [
         { text: 'Spotify API', url: 'https://developer.spotify.com/', type: 'spotify' },
         { text: 'Hugging Face', url: 'https://huggingface.co/', type: 'huggingface' }
     ];
-
     let typeLoop = 0;
     let isDeleting = false;
     let txt = '';
-    
     const typingSpeed = 100; 
     const deletingSpeed = 50;
     const pauseTime = 2500; 
-
     function typeWriter() {
         const i = typeLoop % providerData.length;
         const fullTxt = providerData[i].text;
-
         if (isDeleting) {
             txt = fullTxt.substring(0, txt.length - 1);
         } else {
             txt = fullTxt.substring(0, txt.length + 1);
         }
-
         providerLink.textContent = txt;
-
         let delta = isDeleting ? deletingSpeed : typingSpeed;
-
         if (!isDeleting && txt === fullTxt) {
             delta = pauseTime; 
             isDeleting = true;
@@ -1334,7 +1293,6 @@ document.addEventListener('DOMContentLoaded', function() {
             delta = 500;
             updateProviderStyle(typeLoop % providerData.length);
         }
-
         setTimeout(typeWriter, delta);
     }
 
@@ -1349,31 +1307,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if(providerLink) typeWriter();
-
-    const dynamicContainer = document.getElementById('dynamic-footer-link');
-    let isLyricsState = false;
-
-    if(dynamicContainer) {
-        dynamicContainer.innerHTML = '<a href="/lyrics" class="footer-link">Lyrics Analyzer</a>';
-    
-        setInterval(() => {
-            dynamicContainer.classList.add('fading-out');
-
-            setTimeout(() => {
-                if (isLyricsState) {
-                    dynamicContainer.innerHTML = '<a href="/lyrics" class="footer-link">Lyrics Analyzer</a>';
-                } else {
-                    dynamicContainer.innerHTML = 'Created by <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>';
-                }
-
-                isLyricsState = !isLyricsState;
-                
-                dynamicContainer.classList.remove('fading-out');
-            }, 500);
-
-        }, 5000);
-    }
-
     const downloadBtn = document.querySelector('.download-btn');
     const modalButtons = document.querySelectorAll('.modal-options button');
     const listItems = document.querySelectorAll('.list-container li');
@@ -1382,8 +1315,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el) {
             el.addEventListener('mousemove', (e) => updateGlow(e, el));
             el.addEventListener('mouseleave', () => {
-            });
-            
+            });     
             el.addEventListener('touchstart', (e) => updateGlow(e, el));
             el.addEventListener('touchmove', (e) => updateGlow(e, el));
             el.addEventListener('touchend', () => {
@@ -1393,9 +1325,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const footerEl = document.querySelector('footer');
     const container = document.getElementById('dashboard');
-
     if (!footerEl || !downloadBtn) return;
-
     const observer = new IntersectionObserver((entries) => {
         if (window.innerWidth > 768) {
             downloadBtn.classList.remove('hide-on-scroll');
@@ -1416,7 +1346,6 @@ document.addEventListener('DOMContentLoaded', function() {
         root: null,
         threshold: 0.1
     });
-
     observer.observe(footerEl);
 });
 
@@ -1425,14 +1354,12 @@ function setupMarquee() {
         el.classList.remove('scroll-active');
         el.style.removeProperty('--scroll-distance');
         el.style.removeProperty('--scroll-duration');
-        
         if (el.parentElement.classList.contains('mask-active')) {
             el.parentElement.classList.remove('mask-active');
         }
     });
 
     const titles = document.querySelectorAll('#artists-section .info .name, #tracks-section .info .name');
-    
     const trackMetas = document.querySelectorAll('#tracks-section .info .meta');
     const albumMetas = Array.from(trackMetas).filter(el => {
         const text = el.textContent.trim();
@@ -1442,23 +1369,16 @@ function setupMarquee() {
     });
 
     const allowedElements = [...titles, ...albumMetas];
-
     document.fonts.ready.then(() => {
         allowedElements.forEach(el => {
             const scrollWidth = Math.ceil(el.scrollWidth);
             const clientWidth = Math.ceil(el.clientWidth);
-
             if (scrollWidth > clientWidth) {
-                
                 const distance = scrollWidth - clientWidth + 20;
-                
                 const duration = Math.max(distance / 25, 6);   
-                
                 el.style.setProperty('--scroll-distance', `-${distance}px`);
                 el.style.setProperty('--scroll-duration', `${duration}s`);
-                
                 el.classList.add('scroll-active');
-
                 el.parentElement.classList.add('mask-active');
             }
         });
@@ -1467,13 +1387,11 @@ function setupMarquee() {
 
 document.addEventListener('DOMContentLoaded', setupMarquee);
 window.addEventListener('load', setupMarquee);
-
 let resizeTimer;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(setupMarquee, 200);
 });
-
 document.querySelectorAll('.footer-toggler, .show-more').forEach(btn => {
     btn.addEventListener('click', () => {
         setTimeout(setupMarquee, 600); 

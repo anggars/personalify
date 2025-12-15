@@ -21,7 +21,6 @@ document.addEventListener('wheel', function(e) {
 }, { passive: false });
 
 document.addEventListener('keydown', function(e) {
-
     if ((e.ctrlKey || e.metaKey) && 
         (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '_')) {
         e.preventDefault();
@@ -29,17 +28,12 @@ document.addEventListener('keydown', function(e) {
 });
 
 function updateGlow(e, el) {
-
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
     if (clientX === undefined) return; 
-
     const rect = el.getBoundingClientRect();
     const x = (clientX - rect.left) / rect.width * 100;
-
     const y = (clientY - rect.top) / el.clientHeight * 100; 
-
     el.style.setProperty('--mouse-x', `${x}%`);
     el.style.setProperty('--mouse-y', `${y}%`);
 };
@@ -49,14 +43,12 @@ async function analyzeLyrics() {
 
     if (!lyrics || lyrics.trim() === '') {
         resultsSection.style.display = 'block';
-
         resultDiv.innerHTML = `<p class="status-msg error">Please paste some lyrics first!</p>`;
         return; 
 
     }
 
     resultsSection.style.display = 'block';
-
     resultDiv.innerHTML = getSpinnerHtml("Analyzing...");
 
     try {
@@ -65,15 +57,12 @@ async function analyzeLyrics() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({lyrics: lyrics})
         });
-
         if (!res.ok) throw new Error(`Server error: ${res.statusText}`);
         const data = await res.json();
-
         if (data.error) {
             resultDiv.innerHTML = `<p style="color:#ff6b6b; text-align:center;">${data.error}</p>`;
         } else if (data.emotions && data.emotions.length > 0) {
             const topEmotions = data.emotions.filter(e => e.score > 0.05).slice(0, 10);
-
             if (topEmotions.length === 0) {
                  resultDiv.innerHTML = '<p style="text-align:center;">Could not find significant emotions.</p>';
                  return;
@@ -116,9 +105,7 @@ function typeEffect(element, text, speed = 30) {
     return new Promise((resolve) => {
         let index = 0;
         let currentHtml = '';
-
         element.style.visibility = 'visible';
-
         function typeWriter() {
             if (index < text.length) {
                 let char = text.charAt(index);
@@ -154,85 +141,43 @@ document.addEventListener('DOMContentLoaded', async function() {
     const containerEl = document.querySelector('.container');
     const footerEl = document.querySelector('footer');
     const analyzeButton = document.querySelector('.lyrics-form .button-primary');
-
     if (analyzeButton) {
-
         analyzeButton.addEventListener('mousemove', (e) => updateGlow(e, analyzeButton));
         analyzeButton.addEventListener('mouseleave', () => {
         });
-
         analyzeButton.addEventListener('touchstart', (e) => updateGlow(e, analyzeButton));
         analyzeButton.addEventListener('touchmove', (e) => updateGlow(e, analyzeButton));
         analyzeButton.addEventListener('touchend', () => {
         });
     }
-
     if (titleEl && subtitleEl && containerEl) {
         const titleText = titleEl.textContent;
         const subtitleHtml = subtitleEl.innerHTML;
-
         const sectionEl = containerEl.querySelector('.section');
         if (sectionEl) {
             sectionEl.style.opacity = '0';
             sectionEl.style.animation = 'none'; 
         }
-
         titleEl.innerHTML = '';
         subtitleEl.innerHTML = '';
         titleEl.style.visibility = 'visible';
         subtitleEl.style.visibility = 'visible';
-
         containerEl.style.visibility = 'visible';
-
         await typeEffect(titleEl, titleText, 50);
-
         await typeEffect(subtitleEl, subtitleHtml, 30);
-
         if (sectionEl) {
             sectionEl.style.animation = 'fadeInUp 1s ease-out forwards';
         }
     }
-
-    if (footerEl) footerEl.classList.add('fade-in');
-
-    const dynamicLinkBottom = document.getElementById('dynamic-footer-link');
-
-    if (dynamicLinkBottom) {
-        let isAboutState = true; 
-
-        setInterval(() => {
-
-            dynamicLinkBottom.classList.add('fading-out');
-
-            setTimeout(() => {
-                if (isAboutState) {
-
-                    dynamicLinkBottom.innerHTML = 'Created by <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>';
-                } else {
-
-                    dynamicLinkBottom.innerHTML = '<a href="/about" class="footer-link">About & Credits</a>';
-                }
-
-                isAboutState = !isAboutState;
-
-                dynamicLinkBottom.classList.remove('fading-out');
-            }, 500); 
-
-        }, 5000); 
-
-    }   
+    if (footerEl) footerEl.classList.add('fade-in');  
 });
 
 document.addEventListener('DOMContentLoaded', () => {
     const lyricsInput = document.getElementById('lyricsInput'); 
-
     if (lyricsInput) {
         lyricsInput.addEventListener('paste', (e) => {
-
             e.preventDefault();
-
             const clipboardText = (e.clipboardData || window.clipboardData).getData('text');
-
             const cleanText = clipboardText
                 .split(/\r?\n/)             
                 .map(line => line.trim())   
