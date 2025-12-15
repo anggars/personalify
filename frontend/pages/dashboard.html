@@ -22,7 +22,7 @@
             </li>
 
             {% if user %}
-                <li class="nav-item dropdown {% if '/dashboard' in request.path %}active{% endif %}">
+                <li class="nav-item dropdown {% if '#' in request.path %}active{% endif %}">
                     <a href="#">Dashboard</a>
                     <div class="dropdown-content">
                         <a href="/logout" style="color: #ff453a;">Logout</a>
