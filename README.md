@@ -35,18 +35,18 @@ The Personalify system consists of several components connected through service-
                                           |                  |      | (NLP Emotion Model)  |
 +-------------------------+      +------------------+        |      +----------------------+
 |       Spotify API       |<---->|     FastAPI      |<-------+
-|       (User Data)       |      |  (Backend API)   |        |      +----------------------+      +------------------+
-+-------------------------+      +--------+---------+        +----->|  Cloudflare Workers  |<---->|    Genius API    |
-                                          |                         |    (Lyrics Proxy)    |      |   (Lyrics Data)  |
-                                          |                         +----------------------+      +------------------+
+|       (User Data)       |      |  (Backend API)   |        |      +----------------------+
++-------------------------+      +--------+---------+        +----->|      Genius API      |
+                                          |                         |     (Lyrics Data)    |
+                                          |                         +----------------------+
                                           |
               +---------------------------+---------------------------+
               |                           |                           |
               v                           v                           v
-      +---------------+             +----------+              +------------------+
-      |     Neon      |             | Upstash  |              |  MongoDB Atlas   |
-      | (PostgreSQL)  |             | (Redis)  |              |  (Sync History)  |
-      +-------+-------+             +----------+              +------------------+
+      +---------------+           +---------------+         +------------------+
+      |     Neon      |           |    Upstash    |         |  MongoDB Atlas   |
+      | (PostgreSQL)  |           |    (Redis)    |         |  (Sync History)  |
+      +-------+-------+           +---------------+         +------------------+
               |
               v
       +------------------------+
@@ -82,10 +82,7 @@ The primary external data source. It handles user authentication (OAuth2) and pr
   Foreign Data Wrapper used to access data from other PostgreSQL servers (distribution simulation). Useful for cross-instance queries.
   
 - **Genius API:**  
-  Provides song lyrics data from the Genius platform. Due to CORS restrictions on Vercel, lyrics are fetched via a **Cloudflare Workers proxy** to bypass direct access limitations.
-  
-- **Cloudflare Workers:**  
-  Acts as a proxy layer to fetch HTML content from Genius.com, enabling lyrics extraction in serverless environments like Vercel where direct scraping is restricted.
+  Provides song lyrics data from the Genius platform. The backend implements a custom scraping strategy (using translation proxies) to fetch lyrics content and bypass direct access limitations.
   
 - **Hugging Face API:**  
   Provides pre-trained NLP models (GoEmotions) for sentiment and emotion analysis of song titles and lyrics.
@@ -102,7 +99,7 @@ The primary external data source. It handles user authentication (OAuth2) and pr
 | **Cache**        | Redis (Upstash/Local) | In-memory cache with TTL, very fast for storing temporary data per user. Upstash for cloud, Docker for local. |
 | **Sync Storage** | MongoDB (Atlas/Local) | Suitable for storing history in flexible document format. Atlas for cloud, Docker for local. |
 | **Auth**         | Spotify OAuth2       | Official standard protocol from Spotify, secure for login and user data access. |
-| **Lyrics**       | Genius API + Cloudflare Workers | Genius provides lyrics data; Cloudflare Workers proxy bypasses CORS restrictions on Vercel. |
+| **Lyrics**       | Genius API           | Genius provides lyrics data; custom scraping logic with retry mechanisms handles content retrieval. |
 | **NLP Model**    | Hugging Face API     | Access to pre-trained AI models for emotion analysis without building from scratch. |
 | **FDW**          | PostgreSQL FDW       | Used for simulating queries between PostgreSQL instances (distributed query).   |
 | **Containerization** | Docker + Compose (Optional) | Ensures environment isolation, deployment consistency, and easy replication for local development. |
@@ -584,13 +581,13 @@ During Personalify development, several technical challenges emerged alongside e
 - When deployed on Vercel (serverless environment), direct scraping fails due to CORS restrictions and rate limiting.
 
 **Solutions:**
-- Implement a **Cloudflare Workers proxy** to fetch HTML content from Genius.com.
+- IImplement a custom proxy strategy to fetch HTML content from [Genius.com](https://genius.com).
 - Parse the HTML server-side to extract clean lyrics text.
 - Cache lyrics results to minimize repeated scraping requests.
 
 **Lessons Learned:**
 - Serverless environments have limitations on external HTTP requests that require workarounds.
-- Cloudflare Workers provide an effective proxy layer for bypassing CORS and scraping restrictions.
+- Using flexible proxy strategies and retry logic is effective for bypassing scraping restrictions.
 - Always respect API rate limits and implement proper error handling for third-party services.
 
 ### ☁️ F. Cloud Database Migration
@@ -618,7 +615,7 @@ Furthermore, this project implements PostgreSQL Foreign Data Wrapper (FDW) to ac
 
 The project has evolved significantly from its initial Docker-only deployment to support **both containerized and standalone Python environments**. For local development, users can choose between running the entire stack via Docker Compose (including local databases) or running FastAPI standalone using Miniconda/Anaconda/venv with cloud-hosted databases (Neon, MongoDB Atlas, Upstash). This flexibility allows developers to work in their preferred environment without compromising functionality.
 
-In production, Personalify is deployed as a **serverless application on Vercel**, leveraging managed cloud databases for reliability and scalability. The integration of **Cloudflare Workers** as a proxy layer enables seamless lyrics fetching from Genius API, overcoming CORS restrictions inherent in serverless environments. The **Hugging Face API** powers NLP-based emotion analysis, providing users with actionable insights into the mood and vibe of their music.
+In production, Personalify is deployed as a **serverless application on Vercel**, leveraging managed cloud databases for reliability and scalability. The implementation of a robust scraping mechanism enables seamless lyrics fetching from **Genius API**, overcoming restrictions inherent in serverless environments. The **Hugging Face API** powers NLP-based emotion analysis, providing users with actionable insights into the mood and vibe of their music.
 
 During development, several technical challenges were successfully overcome, from synchronizing non-homogeneous data between Spotify API and relational table structures, to configuring hostnames between Docker containers so they can connect to each other, to implementing proxy solutions for third-party API restrictions. These challenges resulted in practical learning about technology selection, cache management, serverless deployment strategies, and efficient data integration from different sources.
 
@@ -631,7 +628,6 @@ Overall, Personalify has successfully become a proof of concept for distributed 
 - **[Spotify API](https://developer.spotify.com/)** for providing comprehensive music data and authentication services.
 - **[Genius API](https://genius.com/developers/)** for enabling access to song lyrics and artist information.
 - **[Hugging Face](https://huggingface.co/)** for pre-trained NLP models that power emotion analysis.
-- **[Cloudflare Workers](https://workers.cloudflare.com/)** for providing a reliable proxy solution to bypass API restrictions.
 - **[Vercel](https://vercel.com/)** for seamless serverless deployment and hosting.
 - **[Neon](https://neon.tech/)**, **[MongoDB Atlas](https://www.mongodb.com/atlas/)**, and **[Upstash](https://upstash.com/)** for managed cloud database services.
 - **[Docker](http://docker.com/)** for containerization and local development environment isolation.
@@ -640,4 +636,5 @@ Overall, Personalify has successfully become a proof of concept for distributed 
 **Created by [アリツ](https://desty.page/anggars)** © 2025
 
 ---
+
 
