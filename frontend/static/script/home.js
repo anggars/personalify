@@ -94,32 +94,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             }, 1000); 
         });
     }
-
-    const dynamicLinkBottom = document.getElementById('dynamic-footer-link');
-
-    if (dynamicLinkBottom) {
-        let isAboutState = true; 
-
-        setInterval(() => {
-
-            dynamicLinkBottom.classList.add('fading-out');
-
-            setTimeout(() => {
-                if (isAboutState) {
-
-                    dynamicLinkBottom.innerHTML = 'Created by <a href="https://desty.page/anggars" target="_blank" class="footer-link">アリツ</a>';
-                } else {
-
-                    dynamicLinkBottom.innerHTML = '<a href="/about" class="footer-link">About & Credits</a>';
-                }
-
-                isAboutState = !isAboutState;
-
-                dynamicLinkBottom.classList.remove('fading-out');
-            }, 500); 
-
-        }, 5000); 
-    }
 });
 
 document.addEventListener('DOMContentLoaded', function() {
