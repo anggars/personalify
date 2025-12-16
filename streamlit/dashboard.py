@@ -206,8 +206,18 @@ if final_lyrics:
         rob_out = roberta_model(text_to_analyze[:2000])[0]
         dis_out = distilbert_model(text_to_analyze[:2000])[0]
         
-        rob_scores = {r['label']: r['score'] for r in rob_out}
-        dis_scores = {r['label']: r['score'] for r in dis_out}
+        rob_raw = {r['label']: r['score'] for r in rob_out}
+        dis_raw = {r['label']: r['score'] for r in dis_out}
+
+        def renormalize(scores):
+            if 'neutral' in scores: del scores['neutral']
+            total = sum(scores.values())
+            if total > 0:
+                return {k: v / total for k, v in scores.items()}
+            return {}
+
+        rob_scores = renormalize(rob_raw)
+        dis_scores = renormalize(dis_raw)
         
         results_data = []
         all_labels = set(rob_scores.keys()) | set(dis_scores.keys())
