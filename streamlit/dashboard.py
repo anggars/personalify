@@ -133,7 +133,7 @@ song_metadata = {"title": "Unknown Track", "artist": "Unknown Artist"}
 if input_method == "Search via Genius API":
     col1, col2 = st.columns([3, 1])
     with col1:
-        search_query = st.text_input("Enter Artist & Song Title", placeholder="e.g. Reality Club 2112")
+        search_query = st.text_input("Enter Artist & Song Title", placeholder="e.g. The Beatles - Blackbird")
     with col2:
         st.write("")
         st.write("")
@@ -191,8 +191,8 @@ if final_lyrics:
 
     # INFERENCE
     with st.spinner("Calculating Scores..."):
-        rob_out = roberta_model(text_to_analyze[:1500])[0]
-        dis_out = distilbert_model(text_to_analyze[:1500])[0]
+        rob_out = roberta_model(text_to_analyze[:2000])[0]
+        dis_out = distilbert_model(text_to_analyze[:2000])[0]
         
         rob_scores = {r['label']: r['score'] for r in rob_out}
         dis_scores = {r['label']: r['score'] for r in dis_out}

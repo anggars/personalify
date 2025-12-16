@@ -98,7 +98,7 @@ def get_emotion_from_text(text: str):
 
     try:
         print(f"NLP HANDLER: RUNNING HYBRID ANALYSIS (ROBERTA + DISTILBERT)...")
-        text_to_analyze = text[:510]
+        text_to_analyze = text[:2000]
 
         print(" > Calling RoBERTa...")
         results_roberta = hf_client.text_classification(text_to_analyze, model=MODEL_ROBERTA, top_k=28)
