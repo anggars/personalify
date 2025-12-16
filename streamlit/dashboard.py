@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 from transformers import pipeline
-from googletrans import Translator
+from googletrans import Translator, LANGUAGES
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -188,15 +188,20 @@ if final_lyrics:
     with st.spinner('Checking Language...'):
         try:
             sample = final_lyrics[:2000]
-            if translator.detect(sample).lang != 'en':
+            detection = translator.detect(sample)
+            src_lang = detection.lang
+            if src_lang != 'en':
                 text_to_analyze = translator.translate(sample, dest='en').text
-                detected_lang = "Translated to EN"
-        except: pass
+                lang_name = LANGUAGES.get(src_lang, src_lang).title()
+                detected_lang = f"Translated from **{lang_name}** to English"
+            else:
+                detected_lang = "English (Original)"
+        except Exception as e:
+            detected_lang = "Detection Failed (Defaulting to EN)"
     
     with st.expander("View Cleaned Lyrics"):
         st.text(text_to_analyze)
 
-    # INFERENCE
     with st.spinner("Calculating Scores..."):
         rob_out = roberta_model(text_to_analyze[:2000])[0]
         dis_out = distilbert_model(text_to_analyze[:2000])[0]
