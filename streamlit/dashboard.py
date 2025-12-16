@@ -140,7 +140,7 @@ song_metadata = {"title": "Unknown Track", "artist": "Unknown Artist"}
 if input_method == "Search via Genius API":
     col1, col2 = st.columns([3, 1])
     with col1:
-        search_query = st.text_input("Enter Artist & Song Title", placeholder="e.g. The Beatles - Blackbird")
+        search_query = st.text_input("Enter Artist & Song Title", placeholder="e.g. COLORCODE - All Is Gone")
     with col2:
         st.write("")
         st.write("")
@@ -160,7 +160,7 @@ if input_method == "Search via Genius API":
         options = {f"{h['result']['full_title']}": h['result']['url'] for h in st.session_state.search_results}
         selected = st.selectbox("Select Song:", list(options.keys()))
         
-        if st.button("Fetch & Analyze (Proxy Mode)"):
+        if st.button("Fetch & Analyze"):
             target_url = options[selected]
             parts = selected.split(' by ')
             song_metadata = {'title': parts[0], 'artist': parts[1] if len(parts)>1 else "Unknown"}
