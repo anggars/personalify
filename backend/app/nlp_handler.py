@@ -32,7 +32,7 @@ emotion_texts = {
     "annoyance": "subtle <b>annoyance</b>",
     "approval": "positive <b>approval</b>",
     "caring": "gentle <b>caring</b>",
-    "confusion": "a touch of <b>confusion</b>",
+    "confusion": "hazy <b>confusion</b>",
     "curiosity": "sparked <b>curiosity</b>",
     "desire": "yearning <b>desire</b>",
     "disappointment": "quiet <b>letdown</b>",
@@ -40,7 +40,7 @@ emotion_texts = {
     "disgust": "raw <b>disgust</b>",
     "embarrassment": "awkward <b>unease</b>",
     "excitement": "bright <b>excitement</b>",
-    "fear": "whispers of <b>fear</b>",
+    "fear": "cold <b>fear</b>",
     "gratitude": "warm <b>gratitude</b>",
     "grief": "heavy <b>grief</b>",
     "joy": "radiant <b>joy</b>",
@@ -52,7 +52,7 @@ emotion_texts = {
     "relief": "soothing <b>relief</b>",
     "remorse": "deep <b>regret</b>",
     "sadness": "soft <b>sadness</b>",
-    "surprise": "unexpected <b>surprise</b>",
+    "surprise": "pure <b>surprise</b>",
 }
 
 _analysis_cache = {}
@@ -218,5 +218,6 @@ def generate_emotion_paragraph(track_names, extended=False):
 
     top3 = unique[:3]
     formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
+
 
     return f"Shades of {formatted}."
