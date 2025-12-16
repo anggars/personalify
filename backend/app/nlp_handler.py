@@ -53,7 +53,6 @@ emotion_texts = {
     "remorse": "deep <b>regret</b>",
     "sadness": "soft <b>sadness</b>",
     "surprise": "unexpected <b>surprise</b>",
-    "neutral": "a <b>neutral</b> state"
 }
 
 _analysis_cache = {}
@@ -118,10 +117,17 @@ def get_emotion_from_text(text: str):
             score = item['score']
             combined_scores[label] = combined_scores.get(label, 0) + score
 
+        if 'neutral' in combined_scores:
+            del combined_scores['neutral']
+        total_remaining = sum(combined_scores.values())
+
         final_results = []
-        for label, total_score in combined_scores.items():
-            avg_score = total_score / 2
-            final_results.append({"label": label, "score": avg_score})
+        if total_remaining > 0:
+            for label, raw_sum in combined_scores.items():
+                normalized_score = raw_sum / total_remaining
+                final_results.append({"label": label, "score": normalized_score})
+        else:
+            final_results = []
 
         final_results.sort(key=lambda x: x['score'], reverse=True)
 
@@ -152,8 +158,7 @@ def analyze_lyrics_emotion(lyrics: str):
         return {"error": "Emotion analysis is currently unavailable. Check server logs."}
 
     try:
-        sorted_emotions = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
-        top5 = sorted_emotions[:5]
+        top5 = emotions[:5]
         out = [{"label": e["label"], "score": float(e.get("score", 0))} for e in top5]
         return {"emotions": out}
     except Exception as e:
@@ -190,7 +195,7 @@ def generate_emotion_paragraph(track_names, extended=False):
     seen = set()
     for e in em_list:
         lbl = e.get("label")
-        if not lbl:
+        if not lbl or lbl == 'neutral':
             continue
         if lbl not in seen:
             seen.add(lbl)
@@ -200,9 +205,9 @@ def generate_emotion_paragraph(track_names, extended=False):
 
     if len(unique) < 3:
         pad_defaults = [
-            {"label": "neutral", "score": 0.5},
-            {"label": "optimism", "score": 0.3},
-            {"label": "joy", "score": 0.2}
+            {"label": "optimism", "score": 0.5},
+            {"label": "joy", "score": 0.3},
+            {"label": "sadness", "score": 0.2} 
         ]
         for p in pad_defaults:
             if p["label"] not in seen:
