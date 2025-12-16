@@ -110,12 +110,19 @@ def get_translator():
 
 st.sidebar.header("Configuration")
 
-default_token = st.secrets["GENIUS_ACCESS_TOKEN"] if "GENIUS_ACCESS_TOKEN" in st.secrets else ""
-genius_token = st.sidebar.text_input(
-    "Genius Access Token",
-    value=default_token,
-    type="password"
-)
+if "GENIUS_ACCESS_TOKEN" in st.secrets:
+    genius_token = st.secrets["GENIUS_ACCESS_TOKEN"]
+    st.sidebar.success("Token loaded from Streamlit Secrets")
+else:
+    genius_token = st.sidebar.text_input(
+        "Genius Access Token",
+        type="password"
+    )
+
+if not genius_token:
+    st.sidebar.warning("Please enter a token to continue.")
+    st.stop()
+
 st.sidebar.divider()
 input_method = st.sidebar.radio("Input Method:", ("Search via Genius API", "Manual Input"))
 
