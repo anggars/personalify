@@ -133,11 +133,11 @@ body.download-mode canvas {
 }
 .section h2 {
     text-align: center;
-    font-size: 1.4rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: #1DB954;
     border-bottom: 1px solid #333;
-    margin-top: -0.5rem;
+    margin-top: -0.65rem;
     margin-bottom: 0rem;
     padding-bottom: 1rem;
 }
