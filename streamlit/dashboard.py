@@ -205,27 +205,32 @@ if final_lyrics:
     with st.spinner("Calculating Scores..."):
         rob_out = roberta_model(text_to_analyze[:2000])[0]
         dis_out = distilbert_model(text_to_analyze[:2000])[0]
-        
+
         rob_raw = {r['label']: r['score'] for r in rob_out}
         dis_raw = {r['label']: r['score'] for r in dis_out}
-
-        def renormalize(scores):
-            if 'neutral' in scores: del scores['neutral']
-            total = sum(scores.values())
-            if total > 0:
-                return {k: v / total for k, v in scores.items()}
-            return {}
-
-        rob_scores = renormalize(rob_raw)
-        dis_scores = renormalize(dis_raw)
         
+        all_labels = set(rob_raw.keys()) | set(dis_raw.keys())
         results_data = []
-        all_labels = set(rob_scores.keys()) | set(dis_scores.keys())
+
+        hybrid_raw_total = {}
+        for l in all_labels:
+            hybrid_raw_total[l] = rob_raw.get(l, 0) + dis_raw.get(l, 0)
         
+        if 'neutral' in hybrid_raw_total: del hybrid_raw_total['neutral']
+        if 'neutral' in rob_raw: del rob_raw['neutral']
+        if 'neutral' in dis_raw: del dis_raw['neutral']
+
+        sum_hybrid = sum(hybrid_raw_total.values())
+        sum_rob = sum(rob_raw.values())
+        sum_dis = sum(dis_raw.values())
+
         for label in all_labels:
-            s_rob = rob_scores.get(label, 0)
-            s_dis = dis_scores.get(label, 0)
-            s_hyb = (s_rob + s_dis) / 2
+            if label == 'neutral': continue 
+
+            s_hyb = (hybrid_raw_total.get(label, 0) / sum_hybrid) if sum_hybrid > 0 else 0
+            
+            s_rob = (rob_raw.get(label, 0) / sum_rob) if sum_rob > 0 else 0
+            s_dis = (dis_raw.get(label, 0) / sum_dis) if sum_dis > 0 else 0
             
             results_data.append({'label': label.capitalize(), 'score': s_rob, 'model': 'RoBERTa'})
             results_data.append({'label': label.capitalize(), 'score': s_dis, 'model': 'DistilBERT'})
