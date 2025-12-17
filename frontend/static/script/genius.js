@@ -121,7 +121,7 @@ async function loadSongs(artistId, artistName) {
     selectedArtistEl.innerHTML = `
         <div class="track-title-wrapper" id="selectedArtistWrapper" style="margin-bottom: 0;">
             <div class="track-marquee-track" id="selectedArtistTrack">
-                <span class="track-title-text" style="font-size: 1.2rem; color: var(--primary);">${artistName}</span>
+                <span class="track-title-text" style="font-size: 1.25rem; color: var(--primary);">${artistName}</span>
             </div>
         </div>
     `;
@@ -262,7 +262,7 @@ async function analyzeSong(songId, clickedElement) {
         if (data.emotion_analysis && data.emotion_analysis.emotions) {
             const emotions = data.emotion_analysis.emotions.slice(0, 5);
             const maxScore = Math.max(...emotions.map(e => e.score));
-            html += `<h3 style="border-top:1px solid #333; text-align:center; padding-top:15px; color:#1DB954; margin-bottom:15px; font-size: 1.2rem;">Emotion Results:</h3>`;
+            html += `<h3 style="border-top:1px solid #333; text-align:center; padding-top:15px; color:#1DB954; margin-bottom:15px; font-size: 1.25rem;">Emotion Results:</h3>`;
             html += `<div class="emotion-bars-group">`;
             emotions.forEach(e => {
                 html += `
