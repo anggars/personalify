@@ -1,5 +1,6 @@
 {
   "name": "Personalify Docs",
+  "openapi": "openapi.json",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
@@ -13,7 +14,24 @@
   "navigation": [
     {
       "group": "Get Started",
-      "pages": ["introduction"]
+      "pages": [
+        "introduction",
+        "api-reference"
+      ]
+    },
+    {
+      "group": "Auth",
+      "pages": [
+        "GET /login",
+        "GET /callback"
+      ]
+    },
+    {
+      "group": "Analysis",
+      "pages": [
+        "POST /analyze-lyrics",
+        "GET /top-genres"
+      ]
     }
   ],
   "footerSocials": {
