@@ -1,6 +1,6 @@
 {
   "name": "Personalify Docs",
-  "openapi": "https://personalify.vercel.app/openapi.json",
+  "openapi": "/docs/openapi.json", 
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
