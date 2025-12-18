@@ -95,4 +95,44 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.location.pathname === '/login' && storedSpotifyId && !errorParam) {
         window.location.href = `/dashboard/${storedSpotifyId}?time_range=short_term`;
     }
+    const dropdowns = document.querySelectorAll('.nav-item.dropdown');
+    dropdowns.forEach((dropdown) => {
+        const originalContent = dropdown.querySelector('.dropdown-content');
+        if (!originalContent) return;
+        const portalContent = document.createElement('div');
+        portalContent.className = 'dropdown-content'; 
+        portalContent.style.display = 'none';
+        portalContent.innerHTML = originalContent.innerHTML; 
+        document.body.appendChild(portalContent);
+        originalContent.remove();
+        let popperLoop;
+        let isHovered = false;
+        function updatePosition() {
+            if (portalContent.style.display === 'none') return;
+            const rect = dropdown.getBoundingClientRect();
+            portalContent.style.position = 'absolute';
+            portalContent.style.left = (rect.left + rect.width / 2 + window.scrollX) + 'px';
+            portalContent.style.top = (rect.bottom + window.scrollY) + 'px';
+            portalContent.style.transform = 'translateX(-50%)';
+            portalContent.style.zIndex = '10000';
+            popperLoop = requestAnimationFrame(updatePosition);
+        }
+        dropdown.addEventListener('mouseenter', () => {
+            isHovered = true;
+            portalContent.style.display = 'flex'; 
+            updatePosition();
+        });
+        const handleLeave = () => {
+            isHovered = false;
+            setTimeout(() => {
+                if (!isHovered) {
+                    portalContent.style.display = 'none';
+                    if (popperLoop) cancelAnimationFrame(popperLoop);
+                }
+            }, 100);
+        };
+        dropdown.addEventListener('mouseleave', handleLeave);
+        portalContent.addEventListener('mouseenter', () => isHovered = true);
+        portalContent.addEventListener('mouseleave', handleLeave);
+    });
 });

@@ -74,6 +74,32 @@ def search_artist_id(query):
         return artists
     except: return []
 
+def get_suggestions(query):
+    try:
+        res = requests.get(
+            f"{GENIUS_API_URL}/search",
+            params={"q": query},
+            headers=get_headers(),
+            timeout=5
+        )
+        if res.status_code != 200: return []
+        hits = res.json()["response"]["hits"]
+        suggestions = {}
+        for hit in hits:
+            if hit["type"] == "song":
+                artist = hit["result"]["primary_artist"]
+                artist_id = artist["id"]
+                if artist_id not in suggestions:
+                    suggestions[artist_id] = {
+                        "id": artist_id,
+                        "name": artist["name"],
+                        "image_url": artist["image_url"]
+                    }
+        return list(suggestions.values())[:5]
+    except Exception as e:
+        print(f"Suggestion Error: {e}")
+        return []
+
 def get_songs_by_artist(artist_id):
     songs = []
     page = 1

@@ -57,8 +57,10 @@
 <div class="container">
     <div class="section">
         
-        <div class="input-wrapper" style="margin-bottom: 20px;">
-            <input type="text" id="artistInput" class="genius-input" placeholder="Type artist name (e.g. The Beatles)...">
+        <div class="input-wrapper" style="margin-bottom: 20px; position: relative;">
+            <input type="text" id="artistInput" class="genius-input" placeholder="Type artist name (e.g. The Beatles)..." autocomplete="off">
+            
+            <div id="autocomplete-list" class="autocomplete-items"></div>
         </div>
         
         <button id="searchBtn" class="button-primary">

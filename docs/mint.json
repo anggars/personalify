@@ -12,7 +12,10 @@
   "navigation": [
     {
       "group": "General",
-      "pages": ["introduction"]
+      "pages": [
+        "introduction",
+        "api-reference"
+    ]
     },
     {
       "group": "Authentication",

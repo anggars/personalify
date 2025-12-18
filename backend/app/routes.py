@@ -19,7 +19,7 @@ from app.db_handler import (
 from app.cache_handler import cache_top_data, get_cached_top_data, clear_top_data_cache
 from app.mongo_handler import save_user_sync, get_user_history
 from app.qstash_handler import get_qstash_client, get_qstash_receiver
-from app.genius_lyrics import search_artist_id, get_songs_by_artist, get_lyrics_by_id
+from app.genius_lyrics import get_suggestions, search_artist_id, get_songs_by_artist, get_lyrics_by_id
 
 router = APIRouter()
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -589,6 +589,10 @@ async def read_genius_page(request: Request):
 def api_search_artist(q: str):
     log_system("SEARCH", f"Searching Artist: '{q}'", "GENIUS")
     return {"artists": search_artist_id(q)}
+
+@router.get("/api/genius/autocomplete")
+def api_genius_autocomplete(q: str):
+    return {"results": get_suggestions(q)}
 
 @router.get("/api/genius/artist-songs/{artist_id}")
 def api_get_artist_songs(artist_id: int):
