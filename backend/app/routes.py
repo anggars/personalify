@@ -18,6 +18,7 @@ from app.db_handler import (
 )
 from app.cache_handler import cache_top_data, get_cached_top_data, clear_top_data_cache
 from app.mongo_handler import save_user_sync, get_user_history
+from app.qstash_handler import get_qstash_client, get_qstash_receiver
 from app.genius_lyrics import search_artist_id, get_songs_by_artist, get_lyrics_by_id
 
 router = APIRouter()
@@ -552,7 +553,6 @@ def get_user_stats(spotify_id: str):
 @router.get("/admin/export-users", tags=["Admin"])
 def download_user_export():
     csv_content = export_users_to_csv()
-
     return Response(
         content=csv_content,
         media_type="text/csv",
@@ -612,3 +612,35 @@ def api_get_lyrics_emotion(song_id: int):
         "lyrics": data['lyrics'],
         "emotion_analysis": emotion
     }
+
+@router.post("/start-background-analysis")
+async def start_background_analysis(spotify_id: str):
+    client = get_qstash_client()
+    try:
+        result = client.publish_json({
+            "url": "https://personalify.vercel.app/api/tasks/process-analysis",
+            "body": {"spotify_id": spotify_id},
+        })
+        return {"status": "Task queued", "message_id": result.message_id}
+    except Exception as e:
+        print(f"QSTASH ERROR: {e}")
+        raise HTTPException(status_code=500, detail="Failed to queue task")
+    
+@router.post("/api/tasks/process-analysis")
+async def process_analysis_task(request: Request):
+    receiver = get_qstash_receiver()
+    signature = request.headers.get("Upstash-Signature")
+    body_bytes = await request.body()
+    try:
+        receiver.verify(
+            body=body_bytes.decode("utf-8"),
+            signature=signature,
+            url=str(request.url)
+        )
+    except Exception as e:
+        print(f"INVALID QSTASH SIGNATURE: {e}")
+        raise HTTPException(status_code=401, detail="Invalid signature")
+    data = await request.json()
+    spotify_id = data.get("spotify_id")
+    print(f"PROCESSING BACKGROUND TASK FOR: {spotify_id}")
+    return {"status": "Processed"}
