@@ -1,0 +1,866 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FastAPI",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "Root"
+        ],
+        "summary": "Root",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/login": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "operationId": "login_login_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "get": {
+        "summary": "Logout",
+        "operationId": "logout_logout_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/callback": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Callback",
+        "operationId": "callback_callback_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Spotify Authorization Code",
+              "title": "Code"
+            },
+            "description": "Spotify Authorization Code"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze-emotions-background": {
+      "post": {
+        "tags": [
+          "Background"
+        ],
+        "summary": "Analyze Emotions Background",
+        "operationId": "analyze_emotions_background_analyze_emotions_background_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_analyze_emotions_background_analyze_emotions_background_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync/top-data": {
+      "get": {
+        "tags": [
+          "Sync"
+        ],
+        "summary": "Sync Top Data",
+        "operationId": "sync_top_data_sync_top_data_get",
+        "parameters": [
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Spotify Access Token",
+              "title": "Access Token"
+            },
+            "description": "Spotify Access Token"
+          },
+          {
+            "name": "time_range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Time range",
+              "enum": [
+                "short_term",
+                "medium_term",
+                "long_term"
+              ],
+              "default": "medium_term",
+              "title": "Time Range"
+            },
+            "description": "Time range"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top-data": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "summary": "Get Top Data",
+        "operationId": "get_top_data_top_data_get",
+        "parameters": [
+          {
+            "name": "spotify_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Spotify ID",
+              "title": "Spotify Id"
+            },
+            "description": "Spotify ID"
+          },
+          {
+            "name": "time_range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "short_term",
+                "medium_term",
+                "long_term"
+              ],
+              "default": "medium_term",
+              "title": "Time Range"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "popularity",
+              "title": "Sort"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top-genres": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "summary": "Top Genres",
+        "operationId": "top_genres_top_genres_get",
+        "parameters": [
+          {
+            "name": "spotify_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Spotify ID",
+              "title": "Spotify Id"
+            },
+            "description": "Spotify ID"
+          },
+          {
+            "name": "time_range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "short_term",
+                "medium_term",
+                "long_term"
+              ],
+              "default": "medium_term",
+              "title": "Time Range"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/history": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "summary": "Get Sync History",
+        "operationId": "get_sync_history_history_get",
+        "parameters": [
+          {
+            "name": "spotify_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Spotify ID",
+              "title": "Spotify Id"
+            },
+            "description": "Spotify ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/{spotify_id}": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Dashboard",
+        "operationId": "dashboard_dashboard__spotify_id__get",
+        "parameters": [
+          {
+            "name": "spotify_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Spotify Id"
+            }
+          },
+          {
+            "name": "time_range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "medium_term",
+              "title": "Time Range"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/about": {
+      "get": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "About Page",
+        "operationId": "about_page_about_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/system-stats": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Stats",
+        "operationId": "get_stats_admin_system_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clear-cache": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Clear Cache",
+        "operationId": "clear_cache_admin_clear_cache_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/user-report/{spotify_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get User Stats",
+        "operationId": "get_user_stats_admin_user_report__spotify_id__get",
+        "parameters": [
+          {
+            "name": "spotify_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Spotify Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/export-users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Download User Export",
+        "operationId": "download_user_export_admin_export_users_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze-lyrics": {
+      "post": {
+        "tags": [
+          "NLP"
+        ],
+        "summary": "Analyze Lyrics Emotion Endpoint",
+        "operationId": "analyze_lyrics_emotion_endpoint_analyze_lyrics_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_analyze_lyrics_emotion_endpoint_analyze_lyrics_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lyrics": {
+      "get": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Lyrics Page",
+        "operationId": "lyrics_page_lyrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lyrics/genius": {
+      "get": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Read Genius Page",
+        "operationId": "read_genius_page_lyrics_genius_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/genius/search-artist": {
+      "get": {
+        "summary": "Api Search Artist",
+        "operationId": "api_search_artist_api_genius_search_artist_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/genius/artist-songs/{artist_id}": {
+      "get": {
+        "summary": "Api Get Artist Songs",
+        "operationId": "api_get_artist_songs_api_genius_artist_songs__artist_id__get",
+        "parameters": [
+          {
+            "name": "artist_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Artist Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/genius/lyrics/{song_id}": {
+      "get": {
+        "summary": "Api Get Lyrics Emotion",
+        "operationId": "api_get_lyrics_emotion_api_genius_lyrics__song_id__get",
+        "parameters": [
+          {
+            "name": "song_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Song Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_analyze_emotions_background_analyze_emotions_background_post": {
+        "properties": {
+          "spotify_id": {
+            "type": "string",
+            "title": "Spotify Id",
+            "description": "Spotify ID"
+          },
+          "time_range": {
+            "type": "string",
+            "title": "Time Range",
+            "description": "Time range",
+            "default": "short_term"
+          },
+          "extended": {
+            "type": "boolean",
+            "title": "Extended",
+            "description": "Use extended track list (20 tracks)",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "spotify_id"
+        ],
+        "title": "Body_analyze_emotions_background_analyze_emotions_background_post"
+      },
+      "Body_analyze_lyrics_emotion_endpoint_analyze_lyrics_post": {
+        "properties": {
+          "lyrics": {
+            "type": "string",
+            "title": "Lyrics",
+            "description": "Song lyrics to analyze"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lyrics"
+        ],
+        "title": "Body_analyze_lyrics_emotion_endpoint_analyze_lyrics_post"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
