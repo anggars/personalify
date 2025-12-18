@@ -14,11 +14,45 @@
   "navigation": [
     {
       "group": "Get Started",
-      "pages": ["introduction"]
+      "pages": [
+        "introduction",
+        "api-reference"
+      ]
     },
     {
-      "group": "API Endpoints",
-      "openapi": "openapi.json"
+      "group": "Auth Endpoints",
+      "pages": [
+        "GET /login",
+        "GET /logout",
+        "GET /callback"
+      ]
+    },
+    {
+      "group": "Analysis & Data",
+      "pages": [
+        "POST /analyze-lyrics",
+        "POST /analyze-emotions-background",
+        "GET /top-data",
+        "GET /top-genres",
+        "GET /dashboard/{spotify_id}"
+      ]
+    },
+    {
+      "group": "Genius Integration",
+      "pages": [
+        "GET /api/genius/search-artist",
+        "GET /api/genius/artist-songs/{artist_id}",
+        "GET /api/genius/lyrics/{song_id}"
+      ]
+    },
+    {
+      "group": "Admin System",
+      "pages": [
+        "GET /admin/system-stats",
+        "GET /admin/user-report/{spotify_id}",
+        "GET /admin/clear-cache",
+        "GET /admin/export-users"
+      ]
     }
   ],
   "footerSocials": {
