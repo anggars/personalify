@@ -19,43 +19,52 @@
     {
       "group": "Authentication",
       "pages": [
-        "openapi.json GET /login",
-        "openapi.json GET /logout",
-        "openapi.json GET /callback"
+        "endpoints/auth/login",
+        "endpoints/auth/logout",
+        "endpoints/auth/callback"
       ]
     },
     {
-      "group": "Features",
+      "group": "Features & NLP",
       "pages": [
-        "openapi.json POST /analyze-lyrics",
-        "openapi.json POST /analyze-emotions-background",
-        "openapi.json GET /dashboard/{spotify_id}"
+        "endpoints/features/analyze-lyrics",
+        "endpoints/features/analyze-background",
+        "endpoints/features/dashboard"
       ]
     },
     {
       "group": "User Data & Sync",
       "pages": [
-        "openapi.json GET /top-data",
-        "openapi.json GET /top-genres",
-        "openapi.json GET /sync/top-data",
-        "openapi.json GET /history"
+        "endpoints/data/top-data",
+        "endpoints/data/top-genres",
+        "endpoints/data/sync-data",
+        "endpoints/data/history"
       ]
     },
     {
       "group": "Genius Integration",
       "pages": [
-        "openapi.json GET /api/genius/search-artist",
-        "openapi.json GET /api/genius/artist-songs/{artist_id}",
-        "openapi.json GET /api/genius/lyrics/{song_id}"
+        "endpoints/genius/search-artist",
+        "endpoints/genius/artist-songs",
+        "endpoints/genius/lyrics-details"
       ]
     },
     {
       "group": "Admin Panel",
       "pages": [
-        "openapi.json GET /admin/system-stats",
-        "openapi.json GET /admin/user-report/{spotify_id}",
-        "openapi.json GET /admin/clear-cache",
-        "openapi.json GET /admin/export-users"
+        "endpoints/admin/system-stats",
+        "endpoints/admin/user-report",
+        "endpoints/admin/clear-cache",
+        "endpoints/admin/export-users"
+      ]
+    },
+    {
+      "group": "Web Pages (HTML)",
+      "pages": [
+        "endpoints/pages/root",
+        "endpoints/pages/about",
+        "endpoints/pages/lyrics-page",
+        "endpoints/pages/genius-page"
       ]
     }
   ],
