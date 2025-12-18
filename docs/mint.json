@@ -7,13 +7,11 @@
   },
   "favicon": "/favicon.png",
   "colors": {
-    "primary": "#1DB954",
-    "light": "#1ED760",
-    "dark": "#121212"
+    "primary": "#1DB954"
   },
   "navigation": [
     {
-      "group": "Introduction",
+      "group": "General",
       "pages": ["introduction"]
     },
     {
