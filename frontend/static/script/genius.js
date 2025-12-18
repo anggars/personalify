@@ -5,6 +5,26 @@ const songSection = document.getElementById('songSection');
 const songList = document.getElementById('songList');
 const analysisResult = document.getElementById('analysisResult');
 const resultContent = document.getElementById('resultContent');
+let autocompleteList = document.getElementById('autocomplete-list');
+if (autocompleteList) autocompleteList.remove();
+autocompleteList = document.createElement('div');
+autocompleteList.id = 'autocomplete-list';
+autocompleteList.className = 'autocomplete-items';
+document.body.appendChild(autocompleteList); 
+let debounceTimer;
+let positionLoopId; 
+function startPositionTracking() {
+    if (positionLoopId) cancelAnimationFrame(positionLoopId);
+    function update() {
+        if (autocompleteList.style.display === 'none') return;
+        const rect = artistInput.getBoundingClientRect();
+        autocompleteList.style.left = (rect.left + window.scrollX) + 'px';
+        autocompleteList.style.top = (rect.bottom + window.scrollY) + 'px';
+        autocompleteList.style.width = rect.width + 'px';
+        positionLoopId = requestAnimationFrame(update);
+    }
+    update();
+}
 const getSpinnerHtml = (text) => `
     <div class="loading-state-container">
         <svg class="spinner" viewBox="0 0 50 50">
@@ -59,7 +79,6 @@ async function searchArtist() {
     try {
         const res = await fetch(`/api/genius/search-artist?q=${encodeURIComponent(query)}`);
         const data = await res.json();
-
         if (data.artists.length === 0) {
             artistList.innerHTML = '<p class="status-msg error">No artist found.</p>';
         } else {
@@ -125,7 +144,6 @@ async function loadSongs(artistId, artistName) {
             </div>
         </div>
     `;
-
     setTimeout(() => {
         const wrapper = document.getElementById('selectedArtistWrapper');
         const track = document.getElementById('selectedArtistTrack');
@@ -179,7 +197,6 @@ async function loadSongs(artistId, artistName) {
                     ${metaText ? `<div class="album-info">${metaText}</div>` : ''}
                 </div>
             `;
-
             btn.onclick = function() { 
                 analyzeSong(song.id, this); 
             };
@@ -425,4 +442,73 @@ document.addEventListener('DOMContentLoaded', async function() {
     typeTechFooter();
 });
 searchBtn.addEventListener('click', searchArtist);
-artistInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') searchArtist() });
+artistInput.addEventListener('keydown', (e) => { 
+    if(e.key === 'Enter') {
+        autocompleteList.style.display = 'none'; // Tutup dropdown paksa
+        artistInput.classList.remove('active');
+        searchArtist(); 
+    }
+});
+artistInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    clearTimeout(debounceTimer);
+    if (!query) {
+        autocompleteList.innerHTML = '';
+        return;
+    }
+    debounceTimer = setTimeout(() => {
+        fetchSuggestions(query);
+    }, 300);
+});
+document.addEventListener('click', function(e) {
+    if (e.target !== artistInput && e.target !== autocompleteList) {
+        if (autocompleteList) autocompleteList.innerHTML = '';
+    }
+});
+async function fetchSuggestions(query) {
+    try {
+        const res = await fetch(`/api/genius/autocomplete?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        renderSuggestions(data.results);
+    } catch (e) {
+        console.error("Autocomplete error:", e);
+    }
+}
+function renderSuggestions(artists) {
+    autocompleteList.innerHTML = ''; 
+    if (!artists || artists.length === 0) {
+        autocompleteList.style.display = 'none';
+        return;
+    }
+    autocompleteList.style.display = 'block';
+    startPositionTracking();
+    artistInput.classList.add('active');
+    artists.forEach(artist => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        const imgUrl = artist.image_url || 'https://via.placeholder.com/50';
+        item.innerHTML = `
+            <img src="${imgUrl}" alt="art">
+            <span>${artist.name}</span>
+        `;
+        item.addEventListener('mousemove', (e) => updateGlow(e, item));
+        item.addEventListener('touchmove', (e) => updateGlow(e, item));
+        item.addEventListener('click', () => {
+            artistInput.value = artist.name;
+            autocompleteList.style.display = 'none';
+            artistInput.classList.remove('active'); 
+            if(songSection) songSection.style.display = 'none';
+            if(analysisResult) analysisResult.style.display = 'none';
+            if(artistList) artistList.style.display = 'none';
+            
+            loadSongs(artist.id, artist.name);
+        });
+        autocompleteList.appendChild(item);
+    });
+}
+document.addEventListener('click', function(e) {
+    if (e.target !== artistInput && e.target !== autocompleteList) {
+        autocompleteList.style.display = 'none';
+        artistInput.classList.remove('active');
+    }
+});

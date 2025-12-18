@@ -1,0 +1,44 @@
+---
+title: 'API Reference'
+description: 'Complete documentation of Personalify API endpoints'
+---
+
+<Note>
+  This documentation is automatically generated from Personalify's FastAPI OpenAPI specification.
+</Note>
+
+## Authentication
+Endpoints to handle Spotify login, callback, and session management.
+
+* **Login**: Initiates the Spotify authorization process by redirecting the user to the Spotify login page.
+* **Callback**: Handles the response from Spotify after authorization, exchanges the code for access tokens, and manages user session data.
+* **Logout**: Ends the current user session and clears session data from the server.
+
+## Genius Search & Lyrics
+Integration with the Genius API for artist search and lyrics retrieval.
+
+* **Search Artist**: Searches for artists based on a name or keyword query.
+* **Artist Songs**: Retrieves a list of popular songs for a specific artist using their Genius ID.
+* **Lyrics Details**: Fetches the full lyrics of a song along with detailed track information.
+
+## NLP & Emotion Analysis
+Endpoints for analyzing sentiment and emotions from song lyrics using Hugging Face models.
+
+* **Analyze Lyrics**: Manually submit lyrics text to get a deep emotion analysis (e.g., joy, sadness, anger).
+* **Background Analysis**: Internal endpoint that automatically processes emotion analysis when lyrics are fetched from Genius.
+
+## Spotify Data
+Endpoints to retrieve user profile data and music statistics from Spotify.
+
+* **Dashboard Data**: Retrieves a summary of the user's profile and current session status.
+* **Top Tracks & Artists**: Fetches the user's most-listened-to tracks and artists over specific time ranges (short, medium, long term).
+* **Top Genres**: Analyzes and aggregates top music genres based on the user's top artists.
+* **Recent History**: Retrieves the list of recently played tracks by the user.
+
+## Admin
+System administration endpoints to monitor server statistics and cache status.
+
+* **System Stats**: Monitors server health, memory usage, and total requests processed.
+* **Clear Cache**: Clears temporary cache data to force the system to fetch fresh data from third-party APIs.
+* **User Report**: Generates statistical reports on users registered in the system.
+* **Export Data**: Exports basic user data for backup or migration purposes.

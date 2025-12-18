@@ -15,8 +15,8 @@ body {
     height: 44px; 
     z-index: 9999;
     background-color: rgba(22, 22, 23, 0.8);
-    backdrop-filter: saturate(180%) blur(12px);
-    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(8px);
+    -webkit-backdrop-filter: saturate(180%) blur(8px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-family: 'Plus Jakarta Sans', sans-serif;
     box-shadow: 
@@ -89,22 +89,25 @@ body {
 .dropdown-content {
     display: none; 
     position: absolute;
-    top: 100%; 
-    left: 50%;
-    transform: translateX(-50%);
     min-width: 90px;
-    background-color: rgba(22, 22, 23, 0.99) !important;
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    backdrop-filter: blur(40px) saturate(180%);
+    background-color: rgba(22, 22, 23, 0.5) !important;
+    backdrop-filter: blur(8px) saturate(180%);
+    -webkit-backdrop-filter: blur(8px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow:
         0 8px 32px rgba(0, 0, 0, 0.5),
         inset 0 -2px 4px 0 rgba(255, 255, 255, 0.25),
         inset 0 -1px 1px 0 rgba(255, 255, 255, 0.35);
     border-radius: 0 0 12px 12px; 
-    padding: 3px 0;
-    z-index: 9998;
+    padding: 2px 0px;
+    padding-bottom: 4px;
+    z-index: 10000;
     flex-direction: column;
+    overflow: hidden;
+}
+
+.dropdown-content a:last-child {
+    border-bottom: none;
 }
 
 .nav-item:hover .dropdown-content {
@@ -122,6 +125,7 @@ body {
     height: auto;
     display: block;
     -webkit-text-stroke: 0.1px #ccc;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .dropdown-content a:hover {
