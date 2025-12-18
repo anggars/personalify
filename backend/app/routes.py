@@ -40,27 +40,6 @@ def root(request: Request):
         spotify_id = None
     return templates.TemplateResponse("home.html", {"request": request, "spotify_id": spotify_id})
 
-@router.get("/docs", include_in_schema=False)
-async def custom_docs():
-    html_content = """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Personalify API Docs</title>
-        <style>
-            body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-            iframe { width: 100%; height: 100%; border: none; }
-        </style>
-    </head>
-    <body>
-        <iframe src="https://personalify.mintlify.dev/docs"></iframe>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html_content)
-
 @router.get("/login", tags=["Auth"])
 def login(request: Request):
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
