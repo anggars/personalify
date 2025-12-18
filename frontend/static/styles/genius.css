@@ -911,8 +911,31 @@ input:-webkit-autofill:active {
 }
 
 .genius-input.active {
-  border-bottom-left-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-  box-shadow: none;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+}
+
+.input-wrapper {
+    position: relative;
+    width: 100%;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+.container.searching-mode .input-wrapper {
+    transform: translateY(-80px);
+}
+
+.genius-input {
+    transition: border-radius 0.3s ease, border-color 0.2s;
+}
+
+.genius-input.active {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+.genius-input:not(.active) {
+    border-radius: 12px !important;
 }
