@@ -1,6 +1,6 @@
 {
   "name": "Personalify Docs",
-  "openapi": "openapi.json",
+  "openapi": "https://raw.githubusercontent.com/anggars/personalify/main/docs/openapi.json",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
@@ -20,7 +20,7 @@
       ]
     },
     {
-      "group": "Auth Endpoints",
+      "group": "Auth",
       "pages": [
         "GET /login",
         "GET /logout",
@@ -28,17 +28,22 @@
       ]
     },
     {
-      "group": "Analysis & Data",
+      "group": "Analysis",
       "pages": [
         "POST /analyze-lyrics",
         "POST /analyze-emotions-background",
         "GET /top-data",
-        "GET /top-genres",
+        "GET /top-genres"
+      ]
+    },
+    {
+      "group": "Dashboard",
+      "pages": [
         "GET /dashboard/{spotify_id}"
       ]
     },
     {
-      "group": "Genius Integration",
+      "group": "Genius API",
       "pages": [
         "GET /api/genius/search-artist",
         "GET /api/genius/artist-songs/{artist_id}",
@@ -46,7 +51,7 @@
       ]
     },
     {
-      "group": "Admin System",
+      "group": "Admin",
       "pages": [
         "GET /admin/system-stats",
         "GET /admin/user-report/{spotify_id}",
