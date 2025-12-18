@@ -20,17 +20,9 @@
       ]
     },
     {
-      "group": "Auth",
+      "group": "API Endpoints",
       "pages": [
-        "GET /login",
-        "GET /callback"
-      ]
-    },
-    {
-      "group": "Analysis",
-      "pages": [
-        "POST /analyze-lyrics",
-        "GET /top-genres"
+        "openapi.json"
       ]
     }
   ],
