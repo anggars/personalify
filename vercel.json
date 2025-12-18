@@ -8,11 +8,11 @@
   "routes": [
     {
       "src": "/docs",
-      "dest": "https://personalify.mintlify.app/docs"
+      "dest": "https://personalify.mintlify.app/"
     },
     {
       "src": "/docs/(.*)",
-      "dest": "https://personalify.mintlify.app/docs/$1"
+      "dest": "https://personalify.mintlify.app/$1"
     },
     {
       "src": "/_next/(.*)",
