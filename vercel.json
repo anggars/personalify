@@ -7,16 +7,16 @@
   ],
   "routes": [
     {
-      "source": "/docs",
-      "destination": "https://[subdomain].mintlify.dev/docs"
+      "src": "/docs",
+      "dest": "https://personalify.mintlify.app/docs"
     },
     {
-      "source": "/docs/:match*",
-      "destination": "https://[subdomain].mintlify.dev/docs/:match*"
+      "src": "/docs/:match*",
+      "dest": "https://personalify.mintlify.app/docs/:match*"
     },
     {
-      "source": "/(.*)",
-      "destination": "api/index.py"
+      "src": "/(.*)",
+      "dest": "api/index.py"
     }
   ]
 }
