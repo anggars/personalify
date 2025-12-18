@@ -1,6 +1,6 @@
 {
   "name": "Personalify Docs",
-  "openapi": "/docs/openapi.json", 
+  "openapi": "openapi.json",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
