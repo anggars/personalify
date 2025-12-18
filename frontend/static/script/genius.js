@@ -5,26 +5,7 @@ const songSection = document.getElementById('songSection');
 const songList = document.getElementById('songList');
 const analysisResult = document.getElementById('analysisResult');
 const resultContent = document.getElementById('resultContent');
-let autocompleteList = document.getElementById('autocomplete-list');
-if (autocompleteList) autocompleteList.remove();
-autocompleteList = document.createElement('div');
-autocompleteList.id = 'autocomplete-list';
-autocompleteList.className = 'autocomplete-items';
-document.body.appendChild(autocompleteList); 
 let debounceTimer;
-let positionLoopId; 
-function startPositionTracking() {
-    if (positionLoopId) cancelAnimationFrame(positionLoopId);
-    function update() {
-        if (autocompleteList.style.display === 'none') return;
-        const rect = artistInput.getBoundingClientRect();
-        autocompleteList.style.left = (rect.left + window.scrollX) + 'px';
-        autocompleteList.style.top = (rect.bottom + window.scrollY) + 'px';
-        autocompleteList.style.width = rect.width + 'px';
-        positionLoopId = requestAnimationFrame(update);
-    }
-    update();
-}
 const getSpinnerHtml = (text) => `
     <div class="loading-state-container">
         <svg class="spinner" viewBox="0 0 50 50">
@@ -62,14 +43,6 @@ function setLoading(isLoading) {
         searchBtn.classList.remove('loading');
         artistInput.disabled = false;
         artistInput.blur();
-    }
-}
-function closeDropdown() {
-    if (autocompleteList) {
-        autocompleteList.style.display = 'none';
-        if (positionLoopId) cancelAnimationFrame(positionLoopId);
-        artistInput.classList.remove('active');
-        document.querySelector('.container').classList.remove('searching-mode');
     }
 }
 async function searchArtist() {
@@ -143,6 +116,15 @@ async function searchArtist() {
         setLoading(false);
     }
 }
+async function fetchSuggestions(query) {
+    try {
+        const res = await fetch(`/api/genius/autocomplete?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        renderSuggestions(data.results);
+    } catch (e) {
+        console.error("Autocomplete error:", e);
+    }
+}
 async function loadSongs(artistId, artistName) {
     const selectedArtistEl = document.getElementById('selectedArtistName');
     selectedArtistEl.innerHTML = `
@@ -152,6 +134,7 @@ async function loadSongs(artistId, artistName) {
             </div>
         </div>
     `;
+
     setTimeout(() => {
         const wrapper = document.getElementById('selectedArtistWrapper');
         const track = document.getElementById('selectedArtistTrack');
@@ -449,74 +432,73 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     typeTechFooter();
 });
-searchBtn.addEventListener('click', searchArtist);
-artistInput.addEventListener('keydown', (e) => { 
-    if(e.key === 'Enter') {
-        closeDropdown();
-        searchArtist(); 
-    }
-});
 artistInput.addEventListener('input', function() {
     const query = this.value.trim();
     clearTimeout(debounceTimer);
     if (!query) {
-        closeDropdown();
+        artistList.innerHTML = '';
+        artistList.style.display = 'none';
         return;
     }
-    debounceTimer = setTimeout(() => {
-        fetchSuggestions(query);
+    debounceTimer = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/genius/autocomplete?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            if (!artistInput.value.trim()) {
+                artistList.innerHTML = '';
+                artistList.style.display = 'none';
+                return;
+            }
+            artistList.innerHTML = '';
+            artistList.style.display = 'grid';
+            data.results.forEach(artist => {
+                const card = document.createElement('div');
+                card.className = 'artist-card';
+                const imgUrl = artist.image_url || 'https://via.placeholder.com/150?text=No+Image';
+                card.innerHTML = `
+                    <img src="${imgUrl}" class="artist-img">
+                    <div class="artist-name-wrapper">
+                        <span class="artist-name">${artist.name}</span>
+                    </div>
+                `;
+                card.onclick = () => {
+                    artistInput.value = '';
+                    artistList.innerHTML = '';
+                    loadSongs(artist.id, artist.name);
+                };
+                artistList.appendChild(card);
+            });
+        } catch (e) { console.error(e); }
     }, 300);
 });
-document.addEventListener('click', function(e) {
-    if (e.target !== artistInput && e.target !== autocompleteList) {
-        if (autocompleteList) autocompleteList.innerHTML = '';
-    }
-});
-async function fetchSuggestions(query) {
-    try {
-        const res = await fetch(`/api/genius/autocomplete?q=${encodeURIComponent(query)}`);
-        const data = await res.json();
-        renderSuggestions(data.results);
-    } catch (e) {
-        console.error("Autocomplete error:", e);
-    }
-}
+searchBtn.addEventListener('click', searchArtist);
+artistInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') searchArtist() });
 function renderSuggestions(artists) {
-    autocompleteList.innerHTML = ''; 
+    artistList.innerHTML = ''; 
     if (!artists || artists.length === 0) {
-        closeDropdown();
+        artistList.style.display = 'none';
         return;
     }
-    autocompleteList.style.display = 'block';
-    startPositionTracking();
-    if (songSection.style.display === 'none') {
-        document.querySelector('.container').classList.add('searching-mode');
-    }
-    artistInput.classList.add('active'); 
+    artistList.style.display = 'grid';
+    songSection.style.display = 'none';
+    analysisResult.style.display = 'none';
     artists.forEach(artist => {
-        const item = document.createElement('div');
-        item.className = 'autocomplete-item';
-        const imgUrl = artist.image_url || 'https://via.placeholder.com/50';
-        item.innerHTML = `
-            <img src="${imgUrl}" alt="art">
-            <span>${artist.name}</span>
+        const card = document.createElement('div');
+        card.className = 'artist-card';
+        const imgUrl = artist.image_url || 'https://via.placeholder.com/150?text=No+Image';
+        card.innerHTML = `
+            <img src="${imgUrl}" class="artist-img">
+            <div class="artist-name-wrapper">
+                <span class="artist-name">${artist.name}</span>
+            </div>
         `;
-        item.addEventListener('mousemove', (e) => updateGlow(e, item));
-        item.addEventListener('touchmove', (e) => updateGlow(e, item));
-        item.addEventListener('click', () => {
-            artistInput.value = artist.name;
-            closeDropdown(); // Reset posisi & border pas diklik
-            if(songSection) songSection.style.display = 'none';
-            if(analysisResult) analysisResult.style.display = 'none';
-            if(artistList) artistList.style.display = 'none';
+        card.onclick = () => {
+            artistInput.value = '';
             loadSongs(artist.id, artist.name);
-        });
-        autocompleteList.appendChild(item);
+        };
+        card.addEventListener('mousemove', (e) => updateGlow(e, card));
+        card.addEventListener('touchstart', (e) => updateGlow(e, card));
+        card.addEventListener('touchmove', (e) => updateGlow(e, card));
+        artistList.appendChild(card);
     });
 }
-document.addEventListener('click', function(e) {
-    if (e.target !== artistInput && e.target !== autocompleteList) {
-        autocompleteList.style.display = 'none';
-        artistInput.classList.remove('active');
-    }
-});
