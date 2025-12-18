@@ -1,11 +1,55 @@
 ---
-title: "Introduction"
-description: "Welcome to Personalify Documentation"
+title: Introduction
+description: 'Documentation for Personalify API'
 ---
 
-# Hello World
+<img
+  className="block dark:hidden"
+  src="/logo/light.svg"
+  alt="Personalify Logo"
+/>
+<img
+  className="hidden dark:block"
+  src="/logo/dark.svg"
+  alt="Personalify Logo"
+/>
 
-This is the official documentation for the **Personalify** project.
+## Welcome to Personalify
 
-## What is Personalify?
-Personalify is an AI-powered song sentiment analysis application. It helps users understand the emotional tone of their favorite songs by analyzing lyrics and musical elements.
+**Personalify** is a music analytics platform integrated with Spotify and Genius. This API allows you to access listening history data, perform lyric sentiment analysis (NLP), and gain deep insights into user music tastes.
+
+<CardGroup cols={2}>
+  <Card
+    title="Powered by FastAPI"
+    icon="bolt"
+    href="https://fastapi.tiangolo.com"
+  >
+    Backend built using **FastAPI** for high performance, automatic validation, and asynchronous I/O.
+  </Card>
+  <Card
+    title="Spotify Integration"
+    icon="spotify"
+    href="https://developer.spotify.com"
+  >
+    Uses OAuth 2.0 for secure user data synchronization.
+  </Card>
+</CardGroup>
+
+## Key Features
+
+* **🎧 Spotify Data Sync:** Fetch top artists, tracks, and genres data in *real-time*.
+* **🧠 NLP Analysis:** Analyze song lyric emotions using Machine Learning models.
+* **📊 Dashboard & Stats:** Deep data visualization for every user.
+* **⚡ High Performance:** Fast response times thanks to FastAPI + MongoDB architecture.
+
+## Get Started
+
+To start using the API, you need to authenticate via the Login endpoint.
+
+<Card
+  title="Login to Start"
+  icon="right-to-bracket"
+  href="/endpoints/auth/login"
+>
+  Get your access token and start exploring data.
+</Card>
