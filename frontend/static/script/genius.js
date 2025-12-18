@@ -64,6 +64,14 @@ function setLoading(isLoading) {
         artistInput.blur();
     }
 }
+function closeDropdown() {
+    if (autocompleteList) {
+        autocompleteList.style.display = 'none';
+        if (positionLoopId) cancelAnimationFrame(positionLoopId);
+        artistInput.classList.remove('active');
+        document.querySelector('.container').classList.remove('searching-mode');
+    }
+}
 async function searchArtist() {
     const query = artistInput.value.trim();
     if (!query) {
@@ -444,8 +452,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 searchBtn.addEventListener('click', searchArtist);
 artistInput.addEventListener('keydown', (e) => { 
     if(e.key === 'Enter') {
-        autocompleteList.style.display = 'none'; // Tutup dropdown paksa
-        artistInput.classList.remove('active');
+        closeDropdown();
         searchArtist(); 
     }
 });
@@ -453,7 +460,7 @@ artistInput.addEventListener('input', function() {
     const query = this.value.trim();
     clearTimeout(debounceTimer);
     if (!query) {
-        autocompleteList.innerHTML = '';
+        closeDropdown();
         return;
     }
     debounceTimer = setTimeout(() => {
@@ -477,12 +484,15 @@ async function fetchSuggestions(query) {
 function renderSuggestions(artists) {
     autocompleteList.innerHTML = ''; 
     if (!artists || artists.length === 0) {
-        autocompleteList.style.display = 'none';
+        closeDropdown();
         return;
     }
     autocompleteList.style.display = 'block';
     startPositionTracking();
-    artistInput.classList.add('active');
+    if (songSection.style.display === 'none') {
+        document.querySelector('.container').classList.add('searching-mode');
+    }
+    artistInput.classList.add('active'); 
     artists.forEach(artist => {
         const item = document.createElement('div');
         item.className = 'autocomplete-item';
@@ -495,12 +505,10 @@ function renderSuggestions(artists) {
         item.addEventListener('touchmove', (e) => updateGlow(e, item));
         item.addEventListener('click', () => {
             artistInput.value = artist.name;
-            autocompleteList.style.display = 'none';
-            artistInput.classList.remove('active'); 
+            closeDropdown(); // Reset posisi & border pas diklik
             if(songSection) songSection.style.display = 'none';
             if(analysisResult) analysisResult.style.display = 'none';
             if(artistList) artistList.style.display = 'none';
-            
             loadSongs(artist.id, artist.name);
         });
         autocompleteList.appendChild(item);
