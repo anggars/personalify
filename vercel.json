@@ -3,14 +3,6 @@
     {
       "source": "/(.*)",
       "destination": "/api/index.py"
-    },
-    {
-      "source": "/docs",
-      "destination": "https://personalify.mintlify.dev/docs"
-    },
-    {
-      "source": "/docs/:match*",
-      "destination": "https://personalify.mintlify.dev/docs/:match*"
     }
   ]
 }
