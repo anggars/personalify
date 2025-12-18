@@ -11,18 +11,16 @@
     "light": "#1ED760",
     "dark": "#121212"
   },
-  "navigation": {
-    "groups": [
-      {
-        "group": "Get Started",
-        "pages": ["introduction"]
-      },
-      {
-        "group": "API Endpoints",
-        "openapi": "openapi.json"
-      }
-    ]
-  },
+  "navigation": [
+    {
+      "group": "Get Started",
+      "pages": ["introduction"]
+    },
+    {
+      "group": "API Endpoints",
+      "openapi": "openapi.json"
+    }
+  ],
   "footerSocials": {
     "github": "https://github.com/anggars/personalify"
   }
