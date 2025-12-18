@@ -3,6 +3,14 @@
     {
       "source": "/(.*)",
       "destination": "/api/index.py"
+    },
+    {
+      "source": "/docs",
+      "destination": "https://[subdomain].mintlify.dev/docs"
+    },
+    {
+      "source": "/docs/:match*",
+      "destination": "https://[subdomain].mintlify.dev/docs/:match*"
     }
   ]
 }
