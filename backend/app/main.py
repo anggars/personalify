@@ -9,10 +9,7 @@ from app.routes import router
 from app.db_handler import init_db
 from fastapi.responses import RedirectResponse
 
-app = FastAPI(
-    docs_url=None,
-    redoc_url=None,
-)
+app = FastAPI()
 
 origins = [
     "https://personalify.vercel.app",
