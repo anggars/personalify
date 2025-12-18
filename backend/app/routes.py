@@ -55,7 +55,7 @@ async def custom_docs():
         </style>
     </head>
     <body>
-        <iframe src="https://personalify.mintlify.app/docs"></iframe>
+        <iframe src="https://personalify.mintlify.dev/docs"></iframe>
     </body>
     </html>
     """
