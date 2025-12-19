@@ -469,6 +469,11 @@ artistInput.addEventListener('input',function(){
         try{
             const res=await fetch(`/api/genius/autocomplete?q=${encodeURIComponent(query)}`);
             const data=await res.json();
+            if(!artistInput.value.trim()){
+                artistList.innerHTML='';
+                artistList.style.display='none';
+                return;
+            }
             artistList.innerHTML='';
             if(data.results.length>0){
                 artistList.style.display='grid';
