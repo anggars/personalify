@@ -185,6 +185,7 @@ body.toast-active .dropdown-content {
     }
     .dropdown-content {
         min-width: 60px;
-        padding: 1px 0;
+        padding: -2px 2px;
+        text-align: center;
     }
 }

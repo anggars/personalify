@@ -33,9 +33,7 @@ main.main-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-
     justify-content: flex-start; 
-
     width: 100%;
 }
 
@@ -65,13 +63,10 @@ header p.subtitle a:hover {
     width: 100%;
     max-width: 700px;
     margin: 0 auto;
-
     display: flex;
     flex-direction: column;
     align-items: center;
-
     justify-content: center;
-
     min-height: 60vh; 
 }
 
@@ -84,16 +79,13 @@ header p.subtitle a:hover {
     padding: 1.5rem;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-
     border: 1px solid rgba(255, 255, 255, 0.08);
-
     box-shadow: 
         inset 0 2px 4px 0 rgba(255, 255, 255, 0.2), 
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.1),
         0 4px 15px rgba(0, 0, 0, 0.2);
     position: relative;
     z-index: 1;
-
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -136,16 +128,12 @@ header p.subtitle a:hover {
     align-items: center;
     justify-content: center;
     width: 100%; 
-
     padding: 12px 24px;
     border-radius: 50px;
-
     border: 1px solid rgba(255, 255, 255, 0.08);
-
     background: rgba(255, 255, 255, 0.05); 
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-
     color: #FFFFFF;
     font-weight: 700;
     font-size: 1rem;
@@ -161,7 +149,6 @@ header p.subtitle a:hover {
 }
 
 .button-primary:hover {
-
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.3);
     box-shadow: 
@@ -176,17 +163,14 @@ header p.subtitle a:hover {
     position: absolute;
     width: 100%;
     height: 100%;
-
     left: calc(var(--mouse-x, 50%) - 50%); 
     top: calc(var(--mouse-y, 50%) - 50%);
-
     background: radial-gradient(
         circle at center,
         rgba(29, 185, 84, 0.4), 
         rgba(29, 185, 84, 0.05) 50%, 
         transparent 100%            
     );
-
     filter: blur(10px);
     opacity: 0;
     z-index: -1;
@@ -246,10 +230,8 @@ header p.subtitle a:hover {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-
     padding: 10px 0; 
     min-height: auto; 
-
     color: var(--primary);
     font-weight: 600;
 }
@@ -257,7 +239,6 @@ header p.subtitle a:hover {
 .loading-state-container .spinner {
     position: relative; 
     top: auto; left: auto; 
-
     margin: 0 0 8px 0; 
     width: 32px; 
     height: 32px;
@@ -268,7 +249,6 @@ header p.subtitle a:hover {
     grid-column: 1 / -1; 
     text-align: center; 
     width: 100%; 
-
     margin: 5px 0; 
     font-size: 0.95rem;
 }
@@ -298,7 +278,6 @@ header p.subtitle a:hover {
 .artist-card {
     position: relative; 
     overflow: hidden;   
-
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -308,13 +287,10 @@ header p.subtitle a:hover {
     text-align: center; 
     cursor: pointer; 
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-
     background: rgba(255, 255, 255, 0.06); 
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-
     border: 1px solid rgba(255, 255, 255, 0.08);
-
     box-shadow: 
         inset 0 2px 4px 0 rgba(255, 255, 255, 0.2), 
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.1),
@@ -391,14 +367,11 @@ header p.subtitle a:hover {
 }
 
 .section-header {
-
     border-top: 1px solid #333;
     border-bottom: none; 
-
     margin-top: 1rem;      
     padding-top: 1rem;   
     margin-bottom: 1.2rem; 
-
     text-align: center;
 }
 
@@ -413,14 +386,10 @@ header p.subtitle a:hover {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 10px;
-
     max-height: 398px; 
-
     overflow-y: auto; 
     padding-right: 8px; 
-
     padding-bottom: 4px; 
-
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
 }
@@ -435,10 +404,12 @@ header p.subtitle a:hover {
         inset 0 2px 5px rgba(0, 0, 0, 0.5),
         inset 0 1px 1px rgba(255, 255, 255, 0.05); 
 }
+
 .lyrics-box::-webkit-scrollbar-track{
     background: #181818; 
     border-radius: 5px;
 }
+
 .song-grid::-webkit-scrollbar-thumb,
 .lyrics-box::-webkit-scrollbar-thumb { 
     background-color: rgba(255, 255, 255, 0.1);
@@ -464,7 +435,6 @@ header p.subtitle a:hover {
 .song-btn {
     position: relative; 
     overflow: hidden;   
-
     display: flex; 
     align-items: center; 
     gap: 12px;
@@ -475,16 +445,12 @@ header p.subtitle a:hover {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     box-sizing: border-box;
     height: 71px;
-
     scroll-snap-align: start;
     scroll-margin-top: 1px; 
-
     background: rgba(255, 255, 255, 0.06); 
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-
     border: 1px solid rgba(255, 255, 255, 0.08);
-
     box-shadow: 
         inset 0 2px 4px 0 rgba(255, 255, 255, 0.2), 
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.1),
@@ -502,19 +468,12 @@ header p.subtitle a:hover {
 }
 
 .song-btn.active {
-
     background: rgba(29, 185, 84, 0.15) !important; 
-
     border: 1px solid #1DB954 !important;
-
     box-shadow: 
-
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.35), 
-
         0 0 10px rgba(29, 185, 84, 0.15), 
-
         0 4px 10px rgba(0,0,0,0.5) !important;
-
     transform: translateY(-0.1px);
 }
 
@@ -529,17 +488,14 @@ header p.subtitle a:hover {
     position: absolute;
     width: 100%; 
     height: 100%;
-
     left: calc(var(--mouse-x, 50%) - 50%); 
     top: calc(var(--mouse-y, 50%) - 50%);
-
     background: radial-gradient(
         circle at center,
         rgba(29, 185, 84, 0.35), 
         rgba(29, 185, 84, 0.05) 50%, 
         transparent 70%            
     );
-
     filter: blur(8px);
     opacity: 0;         
     z-index: 0; 
@@ -557,7 +513,6 @@ header p.subtitle a:hover {
     font-size: 0.9rem;
     font-weight: 600;
     line-height: 1.3;
-
     white-space: nowrap;      
     overflow: hidden;         
     text-overflow: ellipsis;  
@@ -684,17 +639,11 @@ header p.subtitle a:hover {
 }
 
 .lyric-line {
-
     margin: 0;
-
     padding-bottom: 0; 
-
     color: #ccc; 
-
     line-height: 1.6;
-
     font-size: 1rem;
-
     scroll-snap-align: start;
 }
 
@@ -719,7 +668,6 @@ header p.subtitle a:hover {
 
 .emotion-bar-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
 .emotion-bar-row:last-child { margin-bottom: 0; }
-
 .emotion-label { font-weight: 700; color: #fff; text-transform: capitalize; letter-spacing: 0.5px; white-space: nowrap; overflow: visible; }
 
 .emotion-bar-bg {
@@ -731,31 +679,22 @@ header p.subtitle a:hover {
     position: relative;
     min-width: 80px;
     max-width: 100%;
-
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
 }
 
 .emotion-bar {
-
     background: rgba(255, 255, 255, 0.15); 
-
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-
     height: 100%;
     border-radius: 50px;
     min-width: 0;
     display: block;
     transition: width 0.5s ease-out;
-
     border: 1px solid rgba(255, 255, 255, 0.15);
-
     box-shadow: 
-
         inset 0 1px 1px rgba(255, 255, 255, 0.9),
-
         inset 0 0 3px rgba(255, 255, 255, 0.2),
-
         0 0 5px rgba(255, 255, 255, 0.15);
 }
 
@@ -797,37 +736,28 @@ footer.fade-in { opacity: 1; }
 @media (max-width: 768px) {
 body {
         padding: 1.5rem;
-
         min-height: 100dvh;
         height: auto;
-
         overflow-y: auto; 
-
         padding-bottom: 0;
-
         display: flex;
         flex-direction: column;
     }
-
     main.main-content {
-
         flex: 1;
         width: 100%;
         display: flex;
         flex-direction: column;
         justify-content: flex-start; 
     }
-
     header h1 {
         font-size: 2rem;
         margin-top: 0.85rem;
     }
-
     header p.subtitle {
         font-size: 1rem;
         margin-bottom: 2rem;
     }
-
     .emotion-bar-row {
         display: flex;
         align-items: center;
@@ -847,7 +777,6 @@ body {
         align-items: stretch;
         width: 100%;
     }
-
     .container {
         max-width: 100vw;
         padding: 0;
@@ -859,7 +788,6 @@ body {
         align-items: center;
         justify-content: center;
     }
-
     footer {
         font-size: 0.75rem;
         margin-top: 0.75rem;
@@ -873,7 +801,6 @@ body {
         box-shadow: none;
         line-height: 1.35;
     }
-
     .song-grid {
         padding-bottom: 2px;
     }
@@ -889,4 +816,33 @@ input:-webkit-autofill:active {
     font-size: 1.05rem !important;
     transition: background-color 5000s ease-in-out 0s;
     caret-color: white; 
+}
+
+.button-clear {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 69, 58, 0.3) !important;
+    color: #ff453a !important;
+    box-shadow: 
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.1), 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.05),
+        0 4px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+.button-clear::before {
+    background: radial-gradient(
+        circle at center,
+        rgba(255, 69, 58, 0.2), 
+        rgba(255, 69, 58, 0.05) 50%, 
+        transparent 100%            
+    );
+}
+
+.button-clear:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.45), 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.6),
+        0 8px 25px rgba(0, 0, 0, 0.3);
+    transform: none; 
 }

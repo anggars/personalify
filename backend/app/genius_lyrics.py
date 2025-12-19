@@ -95,7 +95,7 @@ def get_suggestions(query):
                         "name": artist["name"],
                         "image_url": artist["image_url"]
                     }
-        return list(suggestions.values())[:5]
+        return list(suggestions.values())[:8]
     except Exception as e:
         print(f"Suggestion Error: {e}")
         return []

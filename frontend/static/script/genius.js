@@ -45,74 +45,97 @@ function setLoading(isLoading) {
         artistInput.blur();
     }
 }
-async function searchArtist() {
-    const query = artistInput.value.trim();
-    if (!query) {
-        artistList.style.display = 'grid'; 
-        artistList.innerHTML = '<p class="status-msg error">Please enter an artist name first!</p>';
+function createArtistCard(artist){
+    const card=document.createElement('div');
+    card.className='artist-card';
+    const imgUrl=artist.image||artist.image_url||'https://via.placeholder.com/150?text=No+Image';
+    card.innerHTML=`<img src="${imgUrl}" class="artist-img"><div class="artist-name-wrapper"><span class="artist-name">${artist.name}</span></div>`;
+    card.onclick=()=>{
+        artistInput.value=artist.name;
+        updateSearchButtonState(true);
+        loadSongs(artist.id,artist.name);
+    };
+    card.addEventListener('mousemove',(e)=>updateGlow(e,card));
+    card.addEventListener('touchstart',(e)=>updateGlow(e,card));
+    card.addEventListener('touchmove',(e)=>updateGlow(e,card));
+    document.fonts.ready.then(()=>{
+        setTimeout(()=>{
+            const wrapper=card.querySelector('.artist-name-wrapper');
+            const textEl=card.querySelector('.artist-name');
+            if(wrapper&&textEl){
+                if(textEl.scrollWidth>wrapper.clientWidth){
+                    wrapper.classList.add('masked');
+                    const track=document.createElement('div');
+                    track.className='artist-marquee-track';
+                    const originalText=textEl.cloneNode(true);
+                    const cloneText=textEl.cloneNode(true);
+                    const spacer1=document.createElement("span");
+                    spacer1.className="artist-spacer";
+                    const spacer2=document.createElement("span");
+                    spacer2.className="artist-spacer";
+                    wrapper.innerHTML='';
+                    track.appendChild(originalText);
+                    track.appendChild(spacer1);
+                    track.appendChild(cloneText);
+                    track.appendChild(spacer2);
+                    wrapper.appendChild(track);
+                    const singleSetWidth=track.scrollWidth/2;
+                    const speed=30;
+                    const duration=Math.max(singleSetWidth/speed,5);
+                    track.style.setProperty('--duration',`${duration}s`);
+                }
+            }
+        },100);
+    });
+    return card;
+}
+function updateSearchButtonState(hasText){
+    const btnText=searchBtn.querySelector('.button-text')||searchBtn;
+    if(hasText){
+        btnText.textContent="Clear Search";
+        searchBtn.classList.add('button-clear');
+        searchBtn.onclick=()=>{
+            artistInput.value='';
+            artistList.innerHTML='';
+            artistList.style.display='none';
+            songSection.style.display='none';
+            analysisResult.style.display='none';
+            updateSearchButtonState(false);
+            artistInput.focus();
+        };
+    }else{
+        btnText.textContent="Search Artist";
+        searchBtn.classList.remove('button-clear');
+        searchBtn.onclick=searchArtist;
+    }
+}
+async function searchArtist(){
+    const query=artistInput.value.trim();
+    if(!query){
+        artistList.style.display='grid';
+        artistList.innerHTML='<p class="status-msg error">Please enter an artist name first!</p>';
         return;
     }
-    songSection.style.display = 'none';
-    analysisResult.style.display = 'none';
-    artistList.innerHTML = ''; 
-    artistList.style.display = 'grid'; 
+    songSection.style.display='none';
+    analysisResult.style.display='none';
+    artistList.innerHTML='';
+    artistList.style.display='grid';
     setLoading(true);
-    try {
-        const res = await fetch(`/api/genius/search-artist?q=${encodeURIComponent(query)}`);
-        const data = await res.json();
-        if (data.artists.length === 0) {
-            artistList.innerHTML = '<p class="status-msg error">No artist found.</p>';
-        } else {
-            data.artists.forEach(artist => {
-                const card = document.createElement('div');
-                card.className = 'artist-card';
-                const imgUrl = artist.image || 'https://via.placeholder.com/150?text=No+Image';
-                card.innerHTML = `
-                    <img src="${imgUrl}" class="artist-img">
-                    <div class="artist-name-wrapper">
-                        <span class="artist-name">${artist.name}</span>
-                    </div>
-                `;
-                card.onclick = () => loadSongs(artist.id, artist.name);
-                card.addEventListener('mousemove', (e) => updateGlow(e, card));
-                card.addEventListener('touchstart', (e) => updateGlow(e, card));
-                card.addEventListener('touchmove', (e) => updateGlow(e, card));
+    try{
+        const res=await fetch(`/api/genius/search-artist?q=${encodeURIComponent(query)}`);
+        const data=await res.json();
+        if(data.artists.length===0){
+            artistList.innerHTML='<p class="status-msg error">No artist found.</p>';
+        }else{
+            data.artists.forEach(artist=>{
+                const card=createArtistCard(artist);
                 artistList.appendChild(card);
-                document.fonts.ready.then(() => {
-                    setTimeout(() => {
-                        const wrapper = card.querySelector('.artist-name-wrapper');
-                        const textEl = card.querySelector('.artist-name');
-                        if (wrapper && textEl) {
-                            if (textEl.scrollWidth > wrapper.clientWidth + 1) {
-                                wrapper.classList.add('masked');
-                                const track = document.createElement('div');
-                                track.className = 'artist-marquee-track';
-                                const originalText = textEl.cloneNode(true);
-                                const cloneText = textEl.cloneNode(true);
-                                const spacer1 = document.createElement("span");
-                                spacer1.className = "artist-spacer";
-                                const spacer2 = document.createElement("span");
-                                spacer2.className = "artist-spacer";
-                                wrapper.innerHTML = '';
-                                track.appendChild(originalText);
-                                track.appendChild(spacer1);
-                                track.appendChild(cloneText);
-                                track.appendChild(spacer2);
-                                wrapper.appendChild(track);
-                                const singleSetWidth = track.scrollWidth / 2;
-                                const speed = 30; 
-                                const duration = Math.max(singleSetWidth / speed, 5); 
-                                track.style.setProperty('--duration', `${duration}s`);
-                            }
-                        }
-                    }, 100); 
-                });
             });
         }
-    } catch (err) {
+    }catch(err){
         console.error(err);
-        artistList.innerHTML = '<p class="status-msg error">Error searching artist.</p>';
-    } finally {
+        artistList.innerHTML='<p class="status-msg error">Error searching artist.</p>';
+    }finally{
         setLoading(false);
     }
 }
@@ -432,44 +455,34 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     typeTechFooter();
 });
-artistInput.addEventListener('input', function() {
-    const query = this.value.trim();
+artistInput.addEventListener('input',function(){
+    const query=this.value.trim();
+    updateSearchButtonState(query.length>0);
     clearTimeout(debounceTimer);
-    if (!query) {
-        artistList.innerHTML = '';
-        artistList.style.display = 'none';
+    if(!query){
+        artistList.innerHTML='';
+        artistList.style.display='none';
         return;
     }
-    debounceTimer = setTimeout(async () => {
-        try {
-            const res = await fetch(`/api/genius/autocomplete?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            if (!artistInput.value.trim()) {
-                artistList.innerHTML = '';
-                artistList.style.display = 'none';
-                return;
+    debounceTimer=setTimeout(async()=>{
+        if(!artistInput.value.trim())return;
+        try{
+            const res=await fetch(`/api/genius/autocomplete?q=${encodeURIComponent(query)}`);
+            const data=await res.json();
+            artistList.innerHTML='';
+            if(data.results.length>0){
+                artistList.style.display='grid';
+                songSection.style.display='none';
+                analysisResult.style.display='none';
+                data.results.forEach(artist=>{
+                    const card=createArtistCard(artist);
+                    artistList.appendChild(card);
+                });
+            }else{
+                artistList.style.display='none';
             }
-            artistList.innerHTML = '';
-            artistList.style.display = 'grid';
-            data.results.forEach(artist => {
-                const card = document.createElement('div');
-                card.className = 'artist-card';
-                const imgUrl = artist.image_url || 'https://via.placeholder.com/150?text=No+Image';
-                card.innerHTML = `
-                    <img src="${imgUrl}" class="artist-img">
-                    <div class="artist-name-wrapper">
-                        <span class="artist-name">${artist.name}</span>
-                    </div>
-                `;
-                card.onclick = () => {
-                    artistInput.value = '';
-                    artistList.innerHTML = '';
-                    loadSongs(artist.id, artist.name);
-                };
-                artistList.appendChild(card);
-            });
-        } catch (e) { console.error(e); }
-    }, 300);
+        }catch(e){console.error(e);}
+    },300);
 });
 searchBtn.addEventListener('click', searchArtist);
 artistInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') searchArtist() });
