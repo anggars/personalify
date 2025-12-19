@@ -63,25 +63,46 @@ def prepare_text_for_analysis(text: str) -> str:
         return ""
 
     try:
-        print(f"NLP HANDLER: ENSURING TEXT IS IN ENGLISH (TRANSLATE IF NEEDED)...")
+        if len(text) > 4500:
+            print(f"NLP HANDLER: TEXT TOO LONG ({len(text)} chars). COMPRESSING BEFORE TRANSLATE...")
+            lines = text.split('\n')
+            unique_lines = []
+            seen = set()
+            current_len = 0
+            
+            for line in lines:
+                clean = line.strip()
+                if not clean or clean in seen or (clean.startswith('[') and clean.endswith(']')):
+                    continue
+                if current_len + len(clean) > 3000:
+                    break
+                
+                seen.add(clean)
+                unique_lines.append(clean)
+                current_len += len(clean) + 1
+            
+            text = "\n".join(unique_lines)
+            print(f"NLP HANDLER: COMPRESSED TO {len(text)} CHARS.")
+
+        print(f"NLP HANDLER: TRANSLATING TO ENGLISH...")
         try:
             translator = GoogleTranslator(source='auto', target='en')
             translated_text = translator.translate(text)
 
             if translated_text and len(translated_text.strip()) > 0:
-                print(f"NLP HANDLER: TEXT READY FOR ANALYSIS (FULL):\n{translated_text}")
+                # Debug dikit biar tau hasilnya
+                print(f"NLP HANDLER: TRANSLATED SAMPLE: {translated_text[:100]}...")
                 return translated_text
             else:
-                print("NLP HANDLER: TRANSLATION RESULTED IN EMPTY TEXT. USING ORIGINAL TEXT.")
+                print("NLP HANDLER: TRANSLATION RESULTED IN EMPTY TEXT. USING COMPRESSED ORIGINAL.")
                 return text
 
         except Exception as translate_error:
-            print(f"NLP HANDLER: ERROR DURING TRANSLATION: {translate_error}. USING ORIGINAL TEXT.")
+            print(f"NLP HANDLER: TRANSLATION ERROR: {translate_error}. USING COMPRESSED ORIGINAL.")
             return text
 
     except Exception as e:
-        print(f"NLP HANDLER: GENERAL ERROR IN PREPARE_TEXT_FOR_ANALYSIS: {e}")
-        print("NLP HANDLER: USING ORIGINAL TEXT AS FALLBACK.")
+        print(f"NLP HANDLER: GENERAL ERROR: {e}")
         return text
 
 def get_emotion_from_text(text: str):
@@ -97,7 +118,30 @@ def get_emotion_from_text(text: str):
 
     try:
         print(f"NLP HANDLER: RUNNING HYBRID ANALYSIS (ROBERTA + DISTILBERT)...")
-        text_to_analyze = text[:2000]
+        lines = text.split('\n')
+        unique_lines = []
+        seen = set()
+        current_length = 0
+        SAFE_LIMIT = 1200 
+
+        for line in lines:
+            clean_line = line.strip()
+            if not clean_line or clean_line in seen or (clean_line.startswith('[') and clean_line.endswith(']')):
+                continue
+            
+            if current_length + len(clean_line) > SAFE_LIMIT:
+                break
+                
+            seen.add(clean_line)
+            unique_lines.append(clean_line)
+            current_length += len(clean_line) + 2
+
+        text_to_analyze = ". ".join(unique_lines)
+        
+        if len(text_to_analyze) > SAFE_LIMIT:
+             text_to_analyze = text_to_analyze[:SAFE_LIMIT]
+
+        print(f"NLP HANDLER: COMPRESSED TEXT LENGTH: {len(text_to_analyze)} chars")
 
         print(" > Calling RoBERTa...")
         results_roberta = hf_client.text_classification(text_to_analyze, model=MODEL_ROBERTA, top_k=28)
