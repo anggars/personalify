@@ -106,6 +106,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         portalContent.style.zIndex='10000';
         portalContent.innerHTML=originalContent.innerHTML;
         document.body.appendChild(portalContent);
+        originalContent.remove(); 
         let isHovered=false;
         function updatePosition(){
             const rect=dropdown.getBoundingClientRect();
