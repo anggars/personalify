@@ -20,6 +20,22 @@ let cachedFontCSS = null;
 function setupCustomDropdowns() {
     const dropdowns = document.querySelectorAll('.custom-select');
 
+    const closeDropdown = (dropdown) => {
+        if (!dropdown.classList.contains('active')) return;
+
+        dropdown.classList.add('closing');
+
+        setTimeout(() => {
+            dropdown.classList.remove('active');
+            dropdown.classList.remove('closing');
+        }, 190);
+    };
+
+    const openDropdown = (dropdown) => {
+        dropdown.classList.add('active');
+        dropdown.classList.remove('closing');
+    };
+
     dropdowns.forEach(dropdown => {
         const trigger = dropdown.querySelector('.select-trigger');
         const options = dropdown.querySelectorAll('.custom-option');
@@ -27,10 +43,20 @@ function setupCustomDropdowns() {
 
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();
+            
+            const isActive = dropdown.classList.contains('active');
+
             dropdowns.forEach(d => {
-                if (d !== dropdown) d.classList.remove('active');
+                if (d !== dropdown && d.classList.contains('active')) {
+                    closeDropdown(d);
+                }
             });
-            dropdown.classList.toggle('active');
+
+            if (isActive) {
+                closeDropdown(dropdown);
+            } else {
+                openDropdown(dropdown);
+            }
         });
 
         options.forEach(option => {
@@ -40,7 +66,8 @@ function setupCustomDropdowns() {
                 option.classList.add('selected');
                 textSpan.textContent = option.textContent;
                 const value = option.getAttribute('data-value');
-                dropdown.classList.remove('active');
+                
+                closeDropdown(dropdown);
 
                 if (dropdown.id === 'time-filter-wrapper') {
                     const currentURL = window.location.href.split('?')[0].split('#')[0];
@@ -57,8 +84,8 @@ function setupCustomDropdowns() {
 
     document.addEventListener('click', (e) => {
         dropdowns.forEach(dropdown => {
-            if (!dropdown.contains(e.target)) {
-                dropdown.classList.remove('active');
+            if (!dropdown.contains(e.target) && dropdown.classList.contains('active')) {
+                closeDropdown(dropdown);
             }
         });
     });
@@ -1354,7 +1381,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const downloadBtn = document.querySelector('.download-btn');
     const modalButtons = document.querySelectorAll('.modal-options button');
     const listItems = document.querySelectorAll('.list-container li');
-    const elementsToGlow = [downloadBtn, ...modalButtons, ...listItems];
+    const dropdownTriggers = document.querySelectorAll('.select-trigger');
+    const dropdownOptions = document.querySelectorAll('.custom-option');
+    const elementsToGlow = [downloadBtn, ...modalButtons, ...listItems, ...dropdownTriggers, ...dropdownOptions];
     elementsToGlow.forEach(el => {
         if (el) {
             el.addEventListener('mousemove', (e) => updateGlow(e, el));
