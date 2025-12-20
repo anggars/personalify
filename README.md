@@ -2,7 +2,7 @@
 
 ## ✨ Live Demo
 This application is hosted and can be accessed publicly through the following link:
-**[https://personalify.vercel.app/](https://personalify.vercel.app/)**
+**[https://personalify.vercel.app](https://personalify.vercel.app)**
 
 ---
 
@@ -636,6 +636,7 @@ Overall, Personalify has successfully become a proof of concept for distributed 
 **Created by [アリツ](https://desty.page/anggars)** © 2025
 
 ---
+
 
 
 
