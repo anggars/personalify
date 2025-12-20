@@ -72,7 +72,8 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-width: 140px; 
+    width: 200px;
+    height: 46px;
     padding: 10px 1rem; 
     padding-right: 1rem;
     padding-bottom: 12px;
@@ -1064,4 +1065,5 @@ footer.fade-in {
     color: #1DB954;
     border-bottom: 2px solid #1DB954; /* Garis ijo */
     margin-bottom: -1px; /* Trik biar nempel sama border container */
+
 }
