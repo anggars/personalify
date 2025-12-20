@@ -49,10 +49,10 @@ The Personalify system consists of several components connected through service-
       +-------+-------+           +---------------+         +------------------+
               |
               v
-      +------------------------+
-      |   PostgreSQL + FDW     |
-      | (foreign remote table) |
-      +------------------------+
+ +------------------------+
+ |   PostgreSQL + FDW     |
+ | (foreign remote table) |
+ +------------------------+
 ```
 
 **Component Explanation:**
@@ -636,5 +636,6 @@ Overall, Personalify has successfully become a proof of concept for distributed 
 **Created by [アリツ](https://desty.page/anggars)** © 2025
 
 ---
+
 
 
