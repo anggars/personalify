@@ -63,20 +63,32 @@
 </header>
 
     <div class="filters">
-        <div class="select-wrapper">
-            <select id="time-filter">
-                <option value="short_term" {% if time_range == 'short_term' %}selected{% endif %}>Short Term</option>
-                <option value="medium_term" {% if time_range == 'medium_term' %}selected{% endif %}>Mid Term</option>
-                <option value="long_term" {% if time_range == 'long_term' %}selected{% endif %}>Long Term</option>
-            </select>
+        <div class="select-wrapper custom-select" id="time-filter-wrapper">
+            <div class="select-trigger" id="time-filter-trigger">
+                <span>
+                    {% if time_range == 'short_term' %}Short Term
+                    {% elif time_range == 'medium_term' %}Mid Term
+                    {% else %}Long Term{% endif %}
+                </span>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="custom-options">
+                <div class="custom-option {% if time_range == 'short_term' %}selected{% endif %}" data-value="short_term">Short Term</div>
+                <div class="custom-option {% if time_range == 'medium_term' %}selected{% endif %}" data-value="medium_term">Mid Term</div>
+                <div class="custom-option {% if time_range == 'long_term' %}selected{% endif %}" data-value="long_term">Long Term</div>
+            </div>
         </div>
 
-        <div class="select-wrapper" id="category-filter-wrapper" style="display:none;">
-            <select id="category-filter">
-                <option value="artists">Top Artists</option>
-                <option value="tracks" selected>Top Tracks</option>
-                <option value="genres">Top Genres</option>
-            </select>
+        <div class="select-wrapper custom-select" id="category-filter-wrapper" style="display:none;">
+            <div class="select-trigger" id="category-filter-trigger">
+                <span id="current-category-text">Top Tracks</span>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="custom-options">
+                <div class="custom-option" data-value="artists">Top Artists</div>
+                <div class="custom-option selected" data-value="tracks">Top Tracks</div>
+                <div class="custom-option" data-value="genres">Top Genres</div>
+            </div>
         </div>
     </div>
 

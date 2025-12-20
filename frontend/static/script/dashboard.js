@@ -17,6 +17,92 @@ const fontConfig = {
 
 let cachedFontCSS = null;
 
+function setupCustomDropdowns() {
+    const dropdowns = document.querySelectorAll('.custom-select');
+
+    dropdowns.forEach(dropdown => {
+        const trigger = dropdown.querySelector('.select-trigger');
+        const options = dropdown.querySelectorAll('.custom-option');
+        const textSpan = trigger.querySelector('span:first-child');
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdowns.forEach(d => {
+                if (d !== dropdown) d.classList.remove('active');
+            });
+            dropdown.classList.toggle('active');
+        });
+
+        options.forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.stopPropagation();
+                options.forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+                textSpan.textContent = option.textContent;
+                const value = option.getAttribute('data-value');
+                dropdown.classList.remove('active');
+
+                if (dropdown.id === 'time-filter-wrapper') {
+                    const currentURL = window.location.href.split('?')[0].split('#')[0];
+                    const userId = currentURL.split('/').pop();
+                    window.location.href = `/dashboard/${userId}?time_range=${value}`;
+                }
+
+                if (dropdown.id === 'category-filter-wrapper') {
+                   updateCategoryDisplay(value);
+                }
+            });
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        dropdowns.forEach(dropdown => {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+    });
+}
+
+document.addEventListener("DOMContentLoaded", setupCustomDropdowns);
+
+function updateCategoryDisplay(selectedValue) {
+    if (!selectedValue) {
+        const activeOption = document.querySelector('#category-filter-wrapper .custom-option.selected');
+        selectedValue = activeOption ? activeOption.getAttribute('data-value') : 'tracks';
+    }
+
+    const genreItems = sections.genres.querySelectorAll('li.no-animation');
+    genreItems.forEach(item => {
+        item.classList.remove('no-animation');
+    });
+
+    for (const key in sections) {
+        sections[key].classList.remove("active");
+    }
+
+    if (sections[selectedValue]) {
+        sections[selectedValue].classList.add("active");
+    }
+}
+
+function checkScreenSize() {
+    if (window.innerWidth <= 768) {
+        if(categoryFilterWrapper) {
+            categoryFilterWrapper.style.display = "inline-block";
+        }
+        updateCategoryDisplay();
+    } else {
+        for (const key in sections) {
+            sections[key].style.display = "block";
+            sections[key].classList.add("active");
+        }
+        if(categoryFilterWrapper) {
+            categoryFilterWrapper.style.display = "none";
+        }
+    }
+}
+
 document.addEventListener('wheel', function(e) {
     if (e.ctrlKey) {
         e.preventDefault();
@@ -37,9 +123,7 @@ async function prepareFont() {
         console.log("Fetching font for screenshot...");
         const response = await fetch(fontConfig.woff2Url);
         if (!response.ok) throw new Error("Network response was not ok");
-        
         const blob = await response.blob();
-        
         return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -168,31 +252,9 @@ function updateCategoryDisplay() {
     }
 }
 
-categoryFilterSelect.addEventListener("change", updateCategoryDisplay);
-
-function checkScreenSize() {
-    if (window.innerWidth <= 768) {
-        categoryFilterWrapper.style.display = "inline-block";
-        updateCategoryDisplay();
-    } else {
-        for (const key in sections) {
-            sections[key].style.display = "block";
-            sections[key].classList.add("active");
-        }
-        categoryFilterWrapper.style.display = "none";
-    }
-}
-
 window.addEventListener("resize", checkScreenSize);
 
 document.addEventListener("DOMContentLoaded", checkScreenSize);
-
-document.getElementById("time-filter").addEventListener("change", function() {
-    const selected = this.value;
-    const currentURL = window.location.href.split('?')[0].split('#')[0];
-    const userId = currentURL.split('/').pop();
-    window.location.href = `/dashboard/${userId}?time_range=${selected}`;
-});
 
 function toggleMore(index, el) {
     const more = document.getElementById("more-" + index);
@@ -487,18 +549,14 @@ document.body.appendChild(loadingOverlay);
             align-items: center !important;
             justify-content: center !important;
             align-content: center !important;
-
             background: #2a2a2a !important;
             border-radius: 10px !important;
             border: 1px solid var(--genre-color, #555);
             color: #FFFFFF !important;
-
             font-size: 0.6rem !important;
             white-space: nowrap !important;
-
             height: 18px !important;
             line-height: 1 !important;
-
             padding-left: 8px !important;
             padding-right: 8px !important;
             padding-top: 0 !important;
