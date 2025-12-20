@@ -64,7 +64,12 @@ function setupCustomDropdowns() {
     });
 }
 
-document.addEventListener("DOMContentLoaded", setupCustomDropdowns);
+document.addEventListener("DOMContentLoaded", () => {
+    setupCustomDropdowns();
+    checkScreenSize();
+});
+
+window.addEventListener("resize", checkScreenSize);
 
 function updateCategoryDisplay(selectedValue) {
     if (!selectedValue) {
@@ -148,7 +153,6 @@ async function prepareFont() {
         return ""; 
     }
 }
-prepareFont();
 
 function updateGlow(e, el) {
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -235,25 +239,7 @@ function updateGenreChart(newLabels, newCounts) {
     genreChartInstance.update();
 }
 
-function updateCategoryDisplay() {
-    const value = categoryFilterSelect.value;
-    
-    const genreItems = sections.genres.querySelectorAll('li.no-animation');
-    genreItems.forEach(item => {
-        item.classList.remove('no-animation');
-    });
-
-    for (const key in sections) {
-        sections[key].classList.remove("active");
-    }
-
-    if (sections[value]) {
-        sections[value].classList.add("active");
-    }
-}
-
 window.addEventListener("resize", checkScreenSize);
-
 document.addEventListener("DOMContentLoaded", checkScreenSize);
 
 function toggleMore(index, el) {
