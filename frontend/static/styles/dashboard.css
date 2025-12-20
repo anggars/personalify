@@ -56,21 +56,117 @@ h1 {
     gap: 0.75rem;
     margin-bottom: 2.4rem;
 }
+
 .select-wrapper {
     position: relative;
     display: inline-block;
-    border-radius: 9999px;
 }
+
 .select-wrapper::after {
-    content: '▼';
-    font-size: 0.85rem;
-    color: #aaa;
-    position: absolute;
-    right: 1rem;
-    top: 47.5%;
-    transform: translateY(-50%);
-    pointer-events: none;
+    display: none; 
 }
+
+.select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 140px; 
+    padding: 10px 1rem; 
+    padding-right: 1rem;
+    padding-bottom: 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #ffffff;
+    cursor: pointer;
+    border-radius: 9999px;
+    transform: translateZ(0); 
+    will-change: transform;
+    background-color: rgba(255, 255, 255, 0.05); 
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.35), 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
+        0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.select-trigger:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.select-trigger .arrow {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-left: 10px;
+    margin-top: 1px;
+    transition: transform 0.3s ease;
+}
+
+.custom-select.active .select-trigger .arrow {
+    transform: rotate(180deg);
+}
+
+.custom-options {
+    position: absolute;
+    top: 120%; 
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 120px; 
+    width: max-content;
+    background-color: rgba(22, 22, 23, 0.5) !important;
+    backdrop-filter: blur(6px) saturate(180%);
+    -webkit-backdrop-filter: blur(6px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        inset 0 -2px 4px 0 rgba(255, 255, 255, 0.25),
+        inset 0 -1px 1px 0 rgba(255, 255, 255, 0.35);
+    border-radius: 12px;
+    padding: 2px 0px;
+    padding-bottom: 4px;
+    z-index: 1000;
+    display: none; 
+    flex-direction: column;
+}
+
+.custom-select.active .custom-options {
+    display: flex;
+    animation: slideDownFade 0.2s ease forwards;
+}
+
+.custom-option {
+    padding: 10px 20px;
+    color: #ccc;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-text-stroke: 0.1px #ccc;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    transition: background-color 0.2s;
+}
+
+.custom-option:last-child {
+    border-bottom: none;
+}
+
+.custom-option:hover, 
+.custom-option.selected {
+    background: rgba(255, 255, 255, 0.05);
+    color: #1DB954;
+    -webkit-text-stroke: 0.1px #1DB954;
+}
+
+@keyframes slideDownFade {
+    0% { opacity: 0; transform: translate(-50%, -10px); }
+    100% { opacity: 1; transform: translate(-50%, 0); }
+}
+
 .filters select {
     appearance: none;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -93,16 +189,19 @@ h1 {
         inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
         0 4px 15px rgba(0, 0, 0, 0.2);
 }
+
 .filters select option {
     background-color: #1e1e1e; 
     color: #ffffff;
     padding: 10px; 
 }
+
 .container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
 }
+
 .section {
     background: #1e1e1e;
     border-radius: 1rem;
@@ -123,6 +222,7 @@ h1 {
 body.download-mode canvas {
     background-color: #1e1e1e; 
 }
+
 .section:hover {
     transform: translateY(-4px);
     box-shadow: 
@@ -131,6 +231,7 @@ body.download-mode canvas {
         0 15px 30px rgba(0, 0, 0, 0.5);
     z-index: 2;
 }
+
 .section h2 {
     text-align: center;
     font-size: 1.25rem;
@@ -141,29 +242,35 @@ body.download-mode canvas {
     margin-bottom: 0rem;
     padding-bottom: 1rem;
 }
+
 .list-container {
     list-style: none;
     padding: 0;
     margin: 0;
 }
+
 #genres-section li {
     cursor: pointer;
     transition: all 0.2s ease;
 }
+
 #genres-section li:hover {
     background-color: rgba(255, 255, 255, 0.05); 
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     border-radius: 8px;
 }
+
 .list-container li {
     padding: 0.75rem 0;
     border-bottom: 1px solid #333;
 }
+
 .list-item {
     display: flex;
     align-items: center;
     gap: 1rem;
 }
+
 .rank {
     font-size: 1.2rem;
     font-weight: 700;
@@ -172,6 +279,7 @@ body.download-mode canvas {
     text-align: center;
     flex-shrink: 0;
 }
+
 .list-item img {
     width: 64px;
     height: 64px;
@@ -186,6 +294,7 @@ body.download-mode canvas {
     position: relative;
     overflow: hidden; 
 }
+
 .info.mask-active {
     mask-image: linear-gradient(to right, black 85%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
@@ -224,16 +333,19 @@ body.download-mode canvas {
     backface-visibility: hidden;
     padding-right: 50px;
 }
+
 @keyframes smart-scroll {
     0%, 15% { transform: translateX(0); }
     100% { transform: translateX(var(--scroll-distance)); }
 }
+
 .info .name {
     font-weight: 600;
     font-size: 0.85rem; 
     color: #FFFFFF;
     margin-bottom: 2px;
 }
+
 .info .meta {
     font-weight: 500;
     font-size: 0.68rem;
@@ -243,9 +355,9 @@ body.download-mode canvas {
 
 .scroll-active:hover {
     text-overflow: clip; 
-
     animation: smart-scroll var(--scroll-duration, 5s) linear 0.5s infinite alternate;
 }
+
 .genre-pills .genre-label {
     display: inline-flex;
     align-items: center;
@@ -256,26 +368,23 @@ body.download-mode canvas {
     margin: 0.1rem 0.2rem 0 0;
     text-align: center;
     justify-content: center;
-
     --genre-color: rgba(255, 255, 255, 0.2); 
-
     background: rgba(255, 255, 255, 0.1);
     color: #FFFFFF; 
-
     border: 1px solid var(--genre-color); 
-
     transition: all 0.2s ease, border-color 0.2s ease;
 }
+
 .genre-pills .genre-label:hover {
     background: rgba(255, 255, 255, 0.2);
-
     border-color: var(--genre-color); 
-
     color: #FFFFFF;
 }
+
 .more-genres {
     display: none;
 }
+
 .show-more {
     cursor: pointer;
     color: #1DB954;
