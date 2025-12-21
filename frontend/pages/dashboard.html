@@ -64,7 +64,7 @@
 
     <div class="filters">
         <div class="select-wrapper custom-select" id="time-filter-wrapper">
-            <div class="select-trigger" id="time-filter-trigger">
+            <div class="select-trigger" id="time-filter-trigger" onclick="showTimeOptions()">
                 <span>
                     {% if time_range == 'short_term' %}Short Term
                     {% elif time_range == 'medium_term' %}Mid Term
@@ -72,22 +72,36 @@
                 </span>
                 <span class="arrow">▼</span>
             </div>
-            <div class="custom-options">
-                <div class="custom-option {% if time_range == 'short_term' %}selected{% endif %}" data-value="short_term">Short Term</div>
-                <div class="custom-option {% if time_range == 'medium_term' %}selected{% endif %}" data-value="medium_term">Mid Term</div>
-                <div class="custom-option {% if time_range == 'long_term' %}selected{% endif %}" data-value="long_term">Long Term</div>
             </div>
-        </div>
 
         <div class="select-wrapper custom-select" id="category-filter-wrapper" style="display:none;">
-            <div class="select-trigger" id="category-filter-trigger">
+            <div class="select-trigger" id="category-filter-trigger" onclick="showCategoryOptions()">
                 <span id="current-category-text">Top Tracks</span>
                 <span class="arrow">▼</span>
             </div>
-            <div class="custom-options">
-                <div class="custom-option" data-value="artists">Top Artists</div>
-                <div class="custom-option selected" data-value="tracks">Top Tracks</div>
-                <div class="custom-option" data-value="genres">Top Genres</div>
+            </div>
+    </div>
+
+    <div id="time-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Select Time Range</h3>
+            <div class="modal-options">
+                <button onclick="changeTimeRange('short_term')">Short Term</button>
+                <button onclick="changeTimeRange('medium_term')">Mid Term</button>
+                <button onclick="changeTimeRange('long_term')">Long Term</button>
+                <button class="modal-close" onclick="hideTimeOptions()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="category-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Select Category</h3>
+            <div class="modal-options">
+                <button onclick="changeCategory('artists', 'Top Artists')">Top Artists</button>
+                <button onclick="changeCategory('tracks', 'Top Tracks')">Top Tracks</button>
+                <button onclick="changeCategory('genres', 'Top Genres')">Top Genres</button>
+                <button class="modal-close" onclick="hideCategoryOptions()">Cancel</button>
             </div>
         </div>
     </div>

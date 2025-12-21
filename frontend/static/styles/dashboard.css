@@ -104,9 +104,10 @@ h1 {
     left: calc(var(--mouse-x, 50%) - 50%); 
     top: calc(var(--mouse-y, 50%) - 50%);
     background: radial-gradient(
-        circle 120px at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+        circle at center,
         rgba(29, 185, 84, 0.4), 
-        transparent 100%
+        rgba(29, 185, 84, 0.05) 50%, 
+        transparent 100%            
     );
     filter: blur(10px);
     opacity: 0;
@@ -140,109 +141,6 @@ h1 {
 
 .custom-select.active .select-trigger .arrow {
     transform: rotate(180deg);
-}
-
-.custom-options {
-    position: absolute;
-    top: 120%; 
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 120px; 
-    width: max-content;
-    background-color: rgba(22, 22, 23, 0.5) !important;
-    backdrop-filter: blur(6px) saturate(180%);
-    -webkit-backdrop-filter: blur(6px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.5),
-        inset 0 -2px 4px 0 rgba(255, 255, 255, 0.25),
-        inset 0 -1px 1px 0 rgba(255, 255, 255, 0.35);
-    border-radius: 12px;
-    padding: 2px 0px;
-    padding-bottom: 4px;
-    z-index: 1000;
-    display: none; 
-    flex-direction: column;
-}
-
-.custom-select.active .custom-options {
-    display: flex;
-    animation: slideDownFade 0.2s ease forwards;
-}
-
-.custom-option {
-    position: relative;
-    overflow: hidden;
-    z-index: 1;
-    padding: 10px 20px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #ccc;
-    font-size: 14px;
-    font-weight: 500;
-    text-align: center;
-    cursor: pointer;
-    white-space: nowrap;
-    -webkit-text-stroke: 0.1px #ccc;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-    transition: background-color 0.2s;
-    border-start-start-radius: 8px;
-    border-start-end-radius: 8px;
-    margin-top: -1.75px;
-    margin-bottom: -1px;
-}
-
-.custom-option::before {
-    content: '';
-    position: absolute;
-    width: 100%; 
-    height: 100%;
-    left: calc(var(--mouse-x, 50%) - 50%); 
-    top: calc(var(--mouse-y, 50%) - 50%);
-    height: 100%;
-    background: radial-gradient(
-        circle 100px at var(--mouse-x, 50%) var(--mouse-y, 50%), 
-        rgba(29, 185, 84, 0.4), 
-        transparent 100%
-    );
-    filter: blur(10px);
-    opacity: 0;
-    z-index: -1;
-    transition: opacity 0.4s ease;
-    pointer-events: none;
-}
-
-.custom-option:hover::before {
-    opacity: 1;
-}
-
-.custom-option:last-child {
-    border-bottom: none;
-}
-
-.custom-option:hover, 
-.custom-option.selected {
-    background: rgba(255, 255, 255, 0.05);
-    color: #1DB954;
-    -webkit-text-stroke: 0.1px #1DB954;
-}
-
-@keyframes slideDownFade {
-    0% { opacity: 0; transform: translate(-50%, -10px); }
-    100% { opacity: 1; transform: translate(-50%, 0); }
-}
-
-@keyframes slideUpFadeOut {
-    0% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-}
-
-.custom-select.closing .custom-options {
-    display: flex;
-    animation: slideUpFadeOut 0.2s ease forwards;
-    pointer-events: none;
 }
 
 .filters select {

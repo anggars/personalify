@@ -17,83 +17,56 @@ const fontConfig = {
 
 let cachedFontCSS = null;
 
-function setupCustomDropdowns() {
-    const dropdowns = document.querySelectorAll('.custom-select');
+const timeModal = document.getElementById("time-modal-overlay");
+const categoryModal = document.getElementById("category-modal-overlay");
 
-    const closeDropdown = (dropdown) => {
-        if (!dropdown.classList.contains('active')) return;
-
-        dropdown.classList.add('closing');
-
-        setTimeout(() => {
-            dropdown.classList.remove('active');
-            dropdown.classList.remove('closing');
-        }, 190);
-    };
-
-    const openDropdown = (dropdown) => {
-        dropdown.classList.add('active');
-        dropdown.classList.remove('closing');
-    };
-
-    dropdowns.forEach(dropdown => {
-        const trigger = dropdown.querySelector('.select-trigger');
-        const options = dropdown.querySelectorAll('.custom-option');
-        const textSpan = trigger.querySelector('span:first-child');
-
-        trigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            
-            const isActive = dropdown.classList.contains('active');
-
-            dropdowns.forEach(d => {
-                if (d !== dropdown && d.classList.contains('active')) {
-                    closeDropdown(d);
-                }
-            });
-
-            if (isActive) {
-                closeDropdown(dropdown);
-            } else {
-                openDropdown(dropdown);
-            }
-        });
-
-        options.forEach(option => {
-            option.addEventListener('click', (e) => {
-                e.stopPropagation();
-                options.forEach(opt => opt.classList.remove('selected'));
-                option.classList.add('selected');
-                textSpan.textContent = option.textContent;
-                const value = option.getAttribute('data-value');
-                
-                closeDropdown(dropdown);
-
-                if (dropdown.id === 'time-filter-wrapper') {
-                    const currentURL = window.location.href.split('?')[0].split('#')[0];
-                    const userId = currentURL.split('/').pop();
-                    window.location.href = `/dashboard/${userId}?time_range=${value}`;
-                }
-
-                if (dropdown.id === 'category-filter-wrapper') {
-                   updateCategoryDisplay(value);
-                }
-            });
-        });
-    });
-
-    document.addEventListener('click', (e) => {
-        dropdowns.forEach(dropdown => {
-            if (!dropdown.contains(e.target) && dropdown.classList.contains('active')) {
-                closeDropdown(dropdown);
-            }
-        });
-    });
+function showTimeOptions() {
+    if(timeModal) timeModal.style.display = 'flex';
 }
 
+function hideTimeOptions() {
+    if(timeModal) timeModal.style.display = 'none';
+}
+
+function changeTimeRange(value) {
+    const currentURL = window.location.href.split('?')[0].split('#')[0];
+    const userId = currentURL.split('/').pop(); 
+    window.location.href = `?time_range=${value}`; 
+}
+
+function showCategoryOptions() {
+    if(categoryModal) categoryModal.style.display = 'flex';
+}
+
+function hideCategoryOptions() {
+    if(categoryModal) categoryModal.style.display = 'none';
+}
+
+function changeCategory(value, textLabel) {
+    const triggerText = document.querySelector('#category-filter-trigger span:first-child');
+    if (triggerText) triggerText.textContent = textLabel;
+    updateCategoryDisplay(value);
+    hideCategoryOptions();
+}
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        hideSaveOptions();
+        hideTimeOptions();
+        hideCategoryOptions();
+    }
+});
+
 document.addEventListener("DOMContentLoaded", () => {
-    setupCustomDropdowns();
     checkScreenSize();
+    const newModalButtons = document.querySelectorAll('.modal-options button');
+    newModalButtons.forEach(el => {
+        if (el) {
+            el.addEventListener('mousemove', (e) => updateGlow(e, el));
+            el.addEventListener('touchstart', (e) => updateGlow(e, el));
+            el.addEventListener('touchmove', (e) => updateGlow(e, el));
+        }
+    });
 });
 
 window.addEventListener("resize", checkScreenSize);
