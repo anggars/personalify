@@ -630,8 +630,10 @@ async def start_background_analysis(
 ):
     app_url = os.getenv("APP_URL", "http://127.0.0.1:8000")
     token = os.getenv("QSTASH_TOKEN")
+    print(f"🔍 [DEBUG] APP_URL that's read: '{app_url}'")
+    print(f"🔍 [DEBUG] Token contains any content? {'YES' if token else 'EMPTY'}")
     if not token:
-        print("[CRITICAL ERROR] QSTASH_TOKEN KOSONG DI VERCEL!")
+        print("[CRITICAL ERROR] QSTASH_TOKEN EMPTY IN VERCEL!")
     if "127.0.0.1" in app_url or "localhost" in app_url:
         print("Local Mode: Bypass QStash.")
         background_tasks.add_task(run_analysis_logic, spotify_id)
