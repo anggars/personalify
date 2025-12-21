@@ -2,8 +2,9 @@ import os
 import requests
 import json
 import datetime
+import asyncio
 from urllib.parse import urlencode
-from fastapi import APIRouter, Request, Query, HTTPException, Body
+from fastapi import APIRouter, Request, Query, HTTPException, Body, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from typing import Optional
@@ -617,18 +618,33 @@ def api_get_lyrics_emotion(song_id: int):
         "emotion_analysis": emotion
     }
 
+async def run_analysis_logic(spotify_id: str):
+    print(f"[START] Processing analysis for: {spotify_id}")
+    await asyncio.sleep(2)
+    print(f"[FINISH] Analysis complete for: {spotify_id}")
+
 @router.post("/start-background-analysis")
-async def start_background_analysis(spotify_id: str):
-    client = get_qstash_client()
-    try:
-        result = client.publish_json({
-            "url": "https://personalify.vercel.app/api/tasks/process-analysis",
-            "body": {"spotify_id": spotify_id},
-        })
-        return {"status": "Task queued", "message_id": result.message_id}
-    except Exception as e:
-        print(f"QSTASH ERROR: {e}")
-        raise HTTPException(status_code=500, detail="Failed to queue task")
+async def start_background_analysis(
+    spotify_id: str, 
+    background_tasks: BackgroundTasks
+):
+    app_url = os.getenv("APP_URL", "http://127.0.0.1:8000")
+    if "127.0.0.1" in app_url or "localhost" in app_url:
+        print("Local Mode Detected: Bypassing QStash, using BackgroundTasks.")
+        background_tasks.add_task(run_analysis_logic, spotify_id)
+        return {"status": "Processing locally (No QStash needed)"}
+    else:
+        client = get_qstash_client()
+        try:
+            print(f"Production Mode: Sending task to QStash ({app_url})")
+            result = client.publish_json({
+                "url": f"{app_url}/api/tasks/process-analysis",
+                "body": {"spotify_id": spotify_id},
+            })
+            return {"status": "Task queued in QStash", "message_id": result.message_id}
+        except Exception as e:
+            print(f"QSTASH ERROR: {e}")
+            raise HTTPException(status_code=500, detail="Failed to queue task")
     
 @router.post("/api/tasks/process-analysis")
 async def process_analysis_task(request: Request):
@@ -647,4 +663,5 @@ async def process_analysis_task(request: Request):
     data = await request.json()
     spotify_id = data.get("spotify_id")
     print(f"PROCESSING BACKGROUND TASK FOR: {spotify_id}")
+    await run_analysis_logic(spotify_id)
     return {"status": "Processed"}
