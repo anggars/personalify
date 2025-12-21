@@ -7,8 +7,20 @@
 
 * { box-sizing: border-box; }
 
-header h1, header p.subtitle, .container {
-    visibility: hidden;
+header h1 {
+    opacity: 0;
+    animation: fadeInSlideUp 0.8s ease-out forwards;
+}
+
+@keyframes fadeInSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 body {

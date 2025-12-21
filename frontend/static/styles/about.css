@@ -5,6 +5,22 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
 
+header h1 {
+    opacity: 0;
+    animation: fadeInSlideUp 0.8s ease-out forwards;
+}
+
+@keyframes fadeInSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 body {
     background-color: #121212;
     color: #ffffff;
@@ -280,7 +296,7 @@ footer {
     font-size: 0.75rem;
     color: #888;
     opacity: 0; 
-    transition: opacity 0.5s ease-out;
+    transition: opacity 0.5s ease-out 0.5s;
     line-height: 1.35;
 }
 

@@ -151,25 +151,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     if (titleEl && subtitleEl && containerEl) {
-        const titleText = titleEl.textContent;
         const subtitleHtml = subtitleEl.innerHTML;
         const sectionEl = containerEl.querySelector('.section');
         if (sectionEl) {
             sectionEl.style.opacity = '0';
-            sectionEl.style.animation = 'none'; 
+            sectionEl.style.animation = 'fadeInUp 1s ease-out forwards';
         }
-        titleEl.innerHTML = '';
         subtitleEl.innerHTML = '';
         titleEl.style.visibility = 'visible';
         subtitleEl.style.visibility = 'visible';
         containerEl.style.visibility = 'visible';
-        await typeEffect(titleEl, titleText, 50);
+        setTimeout(() => {
+            if (footerEl) footerEl.classList.add('fade-in');
+        }, 100);
         await typeEffect(subtitleEl, subtitleHtml, 30);
-        if (sectionEl) {
-            sectionEl.style.animation = 'fadeInUp 1s ease-out forwards';
-        }
     }
-    if (footerEl) footerEl.classList.add('fade-in');  
 });
 
 document.addEventListener('DOMContentLoaded', () => {

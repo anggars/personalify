@@ -9,6 +9,22 @@ button, input, textarea, select {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 
+header h1 {
+    opacity: 0;
+    animation: fadeInSlideUp 0.8s ease-out forwards;
+}
+
+@keyframes fadeInSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 body {
     margin: 0;
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -439,16 +455,12 @@ header p.subtitle a:hover {
 
 footer {
     width: 100%;
-
     margin-top: -0.25rem; 
-
     padding: 2rem 0; 
-
     text-align: center;
     font-size: 0.75rem;
     color: #888;
     background: transparent; 
-
     opacity: 0;
     transition: opacity 0.5s ease-out 0.5s;
     line-height: 1.35;
