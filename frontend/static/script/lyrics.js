@@ -40,17 +40,14 @@ function updateGlow(e, el) {
 
 async function analyzeLyrics() {
     const lyrics = lyricsInput.value;
-
     if (!lyrics || lyrics.trim() === '') {
         resultsSection.style.display = 'block';
         resultDiv.innerHTML = `<p class="status-msg error">Please paste some lyrics first!</p>`;
         return; 
 
     }
-
     resultsSection.style.display = 'block';
     resultDiv.innerHTML = getSpinnerHtml("Analyzing...");
-
     try {
         const res = await fetch('/analyze-lyrics', {
             method: 'POST',
@@ -59,6 +56,16 @@ async function analyzeLyrics() {
         });
         if (!res.ok) throw new Error(`Server error: ${res.statusText}`);
         const data = await res.json();
+        if (!data.error) {
+            fetch('/fire-qstash-event', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    action: "manual_lyrics_analysis",
+                    metadata: { length: lyrics.length }
+                })
+            }).catch(err => console.log("QStash trigger silent fail:", err));
+        }
         if (data.error) {
             resultDiv.innerHTML = `<p style="color:#ff6b6b; text-align:center;">${data.error}</p>`;
         } else if (data.emotions && data.emotions.length > 0) {
@@ -67,7 +74,6 @@ async function analyzeLyrics() {
                  resultDiv.innerHTML = '<p style="text-align:center;">Could not find significant emotions.</p>';
                  return;
             }
-
             const maxScore = Math.max(...topEmotions.map(e => e.score));
             resultDiv.innerHTML = topEmotions.map(e => `
                 <div class="emotion-bar-row">

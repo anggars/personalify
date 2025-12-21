@@ -1070,7 +1070,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (footerEl) footerEl.classList.add('fade-in');
     await typeEffect(subtitleEl, originalSubtitle, 30);
     await typeEffect(emotionEl, originalEmotion, 30);
-    setTimeout(() => loadEmotionAnalysis(false), 1000);
+    setTimeout(() => {
+        loadEmotionAnalysis(false);
+        const urlParts = window.location.pathname.split('/');
+        const spotifyId = urlParts[urlParts.length - 1];
+        if (spotifyId) {
+            console.log("Triggering QStash analysis...");
+            fetch(`/start-background-analysis?spotify_id=${spotifyId}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => console.log("QStash Status:", data))
+                .catch(err => console.error("QStash Error:", err));
+        }
+    }, 1000);
 });
 
 window.onload = function() {
