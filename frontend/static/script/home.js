@@ -69,6 +69,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             }, 1000);
         }, 100);
     }
+    if (buttonEl) {
+        buttonEl.addEventListener('click', function(e) {
+            e.preventDefault();
+            this.classList.add('loading');
+            const destinationUrl = this.getAttribute('href');
+            setTimeout(() => {
+                window.location.href = destinationUrl;
+            }, 1000);
+        });
+    }
 });
 document.addEventListener('DOMContentLoaded', function() {
     const buttonEl = document.querySelector('.hero .button');
