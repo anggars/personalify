@@ -133,8 +133,7 @@ body {
     display: block;
     -webkit-text-stroke: 0.1px #ccc;
     border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-    border-start-start-radius: 8px;
-    border-start-end-radius: 8px;
+    border-radius: 8px;
     margin-top: -0.5px;
     transition: all 0.2s ease;
 }
