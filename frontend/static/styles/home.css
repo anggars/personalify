@@ -46,8 +46,15 @@ body {
     width: 80px;
     height: 80px;
     margin-bottom: 2rem;
+}
+
+.logo,
+.hero h1, 
+.hero .button, 
+footer {
     opacity: 0;
-    animation: fadeInUp 0.8s ease-out 0.2s forwards;
+    transform: translateY(20px); 
+    transition: opacity 1s ease-out, transform 1s ease-out;
 }
 
 h1 {
@@ -263,14 +270,6 @@ footer.fade-in {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-.hero h1, 
-.hero .button, 
-footer {
-    opacity: 0;
-    transform: translateY(20px); 
-    transition: opacity 1s ease-out, transform 1s ease-out;
 }
 
 .hero p {

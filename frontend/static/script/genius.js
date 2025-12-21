@@ -397,22 +397,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     if (titleEl && subtitleEl) {
-        const titleText = titleEl.textContent;
-        const subtitleHtml = subtitleEl.innerHTML; 
-        titleEl.innerHTML = '';
+        const subtitleHtml = subtitleEl.innerHTML;
         subtitleEl.innerHTML = ''; 
         titleEl.style.visibility = 'visible';
         subtitleEl.style.visibility = 'visible';
-        await typeEffect(titleEl, titleText, 50);
-        await typeEffect(subtitleEl, subtitleHtml, 30);
         const containerEl = document.querySelector('.container');
         if (containerEl) {
             containerEl.style.visibility = 'visible';
             containerEl.style.opacity = '0'; 
             containerEl.style.animation = 'fadeInUp 1s ease-out forwards';
         }
+        setTimeout(() => {
+            if (footerEl) footerEl.classList.add('fade-in');
+        }, 100);
+        await typeEffect(subtitleEl, subtitleHtml, 30);
     }
-    if (footerEl) footerEl.classList.add('fade-in');
     const techPrefix = document.getElementById('tech-prefix');
     const techLink = document.getElementById('tech-link');
     const techStack = [

@@ -1062,18 +1062,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         setTimeout(() => loadEmotionAnalysis(false), 1000);
         return;
     }
-    const originalTitle = titleEl.textContent;
     const originalSubtitle = subtitleEl.textContent;
     const originalEmotion = emotionEl.innerHTML;
-    titleEl.textContent = '';
     subtitleEl.textContent = '';
     emotionEl.innerHTML = '';
-    await typeEffect(titleEl, originalTitle, 50);
-    await typeEffect(subtitleEl, originalSubtitle, 30);
-    await typeEffect(emotionEl, originalEmotion, 30);
     const footerEl = document.querySelector('footer');
     if (footerEl) footerEl.classList.add('fade-in');
-
+    await typeEffect(subtitleEl, originalSubtitle, 30);
+    await typeEffect(emotionEl, originalEmotion, 30);
     setTimeout(() => loadEmotionAnalysis(false), 1000);
 });
 
