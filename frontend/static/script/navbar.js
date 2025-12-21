@@ -2,13 +2,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateGlow(e, el) {
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
         if (clientX === undefined) return;
-
         const rect = el.getBoundingClientRect();
         const x = (clientX - rect.left) / rect.width * 100;
         const y = (clientY - rect.top) / el.clientHeight * 100;
-
         el.style.setProperty('--mouse-x', `${x}%`);
         el.style.setProperty('--mouse-y', `${y}%`);
     }
@@ -69,7 +66,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 e.preventDefault();
                 showToast("⚠️ Please login using the button on the home page!");
             });
-
             function showToast(message) {
                 const activeBubbles = document.querySelectorAll('.video-bubble-toast.show');
                 activeBubbles.forEach(bubble => {
@@ -90,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 document.body.classList.add('toast-active');
                 toast.style.animation = 'none';
-                toast.offsetHeight;
+                toast.offsetHeight; 
                 toast.textContent = message;
                 toast.style.display = 'block';
                 toast.style.animation = 'slideDownFade 0.5s ease-out forwards';
@@ -111,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const dropdowns = document.querySelectorAll('.nav-item.dropdown');
     dropdowns.forEach((dropdown) => {
         const originalContent = dropdown.querySelector('.dropdown-content');
+        const triggerLink = dropdown.querySelector('a'); 
         if (!originalContent) return;
         const portalContent = document.createElement('div');
         portalContent.className = originalContent.className;
@@ -132,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
         function updatePosition() {
             const rect = dropdown.getBoundingClientRect();
             portalContent.style.left = (rect.left + rect.width / 2) + 'px';
-            portalContent.style.top = rect.bottom + 'px';
+            portalContent.style.top = (rect.bottom - 1) + 'px'; 
             portalContent.style.transform = 'translateX(-50%)';
         }
         const showDropdown = () => {
@@ -158,13 +155,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }, 100);
         };
-        dropdown.addEventListener('mouseenter', showDropdown);
+        dropdown.addEventListener('mouseenter', () => {
+            if (window.innerWidth > 768) { 
+                showDropdown();
+            }
+        });
         dropdown.addEventListener('mouseleave', hideDropdown);
         portalContent.addEventListener('mouseenter', () => {
             isHovered = true;
             if (closeTimeout) clearTimeout(closeTimeout);
         });
         portalContent.addEventListener('mouseleave', hideDropdown);
+        if (triggerLink) {
+            triggerLink.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768) {
+                    if (portalContent.style.display === 'none') {
+                        e.preventDefault(); 
+                        e.stopPropagation();
+                        showDropdown();
+                    }
+                }
+            });
+        }
         window.addEventListener('resize', () => {
             if (portalContent.style.display !== 'none') {
                 updatePosition();

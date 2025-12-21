@@ -134,7 +134,7 @@ body {
     -webkit-text-stroke: 0.1px #ccc;
     border-bottom: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    margin-top: -0.5px;
+    top: 100%;
     transition: all 0.2s ease;
 }
 
