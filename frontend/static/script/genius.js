@@ -120,6 +120,14 @@ async function searchArtist(){
     analysisResult.style.display='none';
     artistList.innerHTML='';
     artistList.style.display='grid';
+    fetch('/fire-qstash-event', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            action: "genius_search_artist",
+            metadata: { query: query }
+        })
+    }).catch(() => {});
     setLoading(true);
     try{
         const res=await fetch(`/api/genius/search-artist?q=${encodeURIComponent(query)}`);
@@ -157,7 +165,6 @@ async function loadSongs(artistId, artistName) {
             </div>
         </div>
     `;
-
     setTimeout(() => {
         const wrapper = document.getElementById('selectedArtistWrapper');
         const track = document.getElementById('selectedArtistTrack');
@@ -262,6 +269,14 @@ async function analyzeSong(songId, clickedElement) {
     analysisResult.style.display = 'block';
     resultContent.innerHTML = getSpinnerHtml("Fetching lyrics & analyzing vibe...");
     resultContent.scrollIntoView({behavior: 'smooth'});
+    fetch('/fire-qstash-event', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            action: "genius_analyze_song",
+            metadata: { song_id: songId }
+        })
+    }).catch(() => {});
     try {
         const res = await fetch(`/api/genius/lyrics/${songId}`);
         if (!res.ok) throw new Error(`Server error: ${res.statusText}`);
