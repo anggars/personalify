@@ -637,10 +637,10 @@ async def start_background_analysis(
         client = get_qstash_client()
         try:
             print(f"Production Mode: Sending task to QStash ({app_url})")
-            result = client.publish_json({
-                "url": f"{app_url}/api/tasks/process-analysis",
-                "body": {"spotify_id": spotify_id},
-            })
+            result = client.message.publish_json(
+                url=f"{app_url}/api/tasks/process-analysis",
+                body={"spotify_id": spotify_id}
+            )
             return {"status": "Task queued in QStash", "message_id": result.message_id}
         except Exception as e:
             print(f"QSTASH ERROR: {e}")
@@ -682,10 +682,10 @@ async def fire_qstash_event(
         client = get_qstash_client()
         try:
             print(f"[PROD] Sending '{action}' event to QStash...")
-            result = client.publish_json({
-                "url": f"{app_url}/api/tasks/log-activity", 
-                "body": {"action": action, "data": metadata},
-            })
+            result = client.message.publish_json(
+                url=f"{app_url}/api/tasks/log-activity", 
+                body={"action": action, "data": metadata}
+            )
             return {"status": "Sent to QStash", "id": result.message_id}
         except Exception as e:
             print(f"QStash Error: {e}")
