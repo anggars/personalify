@@ -8,7 +8,6 @@ from fastapi import APIRouter, Request, Query, HTTPException, Body, BackgroundTa
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from typing import Optional
-from app.auth import get_current_user
 from app.nlp_handler import generate_emotion_paragraph, analyze_lyrics_emotion
 from app.admin import get_system_wide_stats, get_user_report, export_users_to_csv
 from app.db_handler import (
@@ -378,7 +377,6 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
 
     except Exception as e:
         print(f"DASHBOARD CRASH: {e}")
-
         raise HTTPException(status_code=500, detail="Internal Dashboard Error")
 
 @router.get("/about", response_class=HTMLResponse, tags=["Pages"])
