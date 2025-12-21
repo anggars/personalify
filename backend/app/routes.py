@@ -3,6 +3,7 @@ import requests
 import json
 import datetime
 import asyncio
+import requests
 from urllib.parse import urlencode
 from fastapi import APIRouter, Request, Query, HTTPException, Body, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Response
@@ -628,52 +629,37 @@ async def start_background_analysis(
     background_tasks: BackgroundTasks
 ):
     app_url = os.getenv("APP_URL", "http://127.0.0.1:8000")
+    token = os.getenv("QSTASH_TOKEN")
+    if not token:
+        print("[CRITICAL ERROR] QSTASH_TOKEN KOSONG DI VERCEL!")
     if "127.0.0.1" in app_url or "localhost" in app_url:
-        print("Local Mode Detected: Bypassing QStash, using BackgroundTasks.")
+        print("Local Mode: Bypass QStash.")
         background_tasks.add_task(run_analysis_logic, spotify_id)
-        return {"status": "Processing locally (No QStash needed)"}
+        return {"status": "Processing locally"}
     else:
-        client = get_qstash_client()
+        print(f"Production: Sending to QStash via MANUAL HTTP REQUEST...")
+        target_url = f"{app_url}/api/tasks/process-analysis"
+        qstash_url = f"https://qstash.upstash.io/v2/publish/{target_url}"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
         try:
-            print(f"Production Mode: Sending task to QStash ({app_url})")
-            result = client.publish(
-                url=f"{app_url}/api/tasks/process-analysis",
-                body=json.dumps({"spotify_id": spotify_id}),
-                headers={"Content-Type": "application/json"}
+            response = requests.post(
+                qstash_url,
+                headers=headers,
+                data=json.dumps({"spotify_id": spotify_id})
             )
-            msg_id = result.get("messageId") if isinstance(result, dict) else getattr(result, "message_id", "sent")
-            return {"status": "Task queued in QStash", "message_id": msg_id}
+            
+            if 200 <= response.status_code < 300:
+                return {"status": "Task queued", "details": response.json()}
+            else:
+                print(f"QStash Nolak: {response.text}")
+                return {"status": "QStash Failed", "error": response.text}
         except Exception as e:
-            print(f"QSTASH ERROR: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to queue task: {str(e)}")
+            print(f"Connection Error: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/fire-qstash-event")
-async def fire_qstash_event(
-    request: Request,
-    background_tasks: BackgroundTasks
-):
-    body = await request.json()
-    action = body.get("action", "unknown_action")
-    metadata = body.get("metadata", {})
-    app_url = os.getenv("APP_URL", "http://127.0.0.1:8000")
-    if "127.0.0.1" in app_url or "localhost" in app_url:
-        print(f"[LOCAL] Skipping QStash for action: {action}")
-        return {"status": "Logged locally"}
-    else:
-        client = get_qstash_client()
-        try:
-            print(f"[PROD] Sending '{action}' event to QStash...")
-            result = client.publish(
-                url=f"{app_url}/api/tasks/log-activity", 
-                body=json.dumps({"action": action, "data": metadata}),
-                headers={"Content-Type": "application/json"}
-            )
-            msg_id = result.get("messageId") if isinstance(result, dict) else getattr(result, "message_id", "sent")
-            return {"status": "Sent to QStash", "id": msg_id}
-        except Exception as e:
-            print(f"QStash Error: {e}")
-            return {"status": "Failed"}
-    
 @router.post("/api/tasks/process-analysis")
 async def process_analysis_task(request: Request):
     receiver = get_qstash_receiver()
@@ -686,14 +672,44 @@ async def process_analysis_task(request: Request):
             url=str(request.url)
         )
     except Exception as e:
-        print(f"INVALID QSTASH SIGNATURE: {e}")
+        print(f"INVALID SIGNATURE: {e}")
         raise HTTPException(status_code=401, detail="Invalid signature")
     data = await request.json()
     spotify_id = data.get("spotify_id")
-    print(f"PROCESSING BACKGROUND TASK FOR: {spotify_id}")
     await run_analysis_logic(spotify_id)
     return {"status": "Processed"}
+
+@router.post("/fire-qstash-event")
+async def fire_qstash_event(
+    request: Request,
+    background_tasks: BackgroundTasks
+):
+    body = await request.json()
+    action = body.get("action", "unknown_action")
+    metadata = body.get("metadata", {})
+    app_url = os.getenv("APP_URL", "http://127.0.0.1:8000")
+    token = os.getenv("QSTASH_TOKEN")
+    if "127.0.0.1" in app_url or "localhost" in app_url:
+        return {"status": "Logged locally"}
+    else:
+        target_url = f"{app_url}/api/tasks/log-activity"
+        qstash_url = f"https://qstash.upstash.io/v2/publish/{target_url}"
         
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        try:
+            requests.post(
+                qstash_url,
+                headers=headers,
+                data=json.dumps({"action": action, "data": metadata})
+            )
+            return {"status": "Sent to QStash (Manual)"}
+        except Exception as e:
+            print(f"QStash Error: {e}")
+            return {"status": "Failed"}
+
 @router.post("/api/tasks/log-activity")
 async def log_activity_task(request: Request):
     receiver = get_qstash_receiver()
@@ -706,8 +722,7 @@ async def log_activity_task(request: Request):
             url=str(request.url)
         )
     except Exception as e:
-        print(f"Invalid Signature: {e}")
-        return {"status": "Ignored (Invalid Sig)"}
+        return {"status": "Ignored"}
     data = await request.json()
-    print(f"[QSTASH WORKER] Processed Activity: {data.get('action')}")
+    print(f"Activity Logged: {data.get('action')}")
     return {"status": "Activity Logged"}
