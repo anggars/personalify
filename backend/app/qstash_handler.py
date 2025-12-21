@@ -2,7 +2,12 @@ import os
 from qstash import QStash, Receiver
 
 def get_qstash_client():
-    return QStash(token=os.getenv("QSTASH_TOKEN"))
+    token = os.getenv("QSTASH_TOKEN")
+    if not token:
+        print("CRITICAL: QSTASH_TOKEN is MISSING in Env Variables!")
+    else:
+        print(f"ℹ️ Token Loaded: {token[:5]}...xxx (Length: {len(token)})")
+    return QStash(token=token)
 
 def get_qstash_receiver():
     return Receiver(

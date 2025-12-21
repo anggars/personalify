@@ -9,4 +9,4 @@ jinja2
 huggingface_hub
 deep-translator
 beautifulsoup4
-qstash
+upstash-qstash
