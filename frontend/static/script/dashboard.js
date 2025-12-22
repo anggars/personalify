@@ -2,7 +2,7 @@ let genreChartInstance = null;
 let currentlyPlayingTrackId = null;
 let currentEmbedContainer = null;
 let currentlyActiveListItem = null;
-
+let currentCategory = 'tracks';
 const categoryFilterSelect = document.getElementById("category-filter");
 const categoryFilterWrapper = document.getElementById("category-filter-wrapper");
 const sections = {
@@ -43,6 +43,7 @@ function hideCategoryOptions() {
 }
 
 function changeCategory(value, textLabel) {
+    currentCategory = value;
     const triggerText = document.querySelector('#category-filter-trigger span:first-child');
     if (triggerText) triggerText.textContent = textLabel;
     updateCategoryDisplay(value);
@@ -96,7 +97,7 @@ function checkScreenSize() {
         if(categoryFilterWrapper) {
             categoryFilterWrapper.style.display = "inline-block";
         }
-        updateCategoryDisplay();
+        updateCategoryDisplay(currentCategory);
     } else {
         for (const key in sections) {
             sections[key].style.display = "block";
