@@ -5,7 +5,10 @@
     --muted: #B3B3B3;
 }
 
-* { box-sizing: border-box; }
+* { 
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
 
 header h1 {
     opacity: 0;

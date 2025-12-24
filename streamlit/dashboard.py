@@ -10,7 +10,7 @@ import time
 import numpy as np
 
 st.set_page_config(
-    page_title="Personalify Analyst",
+    page_title="Personalify Analysis",
     page_icon="🎵",
     layout="centered"
 )
@@ -130,7 +130,7 @@ with st.spinner('Loading AI Engines...'):
     roberta_model, distilbert_model = load_models()
     translator = get_translator()
 
-st.title("Personalify: Sentiment Analyst")
+st.title("Personalify: Sentiment Analysis")
 st.caption("Comparing **RoBERTa**, **DistilBERT**, and **Hybrid Consensus**.")
 st.divider()
 
