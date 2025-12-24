@@ -5,6 +5,10 @@
     --muted: #B3B3B3;
 }
 
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
 button, input, textarea, select {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
