@@ -158,11 +158,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     if (titleEl && subtitleEl && containerEl) {
         const subtitleHtml = subtitleEl.innerHTML;
-        const sectionEl = containerEl.querySelector('.section');
-        if (sectionEl) {
-            sectionEl.style.opacity = '0';
-            sectionEl.style.animation = 'fadeInUp 1s ease-out forwards';
-        }
+        containerEl.style.opacity = '0';
+        containerEl.style.animation = 'fadeInUp 1s ease-out forwards';
+        containerEl.style.visibility = 'visible';
         subtitleEl.innerHTML = '';
         titleEl.style.visibility = 'visible';
         subtitleEl.style.visibility = 'visible';
