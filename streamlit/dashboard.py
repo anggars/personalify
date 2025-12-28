@@ -3,7 +3,7 @@ import pandas as pd
 import altair as alt
 from transformers import pipeline
 from deep_translator import GoogleTranslator
-from langdetect import detect, DetectorFactory
+from langdetect import detect, DetectorFactory, LangDetectException
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -19,7 +19,8 @@ st.set_page_config(
 
 LANG_MAP = {
     'en': 'English', 'id': 'Indonesian', 'su': 'Sundanese', 'jw': 'Javanese',
-    'ja': 'Japanese', 'ko': 'Korean', 'zh-cn': 'Chinese', 'es': 'Spanish', 'fr': 'French'
+    'ja': 'Japanese', 'ko': 'Korean', 'zh-cn': 'Chinese', 'es': 'Spanish', 'fr': 'French',
+    'tl': 'Tagalog'
 }
 
 def get_headers(token):
@@ -54,7 +55,7 @@ def clean_lyrics(text):
         cleaned.append(s)
         current_length += len(s) + 2
 
-    return ". ".join(cleaned)
+    return "\n".join(cleaned)
 
 def get_page_html_via_proxy(url):
     translate_url = f"https://translate.google.com/translate?sl=auto&tl=en&u={url}&client=webapp"
@@ -115,6 +116,7 @@ def load_models():
 
 st.sidebar.header("Configuration")
 
+genius_token = None
 if "GENIUS_ACCESS_TOKEN" in st.secrets:
     genius_token = st.secrets["GENIUS_ACCESS_TOKEN"]
     st.sidebar.success("Token loaded from Streamlit Secrets")
@@ -182,46 +184,56 @@ elif input_method == "Manual Input":
 if final_lyrics:
     st.divider()
     st.subheader(f"Analysis: {song_metadata['title']}")
-    text_to_analyze = final_lyrics
-    detected_lang = "en"
     
+    text_for_ai = final_lyrics.replace("\n", ". ")
+    
+    detected_lang = "en"
+    translated_text = text_for_ai
+
     with st.spinner('Checking Language...'):
         try:
-            src_lang = detect(final_lyrics)
-            if src_lang != 'en':
-                text_to_analyze = GoogleTranslator(source='auto', target='en').translate(final_lyrics)
-                lang_name = LANG_MAP.get(src_lang, src_lang).title()
-                detected_lang = f"Translated from **{lang_name}** to English"
+            lang_code = detect(final_lyrics)
+            if lang_code != 'en':
+                try:
+                    translated_text = GoogleTranslator(source='auto', target='en').translate(text_for_ai)
+                    lang_full = LANG_MAP.get(lang_code, lang_code).title()
+                    detected_lang = f"Translated from **{lang_full}** to English"
+                except:
+                    detected_lang = f"Detected **{LANG_MAP.get(lang_code, lang_code).title()}**, translation failed."
             else:
                 detected_lang = "English (Original)"
-        except Exception:
-            detected_lang = "Detection Failed (Defaulting to EN)"
-    
-    with st.expander("View Prepared Text"):
-        st.text(text_to_analyze)
+        except LangDetectException:
+             detected_lang = "Language Detection Failed"
+
+    with st.expander("View Cleaned Lyrics"):
+        st.text(final_lyrics)
 
     with st.spinner("Calculating Scores..."):
-        rob_out = roberta_model(text_to_analyze)[0]
-        dis_out = distilbert_model(text_to_analyze)[0]
+        rob_out = roberta_model(translated_text[:1200])[0]
+        dis_out = distilbert_model(translated_text[:1200])[0]
 
         rob_raw = {r['label']: r['score'] for r in rob_out}
         dis_raw = {r['label']: r['score'] for r in dis_out}
         
         all_labels = set(rob_raw.keys()) | set(dis_raw.keys())
-        hybrid_raw_total = {l: rob_raw.get(l, 0) + dis_raw.get(l, 0) for l in all_labels}
         
-        if 'neutral' in hybrid_raw_total: del hybrid_raw_total['neutral']
+        hybrid_combined = {}
+        for l in all_labels:
+            hybrid_combined[l] = rob_raw.get(l, 0) + dis_raw.get(l, 0)
+        
+        if 'neutral' in hybrid_combined: del hybrid_combined['neutral']
         if 'neutral' in rob_raw: del rob_raw['neutral']
         if 'neutral' in dis_raw: del dis_raw['neutral']
 
-        sum_hybrid = sum(hybrid_raw_total.values())
+        sum_hybrid = sum(hybrid_combined.values())
         sum_rob = sum(rob_raw.values())
         sum_dis = sum(dis_raw.values())
 
         results_data = []
         for label in all_labels:
             if label == 'neutral': continue 
-            s_hyb = (hybrid_raw_total.get(label, 0) / sum_hybrid) if sum_hybrid > 0 else 0
+            
+            s_hyb = (hybrid_combined.get(label, 0) / sum_hybrid) if sum_hybrid > 0 else 0
             s_rob = (rob_raw.get(label, 0) / sum_rob) if sum_rob > 0 else 0
             s_dis = (dis_raw.get(label, 0) / sum_dis) if sum_dis > 0 else 0
             
