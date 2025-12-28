@@ -2,18 +2,25 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 from transformers import pipeline
-from googletrans import Translator, LANGUAGES
+from deep_translator import GoogleTranslator
+from langdetect import detect, DetectorFactory
 import requests
 from bs4 import BeautifulSoup
 import re
 import time
-import numpy as np
+
+DetectorFactory.seed = 0
 
 st.set_page_config(
     page_title="Personalify Analysis",
     page_icon="🎵",
     layout="centered"
 )
+
+LANG_MAP = {
+    'en': 'English', 'id': 'Indonesian', 'su': 'Sundanese', 'jw': 'Javanese',
+    'ja': 'Japanese', 'ko': 'Korean', 'zh-cn': 'Chinese', 'es': 'Spanish', 'fr': 'French'
+}
 
 def get_headers(token):
     return {
@@ -24,26 +31,36 @@ def get_headers(token):
 def clean_lyrics(text):
     text = re.sub(r"\[.*?\]", "", text)
     lines = text.split("\n")
+    seen = set()
     cleaned = []
+    SAFE_LIMIT = 1200
+    current_length = 0
+
     for line in lines:
         s = line.strip()
-        if not s: continue
-        if re.match(r"^\d+\s+contributors?$", s.lower()): continue
-        blocked = [
-            "translation", "translated", "lyrics",
-            "click", "contribute", "read more",
-            "produced by", "written by"
-        ]
-        if any(b in s.lower() for b in blocked): continue
+        if not s or s in seen:
+            continue
+        if re.match(r"^\d+\s+contributors?$", s.lower()):
+            continue
+        
+        blocked = ["translation", "translated", "lyrics", "click", "contribute", "read more", "produced by", "written by"]
+        if any(b in s.lower() for b in blocked):
+            continue
+            
+        if current_length + len(s) > SAFE_LIMIT:
+            break
+
+        seen.add(s)
         cleaned.append(s)
-    return "\n".join(cleaned)
+        current_length += len(s) + 2
+
+    return ". ".join(cleaned)
 
 def get_page_html_via_proxy(url):
     translate_url = f"https://translate.google.com/translate?sl=auto&tl=en&u={url}&client=webapp"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    
     for attempt in range(3):
         try:
             r = requests.get(translate_url, headers=headers, timeout=20)
@@ -57,13 +74,10 @@ def get_page_html_via_proxy(url):
 def scrape_lyrics_proxy(song_url):
     html = get_page_html_via_proxy(song_url)
     if not html: return None
-
     try:
         soup = BeautifulSoup(html, "html.parser")
-        
         containers = soup.select("div[data-lyrics-container]")
         all_lines = []
-        
         for c in containers:
             if "translation" in c.get_text().lower(): continue
             for br in c.find_all("br"): br.replace_with("\n")
@@ -73,15 +87,10 @@ def scrape_lyrics_proxy(song_url):
                 for line in lines:
                     stripped = line.strip()
                     if stripped: all_lines.append(stripped)
-                    else: all_lines.append("") 
-
         lyrics_raw = "\n".join(all_lines)
-        
-    
         if not lyrics_raw.strip():
             old = soup.find("div", class_="lyrics")
             if old: lyrics_raw = old.get_text("\n")
-            
         return clean_lyrics(lyrics_raw)
     except Exception:
         return None
@@ -104,10 +113,6 @@ def load_models():
     distilbert = pipeline("text-classification", model="joeddav/distilbert-base-uncased-go-emotions-student", top_k=None)
     return roberta, distilbert
 
-@st.cache_resource
-def get_translator():
-    return Translator()
-
 st.sidebar.header("Configuration")
 
 if "GENIUS_ACCESS_TOKEN" in st.secrets:
@@ -128,7 +133,6 @@ input_method = st.sidebar.radio("Input Method:", ("Search via Genius API", "Manu
 
 with st.spinner('Loading AI Engines...'):
     roberta_model, distilbert_model = load_models()
-    translator = get_translator()
 
 st.title("Personalify: Sentiment Analysis")
 st.caption("Comparing **RoBERTa**, **DistilBERT**, and **Hybrid Consensus**.")
@@ -147,7 +151,6 @@ if input_method == "Search via Genius API":
         search_btn = st.button("Search", type="primary", use_container_width=True)
 
     if 'search_results' not in st.session_state: st.session_state.search_results = []
-    
     if search_btn and genius_token:
         with st.spinner("Searching Genius API..."):
             hits = search_genius_manual(search_query, genius_token)
@@ -159,62 +162,53 @@ if input_method == "Search via Genius API":
     if st.session_state.search_results:
         options = {f"{h['result']['full_title']}": h['result']['url'] for h in st.session_state.search_results}
         selected = st.selectbox("Select Song:", list(options.keys()))
-        
         if st.button("Fetch & Analyze"):
             target_url = options[selected]
             parts = selected.split(' by ')
             song_metadata = {'title': parts[0], 'artist': parts[1] if len(parts)>1 else "Unknown"}
-            
             with st.spinner("Bypassing Genius via Google Proxy..."):
                 raw_text = scrape_lyrics_proxy(target_url)
-                
                 if raw_text and len(raw_text) > 50:
                     final_lyrics = raw_text
                     st.toast("Lyrics fetched successfully!")
                 else: 
-                    st.error("Failed to fetch lyrics via Proxy. Content might be empty.")
+                    st.error("Failed to fetch lyrics via Proxy.")
 
 elif input_method == "Manual Input":
-    final_lyrics = st.text_area("Paste lyrics here...", height=200)
-    if st.button("Analyze", type="primary"): pass
+    manual_input = st.text_area("Paste lyrics here...", height=200)
+    if st.button("Analyze", type="primary"):
+        final_lyrics = clean_lyrics(manual_input)
 
 if final_lyrics:
     st.divider()
     st.subheader(f"Analysis: {song_metadata['title']}")
-
     text_to_analyze = final_lyrics
     detected_lang = "en"
     
     with st.spinner('Checking Language...'):
         try:
-            sample = final_lyrics[:2000]
-            detection = translator.detect(sample)
-            src_lang = detection.lang
+            src_lang = detect(final_lyrics)
             if src_lang != 'en':
-                text_to_analyze = translator.translate(sample, dest='en').text
-                lang_name = LANGUAGES.get(src_lang, src_lang).title()
+                text_to_analyze = GoogleTranslator(source='auto', target='en').translate(final_lyrics)
+                lang_name = LANG_MAP.get(src_lang, src_lang).title()
                 detected_lang = f"Translated from **{lang_name}** to English"
             else:
                 detected_lang = "English (Original)"
-        except Exception as e:
+        except Exception:
             detected_lang = "Detection Failed (Defaulting to EN)"
     
-    with st.expander("View Cleaned Lyrics"):
+    with st.expander("View Prepared Text"):
         st.text(text_to_analyze)
 
     with st.spinner("Calculating Scores..."):
-        rob_out = roberta_model(text_to_analyze[:2000])[0]
-        dis_out = distilbert_model(text_to_analyze[:2000])[0]
+        rob_out = roberta_model(text_to_analyze)[0]
+        dis_out = distilbert_model(text_to_analyze)[0]
 
         rob_raw = {r['label']: r['score'] for r in rob_out}
         dis_raw = {r['label']: r['score'] for r in dis_out}
         
         all_labels = set(rob_raw.keys()) | set(dis_raw.keys())
-        results_data = []
-
-        hybrid_raw_total = {}
-        for l in all_labels:
-            hybrid_raw_total[l] = rob_raw.get(l, 0) + dis_raw.get(l, 0)
+        hybrid_raw_total = {l: rob_raw.get(l, 0) + dis_raw.get(l, 0) for l in all_labels}
         
         if 'neutral' in hybrid_raw_total: del hybrid_raw_total['neutral']
         if 'neutral' in rob_raw: del rob_raw['neutral']
@@ -224,11 +218,10 @@ if final_lyrics:
         sum_rob = sum(rob_raw.values())
         sum_dis = sum(dis_raw.values())
 
+        results_data = []
         for label in all_labels:
             if label == 'neutral': continue 
-
             s_hyb = (hybrid_raw_total.get(label, 0) / sum_hybrid) if sum_hybrid > 0 else 0
-            
             s_rob = (rob_raw.get(label, 0) / sum_rob) if sum_rob > 0 else 0
             s_dis = (dis_raw.get(label, 0) / sum_dis) if sum_dis > 0 else 0
             
