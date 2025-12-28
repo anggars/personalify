@@ -5,5 +5,4 @@ pandas
 altair
 lyricsgenius
 beautifulsoup4
-langdetect
 deep_translator

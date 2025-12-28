@@ -3,25 +3,22 @@ import pandas as pd
 import altair as alt
 from transformers import pipeline
 from deep_translator import GoogleTranslator
-from langdetect import detect, DetectorFactory, LangDetectException
 import requests
 from bs4 import BeautifulSoup
 import re
 import time
+import os
+from dotenv import load_dotenv
+from pathlib import Path
 
-DetectorFactory.seed = 0
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 st.set_page_config(
     page_title="Personalify Analysis",
     page_icon="🎵",
     layout="centered"
 )
-
-LANG_MAP = {
-    'en': 'English', 'id': 'Indonesian', 'su': 'Sundanese', 'jw': 'Javanese',
-    'ja': 'Japanese', 'ko': 'Korean', 'zh-cn': 'Chinese', 'es': 'Spanish', 'fr': 'French',
-    'tl': 'Tagalog'
-}
 
 def get_headers(token):
     return {
@@ -32,30 +29,36 @@ def get_headers(token):
 def clean_lyrics(text):
     text = re.sub(r"\[.*?\]", "", text)
     lines = text.split("\n")
-    seen = set()
     cleaned = []
-    SAFE_LIMIT = 1200
-    current_length = 0
-
     for line in lines:
         s = line.strip()
-        if not s or s in seen:
-            continue
-        if re.match(r"^\d+\s+contributors?$", s.lower()):
-            continue
-        
-        blocked = ["translation", "translated", "lyrics", "click", "contribute", "read more", "produced by", "written by"]
-        if any(b in s.lower() for b in blocked):
-            continue
-            
-        if current_length + len(s) > SAFE_LIMIT:
-            break
-
-        seen.add(s)
+        if not s: continue
+        if re.match(r"^\d+\s+contributors?$", s.lower()): continue
+        blocked = [
+            "translation", "translated", "lyrics",
+            "click", "contribute", "read more",
+            "produced by", "written by"
+        ]
+        if any(b in s.lower() for b in blocked): continue
         cleaned.append(s)
-        current_length += len(s) + 2
-
     return "\n".join(cleaned)
+
+def prepare_text_for_ai(text):
+    lines = text.split('\n')
+    unique_lines = []
+    seen = set()
+    current_length = 0
+    SAFE_LIMIT = 1200
+    for line in lines:
+        clean_line = line.strip()
+        if not clean_line or clean_line in seen:
+            continue    
+        if current_length + len(clean_line) > SAFE_LIMIT:
+            break        
+        seen.add(clean_line)
+        unique_lines.append(clean_line)
+        current_length += len(clean_line) + 2
+    return ". ".join(unique_lines)
 
 def get_page_html_via_proxy(url):
     translate_url = f"https://translate.google.com/translate?sl=auto&tl=en&u={url}&client=webapp"
@@ -113,36 +116,28 @@ def load_models():
     roberta = pipeline("text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None)
     distilbert = pipeline("text-classification", model="joeddav/distilbert-base-uncased-go-emotions-student", top_k=None)
     return roberta, distilbert
-
 st.sidebar.header("Configuration")
-
-genius_token = None
-if "GENIUS_ACCESS_TOKEN" in st.secrets:
-    genius_token = st.secrets["GENIUS_ACCESS_TOKEN"]
-    st.sidebar.success("Token loaded from Streamlit Secrets")
+genius_token = os.getenv("GENIUS_ACCESS_TOKEN")
+if genius_token:
+    st.sidebar.success("Token loaded from .env")
 else:
-    genius_token = st.sidebar.text_input(
-        "Genius Access Token",
-        type="password"
-    )
-
+    if "GENIUS_ACCESS_TOKEN" in st.secrets:
+        genius_token = st.secrets["GENIUS_ACCESS_TOKEN"]
+        st.sidebar.success("Token loaded from Secrets")
+    else:
+        genius_token = st.sidebar.text_input("Genius Access Token", type="password")
 if not genius_token:
     st.sidebar.warning("Please enter a token to continue.")
     st.stop()
-
 st.sidebar.divider()
 input_method = st.sidebar.radio("Input Method:", ("Search via Genius API", "Manual Input"))
-
 with st.spinner('Loading AI Engines...'):
     roberta_model, distilbert_model = load_models()
-
 st.title("Personalify: Sentiment Analysis")
 st.caption("Comparing **RoBERTa**, **DistilBERT**, and **Hybrid Consensus**.")
 st.divider()
-
 final_lyrics = ""
 song_metadata = {"title": "Unknown Track", "artist": "Unknown Artist"}
-
 if input_method == "Search via Genius API":
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -151,8 +146,7 @@ if input_method == "Search via Genius API":
         st.write("")
         st.write("")
         search_btn = st.button("Search", type="primary", use_container_width=True)
-
-    if 'search_results' not in st.session_state: st.session_state.search_results = []
+    if 'search_results' not in st.session_state: st.session_state.search_results = []  
     if search_btn and genius_token:
         with st.spinner("Searching Genius API..."):
             hits = search_genius_manual(search_query, genius_token)
@@ -160,7 +154,6 @@ if input_method == "Search via Genius API":
                 st.session_state.search_results = hits
                 st.success(f"Found {len(hits)} results!")
             else: st.error("No results found.")
-
     if st.session_state.search_results:
         options = {f"{h['result']['full_title']}": h['result']['url'] for h in st.session_state.search_results}
         selected = st.selectbox("Select Song:", list(options.keys()))
@@ -175,7 +168,6 @@ if input_method == "Search via Genius API":
                     st.toast("Lyrics fetched successfully!")
                 else: 
                     st.error("Failed to fetch lyrics via Proxy.")
-
 elif input_method == "Manual Input":
     manual_input = st.text_area("Paste lyrics here...", height=200)
     if st.button("Analyze", type="primary"):
@@ -184,70 +176,58 @@ elif input_method == "Manual Input":
 if final_lyrics:
     st.divider()
     st.subheader(f"Analysis: {song_metadata['title']}")
-    
-    text_for_ai = final_lyrics.replace("\n", ". ")
-    
-    detected_lang = "en"
-    translated_text = text_for_ai
-
-    with st.spinner('Checking Language...'):
+    text_display = final_lyrics
+    status_msg = "Processing Text..."
+    text_for_ai_raw = final_lyrics
+    with st.spinner('Translating (Auto-Detect)...'):
         try:
-            lang_code = detect(final_lyrics)
-            if lang_code != 'en':
-                try:
-                    translated_text = GoogleTranslator(source='auto', target='en').translate(text_for_ai)
-                    lang_full = LANG_MAP.get(lang_code, lang_code).title()
-                    detected_lang = f"Translated from **{lang_full}** to English"
-                except:
-                    detected_lang = f"Detected **{LANG_MAP.get(lang_code, lang_code).title()}**, translation failed."
+            translator = GoogleTranslator(source='auto', target='en')
+            translated = translator.translate(final_lyrics[:4500])
+            if translated and len(translated.strip()) > 0:
+                text_for_ai_raw = translated
+                status_msg = "Translated to English (Auto-Detected)"
             else:
-                detected_lang = "English (Original)"
-        except LangDetectException:
-             detected_lang = "Language Detection Failed"
-
-    with st.expander("View Cleaned Lyrics"):
-        st.text(final_lyrics)
-
+                status_msg = "Translation empty, using original." 
+        except Exception as e:
+            status_msg = f"Translation failed ({str(e)}), using original."
+    final_input_model = prepare_text_for_ai(text_for_ai_raw)
+    with st.expander("View Cleaned & Processed Text"):
+        st.text("--- Display Version (UI) ---")
+        st.text(text_display)
+        st.divider()
+        st.text("--- Model Input Version (English + Dot Space) ---")
+        st.text(final_input_model)
     with st.spinner("Calculating Scores..."):
-        rob_out = roberta_model(translated_text[:1200])[0]
-        dis_out = distilbert_model(translated_text[:1200])[0]
-
+        if not final_input_model.strip():
+            st.error("Input text is empty after processing.")
+            st.stop() 
+        rob_out = roberta_model(final_input_model[:1200])[0]
+        dis_out = distilbert_model(final_input_model[:1200])[0]
         rob_raw = {r['label']: r['score'] for r in rob_out}
         dis_raw = {r['label']: r['score'] for r in dis_out}
-        
+        combined_scores = {}
         all_labels = set(rob_raw.keys()) | set(dis_raw.keys())
-        
-        hybrid_combined = {}
         for l in all_labels:
-            hybrid_combined[l] = rob_raw.get(l, 0) + dis_raw.get(l, 0)
-        
-        if 'neutral' in hybrid_combined: del hybrid_combined['neutral']
+            combined_scores[l] = rob_raw.get(l, 0) + dis_raw.get(l, 0)
+        if 'neutral' in combined_scores: del combined_scores['neutral']
         if 'neutral' in rob_raw: del rob_raw['neutral']
         if 'neutral' in dis_raw: del dis_raw['neutral']
-
-        sum_hybrid = sum(hybrid_combined.values())
+        total_remaining = sum(combined_scores.values())
+        results_data = []
         sum_rob = sum(rob_raw.values())
         sum_dis = sum(dis_raw.values())
-
-        results_data = []
-        for label in all_labels:
-            if label == 'neutral': continue 
-            
-            s_hyb = (hybrid_combined.get(label, 0) / sum_hybrid) if sum_hybrid > 0 else 0
+        for label, raw_sum in combined_scores.items():
+            s_hyb = raw_sum / total_remaining if total_remaining > 0 else 0
             s_rob = (rob_raw.get(label, 0) / sum_rob) if sum_rob > 0 else 0
             s_dis = (dis_raw.get(label, 0) / sum_dis) if sum_dis > 0 else 0
-            
             results_data.append({'label': label.capitalize(), 'score': s_rob, 'model': 'RoBERTa'})
             results_data.append({'label': label.capitalize(), 'score': s_dis, 'model': 'DistilBERT'})
             results_data.append({'label': label.capitalize(), 'score': s_hyb, 'model': 'Hybrid'})
-
         df = pd.DataFrame(results_data)
         top_emotions = df[df['model'] == 'Hybrid'].nlargest(6, 'score')['label'].tolist()
         df_filtered = df[df['label'].isin(top_emotions)]
-
     domain = ['RoBERTa', 'DistilBERT', 'Hybrid']
     range_ = ['#3498db', '#e74c3c', '#9b59b6']
-
     chart = alt.Chart(df_filtered).mark_bar().encode(
         x=alt.X('score', axis=alt.Axis(format='%', title='Confidence Score')),
         y=alt.Y('label', sort='-x', title=None),
@@ -255,15 +235,12 @@ if final_lyrics:
         yOffset='model',
         tooltip=['label', 'model', alt.Tooltip('score', format='.1%')]
     ).properties(height=350)
-
-    st.altair_chart(chart, use_container_width=True)
-    
+    st.altair_chart(chart, use_container_width=True) 
     st.markdown("#### Final Results Breakdown")
     try:
         top_rob = df[df['model'] == 'RoBERTa'].nlargest(1, 'score').iloc[0]
         top_dis = df[df['model'] == 'DistilBERT'].nlargest(1, 'score').iloc[0]
         top_hyb = df[df['model'] == 'Hybrid'].nlargest(1, 'score').iloc[0]
-
         c1, c2, c3 = st.columns(3)
         with c1:
             st.info("**RoBERTa**")
@@ -276,5 +253,4 @@ if final_lyrics:
             st.metric(label=top_hyb['label'], value=f"{top_hyb['score']:.1%}")
     except:
         st.error("Error calculating top metrics.")
-
-    st.caption(f"Language Status: {detected_lang}")
+    st.caption(f"Status: {status_msg}")
