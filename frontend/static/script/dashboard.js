@@ -1059,7 +1059,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const subtitleEl = document.querySelector('header .subtitle');
     const emotionEl = document.querySelector('header .emotion-recap');
     if (!titleEl || !subtitleEl || !emotionEl) {
-        console.warn("Elemen header untuk efek ketik tidak ditemukan.");
+        console.warn("Header element for typing isn't found.");
         setTimeout(() => loadEmotionAnalysis(false), 1000);
         return;
     }

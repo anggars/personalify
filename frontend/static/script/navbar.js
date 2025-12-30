@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     bubble.classList.remove('show');
                 });
                 let toast = document.getElementById('error-toast');
-                const mainTitle = document.querySelector('h1');
+                const mainTitle = document.querySelector('header h1');
                 if (toastTimer) clearTimeout(toastTimer);
                 if (fadeOutTimer) clearTimeout(fadeOutTimer);
                 if (!toast) {
@@ -83,16 +83,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (mainTitle) {
                     mainTitle.style.transition = 'opacity 0.2s ease';
                     mainTitle.style.opacity = '0';
+                    mainTitle.style.visibility = 'hidden';
                 }
                 document.body.classList.add('toast-active');
                 toast.style.animation = 'none';
-                toast.offsetHeight; 
+                toast.offsetHeight;
                 toast.textContent = message;
                 toast.style.display = 'block';
                 toast.style.animation = 'slideDownFade 0.5s ease-out forwards';
                 toastTimer = setTimeout(() => {
                     toast.style.animation = 'fadeOut 0.5s ease-out forwards';
-                    if (mainTitle) mainTitle.style.opacity = '1';
+                    if (mainTitle) {
+                        mainTitle.style.opacity = '1';
+                        mainTitle.style.visibility = 'visible';
+                    }
                     document.body.classList.remove('toast-active');
                     fadeOutTimer = setTimeout(() => {
                         toast.style.display = 'none';
