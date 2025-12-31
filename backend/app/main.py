@@ -2,14 +2,17 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from scalar_fastapi import get_scalar_api_reference
+
 if not os.getenv("DATABASE_URL"):
     from dotenv import load_dotenv
     load_dotenv()
+
 from app.routes import router
 from app.db_handler import init_db
 from fastapi.responses import RedirectResponse
 
-app = FastAPI()
+app = FastAPI(docs_url=None, redoc_url=None)
 
 origins = [
     "https://personalify.vercel.app",
@@ -41,12 +44,10 @@ async def redirect_if_not_vercel_or_local(request: Request, call_next):
 
 @app.exception_handler(401)
 async def unauthorized_handler(request: Request, exc):
-
     return RedirectResponse(url="/?error=session_expired")
 
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc):
-
     print(f"CRITICAL ERROR: {exc}")
     return RedirectResponse(url="/?error=server_error")
 
@@ -56,6 +57,13 @@ static_dir = os.path.abspath(static_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 app.include_router(router)
+
+@app.get("/docs", include_in_schema=False)
+async def scalar_html():
+    return get_scalar_api_reference(
+        openapi_url=app.openapi_url,
+        title=app.title,
+    )
 
 @app.on_event("startup")
 def on_startup():
