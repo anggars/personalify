@@ -160,11 +160,11 @@
                 }
                 const toast = document.getElementById('error-toast');
                 if (errType === 'session_expired') {
-                    toast.textContent = "⚠️ Session expired. Please login again!";
+                    toast.textContent = "⚠ Session expired. Please login again!";
                 } else if (errType === 'server_error') {
-                    toast.textContent = "⚠️ Something went wrong. Please try again!";
+                    toast.textContent = "⚠ Something went wrong. Please try again!";
                 } else {
-                    toast.textContent = "⚠️ " + errType;
+                    toast.textContent = "⚠ " + errType;
                 }
                 toast.style.display = 'block';
                 toast.style.animation = 'slideDownFade 0.5s ease-out forwards';

@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let fadeOutTimer;
             loginLink.addEventListener('click', (e) => {
                 e.preventDefault();
-                showToast("⚠️ Please login using the button on the home page!");
+                showToast("⚠ Please login using the button on the home page!");
             });
             function showToast(message) {
                 const activeBubbles = document.querySelectorAll('.video-bubble-toast.show');
