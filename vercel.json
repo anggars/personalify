@@ -1,7 +1,17 @@
 {
+  "framework": "nextjs",
+  "outputDirectory": "frontend/.next",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/login",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/callback",
       "destination": "/api/index.py"
     }
   ]

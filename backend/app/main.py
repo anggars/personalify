@@ -51,10 +51,7 @@ async def internal_error_handler(request: Request, exc):
     print(f"CRITICAL ERROR: {exc}")
     return RedirectResponse(url="/?error=server_error")
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-static_dir = os.path.join(current_dir, "..", "..", "frontend", "static")
-static_dir = os.path.abspath(static_dir)
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+# Static files mount removed (Frontend is Next.js)
 
 app.include_router(router)
 

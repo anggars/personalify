@@ -1,0 +1,57 @@
+"use client";
+
+import React, { useRef, useEffect, useState } from "react";
+
+interface MarqueeTextProps {
+    text: string;
+    className?: string; // Additional classes for the container or text
+}
+
+const MarqueeText: React.FC<MarqueeTextProps> = ({ text, className = "" }) => {
+    const textRef = useRef<HTMLParagraphElement>(null);
+    const [isOverflowing, setIsOverflowing] = useState(false);
+
+    useEffect(() => {
+        const checkOverflow = () => {
+            const el = textRef.current;
+            if (!el) return;
+
+            const scrollWidth = Math.ceil(el.scrollWidth);
+            const clientWidth = Math.ceil(el.clientWidth);
+
+            if (scrollWidth > clientWidth) {
+                const distance = scrollWidth - clientWidth + 20; // 20px padding/buffer
+                const duration = Math.max(distance / 25, 6); // Adjust speed calculation as needed
+                el.style.setProperty('--scroll-distance', `-${distance}px`);
+                el.style.setProperty('--scroll-duration', `${duration}s`);
+                setIsOverflowing(true);
+            } else {
+                el.style.removeProperty('--scroll-distance');
+                el.style.removeProperty('--scroll-duration');
+                setIsOverflowing(false);
+            }
+        };
+
+        // Delay slightly ensuring layout is ready
+        const timeoutId = setTimeout(checkOverflow, 100);
+        window.addEventListener('resize', checkOverflow);
+
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('resize', checkOverflow);
+        };
+    }, [text]);
+
+    return (
+        <div className={`min-w-0 flex-1 overflow-hidden ${isOverflowing ? "mask-active" : ""}`}>
+            <p
+                ref={textRef}
+                className={`${className} ${isOverflowing ? "scroll-active" : "truncate"}`}
+            >
+                {text}
+            </p>
+        </div>
+    );
+};
+
+export default MarqueeText;
