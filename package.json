@@ -5,7 +5,7 @@
   "main": "api/proxy.js",
   "scripts": {
     "dev": "vercel dev",
-    "build": "cd frontend && npm install && npm run build",
+    "build": "cd frontend && npm install --production=false && npm run build",
     "start": "echo 'Serverless'"
   },
   "dependencies": {
