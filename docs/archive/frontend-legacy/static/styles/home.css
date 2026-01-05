@@ -1,0 +1,303 @@
+:root {
+    --primary: #1DB954;
+    --bg: #121212;
+    --text: #FFFFFF;
+    --muted: #B3B3B3;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100dvh;
+    padding: 2rem;
+    text-align: center;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    touch-action: pan-y;
+    overscroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-top: 60px !important;
+}
+
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero {
+    animation: fadeInUp 1s ease-out forwards;
+    opacity: 0;
+}
+
+.logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 2rem;
+}
+
+.logo,
+.hero h1, 
+.hero .button, 
+footer {
+    opacity: 0;
+    transform: translateY(20px); 
+    transition: opacity 1s ease-out, transform 1s ease-out;
+}
+
+h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 1rem;
+}
+
+h1 span {
+    color: var(--primary);
+}
+
+p {
+    font-size: 1.2rem;
+    color: var(--muted);
+    max-width: 600px;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: 500; 
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 1rem !important;
+    }
+
+    .logo {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 1.5rem;
+    }
+
+    h1 {
+        font-size: 2.5rem; 
+    }
+
+    .hero p {
+        /* PENTING: Pakai satuan 'vw' (viewport width).
+           2.8vw artinya ukuran font akan selalu 2.8% dari lebar layar HP.
+           Ini bikin teksnya mengecil otomatis biar muat satu baris. */
+        font-size: 2.8vw !important; 
+
+        /* Paksa teks JANGAN turun baris sendiri (wrapping),
+           kecuali kena tag <br> yang sudah kamu pasang */
+        white-space: nowrap;
+        
+        /* Pastikan lebarnya full */
+        width: 100%;
+        max-width: 100%;
+        margin-bottom: 2rem;
+        
+        /* Reset line-height biar ga terlalu renggang saat font kecil */
+        line-height: 1.5;
+    }
+
+    .button {
+        padding: 12px 24px; 
+        font-size: 0.9rem;
+    }
+}
+
+.button {
+    position: relative;
+    overflow: hidden; 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    text-decoration: none;
+    font-weight: 700; 
+    font-size: 1rem;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.075); 
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text); 
+    box-shadow: 
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.35), 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
+        0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+.button:hover {
+    background: rgba(255, 255, 255, 0.08); 
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 
+        inset 0 2px 4px 0 rgba(255, 255, 255, 0.45), 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.6),
+        0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.button::before {
+    content: '';
+    position: absolute;
+    width: 100%; 
+    height: 100%;
+    left: calc(var(--mouse-x, 50%) - 50%); 
+    top: calc(var(--mouse-y, 50%) - 50%);
+    background: radial-gradient(
+        circle at center,
+        rgba(29, 185, 84, 0.4), 
+        rgba(29, 185, 84, 0.05) 50%, 
+        transparent 100%            
+    );
+    filter: blur(10px); 
+    opacity: 0;         
+    z-index: -1;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.button:hover::before {
+    opacity: 1;
+    animation: none; 
+}
+
+.button .button-text {
+    transition: opacity 0.2s ease-out;
+    position: relative;
+    top: -1.55px;
+}
+
+.button .spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px; 
+    height: 18px;
+    margin-top: -9px; 
+    margin-left: -9px;
+    animation: rotate 2s linear infinite;
+    opacity: 0; 
+    transition: opacity 0.2s ease-out;
+}
+
+.button .spinner .path {
+    stroke: #ffffff; 
+    stroke-width: 5; 
+    stroke-linecap: round; 
+    animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes rotate {
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes dash {
+    0% {
+        stroke-dasharray: 1, 150;  
+        stroke-dashoffset: 0;
+    }
+    50% {
+        stroke-dasharray: 90, 150; 
+        stroke-dashoffset: -35;    
+    }
+    100% {
+        stroke-dasharray: 90, 150; 
+        stroke-dashoffset: -124;   
+    }
+}
+
+.button.loading .button-text {
+    opacity: 0; 
+}
+
+.button.loading .spinner {
+    opacity: 1; 
+}
+
+.button.loading {
+    pointer-events: none;
+    transform: scale(1) translateY(0); 
+}
+
+footer {
+    width: 100%;
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #888;
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+    line-height: 1.35;
+}
+
+footer.fade-in {
+    opacity: 1;
+}
+
+.footer-link {
+    color: #888;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+    color: #1DB954;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hero p {
+    visibility: hidden;
+}
+
+.visible {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+
+#dynamic-footer-link {
+    transition: opacity 0.5s ease-in-out;
+    opacity: 1;
+}
+
+.fading-out {
+    opacity: 0 !important;
+}
+
+.footer-link {
+    color: #888; 
+    text-decoration: none;
+    transition: color 0.3s ease;
+    cursor: pointer;
+}
+
+.footer-link:hover {
+    color: #1DB954 !important;
+}

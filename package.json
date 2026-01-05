@@ -1,11 +1,11 @@
 {
   "name": "personalify-vercel",
   "version": "1.0.0",
-  "description": "Personalify frontend proxy for Vercel",
+  "description": "Personalify frontend for Vercel",
   "main": "api/proxy.js",
   "scripts": {
     "dev": "vercel dev",
-    "build": "",
+    "build": "cd frontend && pnpm install && pnpm run build",
     "start": "echo 'Serverless'"
   },
   "dependencies": {},

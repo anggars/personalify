@@ -24,10 +24,8 @@ from app.qstash_handler import get_qstash_client, get_qstash_receiver
 from app.genius_lyrics import get_suggestions, search_artist_id, get_songs_by_artist, get_lyrics_by_id
 
 router = APIRouter()
-current_dir = os.path.dirname(os.path.abspath(__file__))
-templates_dir = os.path.join(current_dir, "..", "..", "frontend", "pages")
-templates_dir = os.path.abspath(templates_dir)  
-templates = Jinja2Templates(directory=templates_dir)
+# Templates removed
+# templates = Jinja2Templates(directory=templates_dir)
 
 def get_redirect_uri(request: Request):
     host = str(request.headers.get("x-forwarded-host", request.headers.get("host", "")))
@@ -36,12 +34,9 @@ def get_redirect_uri(request: Request):
     else:
         return os.getenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8000/callback")
 
-@router.get("/", response_class=HTMLResponse, tags=["Root"])
-def root(request: Request):
-    spotify_id = request.cookies.get("spotify_id")
-    if request.query_params.get("error") == "logged_out":
-        spotify_id = None
-    return templates.TemplateResponse("home.html", {"request": request, "spotify_id": spotify_id})
+@router.get("/", tags=["Root"])
+def root():
+    return {"status": "ok", "message": "Personalify Backend API"}
 
 @router.get("/login", tags=["Auth"])
 def login(request: Request):
@@ -149,11 +144,18 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
             })
 
         result['emotion_paragraph'] = "Your music vibe is being analyzed..."
-        cache_top_data("top", spotify_id, time_range, result)
+        cache_top_data("top_v2", spotify_id, time_range, result)
         save_user_sync(spotify_id, time_range, result)
 
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-    frontend_url = f"{request.url.scheme}://{original_host}"
+    
+    # For local development, redirect to Next.js frontend on port 3000
+    if "127.0.0.1" in original_host or "localhost" in original_host:
+        frontend_url = "http://localhost:3000"
+    else:
+        # Production (Vercel) - use the same host
+        frontend_url = f"{request.url.scheme}://{original_host}"
+    
     log_system("AUTH", f"User Login Success: {display_name}", "SPOTIFY")
     response = RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
     response.set_cookie(key="spotify_id", value=spotify_id, httponly=True)
@@ -167,7 +169,7 @@ async def analyze_emotions_background(
 ):
 
     try:
-        cached_data = get_cached_top_data("top", spotify_id, time_range)
+        cached_data = get_cached_top_data("top_v2", spotify_id, time_range)
         if not cached_data:
             return {"error": "No data found for analysis"}
         tracks_to_analyze = cached_data.get("tracks", [])
@@ -184,7 +186,7 @@ async def analyze_emotions_background(
 
             print("STANDARD ANALYSIS. UPDATING CACHE AND DATABASE.")
             cached_data['emotion_paragraph'] = emotion_paragraph
-            cache_top_data("top", spotify_id, time_range, cached_data)
+            cache_top_data("top_v2", spotify_id, time_range, cached_data)
             save_user_sync(spotify_id, time_range, cached_data)
 
         return {"emotion_paragraph": emotion_paragraph}
@@ -285,7 +287,7 @@ def sync_top_data(
     emotion_paragraph = generate_emotion_paragraph(track_names)
     result['emotion_paragraph'] = emotion_paragraph
 
-    cache_top_data("top", spotify_id, time_range, result)
+    cache_top_data("top_v2", spotify_id, time_range, result)
     save_user_sync(spotify_id, time_range, result)
 
     return result
@@ -297,7 +299,7 @@ def get_top_data(
     limit: int = Query(10, ge=1),
     sort: str = Query("popularity")
 ):
-    data = get_cached_top_data("top", spotify_id, time_range)
+    data = get_cached_top_data("top_v2", spotify_id, time_range)
     if not data:
         return {"message": "No cached data found."}
 
@@ -313,7 +315,7 @@ def top_genres(
     spotify_id: str = Query(..., description="Spotify ID"),
     time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"])
 ):
-    data = get_cached_top_data("top", spotify_id, time_range)
+    data = get_cached_top_data("top_v2", spotify_id, time_range)
     if not data:
         return {"error": "No cached data found for this user/time_range"}
 
@@ -332,7 +334,7 @@ def get_sync_history(spotify_id: str = Query(..., description="Spotify ID")):
 @router.get("/dashboard/{spotify_id}", response_class=HTMLResponse, tags=["Dashboard"])
 def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request = None):
     try:
-        data = get_cached_top_data("top", spotify_id, time_range)
+        data = get_cached_top_data("top_v2", spotify_id, time_range)
         if not data:
             return RedirectResponse(url="/?error=session_expired")
 
@@ -378,6 +380,45 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
 
     except Exception as e:
         print(f"DASHBOARD CRASH: {e}")
+        raise HTTPException(status_code=500, detail="Internal Dashboard Error")
+
+@router.get("/api/dashboard/{spotify_id}", tags=["Dashboard API"])
+def dashboard_api(spotify_id: str, time_range: str = "medium_term"):
+    """JSON API endpoint for Next.js dashboard"""
+    try:
+        data = get_cached_top_data("top_v2", spotify_id, time_range)
+        if not data:
+            raise HTTPException(status_code=404, detail="No data found. Please login again.")
+
+        emotion_paragraph = data.get("emotion_paragraph", "Vibe analysis is getting ready...")
+
+        # Calculate genres from ALL artists (legacy behavior used all for extended list)
+        genre_count = {}
+        genre_artists_map = {}
+        for artist in data.get("artists", []):
+            for genre in artist.get("genres", []):
+                genre_count[genre] = genre_count.get(genre, 0) + 1
+                if genre not in genre_artists_map:
+                    genre_artists_map[genre] = []
+                genre_artists_map[genre].append(artist["name"])
+        
+        sorted_genres = sorted(genre_count.items(), key=lambda x: x[1], reverse=True)
+        genre_list = [{"name": name, "count": count} for name, count in sorted_genres]
+
+        return {
+            "user": data["user"],
+            "time_range": time_range,
+            "emotion_paragraph": emotion_paragraph,
+            "artists": data.get("artists", []),
+            "tracks": data.get("tracks", []),
+            "genres": genre_list,
+            "genre_artists_map": genre_artists_map
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"DASHBOARD API CRASH: {e}")
         raise HTTPException(status_code=500, detail="Internal Dashboard Error")
 
 @router.get("/about", response_class=HTMLResponse, tags=["Pages"])
