@@ -71,7 +71,7 @@
 
 /* ===== DARK MODE (Personalify default) ===== */
 .dark {
-  --background: #121212;
+  --background: #000000;
   --foreground: #ffffff;
   --card: #1e1e1e;
   --card-foreground: #ffffff;

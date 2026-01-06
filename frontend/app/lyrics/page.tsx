@@ -7,7 +7,13 @@ export default function LyricsPage() {
     const [lyrics, setLyrics] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<{ emotions: { label: string; score: number }[] } | null>(null);
-    const [error, setError] = useState<string | null>(null);
+
+    const dispatchError = (message: string) => {
+        window.dispatchEvent(new CustomEvent("personalify-notification", {
+            detail: { type: "error", message }
+        }));
+        setTimeout(() => window.dispatchEvent(new CustomEvent("personalify-notification", { detail: null })), 4000);
+    };
 
     const subtitleRef = useRef<HTMLParagraphElement>(null);
     const hasTyped = useRef(false);
@@ -71,13 +77,12 @@ export default function LyricsPage() {
     const handleAnalyze = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!lyrics.trim()) {
-            setError("Please paste some lyrics first!");
+            dispatchError("Please paste some lyrics first!");
             setResult(null);
             return;
         }
 
         setIsLoading(true);
-        setError(null);
         setResult(null);
 
         try {
@@ -91,18 +96,18 @@ export default function LyricsPage() {
 
             const data = await res.json();
             if (data.error) {
-                setError(data.error);
+                dispatchError(data.error);
             } else {
                 setResult(data);
             }
         } catch (err) {
-            setError("Failed to contact the analysis server.");
+            dispatchError("Failed to contact the analysis server.");
         } finally {
             setIsLoading(false);
         }
     };
 
-    const isEmpty = !result && !isLoading && !error;
+    const isEmpty = !result && !isLoading;
 
     return (
         <div className="page-container flex flex-col w-full max-w-3xl mx-auto flex-1">
@@ -163,7 +168,7 @@ export default function LyricsPage() {
                     </form>
 
                     {/* Results */}
-                    {(result || error || isLoading) && (
+                    {(result || isLoading) && (
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -171,7 +176,7 @@ export default function LyricsPage() {
                         >
 
 
-                            {error && <p className="text-[#ff6b6b] text-center font-medium">{error}</p>}
+
 
                             {result && result.emotions && (
                                 <div className="flex flex-col gap-4">
