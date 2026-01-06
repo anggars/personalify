@@ -115,10 +115,10 @@
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans), 'Plus Jakarta Sans', system-ui, sans-serif;
     overflow-x: hidden;
-    overflow-y: scroll;
+    overflow-y: auto;
     min-height: 100dvh;
     touch-action: pan-y;
-    overscroll-behavior: auto;
+    overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
   }
 }
