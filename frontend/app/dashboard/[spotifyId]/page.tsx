@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Pie } from "react-chartjs-2";
 import * as htmlToImage from "html-to-image";
+import { Slider } from "@/components/ui/slider";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -92,6 +93,10 @@ export default function DashboardPage() {
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [hideSaveBtn, setHideSaveBtn] = useState(false);
+    const [playingTrack, setPlayingTrack] = useState<string | null>(null);
+    const embedRefs = useRef<Record<string, HTMLIFrameElement | null>>({});
+    const [trackPosition, setTrackPosition] = useState<Record<string, number>>({});
+    const [trackDuration, setTrackDuration] = useState<Record<string, number>>({});
 
     useEffect(() => {
         const footer = document.querySelector('footer');
@@ -286,9 +291,64 @@ export default function DashboardPage() {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
 
+    // Listen to Spotify iframe events for playback info
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            // Only process messages from Spotify
+            if (!event.origin.includes('spotify.com')) return;
+
+            try {
+                const data = event.data;
+                if (data.type === 'playback_update') {
+                    const trackId = playingTrack;
+                    if (trackId && data.position !== undefined) {
+                        setTrackPosition(prev => ({ ...prev, [trackId]: data.position }));
+                        if (data.duration) {
+                            setTrackDuration(prev => ({ ...prev, [trackId]: data.duration }));
+                        }
+                    }
+                }
+            } catch (err) {
+                // Ignore parsing errors
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [playingTrack]);
+
+    // Poll for playback position updates when playing
+    useEffect(() => {
+        if (!playingTrack) return;
+
+        const interval = setInterval(() => {
+            // Simulate playback progression (Spotify embed doesn't expose real-time position)
+            setTrackPosition(prev => {
+                const currentPos = prev[playingTrack] || 0;
+                const duration = trackDuration[playingTrack] || 30;
+
+                // Stop at the end
+                if (currentPos >= duration) {
+                    setPlayingTrack(null);
+                    return prev;
+                }
+
+                return { ...prev, [playingTrack]: currentPos + 1 };
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [playingTrack, trackDuration]);
+
     const changeTimeRange = (range: string) => {
         setShowTimeModal(false);
         router.push(`/dashboard/${spotifyId}?time_range=${range}`);
+    };
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
     const getAlbumType = (totalTracks: number, albumName: string) => {
@@ -313,11 +373,48 @@ export default function DashboardPage() {
 
     const toggleEmbed = (trackId: string) => {
         setActiveEmbed(activeEmbed === trackId ? null : trackId);
+        // Reset playing state when opening a new embed
+        if (activeEmbed !== trackId) {
+            setPlayingTrack(null);
+            // Initialize duration if not set (Spotify preview is 30 seconds)
+            if (!trackDuration[trackId]) {
+                setTrackDuration(prev => ({ ...prev, [trackId]: 30 }));
+            }
+            // Reset position
+            setTrackPosition(prev => ({ ...prev, [trackId]: 0 }));
+        }
     };
 
     const closeEmbed = (e: React.MouseEvent) => {
         e.stopPropagation();
         setActiveEmbed(null);
+        setPlayingTrack(null);
+    };
+
+    const togglePlayPause = (e: React.MouseEvent, trackId: string) => {
+        e.stopPropagation();
+
+        const iframe = embedRefs.current[trackId];
+        if (!iframe || !iframe.contentWindow) return;
+
+        if (playingTrack === trackId) {
+            // Pause
+            iframe.contentWindow.postMessage({ command: 'pause' }, '*');
+            setPlayingTrack(null);
+        } else {
+            // Play
+            iframe.contentWindow.postMessage({ command: 'toggle' }, '*');
+            setPlayingTrack(trackId);
+        }
+    };
+
+    const handleSeek = (trackId: string, value: number[]) => {
+        const iframe = embedRefs.current[trackId];
+        if (!iframe || !iframe.contentWindow) return;
+
+        const seekPosition = value[0];
+        iframe.contentWindow.postMessage({ command: 'seek', position: seekPosition }, '*');
+        setTrackPosition(prev => ({ ...prev, [trackId]: seekPosition }));
     };
 
     const toggleGenre = (idx: number) => {
@@ -815,6 +912,7 @@ export default function DashboardPage() {
                                         className={`list-item track-item cursor-pointer hover:bg-accent/50 rounded-lg transition-colors ${activeEmbed === track.id ? "embed-shown" : ""}`}
                                         onClick={() => toggleEmbed(track.id)}
                                     >
+                                        {/* Rank / Close Button */}
                                         <span
                                             className={`rank ${activeEmbed === track.id ? "embed-active" : ""}`}
                                             onClick={activeEmbed === track.id ? closeEmbed : undefined}
@@ -822,28 +920,85 @@ export default function DashboardPage() {
                                             {idx + 1}
                                         </span>
 
-                                        <div className={`track-content ${activeEmbed === track.id ? "hidden" : "flex"} items-center gap-4 flex-1 min-w-0`}>
-                                            <img src={track.image} alt={track.name} className="w-16 h-16 rounded-lg object-cover shrink-0" />
-                                            <div className="info min-w-0 flex-1 overflow-hidden">
-                                                <MarqueeText text={track.name} className="name font-semibold text-foreground text-base mb-0.5" />
-                                                <MarqueeText text={track.artists.join(", ")} className="meta text-muted-foreground text-sm mt-0.5" />
-                                                <p className="meta truncate">{getAlbumType(track.album.total_tracks, track.album.name)}</p>
-                                                <p className="meta">Popularity: {track.popularity}</p>
-                                            </div>
+                                        {/* Album Art - Always visible */}
+                                        <img src={track.image} alt={track.name} className="w-16 h-16 rounded-lg object-cover shrink-0" />
+
+                                        {/* Info Area */}
+                                        <div className="info min-w-0 flex-1 overflow-hidden">
+                                            {/* Track Name - Always visible */}
+                                            <MarqueeText
+                                                text={track.name}
+                                                className={`name font-semibold text-base mb-0.5 ${activeEmbed === track.id ? "text-[#1DB954]" : "text-foreground"}`}
+                                            />
+                                            {/* Artist - Always visible */}
+                                            <MarqueeText text={track.artists.join(", ")} className="meta text-muted-foreground text-sm" />
+
+                                            {/* Conditional: Metadata OR Player Controls */}
+                                            {activeEmbed !== track.id ? (
+                                                <>
+                                                    {/* Album Type */}
+                                                    <p className="meta truncate">{getAlbumType(track.album.total_tracks, track.album.name)}</p>
+                                                    {/* Popularity */}
+                                                    <p className="meta">Popularity: {track.popularity}</p>
+                                                </>
+                                            ) : (
+                                                /* Compact Player Controls - Same height as 2 metadata lines */
+                                                <div className="player-row flex items-center gap-2 mt-1" onClick={(e) => e.stopPropagation()}>
+                                                    {/* Timestamp left */}
+                                                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                                                        {formatTime(trackPosition[track.id] || 0)}
+                                                    </span>
+
+                                                    {/* Progress bar with Slider */}
+                                                    <div className="flex-1 -my-2" onClick={(e) => e.stopPropagation()}>
+                                                        <Slider
+                                                            value={[trackPosition[track.id] || 0]}
+                                                            max={trackDuration[track.id] || 30}
+                                                            step={0.1}
+                                                            onValueChange={(value) => handleSeek(track.id, value)}
+                                                            className="cursor-pointer [&>span:first-child]:h-1 [&>span:first-child]:bg-white/20 **:[[role=slider]]:h-2.5 **:[[role=slider]]:w-2.5 **:[[role=slider]]:border-white **:[[role=slider]]:bg-white [&>span>span]:bg-white"
+                                                        />
+                                                    </div>
+
+                                                    {/* Timestamp right */}
+                                                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                                                        {formatTime(trackDuration[track.id] || 0)}
+                                                    </span>
+
+                                                    {/* Play/Pause Button (circle with Spotify logo style) */}
+                                                    <button
+                                                        className="w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0 ml-1 shadow-sm transition-opacity hover:opacity-90"
+                                                        onClick={(e) => togglePlayPause(e, track.id)}
+                                                        aria-label={playingTrack === track.id ? "Pause" : "Play"}
+                                                    >
+                                                        {playingTrack === track.id ? (
+                                                            // Pause icon
+                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current">
+                                                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                                            </svg>
+                                                        ) : (
+                                                            // Play icon
+                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current ml-0.5">
+                                                                <path d="M8 5v14l11-7z" />
+                                                            </svg>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
 
+                                        {/* Hidden Spotify Embed for actual playback */}
                                         {activeEmbed === track.id && (
-                                            <div className="embed-placeholder flex-1 -ml-2 bg-[#282828] rounded-xl overflow-hidden shadow-lg border border-[#1DB954]" onClick={(e) => e.stopPropagation()}>
-                                                <iframe
-                                                    src={`https://open.spotify.com/embed/track/${track.id}?utm_source=generator&theme=${resolvedTheme === 'dark' ? '0' : '1'}`}
-                                                    width="100%"
-                                                    height="80"
-                                                    frameBorder="0"
-                                                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                                                    loading="lazy"
-                                                    style={{ borderRadius: "12px", backgroundColor: "#282828" }}
-                                                />
-                                            </div>
+                                            <iframe
+                                                ref={(el) => { embedRefs.current[track.id] = el; }}
+                                                src={`https://open.spotify.com/embed/track/${track.id}?utm_source=generator&theme=0`}
+                                                width="0"
+                                                height="0"
+                                                frameBorder="0"
+                                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                                loading="lazy"
+                                                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+                                            />
                                         )}
                                     </motion.li>
                                 ))}

@@ -122,7 +122,7 @@ export default function LyricsPage() {
                 </h1>
                 <p
                     ref={subtitleRef}
-                    className="text-lg mb-3 text-[#B3B3B3] font-medium min-h-[1.5em]"
+                    className="text-lg mb-3 text-neutral-500 dark:text-[#B3B3B3] font-medium min-h-[1.5em]"
                 />
             </motion.header>
 
