@@ -68,7 +68,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="page-container mobile-fullscreen flex flex-col items-center justify-center flex-1 text-center">
+    <div className="page-container flex flex-col items-center justify-center min-h-[calc(100vh-150px)] text-center">
 
 
       {/* Logo */}

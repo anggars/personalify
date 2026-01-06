@@ -128,7 +128,7 @@ export default function AboutPage() {
                 <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
                     About Personalify
                 </h1>
-                <p className="text-lg mb-1 text-neutral-500 dark:text-[#B3B3B3] font-medium">
+                <p className="text-lg mb-3 text-neutral-500 dark:text-[#B3B3B3] font-medium">
                     The project scoop, from exam brief to deployment.
                 </p>
             </motion.header>
@@ -144,7 +144,7 @@ export default function AboutPage() {
                     transition={{ duration: 0.6, delay: 0.1 }}
                     className="glass-card rounded-2xl p-6 md:p-6 hover:-translate-y-1 transition-transform duration-300"
                 >
-                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-4 text-center -mt-2">
+                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-4 text-center md:-mt-2">
                         Just a Side-Quest?
                     </h2>
                     <div className="space-y-4 text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify">
@@ -204,7 +204,7 @@ export default function AboutPage() {
                     transition={{ duration: 0.6, delay: 0.2 }}
                     className="glass-card rounded-2xl p-6 md:p-6 hover:-translate-y-1 transition-transform duration-300"
                 >
-                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-4 text-center -mt-2">
+                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-4 text-center md:-mt-2">
                         About Me
                     </h2>
                     <div className="space-y-4 text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify">
@@ -249,7 +249,7 @@ export default function AboutPage() {
                     transition={{ duration: 0.6, delay: 0.3 }}
                     className="glass-card rounded-2xl p-6 md:p-6 hover:-translate-y-1 transition-transform duration-300"
                 >
-                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-4 text-center -mt-2">
+                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-4 text-center md:-mt-2">
                         Hit Me Up!
                     </h2>
                     <div className="grid grid-cols-5 gap-3 justify-items-center md:flex md:flex-wrap md:justify-center md:gap-4 pt-2">
