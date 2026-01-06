@@ -68,7 +68,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="page-container flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] text-center">
+    <div className="page-container flex flex-col items-center justify-center h-dvh max-md:overflow-hidden text-center">
 
 
       {/* Logo */}
@@ -82,7 +82,7 @@ export default function HomePage() {
           alt="Personalify Logo"
           width={80}
           height={80}
-          className="mb-8"
+          className="mb-5 max-md:w-[60px] max-md:h-[60px]"
           priority
         />
       </motion.div>
@@ -100,7 +100,7 @@ export default function HomePage() {
 
         <p
           ref={paragraphRef}
-          className="text-[3.1vw] md:text-xl text-muted-foreground font-medium leading-relaxed mb-8 tracking-tight"
+          className="text-[2.8vw] md:text-xl text-muted-foreground font-medium leading-relaxed mb-8 tracking-tight"
         />
       </motion.div>
 

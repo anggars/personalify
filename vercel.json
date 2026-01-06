@@ -13,6 +13,18 @@
     {
       "source": "/callback",
       "destination": "/api/index.py"
+    },
+    {
+      "source": "/logout",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/analyze-lyrics",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/analyze-emotions-background",
+      "destination": "/api/index.py"
     }
   ]
 }
