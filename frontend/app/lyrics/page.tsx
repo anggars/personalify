@@ -49,11 +49,21 @@ export default function LyricsPage() {
         typeWriter();
     }, []);
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const handleMouseMoveOrTouch = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
         const el = e.currentTarget;
         const rect = el.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        let clientX, clientY;
+
+        if ('touches' in e) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = (e as React.MouseEvent).clientX;
+            clientY = (e as React.MouseEvent).clientY;
+        }
+
+        const x = ((clientX - rect.left) / rect.width) * 100;
+        const y = ((clientY - rect.top) / rect.height) * 100;
         el.style.setProperty("--mouse-x", `${x}%`);
         el.style.setProperty("--mouse-y", `${y}%`);
     };
@@ -135,7 +145,8 @@ export default function LyricsPage() {
 
                         <button
                             type="submit"
-                            onMouseMove={handleMouseMove}
+                            onMouseMove={handleMouseMoveOrTouch}
+                            onTouchMove={handleMouseMoveOrTouch}
                             disabled={isLoading}
                             className={`btn-glass w-full group ${isLoading ? "pointer-events-none" : ""}`}
                         >

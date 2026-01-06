@@ -5,22 +5,22 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 const TECH_STACKS = [
-    { phrase: "Containerized by", name: "Docker", url: "https://www.docker.com/", color: "hover:text-[#2496ED]" },
-    { phrase: "Built with", name: "Python (FastAPI)", url: "https://fastapi.tiangolo.com/", color: "hover:text-[#009688]" },
-    { phrase: "Deployed on", name: "Vercel", url: "https://vercel.com/", color: "hover:text-white" },
-    { phrase: "Main Database by", name: "Neon", url: "https://neon.tech/", color: "hover:text-[#00E599]" },
-    { phrase: "History stored in", name: "MongoDB Atlas", url: "https://www.mongodb.com/atlas", color: "hover:text-[#4DB33D]" },
-    { phrase: "Cached by", name: "Upstash", url: "https://upstash.com/", color: "hover:text-[#DC382D]" },
+    { phrase: "Containerized by", name: "Docker", url: "https://www.docker.com/", color: "hover:text-[#2496ED] active:text-[#2496ED]" },
+    { phrase: "Built with", name: "Python (FastAPI)", url: "https://fastapi.tiangolo.com/", color: "hover:text-[#009688] active:text-[#009688]" },
+    { phrase: "Deployed on", name: "Vercel", url: "https://vercel.com/", color: "hover:text-white active:text-white" },
+    { phrase: "Main Database by", name: "Neon", url: "https://neon.tech/", color: "hover:text-[#00E599] active:text-[#00E599]" },
+    { phrase: "History stored in", name: "MongoDB Atlas", url: "https://www.mongodb.com/atlas", color: "hover:text-[#4DB33D] active:text-[#4DB33D]" },
+    { phrase: "Cached by", name: "Upstash", url: "https://upstash.com/", color: "hover:text-[#DC382D] active:text-[#DC382D]" },
 ];
 
 const DASHBOARD_STACKS = [
-    { phrase: "Powered by", name: "Spotify API", url: "https://developer.spotify.com/", color: "hover:text-[#1DB954]" },
-    { phrase: "Powered by", name: "Hugging Face", url: "https://huggingface.co/", color: "hover:text-[#FFD21E]" },
+    { phrase: "Powered by", name: "Spotify API", url: "https://developer.spotify.com/", color: "hover:text-[#1DB954] active:text-[#1DB954]" },
+    { phrase: "Powered by", name: "Hugging Face", url: "https://huggingface.co/", color: "hover:text-[#FFD21E] active:text-[#FFD21E]" },
 ];
 
 const GENIUS_STACKS = [
-    { phrase: "Powered by", name: "Genius API", url: "https://docs.genius.com/", color: "hover:text-[#ffff64]" },
-    { phrase: "Powered by", name: "Hugging Face", url: "https://huggingface.co/", color: "hover:text-[#FFD21E]" },
+    { phrase: "Powered by", name: "Genius API", url: "https://docs.genius.com/", color: "hover:text-[#ffff64] active:text-[#ffff64]" },
+    { phrase: "Powered by", name: "Hugging Face", url: "https://huggingface.co/", color: "hover:text-[#FFD21E] active:text-[#FFD21E]" },
 ];
 
 export function Footer() {
@@ -116,7 +116,7 @@ export function Footer() {
                 <a
                     href="https://developer.spotify.com/"
                     target="_blank"
-                    className="hover:text-[#1DB954] transition-colors"
+                    className="md:hover:text-[#1DB954] active:text-[#1DB954] transition-colors"
                 >
                     Spotify API
                 </a>
@@ -142,12 +142,12 @@ export function Footer() {
                     {isDashboard ? (
                         <span
                             onClick={handleEasterEgg}
-                            className="cursor-pointer hover:text-[#1DB954] transition-colors footer-toggler"
+                            className="cursor-pointer md:hover:text-[#1DB954] active:text-[#1DB954] transition-colors footer-toggler"
                         >
                             Personalify
                         </span>
                     ) : (
-                        <Link href="/" className="hover:text-[#1DB954] transition-colors">
+                        <Link href="/" className="md:hover:text-[#1DB954] active:text-[#1DB954] transition-colors">
                             Personalify
                         </Link>
                     )}{" "}
@@ -158,7 +158,7 @@ export function Footer() {
                     <a
                         href="https://desty.page/anggars"
                         target="_blank"
-                        className="hover:text-[#1DB954] transition-colors"
+                        className="hover:text-[#1DB954] active:text-[#1DB954] transition-colors"
                     >
                         アリツ
                     </a>
