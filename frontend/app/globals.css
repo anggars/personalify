@@ -40,33 +40,33 @@
 /* ===== LIGHT MODE ===== */
 :root {
   --radius: 0.75rem;
-  --background: #ebebeb; /* Off-white tending to grey */
-  --foreground: #121212;
-  --card: #f5f5f5; /* Light grayish */
-  --card-foreground: #121212;
-  --popover: #f5f5f5;
-  --popover-foreground: #121212;
+  --background: #e0e0e0; /* Light grey background */
+  --foreground: #1a1a1a;
+  --card: #ececec; /* Slightly lighter than background */
+  --card-foreground: #1a1a1a;
+  --popover: #ececec;
+  --popover-foreground: #1a1a1a;
   --primary: #1DB954;
   --primary-foreground: #000000;
-  --secondary: #e0e0e0;
-  --secondary-foreground: #121212;
-  --muted: #e0e0e0;
-  --muted-foreground: #666666;
-  --accent: #e5e5e5;
-  --accent-foreground: #121212;
+  --secondary: #d5d5d5;
+  --secondary-foreground: #1a1a1a;
+  --muted: #d0d0d0;
+  --muted-foreground: #555555;
+  --accent: #d8d8d8;
+  --accent-foreground: #1a1a1a;
   --destructive: #ff453a;
-  --border: rgba(0, 0, 0, 0.12);
-  --input: rgba(0, 0, 0, 0.08);
+  --border: rgba(0, 0, 0, 0.15);
+  --input: rgba(0, 0, 0, 0.1);
   --ring: #1DB954;
   
   /* Section colors for light mode */
-  --section-bg: #f5f5f5;
-  --section-border: #e0e0e0;
-  --section-hover-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  --list-border: #e5e5e5;
-  --text-primary: #121212;
-  --text-secondary: #666666;
-  --text-muted: #888888;
+  --section-bg: #ececec;
+  --section-border: #c8c8c8;
+  --section-hover-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  --list-border: #d0d0d0;
+  --text-primary: #1a1a1a;
+  --text-secondary: #4a4a4a;
+  --text-muted: #666666;
 }
 
 /* ===== DARK MODE (Personalify default) ===== */
@@ -130,19 +130,28 @@
 
 @media (max-width: 768px) {
   .page-container {
-    padding: 1.5rem 1.5rem 0 1.5rem;
-    padding-top: 60px;
+    padding: 1rem 1rem 0 1rem;
+    padding-top: 50px;
+  }
+  
+  /* Mobile full-height pages (Home, Lyrics, Genius) */
+  .page-container.mobile-fullscreen {
+    min-height: calc(100dvh - 50px);
+    display: flex;
+    flex-direction: column;
   }
   
   header.hero h1,
   header h1 {
-    font-size: 2rem !important;
+    font-size: 1.75rem !important;
+    margin-top: 0.5rem;
     margin-bottom: 0.5rem;
   }
   
   header.hero p,
   header p {
-    font-size: 1rem !important;
+    font-size: 0.9rem !important;
+    margin-bottom: 0.75rem;
   }
   
   /* Dashboard mobile header styling */
@@ -175,6 +184,16 @@
   .list-item img {
     width: 50px;
     height: 50px;
+  }
+  
+  /* Mobile textarea smaller */
+  textarea {
+    min-height: 120px !important;
+  }
+  
+  /* Mobile glass-card padding */
+  .glass-card {
+    padding: 1rem !important;
   }
 }
 

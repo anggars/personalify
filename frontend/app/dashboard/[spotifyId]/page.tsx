@@ -657,7 +657,7 @@ export default function DashboardPage() {
                 transition={{ duration: 0.8 }}
                 className="dashboard-header text-center"
             >
-                <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-3 mt-4 leading-tight">Personalify</h1>
+                <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-3 leading-tight">Personalify</h1>
                 <p className="text-lg mb-3 text-[#B3B3B3] font-medium">
                     {TIME_RANGE_SUBTITLES[timeRange]}, <span className="font-bold">{data.user}</span>!
                 </p>
