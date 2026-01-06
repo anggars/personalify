@@ -95,12 +95,12 @@ export default function LyricsPage() {
     const isEmpty = !result && !isLoading && !error;
 
     return (
-        <div className="page-container flex flex-col w-full max-w-3xl mx-auto min-h-[calc(100vh-10rem)] max-md:min-h-[calc(100dvh-8rem)]">
+        <div className="page-container mobile-fullscreen flex flex-col w-full max-w-3xl mx-auto min-h-[calc(100vh-10rem)]">
             {/* Header */}
             <motion.header
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center mt-4 md:mt-4 mb-6 md:mb-6 max-md:mt-2 max-md:mb-4 flex-none px-4"
+                className="text-center mt-2 mb-4 flex-none px-4"
             >
                 <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
                     Lyrics Analyzer
@@ -111,8 +111,8 @@ export default function LyricsPage() {
                 />
             </motion.header>
 
-            {/* Content */}
-            <div className={`flex flex-col w-full flex-1 ${isEmpty ? "justify-center" : ""}`}>
+            {/* Content - always centered */}
+            <div className="flex flex-col w-full flex-1 justify-center">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
