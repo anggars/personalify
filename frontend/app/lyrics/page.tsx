@@ -130,7 +130,7 @@ export default function LyricsPage() {
                                 }
                             }}
                             placeholder="Write or paste your lyrics here..."
-                            className="w-full min-h-[250px] max-md:min-h-[180px] p-5 max-md:p-3 rounded-xl border border-neutral-200 dark:border-[#282828] bg-white dark:bg-[#181818] text-neutral-900 dark:text-[#cccccc] placeholder:text-neutral-500 focus:outline-none focus:border-[#1DB954] focus:ring-1 focus:ring-[#1DB954]/20 transition-all custom-scrollbar resize-y leading-loose font-light tracking-wide text-[0.95rem]"
+                            className="w-full min-h-[250px] max-md:min-h-[180px] p-5 max-md:p-3 rounded-xl border border-neutral-200 dark:border-[#282828] bg-white dark:bg-[#181818] text-neutral-900 dark:text-[#cccccc] placeholder:text-neutral-500 focus:outline-none focus:border-[#1DB954] focus:ring-1 focus:ring-[#1DB954]/20 transition-all custom-scrollbar resize-y leading-[1.6rem] font-light tracking-wide text-[0.95rem]"
                         />
 
                         <button
