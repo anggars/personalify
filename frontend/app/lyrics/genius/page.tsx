@@ -177,12 +177,12 @@ export default function GeniusPage() {
     const isEmpty = !selectedArtist && artists.length === 0 && !loadingState && !error;
 
     return (
-        <div className="page-container flex flex-col w-full max-w-3xl mx-auto min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-10rem)] grow">
+        <div className="page-container flex flex-col w-full max-w-3xl mx-auto min-h-[calc(100vh-10rem)] max-md:min-h-[calc(100dvh-8rem)]">
             {/* Header */}
             <motion.header
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center mt-4 max-md:mt-2 mb-6 max-md:mb-3 flex-none px-4"
+                className="text-center mt-4 md:mt-4 mb-6 md:mb-6 max-md:mt-2 max-md:mb-4 flex-none px-4"
             >
                 <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
                     Genius Analyzer
@@ -194,7 +194,7 @@ export default function GeniusPage() {
             </motion.header>
 
             {/* Content */}
-            <div className={`flex flex-col w-full flex-1 transition-all duration-300 ${isEmpty ? "justify-center" : "justify-start"}`}>
+            <div className={`flex flex-col w-full flex-1 ${isEmpty ? "justify-center" : ""}`}>
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
