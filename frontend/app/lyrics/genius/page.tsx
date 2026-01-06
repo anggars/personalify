@@ -177,7 +177,7 @@ export default function GeniusPage() {
     const isEmpty = !selectedArtist && artists.length === 0 && !loadingState && !error;
 
     return (
-        <div className="page-container mobile-fullscreen flex flex-col w-full max-w-3xl mx-auto flex-1">
+        <div className="page-container flex flex-col w-full max-w-3xl mx-auto min-h-[calc(100vh-150px)]">
             {/* Header */}
             <motion.header
                 initial={{ opacity: 0, y: 20 }}
@@ -189,7 +189,7 @@ export default function GeniusPage() {
                 </h1>
                 <p
                     ref={subtitleRef}
-                    className="text-lg mb-1 text-[#B3B3B3] font-medium min-h-[1.5em]"
+                    className="text-lg mb-3 text-[#B3B3B3] font-medium min-h-[1.5em]"
                 />
             </motion.header>
 
@@ -318,7 +318,7 @@ export default function GeniusPage() {
                                 <div className="w-full max-w-md mx-auto">
                                     <MarqueeText
                                         text={analysis.track_info.title}
-                                        className="text-2xl font-bold text-[#1DB954] mb-1"
+                                        className="text-lg font-bold text-[#1DB954] mb-1"
                                     />
                                     <MarqueeText
                                         text={analysis.track_info.artist}

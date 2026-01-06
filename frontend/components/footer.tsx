@@ -134,7 +134,7 @@ export function Footer() {
 
     return (
         <footer
-            className={`w-full py-6 px-6 mt-1 mb-2 bg-transparent text-center z-40 relative transition-opacity duration-500 ${pathname === "/about" ? "animate-fade-in-up" : ""
+            className={`w-full py-3 md:py-6 px-6 -mt-4 md:mt-1 mb-2 bg-transparent text-center z-40 relative transition-opacity duration-500 ${pathname === "/about" ? "animate-fade-in-up" : ""
                 }`}
         >
             <div className="text-xs text-neutral-600 dark:text-neutral-400 font-medium leading-tight">

@@ -130,14 +130,8 @@
 
 @media (max-width: 768px) {
   .page-container {
-    padding: 1rem 1rem 0 1rem;
+    padding: 1.5rem; /* Match navbar floating margin */
     padding-top: 50px;
-  }
-  
-  /* Mobile full-height pages use flex-1 from component, just ensure flex layout */
-  .page-container.mobile-fullscreen {
-    display: flex;
-    flex-direction: column;
   }
   
   header.hero h1,
@@ -190,7 +184,7 @@
     min-height: 120px !important;
   }
   
-  /* Mobile glass-card padding */
+  /* Mobile glass-card - just padding, width handled by container */
   .glass-card {
     padding: 1rem !important;
   }
