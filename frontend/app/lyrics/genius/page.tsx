@@ -40,7 +40,13 @@ export default function GeniusPage() {
     const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
     const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
     const [loadingState, setLoadingState] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
+
+    const dispatchError = (message: string) => {
+        window.dispatchEvent(new CustomEvent("personalify-notification", {
+            detail: { type: "error", message }
+        }));
+        setTimeout(() => window.dispatchEvent(new CustomEvent("personalify-notification", { detail: null })), 4000);
+    };
 
     const subtitleRef = useRef<HTMLParagraphElement>(null);
     const hasTyped = useRef(false);
@@ -98,7 +104,6 @@ export default function GeniusPage() {
         setArtists([]);
         setSongs([]);
         setAnalysis(null);
-        setError(null);
         setSuggestions([]);
 
         try {
@@ -107,10 +112,10 @@ export default function GeniusPage() {
             if (data.artists && data.artists.length > 0) {
                 setArtists(data.artists);
             } else {
-                setError("No artist found.");
+                dispatchError("No artist found.");
             }
         } catch (e) {
-            setError("Error searching artist.");
+            dispatchError("Error searching artist.");
         } finally {
             setLoadingState(null);
         }
@@ -160,7 +165,6 @@ export default function GeniusPage() {
         setArtists([]);
         setSelectedArtist(artist);
         setLoadingState("songs");
-        setError(null);
 
         try {
             const res = await fetch(`/api/genius/artist-songs/${artist.id}`);
@@ -168,10 +172,10 @@ export default function GeniusPage() {
             if (data.songs) {
                 setSongs(data.songs);
             } else {
-                setError("No songs found.");
+                dispatchError("No songs found.");
             }
         } catch (e) {
-            setError("Error loading songs.");
+            dispatchError("Error loading songs.");
         } finally {
             setLoadingState(null);
         }
@@ -187,13 +191,13 @@ export default function GeniusPage() {
             if (!res.ok) throw new Error("Server Error");
             setAnalysis(await res.json());
         } catch (e) {
-            setError("Failed to fetch lyrics or analyze.");
+            dispatchError("Failed to fetch lyrics or analyze.");
         } finally {
             setLoadingState(null);
         }
     };
 
-    const isEmpty = !selectedArtist && artists.length === 0 && !loadingState && !error;
+    const isEmpty = !selectedArtist && artists.length === 0 && !loadingState;
 
     return (
         <div className="page-container flex flex-col w-full max-w-3xl mx-auto flex-1">
@@ -248,7 +252,7 @@ export default function GeniusPage() {
                         )}
                     </button>
 
-                    {error && <p className="text-[#ff6b6b] text-center font-medium mb-4">{error}</p>}
+
 
                     {/* Unified Results Grid (Suggestions or Search Results) */}
                     {(suggestions.length > 0 || artists.length > 0) && (

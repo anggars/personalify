@@ -9,7 +9,7 @@ import { ThemeToggle } from "./ui/theme-toggle";
 import { ChevronDown, Menu, X } from "lucide-react";
 import Image from "next/image";
 
-type NotificationType = "warning" | "media" | null;
+type NotificationType = "warning" | "error" | "media" | null;
 
 interface NotificationData {
     type: NotificationType;
@@ -27,6 +27,7 @@ export const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [mobileDropdownOpen, setMobileDropdownOpen] = useState<string | null>(null);
+    const [desktopDropdownOpen, setDesktopDropdownOpen] = useState<string | null>(null);
     const [spotifyId, setSpotifyId] = useState<string | null>(null);
 
     // Notification State
@@ -67,7 +68,7 @@ export const Navbar = () => {
             // Trigger notification for session expired
             if (errorParam === "session_expired") {
                 const event = new CustomEvent("personalify-notification", {
-                    detail: { type: "warning", message: "⚠ Session expired. Please login again!" }
+                    detail: { type: "error", message: "⚠ Session expired. Please login again!" }
                 });
                 window.dispatchEvent(event);
                 setTimeout(() => window.dispatchEvent(new CustomEvent("personalify-notification", { detail: null })), 4000);
@@ -89,7 +90,7 @@ export const Navbar = () => {
         if (!spotifyId) {
             e.preventDefault();
             const event = new CustomEvent("personalify-notification", {
-                detail: { type: "warning", message: "⚠ Please login using the button on the home page!" }
+                detail: { type: "error", message: "⚠ Please login using the button on the home page!" }
             });
             window.dispatchEvent(event);
             setTimeout(() => window.dispatchEvent(new CustomEvent("personalify-notification", { detail: null })), 3000);
@@ -158,10 +159,12 @@ export const Navbar = () => {
                             "toast-glass backdrop-blur-3xl shadow-2xl rounded-xl overflow-hidden transform-gpu ring-1 ring-white/10",
                             notification.type === "warning"
                                 ? "bg-white/95 dark:bg-[#1e1e1e]/95 text-yellow-600 dark:text-yellow-400"
-                                : "bg-white/70 dark:bg-[#121212]/80 hover:scale-105 transition-transform duration-300"
+                                : notification.type === "error"
+                                    ? "bg-white/95 dark:bg-[#1e1e1e]/95 text-red-600 dark:text-red-400 border border-red-500/20"
+                                    : "bg-white/70 dark:bg-[#121212]/80 hover:scale-105 transition-transform duration-300"
                         )}
                     >
-                        {notification.type === "warning" && (
+                        {(notification.type === "warning" || notification.type === "error") && (
                             <div className="px-6 py-3 font-bold text-sm whitespace-nowrap">
                                 {notification.message}
                             </div>
@@ -226,21 +229,32 @@ export const Navbar = () => {
                                         : pathname?.startsWith(link.href);
 
                                 const textClass = isActive
-                                    ? "text-black dark:text-white font-bold"
+                                    ? "text-black dark:text-white"
                                     : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white";
 
                                 if (link.children) {
                                     return (
                                         <div key={link.name} className="relative group">
-                                            <button className={cn("flex items-center gap-1 text-sm transition-colors px-3 py-2 rounded-md relative whitespace-nowrap", textClass)}>
-                                                {link.name}
-                                                <ChevronDown className="w-3 h-3 transition-transform group-hover:rotate-180" />
+                                            <button
+                                                onClick={() => setDesktopDropdownOpen(desktopDropdownOpen === link.name ? null : link.name)}
+                                                className={cn("flex items-center gap-1 text-sm transition-colors px-3 py-2 rounded-md relative whitespace-nowrap", textClass)}
+                                            >
+                                                <span className="relative flex flex-col items-center justify-center">
+                                                    <span className={isActive ? "font-bold" : "font-medium"}>{link.name}</span>
+                                                    <span className="font-bold invisible h-0 overflow-hidden" aria-hidden="true">{link.name}</span>
+                                                </span>
+                                                <ChevronDown className={cn("w-3 h-3 transition-transform duration-300", desktopDropdownOpen === link.name ? "rotate-180" : "group-hover:rotate-180")} />
                                                 {isActive && (
                                                     <motion.div layoutId="navbar-active" className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#1DB954] rounded-full mx-3" transition={{ type: "spring", stiffness: 380, damping: 30 }} />
                                                 )}
                                             </button>
 
-                                            <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top translate-y-2 group-hover:translate-y-0">
+                                            <div className={cn(
+                                                "absolute top-full left-1/2 -translate-x-1/2 pt-4 transition-all duration-200 transform origin-top",
+                                                desktopDropdownOpen === link.name
+                                                    ? "opacity-100 visible translate-y-0"
+                                                    : "opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-2 group-hover:translate-y-0"
+                                            )}>
                                                 <div className="bg-white/90 dark:bg-[#1e1e1e]/95 border border-black/10 dark:border-white/10 rounded-xl p-1 min-w-[140px] shadow-2xl flex flex-col overflow-hidden backdrop-blur-xl">
                                                     {link.children.map((child) => (
                                                         <Link
@@ -268,9 +282,12 @@ export const Navbar = () => {
                                             key={link.name}
                                             href={link.href}
                                             onClick={link.onClick}
-                                            className={cn("relative px-3 py-2 text-sm transition-colors rounded-md whitespace-nowrap", textClass)}
+                                            className={cn("relative px-3 py-2 text-sm transition-colors rounded-md whitespace-nowrap inline-flex flex-col items-center justify-center", textClass)}
                                         >
-                                            {link.name}
+                                            <span className="relative flex flex-col items-center justify-center">
+                                                <span className={isActive ? "font-bold" : "font-medium"}>{link.name}</span>
+                                                <span className="font-bold invisible h-0 overflow-hidden" aria-hidden="true">{link.name}</span>
+                                            </span>
                                             {isActive && (
                                                 <motion.div layoutId="navbar-active" className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#1DB954] rounded-full mx-3" transition={{ type: "spring", stiffness: 380, damping: 30 }} />
                                             )}
@@ -279,8 +296,11 @@ export const Navbar = () => {
                                 }
 
                                 return (
-                                    <Link key={link.name} href={link.href} className={cn("relative px-3 py-2 text-sm transition-colors rounded-md whitespace-nowrap", textClass)}>
-                                        {link.name}
+                                    <Link key={link.name} href={link.href} className={cn("relative px-3 py-2 text-sm transition-colors rounded-md whitespace-nowrap inline-flex flex-col items-center justify-center", textClass)}>
+                                        <span className="relative flex flex-col items-center justify-center">
+                                            <span className={isActive ? "font-bold" : "font-medium"}>{link.name}</span>
+                                            <span className="font-bold invisible h-0 overflow-hidden" aria-hidden="true">{link.name}</span>
+                                        </span>
                                         {isActive && (
                                             <motion.div layoutId="navbar-active" className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#1DB954] rounded-full mx-3" transition={{ type: "spring", stiffness: 380, damping: 30 }} />
                                         )}
