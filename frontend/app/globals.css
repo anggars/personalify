@@ -134,9 +134,8 @@
     padding-top: 50px;
   }
   
-  /* Mobile full-height pages (Home, Lyrics, Genius) */
+  /* Mobile full-height pages use flex-1 from component, just ensure flex layout */
   .page-container.mobile-fullscreen {
-    min-height: calc(100dvh - 50px);
     display: flex;
     flex-direction: column;
   }
