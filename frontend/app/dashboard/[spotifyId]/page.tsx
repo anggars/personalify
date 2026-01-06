@@ -342,7 +342,10 @@ export default function DashboardPage() {
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
 
-        return { genres: sorted, map: mapping };
+        // Limit to 10 genres in default mode, show all in Top 20 mode
+        const limitedGenres = showTop20 ? sorted : sorted.slice(0, 10);
+
+        return { genres: limitedGenres, map: mapping };
     }, [data, showTop20]);
 
     // Generate image like vanilla - 720x1280 story format with header

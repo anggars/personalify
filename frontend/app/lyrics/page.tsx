@@ -95,12 +95,12 @@ export default function LyricsPage() {
     const isEmpty = !result && !isLoading && !error;
 
     return (
-        <div className="page-container flex flex-col w-full max-w-3xl mx-auto min-h-[calc(100vh-100px)] grow">
+        <div className="page-container flex flex-col w-full max-w-3xl mx-auto h-dvh max-md:overflow-hidden grow">
             {/* Header */}
             <motion.header
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center mt-4 mb-6 flex-none px-4"
+                className="text-center mt-4 max-md:mt-2 mb-6 max-md:mb-3 flex-none px-4"
             >
                 <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
                     Lyrics Analyzer
@@ -130,7 +130,7 @@ export default function LyricsPage() {
                                 }
                             }}
                             placeholder="Write or paste your lyrics here..."
-                            className="w-full min-h-[250px] p-5 rounded-xl border border-neutral-200 dark:border-[#282828] bg-white dark:bg-[#181818] text-neutral-900 dark:text-[#cccccc] placeholder:text-neutral-500 focus:outline-none focus:border-[#1DB954] focus:ring-1 focus:ring-[#1DB954]/20 transition-all custom-scrollbar resize-y leading-loose font-light tracking-wide text-[0.95rem]"
+                            className="w-full min-h-[250px] max-md:min-h-[180px] p-5 max-md:p-3 rounded-xl border border-neutral-200 dark:border-[#282828] bg-white dark:bg-[#181818] text-neutral-900 dark:text-[#cccccc] placeholder:text-neutral-500 focus:outline-none focus:border-[#1DB954] focus:ring-1 focus:ring-[#1DB954]/20 transition-all custom-scrollbar resize-y leading-loose font-light tracking-wide text-[0.95rem]"
                         />
 
                         <button
