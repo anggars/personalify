@@ -24,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${jakarta.className} min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden`}
+        className={`${jakarta.className} min-h-dvh flex flex-col bg-background text-foreground overflow-x-hidden`}
       >
         <ThemeProvider
           attribute="class"
