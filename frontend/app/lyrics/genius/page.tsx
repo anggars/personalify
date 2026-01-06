@@ -116,6 +116,25 @@ export default function GeniusPage() {
         }
     };
 
+    const handleMouseMoveOrTouch = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
+        const el = e.currentTarget;
+        const rect = el.getBoundingClientRect();
+        let clientX, clientY;
+
+        if ('touches' in e) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = (e as React.MouseEvent).clientX;
+            clientY = (e as React.MouseEvent).clientY;
+        }
+
+        const x = ((clientX - rect.left) / rect.width) * 100;
+        const y = ((clientY - rect.top) / rect.height) * 100;
+        el.style.setProperty("--mouse-x", `${x}%`);
+        el.style.setProperty("--mouse-y", `${y}%`);
+    };
+
     const handleAutocomplete = (val: string) => {
         setQuery(val);
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
@@ -215,7 +234,8 @@ export default function GeniusPage() {
                     {/* Search Button */}
                     <button
                         onClick={handleSearch}
-                        onMouseMove={handleMouseMove}
+                        onMouseMove={handleMouseMoveOrTouch}
+                        onTouchMove={handleMouseMoveOrTouch}
                         className="btn-glass w-full group mb-0 min-h-[46px]"
                     >
                         <span className={`relative -top-px transition-opacity duration-200 ${loadingState === "search" ? "opacity-0" : "opacity-100"}`}>

@@ -137,20 +137,20 @@
   header.hero h1,
   header h1 {
     font-size: 1.75rem !important;
-    margin-top: 0.75rem;
+    margin-top: 1rem;
     margin-bottom: 0.5rem;
   }
   
   header.hero p,
   header p {
     font-size: 0.9rem !important;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
   }
   
   /* Dashboard mobile header styling */
   .dashboard-header h1 {
     font-size: 2rem !important;
-    margin-top: 20px;
+    margin-top: 25px;
     margin-bottom: 0.5rem;
   }
   
@@ -238,7 +238,9 @@
   border: 1px solid var(--section-border);
   position: relative;
   z-index: 1;
-  transition: transform 0.4s ease-out, box-shadow 0.4s ease-out;
+  /* Ensure hardware acceleration and smooth compositing */
+  will-change: transform, box-shadow;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -254,6 +256,8 @@
 :root:not(.dark) .section-card {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
+
+/* .section-card:hover transform is handled by Tailwind class hover:-translate-y-1 */
 
 .dark .section-card:hover {
   box-shadow: 
@@ -328,6 +332,7 @@
   font-size: 0.68rem;
   color: var(--text-muted);
   margin-top: 0.18rem;
+  line-height: 1.2;
 }
 
 /* ===== GENRE PILLS ===== */
@@ -443,22 +448,19 @@
   .glow-card:hover::before {
     opacity: 1;
   }
+  
+  /* Active state for mobile touch feedback */
+  .glow-card:active::before {
+    opacity: 1;
+    transition: opacity 0.1s;
+  }
 }
 
-
-/* TOAST GLASS STYLE */
-.toast-glass {
-  background: rgba(30, 30, 30, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-:root:not(.dark) .toast-glass {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+/* Enable touch following for glow effect via JS updating --mouse-x/y */
+@media (hover: none) {
+  .glow-card::before {
+    transition: opacity 0.2s ease, left 0.1s ease, top 0.1s ease;
+  }
 }
 
 /* ===== BUTTON STYLES ===== */
@@ -483,6 +485,15 @@
     inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
     inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
     0 4px 15px rgba(0, 0, 0, 0.2);
+    
+  /* Disable tap highlight on mobile */
+  -webkit-tap-highlight-color: transparent; 
+  user-select: none;
+}
+
+.btn-glass:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 :root:not(.dark) .btn-glass {
@@ -510,8 +521,8 @@
   top: calc(var(--mouse-y, 50%) - 50%);
   background: radial-gradient(
     circle at center,
-    rgba(29, 185, 84, 0.4),
-    rgba(29, 185, 84, 0.05) 50%,
+    rgba(29, 185, 84, 0.65),
+    rgba(29, 185, 84, 0.1) 50%,
     transparent 100%
   );
   filter: blur(10px);
@@ -521,7 +532,8 @@
   pointer-events: none;
 }
 
-.btn-glass:hover::before {
+.btn-glass:hover::before,
+.btn-glass:active::before {
   opacity: 1;
 }
 
@@ -865,9 +877,15 @@ html {
 .instagram-hover:hover {
   border: 1px solid transparent;
   background: 
-    linear-gradient(var(--background), var(--background)) padding-box,
+    linear-gradient(#fff, #fff) padding-box,
     radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%) border-box;
   box-shadow: 0 2px 4px rgba(214, 36, 159, 0.08);
+}
+
+.dark .instagram-hover:hover {
+  background: 
+    linear-gradient(#1e1e1e, #1e1e1e) padding-box,
+    radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%) border-box;
 }
 
 .instagram-hover:hover svg {

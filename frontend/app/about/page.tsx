@@ -99,16 +99,16 @@ export default function AboutPage() {
     };
 
     const socials = [
-        { icon: Github, href: "https://github.com/anggars", label: "Github", hover: "hover-brand-github" },
-        { icon: Linkedin, href: "http://linkedin.com/in/anggarnts", label: "LinkedIn", hover: "hover-brand-linkedin" },
-        { icon: Instagram, href: "http://www.instagram.com/anggarnts", label: "Instagram", hover: "instagram-hover" },
-        { icon: FaSpotify, href: "https://open.spotify.com/user/31xon7qetimdnbmhkupbaszl52nu", label: "Spotify", hover: "hover-brand-spotify" },
-        { icon: XIcon, href: "http://x.com/anggarnts", label: "X", hover: "hover-brand-x" },
-        { icon: Youtube, href: "http://youtube.com/@anggarnts", label: "YouTube", hover: "hover-brand-youtube" },
-        { icon: FaSoundcloud, href: "http://soundcloud.com/anggarnts", label: "SoundCloud", hover: "hover-brand-soundcloud" },
-        { icon: FaMedium, href: "https://medium.com/@anggarnts", label: "Medium", hover: "hover-brand-medium" },
-        { icon: Send, href: "http://t.me/anggarnts", label: "Telegram", hover: "hover-brand-telegram" }, // Send icon serves as Paper Plane
-        { icon: FileText, href: "http://bit.ly/anggariantosudrajat", label: "Blog", hover: "hover-brand-blog" },
+        { icon: Github, href: "https://github.com/anggars", label: "Github", hover: "hover-brand-github", active: "active:text-black dark:active:text-white" },
+        { icon: Linkedin, href: "http://linkedin.com/in/anggarnts", label: "LinkedIn", hover: "hover-brand-linkedin", active: "active:text-[#0077b5]" },
+        { icon: Instagram, href: "http://www.instagram.com/anggarnts", label: "Instagram", hover: "instagram-hover", active: "active:text-[#e4405f]" },
+        { icon: FaSpotify, href: "https://open.spotify.com/user/31xon7qetimdnbmhkupbaszl52nu", label: "Spotify", hover: "hover-brand-spotify", active: "active:text-[#1DB954]" },
+        { icon: XIcon, href: "http://x.com/anggarnts", label: "X", hover: "hover-brand-x", active: "active:text-black dark:active:text-white" },
+        { icon: Youtube, href: "http://youtube.com/@anggarnts", label: "YouTube", hover: "hover-brand-youtube", active: "active:text-[#ff0000]" },
+        { icon: FaSoundcloud, href: "http://soundcloud.com/anggarnts", label: "SoundCloud", hover: "hover-brand-soundcloud", active: "active:text-[#ff5500]" },
+        { icon: FaMedium, href: "https://medium.com/@anggarnts", label: "Medium", hover: "hover-brand-medium", active: "active:text-black dark:active:text-white" },
+        { icon: Send, href: "http://t.me/anggarnts", label: "Telegram", hover: "hover-brand-telegram", active: "active:text-[#0088cc]" },
+        { icon: FileText, href: "http://bit.ly/anggariantosudrajat", label: "Blog", hover: "hover-brand-blog", active: "active:text-[#1DB954]" },
     ];
 
     return (
@@ -157,39 +157,39 @@ export default function AboutPage() {
                         </p>
                         <p>
                             This whole thing is built with a{" "}
-                            <a href="https://fastapi.tiangolo.com/" target="_blank" className="font-semibold hover:text-[#009688] transition-colors">
+                            <a href="https://fastapi.tiangolo.com/" target="_blank" className="font-semibold hover:text-[#009688] active:text-[#009688] transition-colors">
                                 Python (FastAPI)
                             </a>{" "}
                             backend, seamlessly pulling data from the{" "}
-                            <a href="https://developer.spotify.com/" target="_blank" className="font-semibold hover:text-[#1DB954] transition-colors">
+                            <a href="https://developer.spotify.com/" target="_blank" className="font-semibold hover:text-[#1DB954] active:text-[#1DB954] transition-colors">
                                 Spotify Developer API
                             </a>
                             . While local development relies on{" "}
-                            <a href="https://www.docker.com/" target="_blank" className="font-semibold hover:text-[#2496ED] transition-colors">
+                            <a href="https://www.docker.com/" target="_blank" className="font-semibold hover:text-[#2496ED] active:text-[#2496ED] transition-colors">
                                 Docker
                             </a>{" "}
                             containers, production runs purely as a Serverless app on{" "}
-                            <a href="https://vercel.com/" target="_blank" className="font-semibold hover:text-white transition-colors">
+                            <a href="https://vercel.com/" target="_blank" className="font-semibold hover:text-white active:text-white transition-colors">
                                 Vercel
                             </a>
                             . Main data lives in{" "}
-                            <a href="https://neon.tech/" target="_blank" className="font-semibold hover:text-[#00E599] transition-colors">
+                            <a href="https://neon.tech/" target="_blank" className="font-semibold hover:text-[#00E599] active:text-[#00E599] transition-colors">
                                 Neon (Serverless Postgres)
                             </a>
                             , sync history goes to{" "}
-                            <a href="https://www.mongodb.com/atlas" target="_blank" className="font-semibold hover:text-[#4DB33D] transition-colors">
+                            <a href="https://www.mongodb.com/atlas" target="_blank" className="font-semibold hover:text-[#4DB33D] active:text-[#4DB33D] transition-colors">
                                 MongoDB Atlas
                             </a>
                             , and{" "}
-                            <a href="https://upstash.com/" target="_blank" className="font-semibold hover:text-[#DC382D] transition-colors">
+                            <a href="https://upstash.com/" target="_blank" className="font-semibold hover:text-[#DC382D] active:text-[#DC382D] transition-colors">
                                 Upstash Redis
                             </a>{" "}
                             handles the cache. Lyrics are retrieved via a custom proxy routing strategy to bypass{" "}
-                            <a href="https://genius.com/developers" target="_blank" className="font-semibold hover:text-[#FFFF64] transition-colors">
+                            <a href="https://genius.com/developers" target="_blank" className="font-semibold hover:text-[#FFFF64] active:text-[#FFFF64] transition-colors">
                                 Genius
                             </a>{" "}
                             restrictions, and the vibe check? That's a{" "}
-                            <a href="https://huggingface.co/" target="_blank" className="font-semibold hover:text-[#FFD21E] transition-colors">
+                            <a href="https://huggingface.co/" target="_blank" className="font-semibold hover:text-[#FFD21E] active:text-[#FFD21E] transition-colors">
                                 Hugging Face
                             </a>{" "}
                             NLP model.
@@ -259,7 +259,7 @@ export default function AboutPage() {
                                 href={social.href}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={`flex items-center justify-center w-11 h-11 rounded-full bg-white dark:bg-[#1e1e1e] border border-neutral-200 dark:border-[#282828] text-neutral-600 dark:text-[#b3b3b3] transition-all duration-300 ${social.hover}`}
+                                className={`flex items-center justify-center w-11 h-11 rounded-full bg-white dark:bg-[#1e1e1e] border border-neutral-200 dark:border-[#282828] text-neutral-600 dark:text-[#b3b3b3] transition-all duration-300 ${social.hover} ${social.active}`}
                                 aria-label={social.label}
                             >
                                 <social.icon className="w-5 h-5" />

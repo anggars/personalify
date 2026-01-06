@@ -138,11 +138,21 @@ export default function DashboardPage() {
     const chartRef = useRef<any>(null);
     const headerRef = useRef<HTMLElement>(null);
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const handleMouseMoveOrTouch = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
         const el = e.currentTarget;
         const rect = el.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        let clientX, clientY;
+
+        if ('touches' in e) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = (e as React.MouseEvent).clientX;
+            clientY = (e as React.MouseEvent).clientY;
+        }
+
+        const x = ((clientX - rect.left) / rect.width) * 100;
+        const y = ((clientY - rect.top) / rect.height) * 100;
         el.style.setProperty("--mouse-x", `${x}%`);
         el.style.setProperty("--mouse-y", `${y}%`);
     };
@@ -668,13 +678,13 @@ export default function DashboardPage() {
 
             {/* Filters */}
             <div className="flex flex-wrap justify-center gap-3 mb-10">
-                <button onClick={() => setShowTimeModal(true)} className="filter-btn glow-card" onMouseMove={handleMouseMove}>
+                <button onClick={() => setShowTimeModal(true)} className="filter-btn glow-card" onMouseMove={handleMouseMoveOrTouch} onTouchMove={handleMouseMoveOrTouch}>
                     <span>{TIME_RANGE_LABELS[timeRange]}</span>
                     <span className="text-muted-foreground text-sm ml-2">▼</span>
                 </button>
 
                 {isMobile && (
-                    <button onClick={() => setShowCategoryModal(true)} className="filter-btn glow-card" onMouseMove={handleMouseMove}>
+                    <button onClick={() => setShowCategoryModal(true)} className="filter-btn glow-card" onMouseMove={handleMouseMoveOrTouch} onTouchMove={handleMouseMoveOrTouch}>
                         <span>{currentCategory === "artists" ? "Top Artists" : currentCategory === "tracks" ? "Top Tracks" : "Top Genres"}</span>
                         <span className="text-muted-foreground text-sm ml-2">▼</span>
                     </button>
@@ -701,7 +711,7 @@ export default function DashboardPage() {
                             <h3 className="text-xl font-bold mb-6">Select Time Range</h3>
                             <div className="flex flex-col gap-4">
                                 {["short_term", "medium_term", "long_term"].map((range) => (
-                                    <button key={range} onClick={() => changeTimeRange(range)} className="btn-glass" onMouseMove={handleMouseMove}>
+                                    <button key={range} onClick={() => changeTimeRange(range)} className="btn-glass" onMouseMove={handleMouseMoveOrTouch} onTouchMove={handleMouseMoveOrTouch}>
                                         {TIME_RANGE_LABELS[range]}
                                     </button>
                                 ))}
@@ -735,7 +745,7 @@ export default function DashboardPage() {
                             <h3 className="text-xl font-bold mb-6">Select Category</h3>
                             <div className="flex flex-col gap-4">
                                 {(["artists", "tracks", "genres"] as const).map((cat) => (
-                                    <button key={cat} onClick={() => { setCurrentCategory(cat); setShowCategoryModal(false); }} className="btn-glass" onMouseMove={handleMouseMove}>
+                                    <button key={cat} onClick={() => { setCurrentCategory(cat); setShowCategoryModal(false); }} className="btn-glass" onMouseMove={handleMouseMoveOrTouch} onTouchMove={handleMouseMoveOrTouch}>
                                         Top {cat.charAt(0).toUpperCase() + cat.slice(1)}
                                     </button>
                                 ))}
@@ -757,7 +767,7 @@ export default function DashboardPage() {
                 {/* Top Artists Section */}
                 {
                     (!isMobile || currentCategory === "artists") && (
-                        <section className="section-card hover:-translate-y-1 transition-transform duration-300">
+                        <section className="section-card hover:-translate-y-0.5">
                             <h2>Top Artists</h2>
                             <ol className="list-none p-0 m-0">
                                 {data.artists.slice(0, showTop20 ? 20 : 10).map((artist, idx) => (
@@ -793,7 +803,7 @@ export default function DashboardPage() {
                 {/* Top Tracks Section */}
                 {
                     (!isMobile || currentCategory === "tracks") && (
-                        <section className="section-card hover:-translate-y-1 transition-transform duration-300">
+                        <section className="section-card hover:-translate-y-0.5">
                             <h2>Top Tracks</h2>
                             <ol className="list-none p-0 m-0">
                                 {data.tracks.slice(0, showTop20 ? 20 : 10).map((track, idx) => (
@@ -845,7 +855,7 @@ export default function DashboardPage() {
                 {/* Top Genres Section */}
                 {
                     (!isMobile || currentCategory === "genres") && (
-                        <section className="section-card overflow-visible hover:-translate-y-1 transition-transform duration-300">
+                        <section className="section-card overflow-visible hover:-translate-y-0.5">
                             <h2>Top Genres</h2>
 
                             {chartData && (
@@ -890,7 +900,8 @@ export default function DashboardPage() {
             {/* Save as Image Button */}
             <button
                 onClick={() => setShowSaveModal(true)}
-                onMouseMove={handleMouseMove}
+                onMouseMove={handleMouseMoveOrTouch}
+                onTouchMove={handleMouseMoveOrTouch}
                 className={`download-btn glow-card fixed bottom-6 right-8 z-40 px-6 py-3 rounded-2xl font-bold
                     bg-white/5 dark:bg-[#ffffff05] backdrop-blur-md border border-white/10 shadow-lg text-sm
                     transition-all duration-500 ease-in-out
@@ -921,7 +932,7 @@ export default function DashboardPage() {
                                 <h3 className="text-xl font-bold mb-6">Choose Category to Save</h3>
                                 <div className="flex flex-col gap-4">
                                     {(["artists", "tracks", "genres"] as const).map((cat) => (
-                                        <button key={cat} onClick={() => generateImage(cat)} className="btn-glass" onMouseMove={handleMouseMove}>
+                                        <button key={cat} onClick={() => generateImage(cat)} className="btn-glass" onMouseMove={handleMouseMoveOrTouch} onTouchMove={handleMouseMoveOrTouch}>
                                             Top {cat.charAt(0).toUpperCase() + cat.slice(1)}
                                         </button>
                                     ))}

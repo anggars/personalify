@@ -54,11 +54,21 @@ export default function HomePage() {
     setTimeout(typeWriter, 500);
   }, []);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleMouseMoveOrTouch = (e: React.MouseEvent<HTMLAnchorElement> | React.TouchEvent<HTMLAnchorElement>) => {
     const el = e.currentTarget;
     const rect = el.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    let clientX, clientY;
+
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = (e as React.MouseEvent).clientX;
+      clientY = (e as React.MouseEvent).clientY;
+    }
+
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
     el.style.setProperty("--mouse-x", `${x}%`);
     el.style.setProperty("--mouse-y", `${y}%`);
   };
@@ -113,7 +123,8 @@ export default function HomePage() {
         <a
           href="/login"
           onClick={handleLoginClick}
-          onMouseMove={handleMouseMove}
+          onMouseMove={handleMouseMoveOrTouch}
+          onTouchMove={handleMouseMoveOrTouch}
           className={`btn-glass group rounded-2xl ${isLoading ? "pointer-events-none" : ""}`}
         >
           <span
