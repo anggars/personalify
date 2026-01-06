@@ -330,29 +330,55 @@ export const Navbar = () => {
                 {
                     isMobileMenuOpen && !notification && (
                         <motion.div
-                            initial={{ opacity: 0, y: -20, backdropFilter: "blur(0px)" }}
-                            animate={{ opacity: 1, y: 0, backdropFilter: "blur(16px)" }}
-                            exit={{ opacity: 0, y: -20, backdropFilter: "blur(0px)" }}
-                            transition={{ duration: 0.3 }}
-                            className="fixed inset-0 z-40 bg-white/60 dark:bg-black/60 pt-24 px-6 md:hidden overflow-y-auto"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-0 z-50 flex flex-col h-full overflow-hidden bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl"
                         >
-                            <div className="flex flex-col gap-2">
-                                {/* Header / Theme Toggle inside */}
-                                <div className="flex items-center justify-between mb-6 p-4 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-lg backdrop-blur-md">
-                                    <span className="font-bold text-lg text-black dark:text-white">Appearance</span>
-                                    <ThemeToggle />
-                                </div>
+                            {/* Header - Matches Navbar padding/layout EXACTLY to prevent jump */}
+                            <div className={cn(
+                                "flex items-center justify-between shrink-0 transition-all duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1.0)]",
+                                isScrolled
+                                    ? "mt-4 w-[calc(100%-3rem)] md:w-[44rem] mx-auto rounded-2xl px-4 py-3 border border-black/10 dark:border-white/10"
+                                    : "w-full px-4 py-3 border-b border-black/5 dark:border-white/5"
+                            )}>
+                                {/* Same Logo Logic */}
+                                {spotifyId ? (
+                                    <div className="flex items-center justify-center shrink-0 p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800">
+                                        <span className="font-bold text-lg text-[#1DB954] w-5 h-5 flex items-center justify-center">P</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-center shrink-0 p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800">
+                                        <span className="font-bold text-lg text-[#1DB954] w-5 h-5 flex items-center justify-center">P</span>
+                                    </div>
+                                )}
 
+                                <button
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Main Navigation (Centered) */}
+                            <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full px-6 overflow-y-auto no-scrollbar py-6">
                                 {navLinks.map((link) => (
-                                    <div key={link.name} className="flex flex-col">
+                                    <div key={link.name} className="flex flex-col items-center w-full">
                                         {link.children ? (
-                                            <div className="rounded-2xl bg-white/40 dark:bg-white/5 border border-white/20 dark:border-white/10 overflow-hidden mb-2">
+                                            <div className="flex flex-col items-center w-full">
                                                 <button
                                                     onClick={() => setMobileDropdownOpen(mobileDropdownOpen === link.name ? null : link.name)}
-                                                    className="flex items-center justify-between w-full p-4 text-lg font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                                                    className={cn(
+                                                        "text-[1.75rem] font-bold transition-colors flex items-center justify-center gap-2",
+                                                        mobileDropdownOpen === link.name
+                                                            ? "text-[#1DB954]"
+                                                            : "text-black dark:text-white hover:text-neutral-500 dark:hover:text-neutral-300"
+                                                    )}
                                                 >
                                                     {link.name}
-                                                    <ChevronDown className={cn("w-5 h-5 transition-transform duration-300", mobileDropdownOpen === link.name ? "rotate-180" : "rotate-0")} />
+                                                    <ChevronDown className={cn("w-8 h-8 transition-transform duration-300", mobileDropdownOpen === link.name ? "rotate-180" : "rotate-0")} />
                                                 </button>
 
                                                 <AnimatePresence>
@@ -361,16 +387,17 @@ export const Navbar = () => {
                                                             initial={{ height: 0, opacity: 0 }}
                                                             animate={{ height: "auto", opacity: 1 }}
                                                             exit={{ height: 0, opacity: 0 }}
-                                                            transition={{ duration: 0.2 }}
+                                                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                            className="overflow-hidden w-full flex flex-col items-center"
                                                         >
-                                                            <div className="flex flex-col border-t border-black/5 dark:border-white/5 bg-black/5 dark:bg-black/20">
+                                                            <div className="flex flex-col items-center gap-4 pt-6 pb-2">
                                                                 {link.children.map(child => (
                                                                     <Link
                                                                         key={child.name}
                                                                         href={child.href}
                                                                         onClick={() => setIsMobileMenuOpen(false)}
                                                                         className={cn(
-                                                                            "px-6 py-2 text-base font-medium transition-colors",
+                                                                            "text-2xl font-medium transition-colors",
                                                                             pathname === child.href ? "text-[#1DB954]" : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
                                                                         )}
                                                                     >
@@ -390,10 +417,10 @@ export const Navbar = () => {
                                                     if (spotifyId || link.name !== "Dashboard") setIsMobileMenuOpen(false);
                                                 }}
                                                 className={cn(
-                                                    "p-4 rounded-2xl mb-2 text-lg font-bold transition-all border border-white/20 dark:border-white/10",
+                                                    "text-[1.75rem] font-bold transition-colors relative block",
                                                     (link.name === "Dashboard" && pathname?.startsWith("/dashboard")) || pathname === link.href
-                                                        ? "bg-[#1DB954]/10 text-[#1DB954] border-[#1DB954]/20"
-                                                        : "bg-white/40 dark:bg-white/5 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                                                        ? "text-[#1DB954]"
+                                                        : "text-black dark:text-white hover:text-neutral-500 dark:hover:text-neutral-300"
                                                 )}
                                             >
                                                 {link.name}
@@ -401,6 +428,17 @@ export const Navbar = () => {
                                         )}
                                     </div>
                                 ))}
+
+                                {/* Theme Toggle */}
+                                <div className="mt-8 flex flex-col items-center gap-3">
+                                    <ThemeToggle />
+                                    <span className="text-xs font-medium text-neutral-500 uppercase tracking-widest">Appearance</span>
+                                </div>
+                            </div>
+
+                            {/* Copyright Footer (Simple) */}
+                            <div className="p-8 flex flex-col items-center gap-4 mt-auto shrink-0">
+                                <span className="text-xs text-neutral-500 font-medium">Personalify © {new Date().getFullYear()}</span>
                             </div>
                         </motion.div>
                     )

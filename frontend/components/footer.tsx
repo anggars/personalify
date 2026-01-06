@@ -151,7 +151,7 @@ export function Footer() {
                             Personalify
                         </Link>
                     )}{" "}
-                    © 2025 • {renderPoweredBy()}
+                    © {new Date().getFullYear()} • {renderPoweredBy()}
                 </div>
                 <p>
                     Created by{" "}
