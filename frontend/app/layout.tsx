@@ -33,7 +33,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Navbar />
-          <main className="flex-grow w-full">
+          <main className="flex-grow w-full flex flex-col">
             {children}
           </main>
           <Footer />

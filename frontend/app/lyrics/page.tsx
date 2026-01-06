@@ -95,7 +95,7 @@ export default function LyricsPage() {
     const isEmpty = !result && !isLoading && !error;
 
     return (
-        <div className="page-container flex flex-col w-full max-w-3xl mx-auto min-h-[calc(100vh-150px)]">
+        <div className="page-container flex flex-col w-full max-w-3xl mx-auto flex-1">
             {/* Header */}
             <motion.header
                 initial={{ opacity: 0, y: 20 }}
