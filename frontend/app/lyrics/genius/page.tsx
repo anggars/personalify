@@ -326,7 +326,7 @@ export default function GeniusPage() {
                                     />
                                 </div>
                             </div>
-                            <div className="bg-white dark:bg-[#181818] p-5 rounded-xl border border-neutral-200 dark:border-[#282828] text-neutral-700 dark:text-[#cccccc] leading-loose whitespace-pre-wrap max-h-[300px] overflow-y-auto custom-scrollbar mb-6 text-[0.95rem] font-light tracking-wide">
+                            <div className="bg-white dark:bg-[#181818] p-5 rounded-xl border border-neutral-200 dark:border-[#282828] text-neutral-700 dark:text-[#cccccc] leading-[1.6rem] whitespace-pre-wrap max-h-[300px] overflow-y-auto custom-scrollbar mb-6 text-[0.95rem] font-light tracking-wide">
                                 {analysis.lyrics}
                             </div>
                             {analysis.emotion_analysis?.emotions && (
