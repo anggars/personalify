@@ -95,7 +95,7 @@ export default function LyricsPage() {
     const isEmpty = !result && !isLoading && !error;
 
     return (
-        <div className="page-container flex flex-col w-full max-w-3xl mx-auto h-dvh max-md:overflow-hidden grow">
+        <div className="page-container flex flex-col w-full max-w-3xl mx-auto min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-10rem)] grow">
             {/* Header */}
             <motion.header
                 initial={{ opacity: 0, y: 20 }}
@@ -112,7 +112,7 @@ export default function LyricsPage() {
             </motion.header>
 
             {/* Content */}
-            <div className={`flex flex-col w-full flex-1 transition-all duration-500 ${isEmpty ? "justify-center" : "justify-start pt-0"}`}>
+            <div className={`flex flex-col w-full flex-1 transition-all duration-300 ${isEmpty ? "justify-center" : "justify-start"}`}>
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}

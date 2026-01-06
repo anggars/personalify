@@ -68,7 +68,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="page-container flex flex-col items-center justify-center h-dvh max-md:overflow-hidden text-center">
+    <div className="page-container flex flex-col items-center justify-center min-h-dvh text-center">
 
 
       {/* Logo */}
