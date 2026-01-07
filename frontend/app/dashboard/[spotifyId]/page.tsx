@@ -4,12 +4,9 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { Pie } from "react-chartjs-2";
+import { GenreChart } from "@/components/genre-chart";
 import * as htmlToImage from "html-to-image";
 import { Slider } from "@/components/ui/slider";
-
-ChartJS.register(ArcElement, Tooltip, Legend);
 
 import MarqueeText from "@/components/marquee-text";
 
@@ -64,10 +61,16 @@ const TIME_RANGE_SUBTITLES: Record<string, string> = {
 };
 
 const GENRE_COLORS = [
-    "#1DB954", "#F28E2B", "#E15759", "#76B7B2", "#9AA067",
-    "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F", "#BAB0AC",
-    "#4D4D4D", "#6B5B95", "#88B04B", "#F7CAC9", "#92A8D1",
-    "#D62728", "#9467BD", "#8C564B", "#E377C2", "#7F7F7F"
+    "#1DB954", // Spotify Green
+    "#00C7B7", // Teal
+    "#2496ED", // Blue
+    "#9333EA", // Purple
+    "#E91E63", // Pink
+    "#FFD21E", // Yellow
+    "#FF5722", // Orange
+    "#88B04B",
+    "#F7CAC9",
+    "#92A8D1"
 ];
 
 function hexToRgba(hex: string, alpha: number) {
@@ -724,46 +727,17 @@ export default function DashboardPage() {
         }
     };
 
-    // Chart data
-    const chartDisplayGenres = processedGenres.genres;
-    const chartData = chartDisplayGenres.length > 0 ? {
-        labels: chartDisplayGenres.map(g => g.name),
-        datasets: [{
-            data: chartDisplayGenres.map((g, i) =>
-                disabledGenres.has(i) ? 0 : g.count
-            ),
-            backgroundColor: chartDisplayGenres.map((_, i) => {
-                const c = GENRE_COLORS[i % GENRE_COLORS.length];
-                return disabledGenres.has(i) ? "transparent" :
-                    hoveredGenre !== null && hoveredGenre !== i
-                        ? hexToRgba(c, 0.2)
-                        : hexToRgba(c, 0.7);
-            }),
-            borderColor: chartDisplayGenres.map((_, i) => {
-                const c = GENRE_COLORS[i % GENRE_COLORS.length];
-                return disabledGenres.has(i) ? "transparent" :
-                    hoveredGenre !== null && hoveredGenre !== i
-                        ? "rgba(255, 255, 255, 0.1)"
-                        : "rgba(255, 255, 255, 0.3)";
-            }),
-            borderWidth: 1,
-        }]
-    } : null;
+    // Chart data for Recharts
+    const chartData = React.useMemo(() => {
+        if (!processedGenres?.genres?.length) return [];
 
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                backgroundColor: "rgba(30, 30, 30, 0.9)",
-                titleColor: "#fff",
-                bodyColor: "#fff",
-                borderColor: "rgba(255, 255, 255, 0.1)",
-                borderWidth: 1,
-            }
-        },
-    };
+        return processedGenres.genres
+            .map((genre, index) => ({
+                name: genre.name,
+                count: disabledGenres.has(index) ? 0 : genre.count, // Set count to 0 if disabled
+                fill: disabledGenres.has(index) ? "transparent" : GENRE_COLORS[index % GENRE_COLORS.length] // Transparent if disabled
+            }));
+    }, [processedGenres, disabledGenres]);
 
     if (loading) {
         return (
@@ -1129,9 +1103,9 @@ export default function DashboardPage() {
                         <section className="section-card overflow-visible hover:-translate-y-0.5">
                             <h2>Top Genres</h2>
 
-                            {chartData && (
-                                <div className="max-h-[250px] my-4 mb-2 mx-auto" style={{ maxWidth: "250px" }}>
-                                    <Pie ref={chartRef} data={chartData} options={chartOptions} />
+                            {chartData.length > 0 && (
+                                <div className="mb-6 mt-2">
+                                    <GenreChart data={chartData} />
                                 </div>
                             )}
 

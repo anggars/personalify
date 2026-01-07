@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 const TECH_STACKS = [
+    { phrase: "Built with", name: "Next.js", url: "https://nextjs.org/", color: "hover:text-black dark:hover:text-white active:text-black dark:active:text-white" },
     { phrase: "Containerized by", name: "Docker", url: "https://www.docker.com/", color: "hover:text-[#2496ED] active:text-[#2496ED]" },
     { phrase: "Built with", name: "Python (FastAPI)", url: "https://fastapi.tiangolo.com/", color: "hover:text-[#009688] active:text-[#009688]" },
     { phrase: "Deployed on", name: "Vercel", url: "https://vercel.com/", color: "hover:text-white active:text-white" },

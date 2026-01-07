@@ -11,7 +11,22 @@ import {
     Send,
     FileText,
 } from "lucide-react";
-import { FaSpotify, FaSoundcloud, FaMedium } from "react-icons/fa";
+import { FaSpotify, FaSoundcloud, FaMedium, FaGuitar, FaMusic, FaWaveSquare, FaNetworkWired, FaLayerGroup } from "react-icons/fa";
+import TechHover from "@/components/tech-hover";
+import {
+    SiNextdotjs,
+    SiPython,
+    SiFastapi,
+    SiDocker,
+    SiVercel,
+    SiPostgresql,
+    SiMongodb,
+    SiRedis,
+    SiGenius,
+    SiHuggingface,
+    SiTypescript,
+    SiSpotify
+} from "react-icons/si";
 
 const AUDIO_DATA = {
     tuning: {
@@ -148,52 +163,112 @@ export default function AboutPage() {
                         Just a Side-Quest?
                     </h2>
                     <div className="space-y-4 text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify">
-                        <p>
+                        <div className="mb-4">
                             Alright, so here's the plot twist. Personalify basically wasn't just a random side-quest I built for fun.
-                            This whole project was actually my final exam for my <b>'Distributed Data Processing'</b> class back in semester 6.
+                            This whole project was actually my final exam for my{" "}
+                            <TechHover
+                                text="'Distributed Data Processing'"
+                                description="A course focusing on parallel computing and managing large-scale data systems."
+                                icon={FaNetworkWired}
+                                color="#FF9900"
+                            />{" "}
+                            class back in semester 6.
                             The brief was to build a system that integrates several database technologies.
-                            We had to pick a use case, so I went straight for the <b>'Streaming Service Metadata Platform'</b>,
-                            and this web is the final result. It started as an assignment, but evolved into a real passion project.
-                        </p>
-                        <p>
-                            This whole thing is built with a{" "}
-                            <a href="https://fastapi.tiangolo.com/" target="_blank" className="font-semibold hover:text-[#009688] active:text-[#009688] transition-colors">
-                                Python (FastAPI)
-                            </a>{" "}
+                            We had to pick a use case, so I went straight for the{" "}
+                            <TechHover
+                                text="'Streaming Service Metadata Platform'"
+                                description="A unified system to aggregate, process, and serve rich metadata from various music sources."
+                                icon={FaLayerGroup}
+                                color="#00C7B7"
+                            />
+                            , and this web is the final result. It started as an assignment, but evolved into a real passion project
+                            where I could really push my full-stack engineering skills to the limit.
+                        </div>
+                        <div>
+                            The architecture is modernized with a{" "}
+                            <TechHover
+                                text="Next.js"
+                                href="https://nextjs.org/"
+                                description="The React Framework for the Web. Used for server-side rendering and static generation."
+                                icon={SiNextdotjs}
+                                className="hover:text-black dark:hover:text-white"
+                            />{" "}
+                            frontend and a{" "}
+                            <TechHover
+                                text="Python (FastAPI)"
+                                href="https://fastapi.tiangolo.com/"
+                                description="High performance, easy to learn, fast to code, ready for production web framework."
+                                icon={SiFastapi}
+                                color="#009688"
+                            />{" "}
                             backend, seamlessly pulling data from the{" "}
-                            <a href="https://developer.spotify.com/" target="_blank" className="font-semibold hover:text-[#1DB954] active:text-[#1DB954] transition-colors">
-                                Spotify Developer API
-                            </a>
+                            <TechHover
+                                text="Spotify Developer API"
+                                href="https://developer.spotify.com/"
+                                description="Web API to retrieve metadata, player state, and user information."
+                                icon={SiSpotify}
+                                color="#1DB954"
+                            />
                             . While local development relies on{" "}
-                            <a href="https://www.docker.com/" target="_blank" className="font-semibold hover:text-[#2496ED] active:text-[#2496ED] transition-colors">
-                                Docker
-                            </a>{" "}
+                            <TechHover
+                                text="Docker"
+                                href="https://www.docker.com/"
+                                description="Platform to develop, ship, and run applications in containers."
+                                icon={SiDocker}
+                                color="#2496ED"
+                            />{" "}
                             containers, production runs purely as a Serverless app on{" "}
-                            <a href="https://vercel.com/" target="_blank" className="font-semibold hover:text-white active:text-white transition-colors">
-                                Vercel
-                            </a>
+                            <TechHover
+                                text="Vercel"
+                                href="https://vercel.com/"
+                                description="Frontend Cloud needed to develop, preview, and ship Next.js."
+                                icon={SiVercel}
+                                className="hover:text-black dark:hover:text-white"
+                            />
                             . Main data lives in{" "}
-                            <a href="https://neon.tech/" target="_blank" className="font-semibold hover:text-[#00E599] active:text-[#00E599] transition-colors">
-                                Neon (Serverless Postgres)
-                            </a>
+                            <span className="whitespace-nowrap">
+                                <TechHover
+                                    text="Neon (Serverless Postgres)"
+                                    href="https://neon.tech/"
+                                    description="Serverless Postgres built for the cloud."
+                                    icon={SiPostgresql}
+                                    color="#00E599"
+                                />
+                            </span>
                             , sync history goes to{" "}
-                            <a href="https://www.mongodb.com/atlas" target="_blank" className="font-semibold hover:text-[#4DB33D] active:text-[#4DB33D] transition-colors">
-                                MongoDB Atlas
-                            </a>
+                            <TechHover
+                                text="MongoDB Atlas"
+                                href="https://www.mongodb.com/atlas"
+                                description="Multi-cloud database service for modern applications."
+                                icon={SiMongodb}
+                                color="#47A248"
+                            />
                             , and{" "}
-                            <a href="https://upstash.com/" target="_blank" className="font-semibold hover:text-[#DC382D] active:text-[#DC382D] transition-colors">
-                                Upstash Redis
-                            </a>{" "}
+                            <TechHover
+                                text="Upstash Redis"
+                                href="https://upstash.com/"
+                                description="Serverless Data for Redis and Kafka."
+                                icon={SiRedis}
+                                color="#DC382D"
+                            />{" "}
                             handles the cache. Lyrics are retrieved via a custom proxy routing strategy to bypass{" "}
-                            <a href="https://genius.com/developers" target="_blank" className="font-semibold hover:text-[#FFFF64] active:text-[#FFFF64] transition-colors">
-                                Genius
-                            </a>{" "}
-                            restrictions, and the vibe check? That's a{" "}
-                            <a href="https://huggingface.co/" target="_blank" className="font-semibold hover:text-[#FFD21E] active:text-[#FFD21E] transition-colors">
-                                Hugging Face
-                            </a>{" "}
-                            NLP model.
-                        </p>
+                            <TechHover
+                                text="Genius"
+                                href="https://genius.com/developers"
+                                description="World's biggest collection of song lyrics and musical knowledge."
+                                icon={SiGenius}
+                                color="#FFFF64"
+                            />{" "}
+                            restrictions, and the vibe check? That's powered by a sophisticated{" "}
+                            <TechHover
+                                text="Hugging Face"
+                                href="https://huggingface.co/"
+                                description="The AI community building the future. Used for sentiment analysis models."
+                                icon={SiHuggingface}
+                                color="#FFD21E"
+                            />{" "}
+                            transformer model for sentiment analysis.
+                        </div>
                     </div>
                 </motion.section>
 
@@ -208,37 +283,55 @@ export default function AboutPage() {
                         About Me
                     </h2>
                     <div className="space-y-4 text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify">
-                        <p>
+                        <div className="mb-4">
                             I'm Angga, an Informatics major who just genuinely enjoys building cool things.
                             My world is a constant juggling act between computational linguistics, psychology, and (obviously) music.
                             I'm always looking for creative ways these different fields can overlap,
                             and this project is truly the perfect example of that personal exploration.
-                        </p>
-                        <p>
-                            This project is pretty much my whole personality a showcase of coding (mostly Python & JavaScript),
-                            NLP, and I'm so deeply into{" "}
-                            <button
+                        </div>
+                        <div>
+                            This project is pretty much my whole personality a showcase of coding (mostly{" "}
+                            <TechHover
+                                text="Python"
+                                href="https://www.python.org/"
+                                description="A programming language that lets you work quickly and integrate systems more effectively."
+                                icon={SiPython}
+                                color="#3776AB"
+                            />{" "}
+                            &{" "}
+                            <TechHover
+                                text="TypeScript"
+                                href="https://www.typescriptlang.org/"
+                                description="TypeScript is JavaScript with syntax for types."
+                                icon={SiTypescript}
+                                color="#3178C6"
+                            />
+                            ), NLP, and I'm so deeply into{" "}
+                            <TechHover
+                                text="Math Rock"
                                 onClick={() => handlePlayAudio("mathRock")}
-                                className="font-bold hover:text-[#1DB954] transition-colors cursor-pointer bg-transparent border-none"
-                            >
-                                Math Rock
-                            </button>{" "}
+                                description="Complex rhythms, atypical time signatures, and angular melodies. Click to listen!"
+                                icon={FaGuitar}
+                                color="#1DB954"
+                            />{" "}
                             and{" "}
-                            <button
+                            <TechHover
+                                text="Midwest Emo"
                                 onClick={() => handlePlayAudio("midwest")}
-                                className="font-bold hover:text-[#1DB954] transition-colors cursor-pointer bg-transparent border-none"
-                            >
-                                Midwest Emo
-                            </button>
+                                description="Emotional indie rock characterized by melodic guitars and confessionary lyrics. Click to listen!"
+                                icon={FaWaveSquare}
+                                color="#1DB954"
+                            />
                             . I'm down in the trenches geeking out trying to learn alternate guitar tunings like{" "}
-                            <button
+                            <TechHover
+                                text="FACGCE"
                                 onClick={() => handlePlayAudio("tuning")}
-                                className="font-bold hover:text-[#1DB954] transition-colors cursor-pointer bg-transparent border-none"
-                            >
-                                FACGCE
-                            </button>{" "}
+                                description="An open tuning often used in Math Rock and Emo for dreamy, resonant chords. Click for a lesson!"
+                                icon={FaMusic}
+                                color="#1DB954"
+                            />{" "}
                             right now, even though it's tough as hell. This web is the crossover episode I didn't know I needed.
-                        </p>
+                        </div>
                     </div>
                 </motion.section>
 

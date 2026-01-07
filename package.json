@@ -9,7 +9,9 @@
     "start": "echo 'Serverless'"
   },
   "dependencies": {
-    "next": "16.1.1"
+    "@radix-ui/react-hover-card": "^1.1.15",
+    "next": "16.1.1",
+    "recharts": "^3.6.0"
   },
   "devDependencies": {
     "vercel": "^33.0.0"
