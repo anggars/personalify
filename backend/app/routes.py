@@ -132,7 +132,8 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         for track in tracks:
             album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
             result["tracks"].append({
-                "id": track["id"], "name": track["name"],
+                "id": track["id"], 
+                "name": track["name"],
                 "artists": [a["name"] for a in track.get("artists", [])],
                 "album": {
                     "name": track["album"]["name"],
@@ -140,7 +141,9 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                     "total_tracks": track["album"]["total_tracks"]
                 },
                 "popularity": track["popularity"],
-                "preview_url": track.get("preview_url"), "image": album_image_url
+                "preview_url": track.get("preview_url"), 
+                "image": album_image_url,
+                "duration_ms": track["duration_ms"]
             })
 
         result['emotion_paragraph'] = "Your music vibe is being analyzed..."
@@ -280,7 +283,8 @@ def sync_top_data(
             },
             "popularity": track["popularity"],
             "preview_url": track.get("preview_url"), 
-            "image": album_image_url
+            "image": album_image_url,
+            "duration_ms": track["duration_ms"]
         })
 
     track_names = [track['name'] for track in result.get("tracks", [])]

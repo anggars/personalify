@@ -33,6 +33,7 @@ interface Track {
         total_tracks: number;
     };
     popularity: number;
+    duration_ms: number;
 }
 
 interface Genre {
@@ -97,6 +98,8 @@ export default function DashboardPage() {
     const embedRefs = useRef<Record<string, HTMLIFrameElement | null>>({});
     const [trackPosition, setTrackPosition] = useState<Record<string, number>>({});
     const [trackDuration, setTrackDuration] = useState<Record<string, number>>({});
+    const [embedReady, setEmbedReady] = useState<Record<string, boolean>>({});
+    const [showPlayerControls, setShowPlayerControls] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         const footer = document.querySelector('footer');
@@ -327,10 +330,11 @@ export default function DashboardPage() {
                 const currentPos = prev[playingTrack] || 0;
                 const duration = trackDuration[playingTrack] || 30;
 
-                // Stop at the end
-                if (currentPos >= duration) {
+                // Stop at the end and reset position
+                if (currentPos >= duration - 1) {
                     setPlayingTrack(null);
-                    return prev;
+                    // Reset position to 0 when track ends
+                    return { ...prev, [playingTrack]: 0 };
                 }
 
                 return { ...prev, [playingTrack]: currentPos + 1 };
@@ -372,23 +376,59 @@ export default function DashboardPage() {
     };
 
     const toggleEmbed = (trackId: string) => {
-        setActiveEmbed(activeEmbed === trackId ? null : trackId);
-        // Reset playing state when opening a new embed
-        if (activeEmbed !== trackId) {
+        if (activeEmbed === trackId) {
+            // Closing - fade out then close
+            setShowPlayerControls(prev => ({ ...prev, [trackId]: false }));
+            setTimeout(() => {
+                setActiveEmbed(null);
+                setPlayingTrack(null);
+                setEmbedReady(prev => ({ ...prev, [trackId]: false }));
+            }, 300); // Match animation duration
+        } else {
+            // Opening - show embed but delay controls
+            setActiveEmbed(trackId);
             setPlayingTrack(null);
-            // Initialize duration if not set (Spotify preview is 30 seconds)
-            if (!trackDuration[trackId]) {
+            setEmbedReady(prev => ({ ...prev, [trackId]: false }));
+
+            // Initialize duration from track data (convert ms to seconds)
+            const track = data?.tracks.find(t => t.id === trackId);
+            if (track && track.duration_ms) {
+                setTrackDuration(prev => ({ ...prev, [trackId]: Math.floor(track.duration_ms / 1000) }));
+            } else {
+                // Fallback to 30 seconds if duration not available
                 setTrackDuration(prev => ({ ...prev, [trackId]: 30 }));
             }
             // Reset position
             setTrackPosition(prev => ({ ...prev, [trackId]: 0 }));
+
+            // Wait for embed to load, then fade in controls
+            setTimeout(() => {
+                setEmbedReady(prev => ({ ...prev, [trackId]: true }));
+                setTimeout(() => {
+                    setShowPlayerControls(prev => ({ ...prev, [trackId]: true }));
+                }, 100);
+            }, 800); // Give embed time to load
         }
     };
 
-    const closeEmbed = (e: React.MouseEvent) => {
+    const closeEmbed = (e: React.MouseEvent, trackId: string) => {
         e.stopPropagation();
-        setActiveEmbed(null);
-        setPlayingTrack(null);
+
+        // Stop playback if playing
+        const iframe = embedRefs.current[trackId];
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({ command: 'pause' }, '*');
+        }
+
+        // Fade out then close
+        setShowPlayerControls(prev => ({ ...prev, [trackId]: false }));
+        setTimeout(() => {
+            setActiveEmbed(null);
+            setPlayingTrack(null);
+            setEmbedReady(prev => ({ ...prev, [trackId]: false }));
+            // Reset position to 0 when closing
+            setTrackPosition(prev => ({ ...prev, [trackId]: 0 }));
+        }, 300);
     };
 
     const togglePlayPause = (e: React.MouseEvent, trackId: string) => {
@@ -402,19 +442,27 @@ export default function DashboardPage() {
             iframe.contentWindow.postMessage({ command: 'pause' }, '*');
             setPlayingTrack(null);
         } else {
-            // Play
+            // Play - reset position if at the end
+            const currentPos = trackPosition[trackId] || 0;
+            const duration = trackDuration[trackId] || 30;
+
+            if (currentPos >= duration - 1) {
+                // Reset to start if track has ended
+                setTrackPosition(prev => ({ ...prev, [trackId]: 0 }));
+            }
+
             iframe.contentWindow.postMessage({ command: 'toggle' }, '*');
             setPlayingTrack(trackId);
         }
     };
 
     const handleSeek = (trackId: string, value: number[]) => {
-        const iframe = embedRefs.current[trackId];
-        if (!iframe || !iframe.contentWindow) return;
+        // Note: Spotify embed iframe does NOT support seeking via postMessage
+        // This is a limitation of the Spotify embed player
+        // The slider is read-only and only shows current progress
 
-        const seekPosition = value[0];
-        iframe.contentWindow.postMessage({ command: 'seek', position: seekPosition }, '*');
-        setTrackPosition(prev => ({ ...prev, [trackId]: seekPosition }));
+        // Update visual position only (won't affect actual playback)
+        setTrackPosition(prev => ({ ...prev, [trackId]: value[0] }));
     };
 
     const toggleGenre = (idx: number) => {
@@ -914,10 +962,19 @@ export default function DashboardPage() {
                                     >
                                         {/* Rank / Close Button */}
                                         <span
-                                            className={`rank ${activeEmbed === track.id ? "embed-active" : ""}`}
-                                            onClick={activeEmbed === track.id ? closeEmbed : undefined}
+                                            className={`rank flex items-center justify-center ${activeEmbed === track.id ? "embed-active" : ""}`}
+                                            onClick={activeEmbed === track.id ? (e) => closeEmbed(e, track.id) : undefined}
                                         >
-                                            {idx + 1}
+                                            {activeEmbed === track.id ? (
+                                                // macOS-style red close button
+                                                <div className="w-3.5 h-3.5 rounded-full bg-[#FF5F57] hover:bg-[#FF3B30] flex items-center justify-center transition-colors cursor-pointer group">
+                                                    <svg viewBox="0 0 12 12" className="w-2 h-2 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="#4D0000" strokeWidth="1.5" strokeLinecap="round">
+                                                        <path d="M3 3l6 6M9 3l-6 6" />
+                                                    </svg>
+                                                </div>
+                                            ) : (
+                                                idx + 1
+                                            )}
                                         </span>
 
                                         {/* Album Art - Always visible */}
@@ -928,7 +985,7 @@ export default function DashboardPage() {
                                             {/* Track Name - Always visible */}
                                             <MarqueeText
                                                 text={track.name}
-                                                className={`name font-semibold text-base mb-0.5 ${activeEmbed === track.id ? "text-[#1DB954]" : "text-foreground"}`}
+                                                className={`name font-semibold text-base mb-1 ${activeEmbed === track.id ? "text-[#1DB954]" : "text-foreground"}`}
                                             />
                                             {/* Artist - Always visible */}
                                             <MarqueeText text={track.artists.join(", ")} className="meta text-muted-foreground text-sm" />
@@ -937,53 +994,111 @@ export default function DashboardPage() {
                                             {activeEmbed !== track.id ? (
                                                 <>
                                                     {/* Album Type */}
-                                                    <p className="meta truncate">{getAlbumType(track.album.total_tracks, track.album.name)}</p>
+                                                    <MarqueeText text={getAlbumType(track.album.total_tracks, track.album.name)} className="meta text-muted-foreground" />
                                                     {/* Popularity */}
-                                                    <p className="meta">Popularity: {track.popularity}</p>
+                                                    <MarqueeText text={`Popularity: ${track.popularity}`} className="meta text-muted-foreground" />
                                                 </>
                                             ) : (
-                                                /* Compact Player Controls - Same height as 2 metadata lines */
-                                                <div className="player-row flex items-center gap-2 mt-1" onClick={(e) => e.stopPropagation()}>
-                                                    {/* Timestamp left */}
-                                                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                                                        {formatTime(trackPosition[track.id] || 0)}
-                                                    </span>
-
-                                                    {/* Progress bar with Slider */}
-                                                    <div className="flex-1 -my-2" onClick={(e) => e.stopPropagation()}>
-                                                        <Slider
-                                                            value={[trackPosition[track.id] || 0]}
-                                                            max={trackDuration[track.id] || 30}
-                                                            step={0.1}
-                                                            onValueChange={(value) => handleSeek(track.id, value)}
-                                                            className="cursor-pointer [&>span:first-child]:h-1 [&>span:first-child]:bg-white/20 **:[[role=slider]]:h-2.5 **:[[role=slider]]:w-2.5 **:[[role=slider]]:border-white **:[[role=slider]]:bg-white [&>span>span]:bg-white"
-                                                        />
-                                                    </div>
-
-                                                    {/* Timestamp right */}
-                                                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                                                        {formatTime(trackDuration[track.id] || 0)}
-                                                    </span>
-
-                                                    {/* Play/Pause Button (circle with Spotify logo style) */}
-                                                    <button
-                                                        className="w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0 ml-1 shadow-sm transition-opacity hover:opacity-90"
-                                                        onClick={(e) => togglePlayPause(e, track.id)}
-                                                        aria-label={playingTrack === track.id ? "Pause" : "Play"}
-                                                    >
-                                                        {playingTrack === track.id ? (
-                                                            // Pause icon
-                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current">
-                                                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                                /* Compact Player Controls with fade animation */
+                                                <AnimatePresence mode="wait">
+                                                    {!showPlayerControls[track.id] ? (
+                                                        <motion.div
+                                                            key="loading"
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                            transition={{ duration: 0.3 }}
+                                                            className="flex items-center gap-2 text-muted-foreground mt-1.5"
+                                                        >
+                                                            <span className="text-xs">Loading player...</span>
+                                                            <svg className="w-4 h-4 animate-spin" viewBox="0 0 50 50">
+                                                                <circle className="opacity-25" cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="4" />
+                                                                <path className="opacity-75" fill="currentColor" d="M25 5 A20 20 0 0 1 45 25" />
                                                             </svg>
-                                                        ) : (
-                                                            // Play icon
-                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current ml-0.5">
-                                                                <path d="M8 5v14l11-7z" />
-                                                            </svg>
-                                                        )}
-                                                    </button>
-                                                </div>
+                                                        </motion.div>
+                                                    ) : (
+                                                        <motion.div
+                                                            key="controls"
+                                                            initial={{ opacity: 0, y: -5 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -5 }}
+                                                            transition={{ duration: 0.3 }}
+                                                            className="player-row flex items-center gap-2 mt-1"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            {isMobile ? (
+                                                                /* Mobile: Show Preview label like Spotify embed */
+                                                                <>
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        Preview
+                                                                    </span>
+
+                                                                    {/* Play/Pause Button */}
+                                                                    <button
+                                                                        className="w-4 h-4 rounded-full bg-white flex items-center justify-center shrink-0 ml-auto shadow-sm transition-opacity hover:opacity-90"
+                                                                        onClick={(e) => togglePlayPause(e, track.id)}
+                                                                        aria-label={playingTrack === track.id ? "Pause" : "Play"}
+                                                                    >
+                                                                        {playingTrack === track.id ? (
+                                                                            // Pause icon
+                                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current">
+                                                                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                                                            </svg>
+                                                                        ) : (
+                                                                            // Play icon
+                                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current ml-0.5">
+                                                                                <path d="M8 5v14l11-7z" />
+                                                                            </svg>
+                                                                        )}
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                /* Desktop: Show full progress bar */
+                                                                <>
+                                                                    {/* Timestamp left */}
+                                                                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                                                                        {formatTime(trackPosition[track.id] || 0)}
+                                                                    </span>
+
+                                                                    {/* Progress bar with Slider (Read-only - Spotify embed doesn't support seek) */}
+                                                                    <div className="flex-1 -my-2">
+                                                                        <Slider
+                                                                            value={[trackPosition[track.id] || 0]}
+                                                                            max={trackDuration[track.id] || 30}
+                                                                            step={0.1}
+                                                                            disabled={true}
+                                                                            className="pointer-events-none [&>span:first-child]:h-1 [&>span:first-child]:bg-white/20 **:[[role=slider]]:h-2.5 **:[[role=slider]]:w-2.5 **:[[role=slider]]:border-white **:[[role=slider]]:bg-white [&>span>span]:bg-white opacity-60"
+                                                                        />
+                                                                    </div>
+
+                                                                    {/* Timestamp right */}
+                                                                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                                                                        {formatTime(trackDuration[track.id] || 0)}
+                                                                    </span>
+
+                                                                    {/* Play/Pause Button (circle with Spotify logo style) */}
+                                                                    <button
+                                                                        className="w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0 ml-1 shadow-sm transition-opacity hover:opacity-90"
+                                                                        onClick={(e) => togglePlayPause(e, track.id)}
+                                                                        aria-label={playingTrack === track.id ? "Pause" : "Play"}
+                                                                    >
+                                                                        {playingTrack === track.id ? (
+                                                                            // Pause icon
+                                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current">
+                                                                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                                                            </svg>
+                                                                        ) : (
+                                                                            // Play icon
+                                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current ml-0.5">
+                                                                                <path d="M8 5v14l11-7z" />
+                                                                            </svg>
+                                                                        )}
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             )}
                                         </div>
 
