@@ -9,6 +9,7 @@ import * as htmlToImage from "html-to-image";
 import { Slider } from "@/components/ui/slider";
 
 import MarqueeText from "@/components/marquee-text";
+import { toast } from "sonner";
 
 
 
@@ -70,7 +71,17 @@ const GENRE_COLORS = [
     "#FF5722", // Orange
     "#88B04B",
     "#F7CAC9",
-    "#92A8D1"
+    "#92A8D1",
+    "#FF0055", // Magenta
+    "#00E5FF", // Cyan
+    "#AA00FF", // Violet
+    "#FF9100", // Deep Orange
+    "#00E676", // Bright Green
+    "#3D5AFE", // Indigo
+    "#FFEB3B", // Bright Yellow
+    "#76FF03", // Lime
+    "#F50057", // Crimson
+    "#651FFF"  // Deep Purple
 ];
 
 function hexToRgba(hex: string, alpha: number) {
@@ -92,6 +103,13 @@ export default function DashboardPage() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Toast Error Handling - MUST stand above any conditional returns
+    useEffect(() => {
+        if (error) {
+            toast.error(error || "Failed to load dashboard data. Please try again.");
+        }
+    }, [error]);
     const [activeEmbed, setActiveEmbed] = useState<string | null>(null);
     const [showTimeModal, setShowTimeModal] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -520,9 +538,9 @@ export default function DashboardPage() {
         const STORY_WIDTH = 720;
         const STORY_HEIGHT = 1280;
 
-        // Create container
         const container = document.createElement("div");
         container.id = "personalify-screenshot";
+        // Main Container Styles - Fixed 9:16
         Object.assign(container.style, {
             width: `${STORY_WIDTH}px`,
             height: `${STORY_HEIGHT}px`,
@@ -534,44 +552,75 @@ export default function DashboardPage() {
             top: "0",
             left: "0",
             zIndex: "-9999",
-        });
-
-        // Content wrapper
-        const contentWrapper = document.createElement("div");
-        Object.assign(contentWrapper.style, {
-            width: "100%",
-            padding: "140px 40px 60px 40px", // Increased top padding for Instagram UI safe zone
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            padding: "80px 40px 60px 40px",
             boxSizing: "border-box",
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
         });
 
-        // Header
+        // Inject Styles for Recharts Background (Dark Mode Fix)
+        const styleFix = document.createElement("style");
+        styleFix.innerHTML = `
+            /* Force radial bar background to be dark in the generated image */
+            .recharts-radial-bar-background-sector {
+                fill: #333333 !important; 
+                stroke: #333333 !important;
+            }
+        `;
+        container.appendChild(styleFix);
+
+        // --- HEADER ---
         const header = document.createElement("div");
+        header.style.textAlign = "center";
+        header.style.flexShrink = "0"; // Don't shrink
+        header.style.width = "100%";
         header.innerHTML = `
-            <h1 style="color: #1DB954; font-size: 2.5rem; font-weight: 800; text-align: center; margin: 0 0 0.5rem 0;">Personalify</h1>
-            <p style="color: #B3B3B3; font-size: 1.1rem; text-align: center; margin: 0 0 0.5rem 0;">
+            <h1 style="color: #1DB954; font-size: 2.5rem; font-weight: 800; margin: 0 0 4px 0;">Personalify</h1>
+            <p style="color: #B3B3B3; font-size: 1.1rem; margin: 0 0 12px 0;">
                 ${TIME_RANGE_SUBTITLES[timeRange]}, ${data.user}!
             </p>
-            <p style="color: #B3B3B3; font-size: 0.9rem; text-align: center; margin: 0 0 5rem 0; font-style: italic;">
+            <p style="color: #B3B3B3; font-size: 0.9rem; margin: 0; font-style: italic; line-height: 1.5; max-width: 600px; margin: 0 auto;">
                 ${emotionText.replace(/<[^>]*>/g, '')}
             </p>
         `;
-        contentWrapper.appendChild(header);
+        container.appendChild(header);
 
-        // Section
+        // GAP (Consistent Spacing)
+        const gap = document.createElement("div");
+        gap.style.height = "20px";
+        gap.style.flexShrink = "0";
+        container.appendChild(gap);
+
+        // --- MIDDLE SECTION (CARD) ---
+        // Wrapper fills available vertical space
+        const cardWrapper = document.createElement("div");
+        Object.assign(cardWrapper.style, {
+            flex: "1",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center", // Center vertically
+            width: "100%",
+            position: "relative",
+            minHeight: "0", // Important for flex child to shrink/overflow properly
+        });
+
         const section = document.createElement("div");
         Object.assign(section.style, {
             background: "#1e1e1e",
             borderRadius: "16px",
             padding: "1.5rem",
             border: "1px solid #282828",
+            width: "100%",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
+            boxSizing: "border-box",
+            // We initiate with no scale, we'll calculate it later
+            transformOrigin: "center center",
         });
 
         const sectionTitle = document.createElement("h2");
-        sectionTitle.textContent = `Top ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+        sectionTitle.textContent = `Top 10 ${category.charAt(0).toUpperCase() + category.slice(1)}`;
         Object.assign(sectionTitle.style, {
             color: "#1DB954",
             fontSize: "1.25rem",
@@ -584,23 +633,53 @@ export default function DashboardPage() {
         });
         section.appendChild(sectionTitle);
 
-        // List items - limit to 10
+        // -- CLONE CHART IF GENRES --
+        if (category === "genres") {
+            const chartContainer = document.getElementById("genre-chart-container");
+            if (chartContainer) {
+                // Clone the SVG inside
+                const svg = chartContainer.querySelector("svg");
+                if (svg) {
+                    const clonedSvg = svg.cloneNode(true) as SVGElement;
+                    const chartWrapper = document.createElement("div");
+                    // Style fitting for the image
+                    Object.assign(chartWrapper.style, {
+                        display: "flex",
+                        justifyContent: "center",
+                        marginBottom: "1rem",
+                        marginTop: "0.5rem",
+                        height: "220px",
+                    });
+
+                    clonedSvg.setAttribute("width", "220");
+                    clonedSvg.setAttribute("height", "220");
+                    clonedSvg.style.width = "220px";
+                    clonedSvg.style.height = "220px";
+                    clonedSvg.style.overflow = "visible";
+
+                    chartWrapper.appendChild(clonedSvg);
+                    section.appendChild(chartWrapper);
+                }
+            }
+        }
+
+        // List
         const list = document.createElement("ol");
         list.style.listStyle = "none";
         list.style.padding = "0";
         list.style.margin = "0";
 
         const items = category === "artists" ? data.artists : category === "tracks" ? data.tracks : data.genres;
-        const top10 = items.slice(0, 10);
+        const itemsToRender = items.slice(0, 10);
 
-        top10.forEach((item, idx) => {
+        itemsToRender.forEach((item, idx) => {
             const li = document.createElement("li");
             Object.assign(li.style, {
                 display: "flex",
                 alignItems: "center",
                 gap: "1rem",
                 padding: "0.75rem 0",
-                borderBottom: idx < 9 ? "1px solid #333" : "none",
+                borderBottom: idx < itemsToRender.length - 1 ? "1px solid #333" : "none",
             });
 
             const rank = document.createElement("span");
@@ -620,8 +699,8 @@ export default function DashboardPage() {
                 img.src = (item as Artist | Track).image;
                 img.crossOrigin = "anonymous";
                 Object.assign(img.style, {
-                    width: "64px",
-                    height: "64px",
+                    width: "60px",
+                    height: "60px",
                     borderRadius: "8px",
                     objectFit: "cover",
                     flexShrink: "0",
@@ -638,7 +717,7 @@ export default function DashboardPage() {
                 info.innerHTML = `
                     <p style="font-weight: 600; font-size: 0.85rem; color: #fff; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${artist.name}</p>
                     <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px;">
-                        ${artist.genres.slice(0, 5).map(g => {
+                        ${artist.genres.slice(0, 4).map(g => {
                     const color = getGenreColor(g);
                     return `<span style="background: rgba(255,255,255,0.1); border: 1px solid ${color}; border-radius: 9999px; padding: 2px 8px; font-size: 0.6rem; color: #fff;">${g}</span>`;
                 }).join("")}
@@ -669,20 +748,22 @@ export default function DashboardPage() {
         });
 
         section.appendChild(list);
-        contentWrapper.appendChild(section);
+        cardWrapper.appendChild(section);
+        container.appendChild(cardWrapper);
 
-        // Footer
+        // --- FOOTER ---
         const footer = document.createElement("div");
-        footer.innerHTML = "Personalify © 2025 • Powered by Spotify API";
+        footer.innerHTML = "Personalify © 2026 • Powered by Spotify API";
         Object.assign(footer.style, {
-            paddingTop: "1.5rem",
             textAlign: "center",
             fontSize: "0.75rem",
             color: "#888",
+            flexShrink: "0",
+            width: "100%",
+            marginTop: "1rem",
         });
-        contentWrapper.appendChild(footer);
+        container.appendChild(footer);
 
-        container.appendChild(contentWrapper);
         document.body.appendChild(container);
 
         try {
@@ -702,7 +783,21 @@ export default function DashboardPage() {
                 )
             );
 
-            await new Promise((r) => setTimeout(r, 300));
+            await new Promise((r) => setTimeout(r, 700)); // Slightly longer wait for safety
+
+            // --- AUTO SCALING LOGIC ---
+            // Now that everything is rendered, we measure heights
+            const availableHeight = cardWrapper.clientHeight;
+            const actualCardHeight = section.scrollHeight; // Or offsetHeight
+
+            // If card is taller than space (minus safety margin), scale it down
+            if (actualCardHeight > availableHeight) {
+                // Safety margin of 20px so it doesn't touch edges
+                const scale = (availableHeight - 20) / actualCardHeight;
+                // Clamp scale to max 1 (don't zoom in)
+                const finalScale = Math.min(1, scale);
+                section.style.transform = `scale(${finalScale})`;
+            }
 
             const dataUrl = await htmlToImage.toPng(container, {
                 quality: 1.0,
@@ -750,10 +845,18 @@ export default function DashboardPage() {
         );
     }
 
-    if (error || !data) {
+
+
+    if (!data) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-destructive">
-                <p className="font-semibold">{error || "Something went wrong"}</p>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-muted-foreground opacity-50">
+                <p className="font-medium">No data available to display.</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="mt-4 px-4 py-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-sm transition-colors"
+                >
+                    Retry
+                </button>
             </div>
         );
     }
@@ -767,12 +870,13 @@ export default function DashboardPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-background/95 z-50 flex flex-col items-center justify-center"
+                        className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+                        style={{ backgroundColor: "#121212" }}
                     >
                         <svg className="w-8 h-8 mb-4 spinner-svg" viewBox="0 0 50 50">
                             <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
                         </svg>
-                        <span className="font-semibold">Processing Image...</span>
+                        <span className="font-semibold text-white">Processing Image...</span>
                         <span className="text-muted-foreground text-sm mt-2">Please wait!</span>
                     </motion.div>
                 )}
@@ -796,7 +900,7 @@ export default function DashboardPage() {
             </motion.header>
 
             {/* Filters */}
-            <div className="flex flex-wrap justify-center gap-3 mb-10">
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
                 <button onClick={() => setShowTimeModal(true)} className="filter-btn glow-card" onMouseMove={handleMouseMoveOrTouch} onTouchMove={handleMouseMoveOrTouch}>
                     <span>{TIME_RANGE_LABELS[timeRange]}</span>
                     <span className="text-muted-foreground text-sm ml-2">▼</span>
@@ -1104,7 +1208,7 @@ export default function DashboardPage() {
                             <h2>Top Genres</h2>
 
                             {chartData.length > 0 && (
-                                <div className="mb-6 mt-2">
+                                <div id="genre-chart-container" className="mb-2 mt-2">
                                     <GenreChart data={chartData} />
                                 </div>
                             )}
@@ -1149,8 +1253,7 @@ export default function DashboardPage() {
                 onTouchMove={handleMouseMoveOrTouch}
                 className={`download-btn glow-card fixed bottom-6 right-8 z-40 px-6 py-3 rounded-2xl font-bold
                     bg-white/5 dark:bg-[#ffffff05] backdrop-blur-md border border-white/10 shadow-lg text-sm
-                    transition-all duration-500 ease-in-out
-                    ${hideSaveBtn ? 'hide-on-scroll' : 'translate-y-0 opacity-100'}
+                    ${hideSaveBtn ? 'hide-on-scroll' : 'show-floating-btn'}
                 `}
             >
                 <span className="relative -top-px">Save as Image</span>

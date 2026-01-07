@@ -137,7 +137,7 @@
   header.hero h1,
   header h1 {
     font-size: 1.75rem !important;
-    margin-top: 1rem;
+    margin-top: 1.25rem !important;
     margin-bottom: 0.5rem;
   }
   
@@ -150,7 +150,7 @@
   /* Dashboard mobile header styling */
   .dashboard-header h1 {
     font-size: 2rem !important;
-    margin-top: 25px;
+    margin-top: 30px !important;
     margin-bottom: 0.5rem;
   }
   
@@ -210,7 +210,7 @@
   font-size: 1rem;
   color: var(--text-muted);
   max-width: 600px;
-  margin: 0 auto 2rem auto;
+  margin: 0 auto 1.5rem auto;
   line-height: 1.6;
   font-style: italic;
 }
@@ -598,10 +598,44 @@
     0 4px 15px rgba(0, 0, 0, 0.2) !important;
 }
 
+
 .hide-on-scroll {
-    transform: translateY(150px) !important;
-    opacity: 0 !important;
+    animation: bounceHide 0.5s ease-out forwards !important;
     pointer-events: none !important;
+}
+
+.show-floating-btn {
+    animation: bounceShow 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+}
+
+@keyframes bounceHide {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    40% {
+        transform: translateY(-20px);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(150px);
+        opacity: 0;
+    }
+}
+
+@keyframes bounceShow {
+    0% {
+        transform: translateY(150px);
+        opacity: 0;
+    }
+    60% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .filter-btn:hover {
