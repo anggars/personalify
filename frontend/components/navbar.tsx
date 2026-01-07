@@ -122,7 +122,7 @@ export const Navbar = () => {
         "fixed left-1/2 -translate-x-1/2 z-50 flex items-center justify-between",
         "transition-all duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1.0)] will-change-[width,top,background,border-radius]",
         isScrolled
-            ? "top-4 w-[calc(100%-3rem)] md:w-[44rem] rounded-2xl bg-white/50 dark:bg-[#1e1e1e]/60 backdrop-blur-xl border border-black/10 dark:border-white/10 navbar-floating-glass px-4 py-3"
+            ? "top-4 w-[calc(100%-3rem)] md:w-[44rem] rounded-2xl bg-white/25 dark:bg-[#1e1e1e]/25 backdrop-blur-xl border border-black/10 dark:border-white/10 navbar-floating-glass px-4 py-3"
             : "top-0 w-full px-4 py-3 bg-transparent border-b border-black/5 dark:border-white/5"
     );
 
@@ -156,12 +156,15 @@ export const Navbar = () => {
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         className={cn(
                             notificationContainerClass,
-                            "toast-glass backdrop-blur-3xl shadow-2xl rounded-xl overflow-hidden transform-gpu ring-1 ring-white/10",
+                            "toast-glass backdrop-blur-md shadow-2xl rounded-xl overflow-hidden transform-gpu",
+                            "border border-white/10 dark:border-white/8",
+                            "[box-shadow:inset_0_1px_2px_0_rgba(255,255,255,0.15),inset_0_1px_1px_0_rgba(255,255,255,0.2),0_4px_15px_rgba(0,0,0,0.3)]",
+                            "dark:[box-shadow:inset_0_1px_2px_0_rgba(255,255,255,0.15),inset_0_1px_1px_0_rgba(255,255,255,0.2),0_4px_15px_rgba(0,0,0,0.3)]",
                             notification.type === "warning"
-                                ? "bg-white/95 dark:bg-[#1e1e1e]/95 text-yellow-600 dark:text-yellow-400"
+                                ? "bg-white/10 dark:bg-white/[0.015] text-yellow-600 dark:text-yellow-400"
                                 : notification.type === "error"
-                                    ? "bg-white/95 dark:bg-[#1e1e1e]/95 text-red-600 dark:text-red-400 border border-red-500/20"
-                                    : "bg-white/70 dark:bg-[#121212]/80 hover:scale-105 transition-transform duration-300"
+                                    ? "bg-white/10 dark:bg-white/[0.015] text-red-600 dark:text-red-400"
+                                    : "bg-white/10 dark:bg-white/[0.015] hover:scale-105 transition-transform duration-300"
                         )}
                     >
                         {(notification.type === "warning" || notification.type === "error") && (

@@ -57,6 +57,17 @@ const XIcon = ({ className }: { className?: string }) => (
 );
 
 export default function AboutPage() {
+    const [hasNotification, setHasNotification] = React.useState(false);
+
+    // Listen for notification state to adjust mobile header
+    useEffect(() => {
+        const handleNotification = (e: CustomEvent) => {
+            setHasNotification(e.detail !== null);
+        };
+        window.addEventListener("personalify-notification" as any, handleNotification);
+        return () => window.removeEventListener("personalify-notification" as any, handleNotification);
+    }, []);
+
     const audioRefs = {
         tuning: useRef<HTMLAudioElement | null>(null),
         mathRock: useRef<HTMLAudioElement | null>(null),
@@ -138,7 +149,7 @@ export default function AboutPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="text-center mt-2 mb-4"
+                className={`text-center mb-4 transition-all duration-300 ${hasNotification ? "mt-8 md:mt-2" : "mt-2"}`}
             >
                 <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
                     About Personalify
@@ -159,11 +170,11 @@ export default function AboutPage() {
                     transition={{ duration: 0.6, delay: 0.1 }}
                     className="glass-card rounded-2xl p-6 md:p-6 hover:-translate-y-1 transition-transform duration-300"
                 >
-                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-4 text-center md:-mt-2">
+                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-3 text-center md:-mt-2">
                         Just a Side-Quest?
                     </h2>
-                    <div className="space-y-4 text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify">
-                        <div className="mb-4">
+                    <div className="space-y-4 text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify hyphens-auto font-medium">
+                        <div className="mb-2">
                             Alright, so here's the plot twist. Personalify basically wasn't just a random side-quest I built for fun.
                             This whole project was actually my final exam for my{" "}
                             <TechHover
@@ -279,11 +290,11 @@ export default function AboutPage() {
                     transition={{ duration: 0.6, delay: 0.2 }}
                     className="glass-card rounded-2xl p-6 md:p-6 hover:-translate-y-1 transition-transform duration-300"
                 >
-                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-4 text-center md:-mt-2">
+                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-3 text-center md:-mt-2">
                         About Me
                     </h2>
-                    <div className="space-y-4 text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify">
-                        <div className="mb-4">
+                    <div className="space-y-4 text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify hyphens-auto font-medium">
+                        <div className="mb-2">
                             I'm Angga, an Informatics major who just genuinely enjoys building cool things.
                             My world is a constant juggling act between computational linguistics, psychology, and (obviously) music.
                             I'm always looking for creative ways these different fields can overlap,
@@ -342,7 +353,7 @@ export default function AboutPage() {
                     transition={{ duration: 0.6, delay: 0.3 }}
                     className="glass-card rounded-2xl p-6 md:p-6 hover:-translate-y-1 transition-transform duration-300"
                 >
-                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-4 text-center md:-mt-2">
+                    <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-2 md:mb-4 lg:mb-4 text-center md:-mt-2">
                         Hit Me Up!
                     </h2>
                     <div className="grid grid-cols-5 gap-3 justify-items-center md:flex md:flex-wrap md:justify-center md:gap-4 pt-2">
