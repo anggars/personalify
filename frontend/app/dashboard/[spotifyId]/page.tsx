@@ -1035,19 +1035,20 @@ export default function DashboardPage() {
 
                                                                     {/* Play/Pause Button */}
                                                                     <button
-                                                                        className="w-4 h-4 rounded-full bg-white flex items-center justify-center shrink-0 ml-auto shadow-sm transition-opacity hover:opacity-90"
+                                                                        className="w-5 h-5 rounded-full bg-white flex items-center justify-center shrink-0 ml-auto shadow-sm transition-opacity hover:opacity-90"
                                                                         onClick={(e) => togglePlayPause(e, track.id)}
                                                                         aria-label={playingTrack === track.id ? "Pause" : "Play"}
                                                                     >
                                                                         {playingTrack === track.id ? (
-                                                                            // Pause icon
-                                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current">
-                                                                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                                                            // Pause icon (rounded bars)
+                                                                            <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-black fill-current">
+                                                                                <rect x="6" y="5" width="4" height="14" rx="1" />
+                                                                                <rect x="14" y="5" width="4" height="14" rx="1" />
                                                                             </svg>
                                                                         ) : (
-                                                                            // Play icon
-                                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current ml-0.5">
-                                                                                <path d="M8 5v14l11-7z" />
+                                                                            // Play icon (rounded)
+                                                                            <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-black fill-current ml-[1px]">
+                                                                                <path d="M8 5.14v13.72a1 1 0 001.55.83l11-6.86a1 1 0 000-1.66l-11-6.86a1 1 0 00-1.55.83z" />
                                                                             </svg>
                                                                         )}
                                                                     </button>
