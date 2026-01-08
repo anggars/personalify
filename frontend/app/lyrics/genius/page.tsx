@@ -142,13 +142,20 @@ export default function GeniusPage() {
 
     const handleAutocomplete = (val: string) => {
         setQuery(val);
-        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
+            debounceTimer.current = null;
+        }
         if (!val.trim()) {
             setSuggestions([]);
             return;
         }
 
         debounceTimer.current = setTimeout(async () => {
+            if (!val.trim()) {
+                setSuggestions([]);
+                return;
+            }
             try {
                 const res = await fetch(`/api/genius/autocomplete?q=${encodeURIComponent(val)}`);
                 const data = await res.json();
@@ -160,7 +167,7 @@ export default function GeniusPage() {
     };
 
     const handleLoadSongs = async (artist: Artist) => {
-        setQuery("");
+        setQuery(artist.name); // Auto-fill with artist's correct spelling
         setSuggestions([]);
         setArtists([]);
         setSelectedArtist(artist);
@@ -179,6 +186,16 @@ export default function GeniusPage() {
         } finally {
             setLoadingState(null);
         }
+    };
+
+    const handleClearSearch = () => {
+        setQuery("");
+        setSuggestions([]);
+        setArtists([]);
+        setSelectedArtist(null);
+        setSongs([]);
+        setSelectedSongId(null);
+        setAnalysis(null);
     };
 
     const handleAnalyzeSong = async (songId: string) => {
@@ -235,15 +252,15 @@ export default function GeniusPage() {
                         />
                     </div>
 
-                    {/* Search Button */}
+                    {/* Search / Clear Button */}
                     <button
-                        onClick={handleSearch}
+                        onClick={selectedArtist ? handleClearSearch : handleSearch}
                         onMouseMove={handleMouseMoveOrTouch}
                         onTouchMove={handleMouseMoveOrTouch}
-                        className="btn-glass w-full group mb-0 min-h-[46px]"
+                        className={`w-full group mb-0 min-h-[46px] ${selectedArtist ? "btn-glass-red" : "btn-glass"}`}
                     >
                         <span className={`relative -top-px transition-opacity duration-200 ${loadingState === "search" ? "opacity-0" : "opacity-100"}`}>
-                            Search Artist
+                            {selectedArtist ? "Clear Search" : "Search Artist"}
                         </span>
                         {loadingState === "search" && (
                             <svg className="absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 spinner-svg" viewBox="0 0 50 50">
@@ -261,8 +278,9 @@ export default function GeniusPage() {
                                 <div
                                     key={artist.id}
                                     onClick={() => handleLoadSongs(artist)}
-                                    onMouseMove={handleMouseMove}
-                                    className="glass-card flex flex-col items-center p-4 rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 border-white/10 transition-colors"
+                                    onMouseMove={handleMouseMoveOrTouch}
+                                    onTouchMove={handleMouseMoveOrTouch}
+                                    className="glass-card glow-card flex flex-col items-center p-4 rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 border-white/10 transition-all active:scale-95"
                                 >
                                     <img
                                         src={artist.image_url || artist.image || "https://via.placeholder.com/150"}
@@ -281,7 +299,7 @@ export default function GeniusPage() {
                     )}
 
                     {loadingState === "songs" && (
-                        <div className="flex flex-col items-center justify-center text-[#1DB954] py-4 gap-3">
+                        <div className="flex flex-col items-center justify-center text-[#1DB954] py-6 gap-3 mt-4 border-t border-neutral-200 dark:border-white/10">
                             <svg className="spinner-svg w-8 h-8" viewBox="0 0 50 50">
                                 <circle className="spinner-path stroke-[#1DB954]!" cx="25" cy="25" r="20" fill="none" />
                             </svg>
@@ -300,8 +318,11 @@ export default function GeniusPage() {
                                     <div
                                         key={song.id}
                                         onClick={() => handleAnalyzeSong(song.id)}
-                                        onMouseMove={handleMouseMove}
-                                        className={`glass-card flex items-center gap-3 p-3 rounded-xl cursor-pointer text-left h-[71px] bg-white/5 dark:bg-white/5 border-neutral-200 dark:border-white/10 snap-start ${selectedSongId === song.id ? "ring-2 ring-[#1DB954]" : ""
+                                        onMouseMove={handleMouseMoveOrTouch}
+                                        onTouchMove={handleMouseMoveOrTouch}
+                                        className={`glass-card glow-card flex items-center gap-3 p-3 rounded-xl cursor-pointer text-left h-[71px] border-neutral-200 dark:border-white/10 snap-start transition-all active:scale-[0.98] ${selectedSongId === song.id
+                                            ? "ring-2 ring-[#1DB954] bg-[#1DB954]/10 dark:bg-[#1DB954]/15"
+                                            : "bg-white/5 dark:bg-white/5 hover:bg-white/10"
                                             }`}
                                     >
                                         <img
@@ -312,7 +333,7 @@ export default function GeniusPage() {
                                         <div className="overflow-hidden flex-1 min-w-0">
                                             <MarqueeText
                                                 text={song.title}
-                                                className="text-sm font-bold text-neutral-900 dark:text-white"
+                                                className={`text-sm font-bold ${selectedSongId === song.id ? "text-[#1DB954]" : "text-neutral-900 dark:text-white"}`}
                                             />
                                             <MarqueeText
                                                 text={song.album || song.date || "Single"}
@@ -327,7 +348,7 @@ export default function GeniusPage() {
 
                     {/* Loading Analysis */}
                     {loadingState === "analyze" && (
-                        <div className="flex flex-col items-center justify-center text-[#1DB954] py-6 gap-3 mt-8 border-t border-dashed border-neutral-300 dark:border-[#333]">
+                        <div className="flex flex-col items-center justify-center text-[#1DB954] py-6 gap-3 mt-6 border-t border-dashed border-neutral-300 dark:border-[#333]">
                             <svg className="spinner-svg w-8 h-8" viewBox="0 0 50 50">
                                 <circle className="spinner-path stroke-[#1DB954]!" cx="25" cy="25" r="20" fill="none" />
                             </svg>
