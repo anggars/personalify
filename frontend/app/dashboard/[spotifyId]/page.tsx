@@ -121,6 +121,7 @@ export default function DashboardPage() {
     const [trackDuration, setTrackDuration] = useState<Record<string, number>>({});
     const [embedReady, setEmbedReady] = useState<Record<string, boolean>>({});
     const [showPlayerControls, setShowPlayerControls] = useState<Record<string, boolean>>({});
+    const [isBuffering, setIsBuffering] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         const footer = document.querySelector('footer');
@@ -323,13 +324,47 @@ export default function DashboardPage() {
 
             try {
                 const data = event.data;
+                const trackId = playingTrack;
+
+                if (!trackId) return;
+
+                // Handle playback state updates from Spotify embed
                 if (data.type === 'playback_update') {
-                    const trackId = playingTrack;
-                    if (trackId && data.position !== undefined) {
+                    if (data.position !== undefined) {
                         setTrackPosition(prev => ({ ...prev, [trackId]: data.position }));
-                        if (data.duration) {
-                            setTrackDuration(prev => ({ ...prev, [trackId]: data.duration }));
-                        }
+                    }
+                    if (data.duration) {
+                        setTrackDuration(prev => ({ ...prev, [trackId]: data.duration }));
+                    }
+                    // If Spotify sends isPaused, use it to control buffering state
+                    if (data.isPaused !== undefined) {
+                        // If paused mid-playback, set buffering to stop progress bar
+                        setIsBuffering(prev => ({ ...prev, [trackId]: data.isPaused }));
+                    }
+                }
+
+                // Handle ready/loading/error events
+                if (data.type === 'ready') {
+                    // Player is ready, clear buffering
+                    setIsBuffering(prev => ({ ...prev, [trackId]: false }));
+                }
+
+                if (data.type === 'loading' || data.type === 'buffering') {
+                    // Player is loading/buffering, pause progress bar
+                    setIsBuffering(prev => ({ ...prev, [trackId]: true }));
+                }
+
+                if (data.type === 'playing') {
+                    // Player started playing, clear buffering
+                    setIsBuffering(prev => ({ ...prev, [trackId]: false }));
+                }
+
+                if (data.type === 'paused' || data.type === 'ended') {
+                    // Player paused or ended, stop progress bar
+                    setIsBuffering(prev => ({ ...prev, [trackId]: true }));
+                    if (data.type === 'ended') {
+                        setPlayingTrack(null);
+                        setTrackPosition(prev => ({ ...prev, [trackId]: 0 }));
                     }
                 }
             } catch (err) {
@@ -344,6 +379,9 @@ export default function DashboardPage() {
     // Poll for playback position updates when playing
     useEffect(() => {
         if (!playingTrack) return;
+
+        // Don't start the interval until buffering is complete
+        if (isBuffering[playingTrack]) return;
 
         const interval = setInterval(() => {
             // Simulate playback progression (Spotify embed doesn't expose real-time position)
@@ -363,7 +401,7 @@ export default function DashboardPage() {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [playingTrack, trackDuration]);
+    }, [playingTrack, trackDuration, isBuffering]);
 
     const changeTimeRange = (range: string) => {
         setShowTimeModal(false);
@@ -462,6 +500,7 @@ export default function DashboardPage() {
             // Pause
             iframe.contentWindow.postMessage({ command: 'pause' }, '*');
             setPlayingTrack(null);
+            setIsBuffering(prev => ({ ...prev, [trackId]: false }));
         } else {
             // Play - reset position if at the end
             const currentPos = trackPosition[trackId] || 0;
@@ -472,8 +511,17 @@ export default function DashboardPage() {
                 setTrackPosition(prev => ({ ...prev, [trackId]: 0 }));
             }
 
+            // Set buffering state - progress bar won't move until buffering is done
+            setIsBuffering(prev => ({ ...prev, [trackId]: true }));
+
             iframe.contentWindow.postMessage({ command: 'toggle' }, '*');
             setPlayingTrack(trackId);
+
+            // Wait for Spotify embed to start playing before syncing progress bar
+            // This accounts for network latency and buffering time
+            setTimeout(() => {
+                setIsBuffering(prev => ({ ...prev, [trackId]: false }));
+            }, 1500); // 1.5 second buffer delay to account for typical Spotify load time
         }
     };
 
@@ -620,7 +668,7 @@ export default function DashboardPage() {
         });
 
         const sectionTitle = document.createElement("h2");
-        sectionTitle.textContent = `Top 10 ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+        sectionTitle.textContent = `Top ${category.charAt(0).toUpperCase() + category.slice(1)}`;
         Object.assign(sectionTitle.style, {
             color: "#1DB954",
             fontSize: "1.25rem",
@@ -669,7 +717,7 @@ export default function DashboardPage() {
         list.style.padding = "0";
         list.style.margin = "0";
 
-        const items = category === "artists" ? data.artists : category === "tracks" ? data.tracks : data.genres;
+        const items = category === "artists" ? data.artists : category === "tracks" ? data.tracks : processedGenres.genres;
         const itemsToRender = items.slice(0, 10);
 
         itemsToRender.forEach((item, idx) => {
@@ -680,6 +728,8 @@ export default function DashboardPage() {
                 gap: "1rem",
                 padding: "0.75rem 0",
                 borderBottom: idx < itemsToRender.length - 1 ? "1px solid #333" : "none",
+                height: "auto",
+                minHeight: "0",
             });
 
             const rank = document.createElement("span");
@@ -734,13 +784,13 @@ export default function DashboardPage() {
                 `;
             } else {
                 const genre = item as Genre;
-                const artistsList = data.genre_artists_map[genre.name] || [];
+                const artistsList = processedGenres.map[genre.name] || [];
                 info.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="width: 10px; height: 10px; border-radius: 50%; background: ${GENRE_COLORS[idx]};"></span>
                         <span style="font-weight: 600; font-size: 0.85rem; color: #fff;">${genre.name}</span>
                     </div>
-                    <p style="font-size: 0.68rem; color: #908f8f; margin: 4px 0 0 0;">Mentioned ${genre.count} times${artistsList.length > 0 ? `: ${artistsList.join(", ")}` : ""}</p>
+                    <p style="font-size: 0.6rem; color: #908f8f; margin: 4px 0 0 0; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; line-height: 1.3;">Mentioned ${genre.count} times${artistsList.length > 0 ? `: ${artistsList.join(", ")}` : ""}</p>
                 `;
             }
             li.appendChild(info);
@@ -783,18 +833,14 @@ export default function DashboardPage() {
                 )
             );
 
-            await new Promise((r) => setTimeout(r, 700)); // Slightly longer wait for safety
+            await document.fonts.ready;
+            await new Promise((r) => setTimeout(r, 1000));
 
-            // --- AUTO SCALING LOGIC ---
-            // Now that everything is rendered, we measure heights
             const availableHeight = cardWrapper.clientHeight;
-            const actualCardHeight = section.scrollHeight; // Or offsetHeight
+            const actualCardHeight = section.scrollHeight;
 
-            // If card is taller than space (minus safety margin), scale it down
             if (actualCardHeight > availableHeight) {
-                // Safety margin of 20px so it doesn't touch edges
                 const scale = (availableHeight - 20) / actualCardHeight;
-                // Clamp scale to max 1 (don't zoom in)
                 const finalScale = Math.min(1, scale);
                 section.style.transform = `scale(${finalScale})`;
             }
