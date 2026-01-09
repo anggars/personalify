@@ -39,7 +39,7 @@ The Personalify system consists of several components connected through service-
               |    (Frontend)     |<------------->|    (Backend)       |
               +---------+---------+               +---------+----------+
                         |                                   |
-                        |                          +--------+---------+               +----------------------+
+                        |                          +--------+---------+      +----------------------+
                         |                          |                  +----->|  Hugging Face API    |
                         |                          |                  |      | (NLP Emotion Model)  |
                         |                  +-------v----------+       |      +----------------------+
@@ -599,15 +599,20 @@ Overall, Personalify has successfully become a proof of concept for distributed 
 
 ## 11. Credits & Acknowledgments
 
+- **[FastAPI](https://fastapi.tiangolo.com/)** for a modern, high-performance Python web framework.
+- **[Next.js](https://nextjs.org/)** for the React framework powering the frontend.
 - **[Spotify API](https://developer.spotify.com/)** for providing comprehensive music data and authentication services.
 - **[Genius API](https://genius.com/developers/)** for enabling access to song lyrics and artist information.
 - **[Hugging Face](https://huggingface.co/)** for pre-trained NLP models that power emotion analysis.
+- **[Aceternity UI](https://ui.aceternity.com/)** for beautiful typewriter effects and modern components.
+- **[shadcn/ui](https://ui.shadcn.com/)** for accessible and robust component primitives.
+- **[Framer Motion](https://www.framer.com/motion/)** for smooth animations and layout transitions.
+- **[Lucide React](https://lucide.dev/)** & **[Simple Icons](https://simpleicons.org/)** for clean iconography.
 - **[Vercel](https://vercel.com/)** for seamless serverless deployment and hosting.
 - **[Neon](https://neon.tech/)**, **[MongoDB Atlas](https://www.mongodb.com/atlas/)**, and **[Upstash](https://upstash.com/)** for managed cloud database services.
 - **[Docker](http://docker.com/)** for containerization and local development environment isolation.
-- **[FastAPI](https://fastapi.tiangolo.com/)** for a modern, high-performance Python web framework.
 
-**Created by [アリツ](https://desty.page/anggars)** © 2025
+**Created by [アリツ](https://desty.page/anggars)** © 2025 - Present
 
 ---
 
