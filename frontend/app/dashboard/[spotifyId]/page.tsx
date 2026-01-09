@@ -816,7 +816,8 @@ export default function DashboardPage() {
 
         // --- FOOTER ---
         const footer = document.createElement("div");
-        footer.innerHTML = "Personalify © 2026 • Powered by Spotify API";
+        const currentYear = new Date().getFullYear();
+        footer.innerHTML = `Personalify © ${currentYear} • Powered by Spotify API`;
         Object.assign(footer.style, {
             textAlign: "center",
             fontSize: "0.75rem",
