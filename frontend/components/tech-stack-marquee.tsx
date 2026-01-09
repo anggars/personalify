@@ -7,8 +7,8 @@ export const TECH_STACK = [
     { name: "Spotify", slug: "spotify", color: "1DB954" },
     { name: "Genius", slug: "genius", color: "FFFF00" },
     { name: "Next.js", slug: "nextdotjs", color: "white" },
-    { name: "FastAPI", slug: "fastapi", color: "009688" },
     { name: "TypeScript", slug: "typescript", color: "3178C6" },
+    { name: "FastAPI", slug: "fastapi", color: "009688" },
     { name: "Python", slug: "python", color: "3776AB" },
     { name: "shadcn/ui", slug: "shadcnui", color: "white" },
     { name: "Tailwind CSS", slug: "tailwindcss", color: "06B6D4" },
@@ -31,13 +31,13 @@ export const TechStackMarquee = ({ isVisible }: { isVisible: boolean }) => {
     if (!isVisible) return null;
 
     return (
-        <div className="relative w-full h-full overflow-hidden flex items-center mask-image-gradient">
-            <style jsx>{`
-                .mask-image-gradient {
-                    mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
-                    -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
-                }
-            `}</style>
+        <div
+            className="relative w-full h-full overflow-hidden flex items-center"
+            style={{
+                maskImage: "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
+                WebkitMaskImage: "linear-gradient(to right, transparent, black 15%, black 85%, transparent)"
+            }}
+        >
             <motion.div
                 className="flex items-center gap-0" // gap-0 because we control spacing via padding/width
                 animate={{ x: ["0%", "-50%"] }} // Move half the width (since we duplicated list)
@@ -53,7 +53,7 @@ export const TechStackMarquee = ({ isVisible }: { isVisible: boolean }) => {
                 {[...TECH_STACK, ...TECH_STACK].map((tech, i) => (
                     <div
                         key={i}
-                        className="flex items-center justify-center shrink-0 w-[80px] h-[80px] max-md:w-[60px] max-md:h-[60px] p-4 group relative"
+                        className="flex items-center justify-center shrink-0 w-[80px] h-[80px] max-md:w-[60px] max-md:h-[60px] p-4 max-md:p-2 group relative"
                         title={tech.name}
                     >
                         <TechIcon tech={tech} />

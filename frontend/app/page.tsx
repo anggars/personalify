@@ -13,6 +13,16 @@ export default function HomePage() {
   const [isTechStackVisible, setIsTechStackVisible] = useState(false);
   const isMobileRef = useRef(false);
 
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      isMobileRef.current = window.innerWidth < 768;
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // No rotation effect for logo anymore
 
   // Typewriter effect for paragraph
@@ -148,7 +158,7 @@ export default function HomePage() {
           className={`btn-glass group rounded-2xl ${isLoading ? "pointer-events-none" : ""}`}
         >
           <span
-            className={`relative -top-px transition-opacity duration-200 ${isLoading ? "opacity-0" : "opacity-100"
+            className={`transition-opacity duration-200 ${isLoading ? "opacity-0" : "opacity-100"
               }`}
           >
             Login with Spotify
@@ -156,6 +166,7 @@ export default function HomePage() {
           <svg
             className={`absolute top-1/2 left-1/2 -ml-[9px] -mt-[9px] w-[18px] h-[18px] transition-opacity duration-200 spinner-svg ${isLoading ? "opacity-100" : "opacity-0"
               }`}
+            style={{ position: 'absolute' }}
             viewBox="0 0 50 50"
           >
             <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />

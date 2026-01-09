@@ -58,6 +58,8 @@ const XIcon = ({ className }: { className?: string }) => (
 
 export default function AboutPage() {
     const [hasNotification, setHasNotification] = React.useState(false);
+    const paragraphRef = React.useRef<HTMLParagraphElement>(null);
+    const hasTyped = React.useRef(false);
 
     // Listen for notification state to adjust mobile header
     useEffect(() => {
@@ -66,6 +68,31 @@ export default function AboutPage() {
         };
         window.addEventListener("personalify-notification" as any, handleNotification);
         return () => window.removeEventListener("personalify-notification" as any, handleNotification);
+    }, []);
+
+    // Typewriter effect for paragraph
+    useEffect(() => {
+        if (hasTyped.current || !paragraphRef.current) return;
+        hasTyped.current = true;
+
+        const text = "The project scoop, from exam brief to deployment.";
+        let index = 0;
+
+        function typeWriter() {
+            if (index < text.length) {
+                if (paragraphRef.current) {
+                    paragraphRef.current.innerHTML = text.substring(0, index + 1) + '<span class="typing-cursor"></span>';
+                }
+                index++;
+                setTimeout(typeWriter, 30);
+            } else {
+                if (paragraphRef.current) {
+                    paragraphRef.current.innerHTML = text;
+                }
+            }
+        }
+
+        setTimeout(typeWriter, 400);
     }, []);
 
     const audioRefs = {
@@ -154,9 +181,10 @@ export default function AboutPage() {
                 <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
                     About Personalify
                 </h1>
-                <p className="text-lg mb-3 text-neutral-500 dark:text-[#B3B3B3] font-medium">
-                    The project scoop, from exam brief to deployment.
-                </p>
+                <p
+                    ref={paragraphRef}
+                    className="text-lg mb-3 text-neutral-500 dark:text-[#B3B3B3] font-medium"
+                />
             </motion.header>
 
             {/* Content Sections */}
@@ -175,60 +203,58 @@ export default function AboutPage() {
                     </h2>
                     <div className="space-y-4 text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify hyphens-auto font-medium">
                         <div className="mb-2">
-                            Alright, so here's the plot twist. Personalify basically wasn't just a random side-quest I built for fun.
-                            This whole project was actually my final exam for my{" "}
+                            Alright, here's the plot twist. Personalify wasn't just a random side-quest I built for fun.
+                            It was my final exam for{" "}
                             <TechHover
                                 text="'Distributed Data Processing'"
                                 description="A course focusing on parallel computing and managing large-scale data systems."
                                 icon={FaNetworkWired}
                                 color="#FF9900"
                             />{" "}
-                            class back in semester 6.
-                            The brief was to build a system that integrates several database technologies.
-                            We had to pick a use case, so I went straight for the{" "}
+                            back in semester 6. We had to build a system that integrates several database technologies.
+                            I chose a{" "}
                             <TechHover
                                 text="'Streaming Service Metadata Platform'"
                                 description="A unified system to aggregate, process, and serve rich metadata from various music sources."
                                 icon={FaLayerGroup}
                                 color="#00C7B7"
                             />
-                            , and this web is the final result. It started as an assignment, but evolved into a real passion project
-                            where I could really push my full-stack engineering skills to the limit.
+                            {" "}as my use case. What started as an assignment evolved into a passion project where I pushed my skills.
                         </div>
                         <div>
-                            The architecture is modernized with a{" "}
+                            The frontend runs on{" "}
                             <TechHover
                                 text="Next.js"
                                 href="https://nextjs.org/"
                                 description="The React Framework for the Web. Used for server-side rendering and static generation."
                                 icon={SiNextdotjs}
                                 className="hover:text-black dark:hover:text-white"
-                            />{" "}
-                            frontend and a{" "}
+                            />
+                            {" "}while the backend uses{" "}
                             <TechHover
-                                text="Python (FastAPI)"
+                                text="FastAPI"
                                 href="https://fastapi.tiangolo.com/"
                                 description="High performance, easy to learn, fast to code, ready for production web framework."
                                 icon={SiFastapi}
                                 color="#009688"
-                            />{" "}
-                            backend, seamlessly pulling data from the{" "}
+                            />
+                            . Data comes from the{" "}
                             <TechHover
-                                text="Spotify Developer API"
+                                text="Spotify API"
                                 href="https://developer.spotify.com/"
                                 description="Web API to retrieve metadata, player state, and user information."
                                 icon={SiSpotify}
                                 color="#1DB954"
                             />
-                            . While local development relies on{" "}
+                            . Local dev uses{" "}
                             <TechHover
                                 text="Docker"
                                 href="https://www.docker.com/"
                                 description="Platform to develop, ship, and run applications in containers."
                                 icon={SiDocker}
                                 color="#2496ED"
-                            />{" "}
-                            containers, production runs purely as a Serverless app on{" "}
+                            />
+                            , but production runs on{" "}
                             <TechHover
                                 text="Vercel"
                                 href="https://vercel.com/"
@@ -236,49 +262,47 @@ export default function AboutPage() {
                                 icon={SiVercel}
                                 className="hover:text-black dark:hover:text-white"
                             />
-                            . Main data lives in{" "}
-                            <span className="whitespace-nowrap">
-                                <TechHover
-                                    text="Neon (Serverless Postgres)"
-                                    href="https://neon.tech/"
-                                    description="Serverless Postgres built for the cloud."
-                                    icon={SiPostgresql}
-                                    color="#00E599"
-                                />
-                            </span>
-                            , sync history goes to{" "}
+                            {" "}as a serverless app. For storage,{" "}
                             <TechHover
-                                text="MongoDB Atlas"
+                                text="Neon"
+                                href="https://neon.tech/"
+                                description="Serverless Postgres built for the cloud."
+                                icon={SiPostgresql}
+                                color="#00E599"
+                            />
+                            {" "}handles main data,{" "}
+                            <TechHover
+                                text="MongoDB"
                                 href="https://www.mongodb.com/atlas"
                                 description="Multi-cloud database service for modern applications."
                                 icon={SiMongodb}
                                 color="#47A248"
                             />
-                            , and{" "}
+                            {" "}stores sync history, and{" "}
                             <TechHover
-                                text="Upstash Redis"
+                                text="Redis"
                                 href="https://upstash.com/"
                                 description="Serverless Data for Redis and Kafka."
                                 icon={SiRedis}
                                 color="#DC382D"
-                            />{" "}
-                            handles the cache. Lyrics are retrieved via a custom proxy routing strategy to bypass{" "}
+                            />
+                            {" "}manages the cache. Lyrics come from{" "}
                             <TechHover
                                 text="Genius"
                                 href="https://genius.com/developers"
                                 description="World's biggest collection of song lyrics and musical knowledge."
                                 icon={SiGenius}
                                 color="#FFFF64"
-                            />{" "}
-                            restrictions, and the vibe check? That's powered by a sophisticated{" "}
+                            />
+                            {" "}via a custom proxy. The vibe check runs on a{" "}
                             <TechHover
                                 text="Hugging Face"
                                 href="https://huggingface.co/"
                                 description="The AI community building the future. Used for sentiment analysis models."
                                 icon={SiHuggingface}
                                 color="#FFD21E"
-                            />{" "}
-                            transformer model for sentiment analysis.
+                            />
+                            {" "}model for sentiment analysis.
                         </div>
                     </div>
                 </motion.section>
@@ -295,10 +319,10 @@ export default function AboutPage() {
                     </h2>
                     <div className="space-y-4 text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify hyphens-auto font-medium">
                         <div className="mb-2">
-                            I'm Angga, an Informatics major who just genuinely enjoys building cool things.
-                            My world is a constant juggling act between computational linguistics, psychology, and (obviously) music.
-                            I'm always looking for creative ways these different fields can overlap,
-                            and this project is truly the perfect example of that personal exploration.
+                            I'm Angga, an Informatics major who just genuinely enjoys building cool things. 
+                            My world is a constant juggling act between computational linguistics, psychology, 
+                            and (obviously) music. I'm always looking for creative ways these different fields 
+                            can overlap, and this project is truly the perfect example of that personal exploration.
                         </div>
                         <div>
                             This project is pretty much my whole personality a showcase of coding (mostly{" "}
@@ -309,7 +333,7 @@ export default function AboutPage() {
                                 icon={SiPython}
                                 color="#3776AB"
                             />{" "}
-                            &{" "}
+                            and{" "}
                             <TechHover
                                 text="TypeScript"
                                 href="https://www.typescriptlang.org/"
@@ -317,7 +341,7 @@ export default function AboutPage() {
                                 icon={SiTypescript}
                                 color="#3178C6"
                             />
-                            ), NLP, and I'm so deeply into{" "}
+                            ), NLP, with my heavy into{" "}
                             <TechHover
                                 text="Math Rock"
                                 onClick={() => handlePlayAudio("mathRock")}
@@ -337,7 +361,7 @@ export default function AboutPage() {
                             <TechHover
                                 text="FACGCE"
                                 onClick={() => handlePlayAudio("tuning")}
-                                description="An open tuning often used in Math Rock and Emo for dreamy, resonant chords. Click for a lesson!"
+                                description="An open tuning often used in Math Rock and Midwest Emo for dreamy, resonant chords. Click for a lesson!"
                                 icon={FaMusic}
                                 color="#1DB954"
                             />{" "}

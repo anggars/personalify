@@ -188,6 +188,12 @@
   .glass-card {
     padding: 1rem !important;
   }
+  
+  /* Better text-justify on mobile - reduce spacing gaps */
+  .text-justify {
+    word-spacing: -0.05em;
+    text-align-last: left;
+  }
 }
 
 /* ===== DASHBOARD SPECIFIC STYLES ===== */
