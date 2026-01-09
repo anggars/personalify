@@ -339,7 +339,7 @@ export const Navbar = () => {
                             transition={{ duration: 0.2 }}
                             className="fixed inset-0 z-50 flex flex-col h-full overflow-hidden bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl"
                         >
-                            {/* Header - Matches Navbar padding/layout EXACTLY to prevent jump */}
+                            {/* Header - Static, no animation */}
                             <div className={cn(
                                 "flex items-center justify-between shrink-0 transition-all duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1.0)]",
                                 isScrolled
@@ -365,84 +365,98 @@ export const Navbar = () => {
                                 </button>
                             </div>
 
-                            {/* Main Navigation (Centered) */}
-                            <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full px-6 overflow-y-auto no-scrollbar py-6">
-                                {navLinks.map((link) => (
-                                    <div key={link.name} className="flex flex-col items-center w-full">
-                                        {link.children ? (
-                                            <div className="flex flex-col items-center w-full">
-                                                <button
-                                                    onClick={() => setMobileDropdownOpen(mobileDropdownOpen === link.name ? null : link.name)}
+                            {/* Animated Content Area - Bouncy open, curtain close */}
+                            <motion.div
+                                initial={{ y: -50, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: "-100%", opacity: 0 }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 300,
+                                    damping: 35,
+                                    mass: 1
+                                }}
+                                className="flex-1 flex flex-col overflow-hidden"
+                            >
+                                {/* Main Navigation (Centered) */}
+                                <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full px-6 overflow-y-auto no-scrollbar py-6">
+                                    {navLinks.map((link) => (
+                                        <div key={link.name} className="flex flex-col items-center w-full">
+                                            {link.children ? (
+                                                <div className="flex flex-col items-center w-full">
+                                                    <button
+                                                        onClick={() => setMobileDropdownOpen(mobileDropdownOpen === link.name ? null : link.name)}
+                                                        className={cn(
+                                                            "text-[1.75rem] transition-colors flex items-center justify-center gap-2",
+                                                            mobileDropdownOpen === link.name
+                                                                ? "text-[#1DB954] font-extrabold"
+                                                                : "text-black dark:text-white font-bold hover:text-neutral-500 dark:hover:text-neutral-300"
+                                                        )}
+                                                    >
+                                                        {link.name}
+                                                        <ChevronDown className={cn("w-8 h-8 transition-transform duration-300", mobileDropdownOpen === link.name ? "rotate-180" : "rotate-0")} />
+                                                    </button>
+
+                                                    <AnimatePresence>
+                                                        {mobileDropdownOpen === link.name && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: "auto", opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                                className="overflow-hidden w-full flex flex-col items-center"
+                                                            >
+                                                                <div className="flex flex-col items-center gap-4 pt-6 pb-2">
+                                                                    {link.children.map(child => (
+                                                                        <Link
+                                                                            key={child.name}
+                                                                            href={child.href}
+                                                                            onClick={() => setIsMobileMenuOpen(false)}
+                                                                            className={cn(
+                                                                                "text-2xl font-medium transition-colors",
+                                                                                pathname === child.href ? "text-[#1DB954]" : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
+                                                                            )}
+                                                                        >
+                                                                            {child.name}
+                                                                        </Link>
+                                                                    ))}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            ) : (
+                                                <Link
+                                                    href={link.href}
+                                                    onClick={(e) => {
+                                                        if (link.onClick) link.onClick(e);
+                                                        if (spotifyId || link.name !== "Dashboard") setIsMobileMenuOpen(false);
+                                                    }}
                                                     className={cn(
-                                                        "text-[1.75rem] font-bold transition-colors flex items-center justify-center gap-2",
-                                                        mobileDropdownOpen === link.name
-                                                            ? "text-[#1DB954]"
-                                                            : "text-black dark:text-white hover:text-neutral-500 dark:hover:text-neutral-300"
+                                                        "text-[1.75rem] transition-colors relative block",
+                                                        (link.name === "Dashboard" && pathname?.startsWith("/dashboard")) || pathname === link.href
+                                                            ? "text-[#1DB954] font-extrabold"
+                                                            : "text-black dark:text-white font-bold hover:text-neutral-500 dark:hover:text-neutral-300"
                                                     )}
                                                 >
                                                     {link.name}
-                                                    <ChevronDown className={cn("w-8 h-8 transition-transform duration-300", mobileDropdownOpen === link.name ? "rotate-180" : "rotate-0")} />
-                                                </button>
+                                                </Link>
+                                            )}
+                                        </div>
+                                    ))}
 
-                                                <AnimatePresence>
-                                                    {mobileDropdownOpen === link.name && (
-                                                        <motion.div
-                                                            initial={{ height: 0, opacity: 0 }}
-                                                            animate={{ height: "auto", opacity: 1 }}
-                                                            exit={{ height: 0, opacity: 0 }}
-                                                            transition={{ duration: 0.3, ease: "easeInOut" }}
-                                                            className="overflow-hidden w-full flex flex-col items-center"
-                                                        >
-                                                            <div className="flex flex-col items-center gap-4 pt-6 pb-2">
-                                                                {link.children.map(child => (
-                                                                    <Link
-                                                                        key={child.name}
-                                                                        href={child.href}
-                                                                        onClick={() => setIsMobileMenuOpen(false)}
-                                                                        className={cn(
-                                                                            "text-2xl font-medium transition-colors",
-                                                                            pathname === child.href ? "text-[#1DB954]" : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
-                                                                        )}
-                                                                    >
-                                                                        {child.name}
-                                                                    </Link>
-                                                                ))}
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                            </div>
-                                        ) : (
-                                            <Link
-                                                href={link.href}
-                                                onClick={(e) => {
-                                                    if (link.onClick) link.onClick(e);
-                                                    if (spotifyId || link.name !== "Dashboard") setIsMobileMenuOpen(false);
-                                                }}
-                                                className={cn(
-                                                    "text-[1.75rem] font-bold transition-colors relative block",
-                                                    (link.name === "Dashboard" && pathname?.startsWith("/dashboard")) || pathname === link.href
-                                                        ? "text-[#1DB954]"
-                                                        : "text-black dark:text-white hover:text-neutral-500 dark:hover:text-neutral-300"
-                                                )}
-                                            >
-                                                {link.name}
-                                            </Link>
-                                        )}
+                                    {/* Theme Toggle */}
+                                    <div className="mt-8 flex flex-col items-center gap-3">
+                                        <ThemeToggle />
+                                        <span className="text-xs font-medium text-neutral-500 uppercase tracking-widest">Appearance</span>
                                     </div>
-                                ))}
-
-                                {/* Theme Toggle */}
-                                <div className="mt-8 flex flex-col items-center gap-3">
-                                    <ThemeToggle />
-                                    <span className="text-xs font-medium text-neutral-500 uppercase tracking-widest">Appearance</span>
                                 </div>
-                            </div>
 
-                            {/* Copyright Footer (Simple) */}
-                            <div className="p-8 flex flex-col items-center gap-4 mt-auto shrink-0">
-                                <span className="text-xs text-neutral-500 font-medium">Personalify © {new Date().getFullYear()}</span>
-                            </div>
+                                {/* Copyright Footer (Simple) */}
+                                <div className="p-8 flex flex-col items-center gap-4 mt-auto shrink-0">
+                                    <span className="text-xs text-neutral-500 font-medium">Personalify © {new Date().getFullYear()}</span>
+                                </div>
+                            </motion.div>
                         </motion.div>
                     )
                 }
