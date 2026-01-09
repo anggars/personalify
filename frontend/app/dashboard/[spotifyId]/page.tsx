@@ -452,7 +452,10 @@ export default function DashboardPage() {
             // Initialize duration from track data (convert ms to seconds)
             const track = data?.tracks.find(t => t.id === trackId);
             if (track && track.duration_ms) {
-                setTrackDuration(prev => ({ ...prev, [trackId]: Math.floor(track.duration_ms / 1000) }));
+                // On mobile, limit to 30s as embeds are typically previews
+                // On desktop, we assume users might have full playback (though often still previews, consistency with mobile complaint is key)
+                const durationSeconds = Math.floor(track.duration_ms / 1000);
+                setTrackDuration(prev => ({ ...prev, [trackId]: isMobile ? 30 : durationSeconds }));
             } else {
                 // Fallback to 30 seconds if duration not available
                 setTrackDuration(prev => ({ ...prev, [trackId]: 30 }));
@@ -588,12 +591,20 @@ export default function DashboardPage() {
 
         const container = document.createElement("div");
         container.id = "personalify-screenshot";
-        // Main Container Styles - Fixed 9:16
+        // Main Container Styles - Fixed 9:16 - Theme Aware
+        const isLight = resolvedTheme === 'light';
+        const bgColor = isLight ? "#ffffff" : "#121212";
+        const textColor = isLight ? "#000000" : "#ffffff";
+        const subTextColor = isLight ? "#666666" : "#B3B3B3";
+        const cardBg = isLight ? "#f5f5f5" : "#1e1e1e";
+        const cardBorder = isLight ? "#e5e5e5" : "#282828";
+        const roleColor = isLight ? "#444444" : "#908f8f"; // darker gray for light mode small text
+
         Object.assign(container.style, {
             width: `${STORY_WIDTH}px`,
             height: `${STORY_HEIGHT}px`,
-            background: "#121212",
-            color: "#fff",
+            background: bgColor,
+            color: textColor,
             fontFamily: "'Plus Jakarta Sans', sans-serif",
             overflow: "hidden",
             position: "fixed",
@@ -607,13 +618,15 @@ export default function DashboardPage() {
             boxSizing: "border-box",
         });
 
-        // Inject Styles for Recharts Background (Dark Mode Fix)
+        // Inject Styles for Recharts Background (Dark Mode Fix + Theme Aware)
         const styleFix = document.createElement("style");
+        // For light mode, we want a lighter gray for the radial chart background tracks
+        const radialBgColor = isLight ? "#e0e0e0" : "#333333";
         styleFix.innerHTML = `
-            /* Force radial bar background to be dark in the generated image */
+            /* Force radial bar background to be dark/light depending on theme */
             .recharts-radial-bar-background-sector {
-                fill: #333333 !important; 
-                stroke: #333333 !important;
+                fill: ${radialBgColor} !important; 
+                stroke: ${radialBgColor} !important;
             }
         `;
         container.appendChild(styleFix);
@@ -625,10 +638,10 @@ export default function DashboardPage() {
         header.style.width = "100%";
         header.innerHTML = `
             <h1 style="color: #1DB954; font-size: 2.5rem; font-weight: 800; margin: 0 0 4px 0;">Personalify</h1>
-            <p style="color: #B3B3B3; font-size: 1.1rem; margin: 0 0 12px 0;">
+            <p style="color: ${subTextColor}; font-size: 1.1rem; margin: 0 0 12px 0;">
                 ${TIME_RANGE_SUBTITLES[timeRange]}, ${data.user}!
             </p>
-            <p style="color: #B3B3B3; font-size: 0.9rem; margin: 0; font-style: italic; line-height: 1.5; max-width: 600px; margin: 0 auto;">
+            <p style="color: ${subTextColor}; font-size: 0.9rem; margin: 0; font-style: italic; line-height: 1.5; max-width: 600px; margin: 0 auto;">
                 ${emotionText.replace(/<[^>]*>/g, '')}
             </p>
         `;
@@ -656,10 +669,10 @@ export default function DashboardPage() {
 
         const section = document.createElement("div");
         Object.assign(section.style, {
-            background: "#1e1e1e",
+            background: cardBg,
             borderRadius: "16px",
             padding: "1.5rem",
-            border: "1px solid #282828",
+            border: `1px solid ${cardBorder}`,
             width: "100%",
             boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
             boxSizing: "border-box",
@@ -674,7 +687,7 @@ export default function DashboardPage() {
             fontSize: "1.25rem",
             fontWeight: "700",
             textAlign: "center",
-            borderBottom: "1px solid #333",
+            borderBottom: isLight ? "1px solid #e0e0e0" : "1px solid #333",
             paddingBottom: "1rem",
             marginTop: "-0.5rem",
             marginBottom: "0.5rem",
@@ -727,7 +740,7 @@ export default function DashboardPage() {
                 alignItems: "center",
                 gap: "1rem",
                 padding: "0.75rem 0",
-                borderBottom: idx < itemsToRender.length - 1 ? "1px solid #333" : "none",
+                borderBottom: idx < itemsToRender.length - 1 ? (isLight ? "1px solid #e0e0e0" : "1px solid #333") : "none",
                 height: "auto",
                 minHeight: "0",
             });
@@ -737,7 +750,7 @@ export default function DashboardPage() {
             Object.assign(rank.style, {
                 fontSize: "1.2rem",
                 fontWeight: "700",
-                color: "rgba(255, 255, 255, 0.5)",
+                color: isLight ? "rgba(0, 0, 0, 0.4)" : "rgba(255, 255, 255, 0.5)",
                 width: "2rem",
                 textAlign: "center",
                 flexShrink: "0",
@@ -765,22 +778,22 @@ export default function DashboardPage() {
             if (category === "artists") {
                 const artist = item as Artist;
                 info.innerHTML = `
-                    <p style="font-weight: 600; font-size: 0.85rem; color: #fff; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${artist.name}</p>
+                    <p style="font-weight: 600; font-size: 0.85rem; color: ${textColor}; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${artist.name}</p>
                     <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px;">
                         ${artist.genres.slice(0, 4).map(g => {
                     const color = getGenreColor(g);
-                    return `<span style="background: rgba(255,255,255,0.1); border: 1px solid ${color}; border-radius: 9999px; padding: 2px 8px; font-size: 0.6rem; color: #fff;">${g}</span>`;
+                    return `<span style="background: ${isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.1)"}; border: 1px solid ${color}; border-radius: 9999px; padding: 2px 8px; font-size: 0.6rem; color: ${textColor};">${g}</span>`;
                 }).join("")}
                     </div>
-                    <p style="font-size: 0.68rem; color: #908f8f; margin: 0;">Popularity: ${artist.popularity}</p>
+                    <p style="font-size: 0.68rem; color: ${roleColor}; margin: 0;">Popularity: ${artist.popularity}</p>
                 `;
             } else if (category === "tracks") {
                 const track = item as Track;
                 info.innerHTML = `
-                    <p style="font-weight: 600; font-size: 0.85rem; color: #fff; margin: 0 0 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.name}</p>
-                    <p style="font-size: 0.68rem; color: #908f8f; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.artists.join(", ")}</p>
-                    <p style="font-size: 0.68rem; color: #908f8f; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${getAlbumType(track.album.total_tracks, track.album.name)}</p>
-                    <p style="font-size: 0.68rem; color: #908f8f; margin: 2px 0;">Popularity: ${track.popularity}</p>
+                    <p style="font-weight: 600; font-size: 0.85rem; color: ${textColor}; margin: 0 0 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.name}</p>
+                    <p style="font-size: 0.68rem; color: ${roleColor}; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.artists.join(", ")}</p>
+                    <p style="font-size: 0.68rem; color: ${roleColor}; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${getAlbumType(track.album.total_tracks, track.album.name)}</p>
+                    <p style="font-size: 0.68rem; color: ${roleColor}; margin: 2px 0;">Popularity: ${track.popularity}</p>
                 `;
             } else {
                 const genre = item as Genre;
@@ -788,9 +801,9 @@ export default function DashboardPage() {
                 info.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="width: 10px; height: 10px; border-radius: 50%; background: ${GENRE_COLORS[idx]};"></span>
-                        <span style="font-weight: 600; font-size: 0.85rem; color: #fff;">${genre.name}</span>
+                        <span style="font-weight: 600; font-size: 0.85rem; color: ${textColor};">${genre.name}</span>
                     </div>
-                    <p style="font-size: 0.6rem; color: #908f8f; margin: 4px 0 0 0; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; line-height: 1.3;">Mentioned ${genre.count} times${artistsList.length > 0 ? `: ${artistsList.join(", ")}` : ""}</p>
+                    <p style="font-size: 0.6rem; color: ${roleColor}; margin: 4px 0 0 0; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; line-height: 1.3;">Mentioned ${genre.count} times${artistsList.length > 0 ? `: ${artistsList.join(", ")}` : ""}</p>
                 `;
             }
             li.appendChild(info);
@@ -848,7 +861,7 @@ export default function DashboardPage() {
             const dataUrl = await htmlToImage.toPng(container, {
                 quality: 1.0,
                 pixelRatio: 2,
-                backgroundColor: "#121212",
+                backgroundColor: bgColor,
                 width: STORY_WIDTH,
                 height: STORY_HEIGHT,
             });
@@ -917,12 +930,12 @@ export default function DashboardPage() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-50 flex flex-col items-center justify-center"
-                        style={{ backgroundColor: "#121212" }}
+                        style={{ backgroundColor: resolvedTheme === 'light' ? "#ffffff" : "#121212" }}
                     >
                         <svg className="w-8 h-8 mb-4 spinner-svg" viewBox="0 0 50 50">
-                            <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
+                            <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" stroke={resolvedTheme === 'light' ? "#000" : "#fff"} />
                         </svg>
-                        <span className="font-semibold text-white">Processing Image...</span>
+                        <span className={`font-semibold ${resolvedTheme === 'light' ? "text-black" : "text-white"}`}>Processing Image...</span>
                         <span className="text-muted-foreground text-sm mt-2">Please wait!</span>
                     </motion.div>
                 )}
@@ -985,6 +998,8 @@ export default function DashboardPage() {
                                     </button>
                                 ))}
                                 <button onClick={() => setShowTimeModal(false)}
+                                    onMouseMove={handleMouseMoveOrTouch}
+                                    onTouchMove={handleMouseMoveOrTouch}
                                     className="mt-2 px-6 py-2 rounded-xl font-bold text-destructive bg-destructive/10 border border-destructive/20 hover:bg-destructive/15 transition-all">
                                     Cancel
                                 </button>
@@ -1019,6 +1034,8 @@ export default function DashboardPage() {
                                     </button>
                                 ))}
                                 <button onClick={() => setShowCategoryModal(false)}
+                                    onMouseMove={handleMouseMoveOrTouch}
+                                    onTouchMove={handleMouseMoveOrTouch}
                                     className="mt-2 px-6 py-2 rounded-xl font-bold text-destructive bg-destructive/10 border border-destructive/20 hover:bg-destructive/15 transition-all">
                                     Cancel
                                 </button>
@@ -1159,19 +1176,19 @@ export default function DashboardPage() {
 
                                                                     {/* Play/Pause Button */}
                                                                     <button
-                                                                        className="w-5 h-5 rounded-full bg-white flex items-center justify-center shrink-0 ml-auto shadow-sm transition-opacity hover:opacity-90"
+                                                                        className="w-5 h-5 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0 ml-auto shadow-md transition-opacity hover:opacity-90"
                                                                         onClick={(e) => togglePlayPause(e, track.id)}
                                                                         aria-label={playingTrack === track.id ? "Pause" : "Play"}
                                                                     >
                                                                         {playingTrack === track.id ? (
                                                                             // Pause icon (rounded bars)
-                                                                            <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-black fill-current">
+                                                                            <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white dark:text-black fill-current">
                                                                                 <rect x="6" y="5" width="4" height="14" rx="1" />
                                                                                 <rect x="14" y="5" width="4" height="14" rx="1" />
                                                                             </svg>
                                                                         ) : (
                                                                             // Play icon (rounded)
-                                                                            <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-black fill-current ml-[1px]">
+                                                                            <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white dark:text-black fill-current ml-[1px]">
                                                                                 <path d="M8 5.14v13.72a1 1 0 001.55.83l11-6.86a1 1 0 000-1.66l-11-6.86a1 1 0 00-1.55.83z" />
                                                                             </svg>
                                                                         )}
@@ -1192,7 +1209,7 @@ export default function DashboardPage() {
                                                                             max={trackDuration[track.id] || 30}
                                                                             step={0.1}
                                                                             disabled={true}
-                                                                            className="pointer-events-none [&>span:first-child]:h-1 [&>span:first-child]:bg-white/20 **:[[role=slider]]:h-2.5 **:[[role=slider]]:w-2.5 **:[[role=slider]]:border-white **:[[role=slider]]:bg-white [&>span>span]:bg-white opacity-60"
+                                                                            className="pointer-events-none [&>span:first-child]:h-1 [&>span:first-child]:bg-black/10 dark:[&>span:first-child]:bg-white/20 **:[[role=slider]]:h-2.5 **:[[role=slider]]:w-2.5 **:[[role=slider]]:border-black dark:**:[[role=slider]]:border-white **:[[role=slider]]:bg-black dark:**:[[role=slider]]:bg-white [&>span>span]:bg-black dark:[&>span>span]:bg-white opacity-60"
                                                                         />
                                                                     </div>
 
@@ -1203,18 +1220,18 @@ export default function DashboardPage() {
 
                                                                     {/* Play/Pause Button (circle with Spotify logo style) */}
                                                                     <button
-                                                                        className="w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0 ml-1 shadow-sm transition-opacity hover:opacity-90"
+                                                                        className="w-6 h-6 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0 ml-1 shadow-md transition-opacity hover:opacity-90"
                                                                         onClick={(e) => togglePlayPause(e, track.id)}
                                                                         aria-label={playingTrack === track.id ? "Pause" : "Play"}
                                                                     >
                                                                         {playingTrack === track.id ? (
                                                                             // Pause icon
-                                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current">
+                                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-white dark:text-black fill-current">
                                                                                 <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
                                                                             </svg>
                                                                         ) : (
                                                                             // Play icon
-                                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-black fill-current ml-0.5">
+                                                                            <svg viewBox="0 0 24 24" className="w-4 h-4 text-white dark:text-black fill-current ml-0.5">
                                                                                 <path d="M8 5v14l11-7z" />
                                                                             </svg>
                                                                         )}
@@ -1294,7 +1311,7 @@ export default function DashboardPage() {
 
             {/* Save as Image Button */}
             <button
-                onClick={() => setShowSaveModal(true)}
+                onClick={() => isMobile ? generateImage(currentCategory) : setShowSaveModal(true)}
                 onMouseMove={handleMouseMoveOrTouch}
                 onTouchMove={handleMouseMoveOrTouch}
                 className={`download-btn glow-card fixed bottom-6 right-8 z-40 px-6 py-3 rounded-2xl font-bold
@@ -1331,6 +1348,8 @@ export default function DashboardPage() {
                                         </button>
                                     ))}
                                     <button onClick={() => setShowSaveModal(false)}
+                                        onMouseMove={handleMouseMoveOrTouch}
+                                        onTouchMove={handleMouseMoveOrTouch}
                                         className="mt-2 px-6 py-2 rounded-xl font-bold text-destructive bg-destructive/10 border border-destructive/20 hover:bg-destructive/15 transition-all">
                                         Cancel
                                     </button>

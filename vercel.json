@@ -29,6 +29,18 @@
     {
       "source": "/resume",
       "destination": "/resume.html"
+    },
+    {
+      "source": "/docs",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/redoc",
+      "destination": "/api/index.py"
     }
   ]
 }
