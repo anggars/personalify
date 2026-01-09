@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Personalify Frontend
 
-## Getting Started
+The frontend is a modern **Next.js 14+** application using the **App Router**, styled with **Tailwind CSS** and **shadcn/ui**, and animated with **Framer Motion**. It fetches data from the FastAPI backend and renders a responsive dashboard.
 
-First, run the development server:
+## 🏗️ Project Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+frontend/
+├── app/                  # App Router Pages
+│   ├── dashboard/        # Main User Dashboard ([id]/page.tsx)
+│   ├── lyrics/           # Lyrics Analysis Pages (genius/page.tsx)
+│   ├── layout.tsx        # Root Layout (Fonts, Metadata)
+│   └── page.tsx          # Home Page (Login & Tech Marquee)
+├── components/           # Reusable UI Components
+│   ├── tech-stack-marquee.tsx # Infinite scrolling stack icons
+│   ├── glass-surface.tsx      # Liquid glass effect container
+│   ├── navbar.tsx             # Responsive Navigation
+│   ├── footer.tsx             # Application footer
+│   └── ui/                    # shadcn/ui primitives
+├── public/               # Static Assets
+│   └── assets/           # Images, logos
+└── tailwind.config.ts    # Design token configuration
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Key Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Tech Stack Marquee**: Interactive Home Page element. Hovering the Spotify logo reveals a sliding marquee of the tech used (Next.js, FastAPI, Neon, etc.).
+- **Dashboard**: High-fidelity visualization of top artists, tracks, and genres with adaptive light/dark mode.
+- **Lyrics Analyzer**: Integration with Genius API to search songs and analyze emotional sentiment using NLP.
+- **Glassmorphism UI**: Custom "Liquid Glass" effects on buttons and cards using `glass-surface.tsx`.
+- **Responsive Design**: Fully mobile-optimized layout with hamburger menus and touch-friendly controls.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Stack
 
-## Learn More
+- **Framework**: Next.js 14 (App Router)
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Icons**: Lucide React + Simple Icons (CDN)
+- **Animation**: Framer Motion (Transitions, Marquee)
+- **Fonts**: Plus Jakarta Sans (Google Fonts)
 
-To learn more about Next.js, take a look at the following resources:
+## 🚀 Setup & Run
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
+- Node.js 18+
+- pnpm (recommended) or npm
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Installation
+```bash
+cd frontend
+pnpm install
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Development Server
+```bash
+pnpm dev
+# Runs on http://localhost:3000
+```
+Make sure the Backend is running on port `8000` for data fetching to work correctly.

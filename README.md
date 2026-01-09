@@ -30,23 +30,32 @@ The Personalify system consists of several components connected through service-
                                  +------------------+
                                  |      Vercel      |
                                  |   (Serverless)   |
-                                 +--------+---------+               +----------------------+
-                                          |                  +----->|  Hugging Face API    |
-                                          |                  |      | (NLP Emotion Model)  |
-+-------------------------+      +------------------+        |      +----------------------+
-|       Spotify API       |<---->|     FastAPI      |<-------+
-|       (User Data)       |      |  (Backend API)   |        |      +----------------------+
-+-------------------------+      +--------+---------+        +----->|      Genius API      |
-                                          |                         |     (Lyrics Data)    |
-                                          |                         +----------------------+
+                                 +--------+---------+
                                           |
-              +---------------------------+---------------------------+
-              |                           |                           |
-              v                           v                           v
-      +---------------+           +---------------+         +------------------+
-      |     Neon      |           |    Upstash    |         |  MongoDB Atlas   |
-      | (PostgreSQL)  |           |    (Redis)    |         |  (Sync History)  |
-      +-------+-------+           +---------------+         +------------------+
+                        +-----------------+-----------------+
+                        |                                   |
+              +---------v---------+               +---------v----------+
+              |     Next.js       |               |     FastAPI        |
+              |    (Frontend)     |<------------->|    (Backend)       |
+              +---------+---------+               +---------+----------+
+                        |                                   |
+                        |                          +--------+---------+               +----------------------+
+                        |                          |                  +----->|  Hugging Face API    |
+                        |                          |                  |      | (NLP Emotion Model)  |
+                        |                  +-------v----------+       |      +----------------------+
+                        |                  |   Spotify API    |<------+
+                        |                  |   (User Data)    |       |      +----------------------+
+                        |                  +------------------+       +----->|      Genius API      |
+                        |                                             |      |     (Lyrics Data)    |
+                        |                                             |      +----------------------+
+                        |                                             |
+              +---------v---------------------------+-----------------v---------+
+              |                                     |                           |
+              v                                     v                           v
+      +---------------+                     +---------------+           +------------------+
+      |     Neon      |                     |    Upstash    |           |  MongoDB Atlas   |
+      | (PostgreSQL)  |                     |    (Redis)    |           |  (Sync History)  |
+      +-------+-------+                     +---------------+           +------------------+
               |
               v
  +------------------------+
@@ -63,8 +72,9 @@ The cloud platform hosting the application. It runs the FastAPI backend in a ser
 - **Spotify API:**
 The primary external data source. It handles user authentication (OAuth2) and provides the core music data (top artists, tracks, genres) for the application.
 
-- **Frontend (Jinja):**  
-  Web-based UI that displays user's top artists, tracks, and genres interactively. Includes a dedicated **Lyrics Analyzer** page powered by Genius API. Responsive display for desktop & mobile.
+- **Frontend (Next.js):**  
+  Modern React-based framework providing a fast, interactive UI with Tailwind CSS for styling and Framer Motion for animations. It communicates with the backend via REST API.
+  
   
 - **FastAPI (Backend API):**  
   Main server that handles Spotify authentication (OAuth2), data synchronization, database storage, caching, external API calls (Hugging Face for NLP analysis, Genius for lyrics), and API serving to frontend.
@@ -93,17 +103,19 @@ The primary external data source. It handles user authentication (OAuth2) and pr
 
 | Component        | Technology           | Selection Rationale                                                               |
 |------------------|----------------------|----------------------------------------------------------------------------------|
-| **Frontend**     | Jinja                | Lightweight, fast build time, suitable for creating SPA with reactive display.   |
-| **Backend API**  | FastAPI              | Modern Python framework, supports async, fast for building REST APIs.           |
-| **Main Database**| PostgreSQL (Neon/Local) | Serverless Postgres designed for cloud, separates storage & compute. Neon for cloud, Docker for local. |
-| **Cache**        | Redis (Upstash/Local) | In-memory cache with TTL, very fast for storing temporary data per user. Upstash for cloud, Docker for local. |
-| **Sync Storage** | MongoDB (Atlas/Local) | Suitable for storing history in flexible document format. Atlas for cloud, Docker for local. |
-| **Auth**         | Spotify OAuth2       | Official standard protocol from Spotify, secure for login and user data access. |
-| **Lyrics**       | Genius API           | Genius provides lyrics data; custom scraping logic with retry mechanisms handles content retrieval. |
-| **NLP Model**    | Hugging Face API     | Access to pre-trained AI models for emotion analysis without building from scratch. |
-| **FDW**          | PostgreSQL FDW       | Used for simulating queries between PostgreSQL instances (distributed query).   |
-| **Containerization** | Docker + Compose (Optional) | Ensures environment isolation, deployment consistency, and easy replication for local development. |
-| **Cloud Deployment** | Vercel           | Serverless deployment platform with seamless FastAPI integration and global CDN. |
+| **Frontend**     | Next.js (React)      | Server-side rendering (SSR), fast performance, modern ecosystem with Tailwind CSS.|
+| **UI Library**   | shadcn/ui            | Reusable components built with Radix UI and Tailwind CSS.                        |
+| **Styling**      | Tailwind CSS         | Utility-first CSS for rapid and consistent UI development.                       || **Animation**    | Framer Motion        | Powerful library for complex, fluid animations (marquee, transitions).           |
+| **Language**     | TypeScript / Python  | TS for type-safe frontend, Python for robust backend logic.                      |
+| **Backend API**  | FastAPI              | Modern Python framework, supports async, fast for building REST APIs.            |
+| **Main Database**| PostgreSQL (Neon)    | Serverless Postgres designed for cloud, separates storage & compute.             |
+| **Cache**        | Redis (Upstash)      | Serverless Redis for extremely fast, low-latency caching at the edge.            |
+| **Sync Storage** | MongoDB (Atlas)      | Flexible document store for logging semi-structured sync history.                |
+| **Auth**         | Spotify OAuth2       | Official standard protocol from Spotify, secure for login and user data access.  |
+| **Lyrics**       | Genius API           | Genius provides lyrics data; custom scraping logic handles retrieval.            |
+| **NLP Model**    | Hugging Face API     | Access to pre-trained AI models for emotion analysis without building from scratch.|
+| **FDW**          | PostgreSQL FDW       | Used for simulating queries between PostgreSQL instances (distributed query).    |
+| **Deployment**   | Vercel               | Zero-config deployment for Next.js frontend and Python backend serverless functions.|
 
 ---
 
@@ -312,14 +324,14 @@ This method uses Docker Compose to run the entire stack, including local Postgre
 
 ---
 
-### 🐍 Option 2: Running Standalone (Python Environment)
+### 🐍 Option 2: Running Standalone (Frontend + Backend)
 
-This method runs FastAPI directly on your local machine using a Python virtual environment (Miniconda, Anaconda, or standard venv). This approach is **lighter** and does **not require Docker**.
+This method runs the full stack locally: **FastAPI** for the backend and **Next.js** for the frontend.
 
 #### Prerequisites:
-- Python 3.12+ installed (via Miniconda, Anaconda, or standard Python)
-- Cloud database accounts (Neon, MongoDB Atlas, Upstash) **OR** local Docker containers for databases
-- `.env` file configured (see `.env.example`)
+- Python 3.12+ installed
+- Node.js 18+ and pnpm installed
+- Cloud database accounts (Neon, MongoDB Atlas, Upstash) configured in `.env`
 
 #### Steps:
 
@@ -329,92 +341,54 @@ This method runs FastAPI directly on your local machine using a Python virtual e
    cd personalify
    ```
 
-2. **Create Conda environment (if using Miniconda/Anaconda):**
+2. **Backend Setup (Terminal 1):**
+   
+   Create environment and install specific dependencies:
    ```bash
+   # Create & Activate Conda Environment
    conda create -n personalify python=3.12
    conda activate personalify
-   ```
    
-   **Or create venv (if using standard Python):**
-   ```bash
-   python -m venv .venv
-   
-   # Windows
-   .venv\Scripts\activate
-   
-   # Linux/Mac
-   source .venv/bin/activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
+   # Install Dependencies
    pip install -r backend/requirements.txt
    ```
-
-4. **Create and configure `.env` file:**
-   ```bash
-   cp .env.example .env
-   ```
-   Edit `.env` and configure for **cloud databases**:
-   ```env
-   # Spotify
-   SPOTIFY_CLIENT_ID=your_client_id
-   SPOTIFY_CLIENT_SECRET=your_client_secret
-   SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/callback
-
-   # PostgreSQL (Neon)
-   DATABASE_URL=postgresql://neondb_owner:password@cluster.neon.tech/neondb
-
-   # MongoDB (Atlas)
-   MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/database
-
-   # Redis (Upstash)
-   REDIS_URL=redis://default:password@host:port
-
-   # Hugging Face
-   HUGGING_FACE_API_KEY=your_hugging_face_token
-
-   # Genius API
-   GENIUS_ACCESS_TOKEN=your_genius_token
-   ```
-
-5. **Run the development server:**
    
-   **For Windows (using provided batch script):**
+   Configure `.env` in the root directory (see `.env.example`).
+   
+   **Run the Backend:**
    ```bash
+   # Using provided script (Windows)
    dev.bat
-   ```
    
-   **For Linux/Mac (manual command):**
-   ```bash
+   # OR Manual (Linux/Mac)
    export PYTHONPATH=backend
    uvicorn app.main:app --reload --port 8000
    ```
+   Backend will run on `http://localhost:8000` (API Docs at `/docs`).
+
+3. **Frontend Setup (Terminal 2):**
    
-   The `dev.bat` script contains:
-   ```bat
-   @echo off
-   echo Starting Local Personalify (Cloud DB Mode)...
-
-   :: 1. Set Path so Python knows the backend location
-   set PYTHONPATH=backend
-
-   :: 2. Activate Conda (Just in case you forgot to activate in the terminal)
-   call conda activate personalify
-
-   :: 3. Run Server
-   :: --reload is active so if the code is changed, the server restarts itself
-   uvicorn app.main:app --reload --port 8000
+   Open a new terminal and navigate to the frontend directory:
+   ```bash
+   cd frontend
    ```
+   
+   Install dependencies and run the development server:
+   ```bash
+   pnpm install
+   pnpm dev
+   ```
+   
+   Frontend will run on `http://localhost:3000`.
 
-6. **Access the application:**
+4. **Access the Application:**
    Open your browser and navigate to:
    ```
-   http://127.0.0.1:8000
+   http://localhost:3000
    ```
 
-7. **Stop the server:**
-   Press `Ctrl+C` in the terminal.
+5. **Stop the servers:**
+   Press `Ctrl+C` in both terminals.
 
 ---
 

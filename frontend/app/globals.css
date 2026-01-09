@@ -443,16 +443,33 @@
     transition: opacity 0.4s ease;
     pointer-events: none;
   }
+
+  :root:not(.dark) .glow-card::before {
+    z-index: 1;
+    mix-blend-mode: normal;
+    background: radial-gradient(
+      circle at center,
+      rgba(29, 185, 84, 0.25),
+      rgba(29, 185, 84, 0.05) 50%,
+      transparent 100%
+    );
+  }
   
   .glow-card:hover::before {
     opacity: 1;
   }
   
-  /* Active state for mobile touch feedback */
+  /* Ensure active state works */
   .glow-card:active::before {
     opacity: 1;
     transition: opacity 0.1s;
   }
+}
+
+/* Ensure content sits above spotlight */
+.glow-card > *, .btn-glass > * {
+  position: relative;
+  z-index: 2;
 }
 
 /* Enable touch following for glow effect via JS updating --mouse-x/y */
@@ -529,6 +546,17 @@
   z-index: -1;
   transition: opacity 0.4s ease;
   pointer-events: none;
+}
+
+:root:not(.dark) .btn-glass::before {
+  z-index: 1;
+  mix-blend-mode: normal;
+  background: radial-gradient(
+    circle at center,
+    rgba(29, 185, 84, 0.3),
+    rgba(29, 185, 84, 0.1) 50%,
+    transparent 100%
+  );
 }
 
 .btn-glass:hover::before,

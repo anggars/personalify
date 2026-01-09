@@ -4,11 +4,23 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { TechStackMarquee } from "@/components/tech-stack-marquee";
 
 export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const paragraphRef = useRef<HTMLParagraphElement>(null);
   const hasTyped = useRef(false);
+  const [isTechStackVisible, setIsTechStackVisible] = useState(false);
+  const isMobileRef = useRef(false);
+
+  useEffect(() => {
+    isMobileRef.current = window.innerWidth < 768;
+    const handleResize = () => {
+      isMobileRef.current = window.innerWidth < 768;
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
 
 
@@ -86,15 +98,33 @@ export default function HomePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
+        className="relative mb-5 flex justify-center"
       >
-        <Image
-          src="/assets/Spotify_Primary_Logo_RGB_Green.ico"
-          alt="Personalify Logo"
-          width={80}
-          height={80}
-          className="mb-5 max-md:w-[60px] max-md:h-[60px]"
-          priority
-        />
+        <motion.div
+          className="relative h-[80px] max-md:h-[60px] rounded-full overflow-hidden cursor-pointer"
+          animate={{
+            width: isTechStackVisible ? (isMobileRef.current ? 180 : 240) : (isMobileRef.current ? 60 : 80),
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          onMouseEnter={() => !isMobileRef.current && setIsTechStackVisible(true)}
+          onMouseLeave={() => !isMobileRef.current && setIsTechStackVisible(false)}
+          onClick={() => isMobileRef.current && setIsTechStackVisible(!isTechStackVisible)}
+        >
+          <div className={`absolute inset-0 transition-opacity duration-300 ${isTechStackVisible ? "opacity-100" : "opacity-0"}`}>
+            <TechStackMarquee isVisible={isTechStackVisible} />
+          </div>
+
+          <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isTechStackVisible ? "opacity-0" : "opacity-100"}`}>
+            <Image
+              src="/assets/Spotify_Primary_Logo_RGB_Green.ico"
+              alt="Personalify Logo"
+              width={80}
+              height={80}
+              className="max-md:w-[60px] max-md:h-[60px] object-contain"
+              priority
+            />
+          </div>
+        </motion.div>
       </motion.div>
 
       {/* Hero Section */}
