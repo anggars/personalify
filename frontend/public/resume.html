@@ -3,8 +3,31 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=850">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700&display=swap" rel="stylesheet">
+
+    <!-- Metadata for Social Sharing -->
     <title>CV - Angga Rianto Sudrajat</title>
+    <meta name="description"
+        content="Informatics student & Software Engineer. Specialized in Next.js, FastAPI, and Machine Learning.">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://personalify.vercel.app/resume">
+    <meta property="og:title" content="CV - Angga Rianto Sudrajat">
+    <meta property="og:description"
+        content="Informatics student & Software Engineer. Specialized in Next.js, FastAPI, and Machine Learning.">
+    <meta property="og:image" content="https://personalify.vercel.app/og-image.png">
+    <!-- Assuming a default OG image exists -->
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://personalify.vercel.app/resume">
+    <meta property="twitter:title" content="CV - Angga Rianto Sudrajat">
+    <meta property="twitter:description"
+        content="Informatics student & Software Engineer. Specialized in Next.js, FastAPI, and Machine Learning.">
+    <meta property="twitter:image" content="https://personalify.vercel.app/og-image.png">
+
     <style>
         /* Base Styles */
         body {
@@ -12,7 +35,8 @@
             line-height: 1.3;
             /* Further reduced */
             color: #000;
-            background: #fff;
+            background: #f4f4f5;
+            /* Subtle background for desktop look */
             margin: 0;
             padding: 0;
             font-size: 10pt;
@@ -20,12 +44,28 @@
         }
 
         .container {
-            width: 100%;
-            max-width: 210mm;
+            width: 210mm;
+            min-height: 297mm;
             margin: 0 auto;
-            padding: 20px 30px;
-            /* Tighter padding */
+            padding: 20mm 15mm;
+            /* Standard A4 padding */
             box-sizing: border-box;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        @media print {
+            body {
+                background: #fff;
+            }
+
+            .container {
+                box-shadow: none;
+                margin: 0;
+                padding: 10mm 15mm;
+                width: 100%;
+                max-width: none;
+            }
         }
 
         /* Typography & Layout */
@@ -184,34 +224,100 @@
             font-weight: bold;
         }
 
+        /* Premium Liquid Glass Download Button - Refined for Transparency */
         .btn-download {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #000;
-            color: #fff;
-            padding: 12px 24px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border: none;
+            bottom: 30px;
+            right: 40px;
             z-index: 1000;
-            transition: transform 0.2s;
+            padding: 12px 24px;
+            border-radius: 16px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            color: #000;
+            /* Switched to black for contrast on light glass */
+            background: rgba(255, 255, 255, 0.4);
+            /* Much more transparent/glassy */
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow:
+                inset 0 1px 2px 0 rgba(255, 255, 255, 0.4),
+                0 8px 32px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .btn-download:hover {
-            transform: translateY(-2px);
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.6);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-download:active {
+            transform: scale(0.95);
+        }
+
+        /* Glow Effect - Adjusted for light background */
+        .btn-download::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            left: calc(var(--mouse-x, 50%) - 50%);
+            top: calc(var(--mouse-y, 50%) - 50%);
+            background: radial-gradient(circle at center,
+                    rgba(29, 185, 84, 0.4),
+                    rgba(29, 185, 84, 0.05) 50%,
+                    transparent 100%);
+            filter: blur(10px);
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .btn-download:hover::before {
+            opacity: 1;
+        }
+
+        .download-icon {
+            width: 18px;
+            height: 18px;
+            fill: #1DB954;
+            /* Keep the brand green */
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Download Button (Visible only on screen) -->
-    <button class="btn-download no-print" onclick="window.print()">
-        Download PDF
+    <!-- Premium Download Button -->
+    <button class="btn-download no-print" id="download-btn" onclick="window.print()">
+        <svg class="download-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" />
+        </svg>
+        <span>Download PDF</span>
     </button>
+
+    <script>
+        const btn = document.getElementById('download-btn');
+        const handleMove = (e) => {
+            const rect = btn.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            btn.style.setProperty('--mouse-x', `${x}%`);
+            btn.style.setProperty('--mouse-y', `${y}%`);
+        };
+        btn.addEventListener('mousemove', handleMove);
+        btn.addEventListener('touchmove', (e) => handleMove(e.touches[0]));
+    </script>
 
     <div class="container">
         <!-- Header -->
