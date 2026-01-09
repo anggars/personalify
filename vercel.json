@@ -25,6 +25,10 @@
     {
       "source": "/analyze-emotions-background",
       "destination": "/api/index.py"
+    },
+    {
+      "source": "/resume",
+      "destination": "/resume.html"
     }
   ]
 }

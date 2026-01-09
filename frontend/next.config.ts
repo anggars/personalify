@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   // API Rewrites to backend
   async rewrites() {
     return [
+      // Resume hidden link
+      {
+        source: "/resume",
+        destination: "/resume.html",
+      },
       // Genius API endpoints
       {
         source: "/api/:path*",
