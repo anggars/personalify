@@ -164,6 +164,7 @@ export default function DashboardPage() {
     const [disabledGenres, setDisabledGenres] = useState<Set<number>>(new Set());
     const [showTop20, setShowTop20] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [animatedDots, setAnimatedDots] = useState(".");
 
     const chartRef = useRef<any>(null);
     const headerRef = useRef<HTMLElement>(null);
@@ -219,6 +220,16 @@ export default function DashboardPage() {
             return () => clearInterval(interval);
         }
     }, [emotionText]);
+
+    // Animated dots for loading text
+    const isAnalyzing = emotionText?.includes("being analyzed") || emotionText?.includes("getting ready");
+    useEffect(() => {
+        if (!isAnalyzing) return;
+        const dotsInterval = setInterval(() => {
+            setAnimatedDots(prev => prev.length >= 3 ? "." : prev + ".");
+        }, 500);
+        return () => clearInterval(dotsInterval);
+    }, [isAnalyzing]);
 
     // Check screen size
     useEffect(() => {
@@ -955,7 +966,13 @@ export default function DashboardPage() {
                     {TIME_RANGE_SUBTITLES[timeRange]}, <span className="font-bold">{data.user}</span>!
                 </p>
                 <p className="emotion-recap mt-4">
-                    <span dangerouslySetInnerHTML={{ __html: typedHtml }} />
+                    {isAnalyzing ? (
+                        <span className="animate-pulse text-[#B3B3B3]">
+                            Your music vibe is being analyzed{animatedDots}
+                        </span>
+                    ) : (
+                        <span dangerouslySetInnerHTML={{ __html: typedHtml }} />
+                    )}
                 </p>
             </motion.header>
 
@@ -1054,7 +1071,12 @@ export default function DashboardPage() {
                 {/* Top Artists Section */}
                 {
                     (!isMobile || currentCategory === "artists") && (
-                        <section className="section-card hover:-translate-y-0.5">
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0 }}
+                            className="section-card hover:-translate-y-0.5"
+                        >
                             <h2>Top Artists</h2>
                             <ol className="list-none p-0 m-0">
                                 {data.artists.slice(0, showTop20 ? 20 : 10).map((artist, idx) => (
@@ -1083,14 +1105,19 @@ export default function DashboardPage() {
                                     </motion.li>
                                 ))}
                             </ol>
-                        </section>
+                        </motion.section>
                     )
                 }
 
                 {/* Top Tracks Section */}
                 {
                     (!isMobile || currentCategory === "tracks") && (
-                        <section className="section-card hover:-translate-y-0.5">
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.1 }}
+                            className="section-card hover:-translate-y-0.5"
+                        >
                             <h2>Top Tracks</h2>
                             <ol className="list-none p-0 m-0">
                                 {data.tracks.slice(0, showTop20 ? 20 : 10).map((track, idx) => (
@@ -1261,14 +1288,19 @@ export default function DashboardPage() {
                                     </motion.li>
                                 ))}
                             </ol>
-                        </section>
+                        </motion.section>
                     )
                 }
 
                 {/* Top Genres Section */}
                 {
                     (!isMobile || currentCategory === "genres") && (
-                        <section className="section-card overflow-visible hover:-translate-y-0.5">
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.2 }}
+                            className="section-card overflow-visible hover:-translate-y-0.5"
+                        >
                             <h2>Top Genres</h2>
 
                             {chartData.length > 0 && (
@@ -1304,7 +1336,7 @@ export default function DashboardPage() {
                                     </motion.li>
                                 ))}
                             </ol>
-                        </section>
+                        </motion.section>
                     )
                 }
             </div >

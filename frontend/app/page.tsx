@@ -5,8 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { TechStackMarquee, TECH_STACK, TechIcon } from "@/components/tech-stack-marquee";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const paragraphRef = useRef<HTMLParagraphElement>(null);
   const hasTyped = useRef(false);
@@ -22,6 +24,23 @@ export default function HomePage() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Handle SPA navigation for typewriter links
+  useEffect(() => {
+    const handleLinkClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'A' && target.getAttribute('href')?.startsWith('/')) {
+        e.preventDefault();
+        router.push(target.getAttribute('href')!);
+      }
+    };
+
+    const el = paragraphRef.current;
+    if (el) {
+      el.addEventListener('click', handleLinkClick);
+      return () => el.removeEventListener('click', handleLinkClick);
+    }
+  }, [router]);
 
   // No rotation effect for logo anymore
 
@@ -164,7 +183,7 @@ export default function HomePage() {
             Login with Spotify
           </span>
           <svg
-            className={`absolute top-1/2 left-1/2 -ml-[9px] -mt-[9px] w-[18px] h-[18px] transition-opacity duration-200 spinner-svg ${isLoading ? "opacity-100" : "opacity-0"
+            className={`absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 transition-opacity duration-200 spinner-svg ${isLoading ? "opacity-100" : "opacity-0"
               }`}
             style={{ position: 'absolute' }}
             viewBox="0 0 50 50"

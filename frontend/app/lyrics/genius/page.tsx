@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import MarqueeText from "@/components/marquee-text";
+import { useRouter } from "next/navigation";
 
 interface Artist {
     id: string;
@@ -32,6 +33,7 @@ interface AnalysisResult {
 }
 
 export default function GeniusPage() {
+    const router = useRouter();
     const [query, setQuery] = useState("");
     const [suggestions, setSuggestions] = useState<Artist[]>([]);
     const [artists, setArtists] = useState<Artist[]>([]);
@@ -51,6 +53,23 @@ export default function GeniusPage() {
     const subtitleRef = useRef<HTMLParagraphElement>(null);
     const hasTyped = useRef(false);
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+    // Handle SPA navigation for typewriter links
+    useEffect(() => {
+        const handleLinkClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'A' && target.getAttribute('href')?.startsWith('/')) {
+                e.preventDefault();
+                router.push(target.getAttribute('href')!);
+            }
+        };
+
+        const el = subtitleRef.current;
+        if (el) {
+            el.addEventListener('click', handleLinkClick);
+            return () => el.removeEventListener('click', handleLinkClick);
+        }
+    }, [router]);
 
     useEffect(() => {
         if (hasTyped.current || !subtitleRef.current) return;
@@ -99,7 +118,10 @@ export default function GeniusPage() {
     };
 
     const handleSearch = async () => {
-        if (!query.trim()) return;
+        if (!query.trim()) {
+            dispatchError("Please enter an artist name first!");
+            return;
+        }
         setLoadingState("search");
         setArtists([]);
         setSongs([]);
@@ -257,14 +279,19 @@ export default function GeniusPage() {
                         onClick={selectedArtist ? handleClearSearch : handleSearch}
                         onMouseMove={handleMouseMoveOrTouch}
                         onTouchMove={handleMouseMoveOrTouch}
-                        className={`w-full group mb-0 min-h-[46px] ${selectedArtist ? "btn-glass-red" : "btn-glass"}`}
+                        disabled={loadingState === "search"}
+                        className={`w-full group mb-0 min-h-[46px] ${loadingState === "search" ? "pointer-events-none" : ""} ${selectedArtist ? "btn-glass-red" : "btn-glass"}`}
                     >
                         <span className={`relative -top-px transition-opacity duration-200 ${loadingState === "search" ? "opacity-0" : "opacity-100"}`}>
                             {selectedArtist ? "Clear Search" : "Search Artist"}
                         </span>
                         {loadingState === "search" && (
-                            <svg className="absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 spinner-svg" viewBox="0 0 50 50">
-                                <circle className="spinner-path stroke-[#1DB954]!" cx="25" cy="25" r="20" fill="none" />
+                            <svg 
+                                className="absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 spinner-svg" 
+                                style={{ position: 'absolute' }}
+                                viewBox="0 0 50 50"
+                            >
+                                <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
                             </svg>
                         )}
                     </button>
@@ -301,7 +328,7 @@ export default function GeniusPage() {
                     {loadingState === "songs" && (
                         <div className="flex flex-col items-center justify-center text-[#1DB954] py-6 gap-3 mt-4 border-t border-neutral-200 dark:border-white/10">
                             <svg className="spinner-svg w-8 h-8" viewBox="0 0 50 50">
-                                <circle className="spinner-path stroke-[#1DB954]!" cx="25" cy="25" r="20" fill="none" />
+                                <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
                             </svg>
                             <span>Loading Songs...</span>
                         </div>
@@ -350,7 +377,7 @@ export default function GeniusPage() {
                     {loadingState === "analyze" && (
                         <div className="flex flex-col items-center justify-center text-[#1DB954] py-6 gap-3 mt-6 border-t border-dashed border-neutral-300 dark:border-[#333]">
                             <svg className="spinner-svg w-8 h-8" viewBox="0 0 50 50">
-                                <circle className="spinner-path stroke-[#1DB954]!" cx="25" cy="25" r="20" fill="none" />
+                                <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
                             </svg>
                             <span>Analyzing...</span>
                         </div>
