@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 export default function LyricsPage() {
+    const router = useRouter();
     const [lyrics, setLyrics] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<{ emotions: { label: string; score: number }[] } | null>(null);
@@ -17,6 +19,23 @@ export default function LyricsPage() {
 
     const subtitleRef = useRef<HTMLParagraphElement>(null);
     const hasTyped = useRef(false);
+
+    // Handle SPA navigation for typewriter links
+    useEffect(() => {
+        const handleLinkClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'A' && target.getAttribute('href')?.startsWith('/')) {
+                e.preventDefault();
+                router.push(target.getAttribute('href')!);
+            }
+        };
+
+        const el = subtitleRef.current;
+        if (el) {
+            el.addEventListener('click', handleLinkClick);
+            return () => el.removeEventListener('click', handleLinkClick);
+        }
+    }, [router]);
 
     useEffect(() => {
         if (hasTyped.current || !subtitleRef.current) return;
@@ -159,7 +178,8 @@ export default function LyricsPage() {
                                 Analyze Emotions
                             </span>
                             <svg
-                                className={`absolute top-1/2 left-1/2 -ml-2.5 -mt-2.5 w-5 h-5 transition-opacity duration-200 spinner-svg ${isLoading ? "opacity-100" : "opacity-0"}`}
+                                className={`absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 transition-opacity duration-200 spinner-svg ${isLoading ? "opacity-100" : "opacity-0"}`}
+                                style={{ position: 'absolute' }}
                                 viewBox="0 0 50 50"
                             >
                                 <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
