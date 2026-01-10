@@ -209,7 +209,7 @@ export default function TechHover({
                         left: coords.left,
                         zIndex: 9999,
                     }}
-                    className="mb-2 w-fit min-w-[240px] max-w-md pointer-events-auto"
+                    className="mb-2 w-fit min-w-[200px] max-w-[calc(100vw-2rem)] md:max-w-md pointer-events-auto"
                     onMouseEnter={() => handleInteraction(true)}
                     onMouseLeave={() => handleInteraction(false)}
                 >
@@ -236,7 +236,7 @@ export default function TechHover({
                                         </div>
                                     )}
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-sm text-neutral-900 dark:text-white mb-0.5 whitespace-nowrap">
+                                        <h4 className="font-bold text-sm text-neutral-900 dark:text-white mb-0.5 whitespace-normal md:whitespace-nowrap">
                                             {text}
                                         </h4>
                                         <p className="text-xs text-neutral-600 dark:text-neutral-300 leading-snug whitespace-normal w-0 min-w-full">
