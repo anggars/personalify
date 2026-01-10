@@ -85,6 +85,17 @@ export default function TechHover({
         if (containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
             const screenWidth = window.innerWidth;
+
+            // Mobile: Always center on screen (to avoid edge cutoff)
+            if (window.innerWidth < 768) {
+                setCoords({
+                    top: rect.top,
+                    left: screenWidth / 2,
+                    alignment: "center",
+                });
+                return;
+            }
+
             const threshold = 150;
 
             let align: "left" | "right" | "center" = "center";
@@ -236,7 +247,7 @@ export default function TechHover({
                                         </div>
                                     )}
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-sm text-neutral-900 dark:text-white mb-0.5 whitespace-normal md:whitespace-nowrap">
+                                        <h4 className="font-bold text-sm text-neutral-900 dark:text-white mb-0.5 whitespace-nowrap">
                                             {text}
                                         </h4>
                                         <p className="text-xs text-neutral-600 dark:text-neutral-300 leading-snug whitespace-normal w-0 min-w-full">

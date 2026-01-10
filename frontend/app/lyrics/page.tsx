@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { staggerContainer, fadeUp, scalePop, cardReveal, staggerContainerFast, listItem } from "@/lib/animations";
 
 export default function LyricsPage() {
     const router = useRouter();
@@ -129,11 +130,15 @@ export default function LyricsPage() {
     const isEmpty = !result && !isLoading;
 
     return (
-        <div className="page-container flex flex-col w-full max-w-3xl mx-auto flex-1">
+        <motion.div 
+            className="page-container flex flex-col w-full max-w-3xl mx-auto flex-1"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="show"
+        >
             {/* Header */}
             <motion.header
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                variants={fadeUp}
                 className="text-center mt-2 mb-4 flex-none px-4"
             >
                 <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
@@ -148,10 +153,9 @@ export default function LyricsPage() {
             {/* Content - always centered */}
             <div className="flex flex-col w-full flex-1 justify-center">
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="w-full glass-card rounded-2xl p-5 md:p-6 hover:-translate-y-1 transition-transform duration-300"
+                    variants={cardReveal}
+                    className="w-full glass-card rounded-2xl p-5 md:p-6"
+                    whileHover={{ y: -4, transition: { type: "spring", stiffness: 400, damping: 17 } }}
                 >
                     <form onSubmit={handleAnalyze} className="flex flex-col gap-6">
                         <textarea
@@ -190,16 +194,18 @@ export default function LyricsPage() {
                     {/* Results */}
                     {(result || isLoading) && (
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 24 }}
                             className="mt-6"
                         >
-
-
-
-
                             {result && result.emotions && (
-                                <div className="flex flex-col gap-4">
+                                <motion.div 
+                                    className="flex flex-col gap-4"
+                                    variants={staggerContainerFast}
+                                    initial="hidden"
+                                    animate="show"
+                                >
                                     {result.emotions.length === 0 ? (
                                         <p className="text-center text-neutral-400">Could not find significant emotions.</p>
                                     ) : (
@@ -212,26 +218,36 @@ export default function LyricsPage() {
                                                 const widthPercent = ((e.score / maxScore) * 100).toFixed(1);
 
                                                 return (
-                                                    <div key={idx} className="flex items-center gap-2 w-full">
+                                                    <motion.div 
+                                                        key={idx} 
+                                                        className="flex items-center gap-2 w-full"
+                                                        variants={listItem}
+                                                    >
                                                         <span className="font-bold text-neutral-800 dark:text-white capitalize text-sm whitespace-nowrap min-w-fit">
                                                             {e.label}
                                                         </span>
                                                         <div className="emotion-bar-bg flex-1">
-                                                            <div className="emotion-bar" style={{ width: `${widthPercent}%` }} />
+                                                            <motion.div 
+                                                                className="emotion-bar" 
+                                                                initial={{ scaleX: 0 }}
+                                                                animate={{ scaleX: 1 }}
+                                                                transition={{ type: "spring", stiffness: 100, damping: 15, delay: idx * 0.05 }}
+                                                                style={{ width: `${widthPercent}%`, transformOrigin: 'left' }} 
+                                                            />
                                                         </div>
                                                         <span className="w-10 text-right text-neutral-500 dark:text-[#b3b3b3] text-sm font-medium">
                                                             {percent}%
                                                         </span>
-                                                    </div>
+                                                    </motion.div>
                                                 );
                                             })
                                     )}
-                                </div>
+                                </motion.div>
                             )}
                         </motion.div>
                     )}
                 </motion.div>
             </div>
-        </div>
+        </motion.div>
     );
 }

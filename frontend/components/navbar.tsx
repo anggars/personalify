@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,6 +30,30 @@ export const Navbar = () => {
     const [mobileDropdownOpen, setMobileDropdownOpen] = useState<string | null>(null);
     const [desktopDropdownOpen, setDesktopDropdownOpen] = useState<string | null>(null);
     const [spotifyId, setSpotifyId] = useState<string | null>(null);
+    const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
+    const dropdownTriggerRef = useRef<HTMLButtonElement>(null);
+    const [isMounted, setIsMounted] = useState(false);
+
+    // Mount check for portal
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // Update dropdown position when opened
+    useEffect(() => {
+        if (desktopDropdownOpen && dropdownTriggerRef.current) {
+            const rect = dropdownTriggerRef.current.getBoundingClientRect();
+            setDropdownPosition({
+                top: rect.bottom + 16,
+                left: rect.left + rect.width / 2
+            });
+        }
+    }, [desktopDropdownOpen]);
+
+    // Close dropdown when scroll state changes (sticky <-> floating)
+    useEffect(() => {
+        setDesktopDropdownOpen(null);
+    }, [isScrolled]);
 
     // Notification State
     const [notification, setNotification] = useState<NotificationData | null>(null);
@@ -239,7 +264,23 @@ export const Navbar = () => {
                                     return (
                                         <div key={link.name} className="relative group">
                                             <button
+                                                ref={dropdownTriggerRef}
                                                 onClick={() => setDesktopDropdownOpen(desktopDropdownOpen === link.name ? null : link.name)}
+                                                onMouseEnter={() => {
+                                                    if (dropdownTriggerRef.current) {
+                                                        const rect = dropdownTriggerRef.current.getBoundingClientRect();
+                                                        setDropdownPosition({ top: rect.bottom + 12, left: rect.left + rect.width / 2 });
+                                                    }
+                                                    setDesktopDropdownOpen(link.name);
+                                                }}
+                                                onMouseLeave={() => {
+                                                    setTimeout(() => {
+                                                        const dropdown = document.getElementById('navbar-dropdown-portal');
+                                                        if (dropdown && !dropdown.matches(':hover')) {
+                                                            setDesktopDropdownOpen(null);
+                                                        }
+                                                    }, 100);
+                                                }}
                                                 className={cn("flex items-center gap-1 text-sm transition-colors px-3 py-2 rounded-md relative whitespace-nowrap", textClass)}
                                             >
                                                 <span className="relative flex flex-col items-center justify-center">
@@ -252,29 +293,35 @@ export const Navbar = () => {
                                                 )}
                                             </button>
 
-                                            <div className={cn(
-                                                "absolute top-full left-1/2 -translate-x-1/2 pt-4 transition-all duration-200 transform origin-top",
-                                                desktopDropdownOpen === link.name
-                                                    ? "opacity-100 visible translate-y-0"
-                                                    : "opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-2 group-hover:translate-y-0"
-                                            )}>
-                                                <div className="bg-white/90 dark:bg-[#1e1e1e]/95 border border-black/10 dark:border-white/10 rounded-xl p-1 min-w-[140px] shadow-2xl flex flex-col overflow-hidden backdrop-blur-xl">
-                                                    {link.children.map((child) => (
-                                                        <Link
-                                                            key={child.name}
-                                                            href={child.href}
-                                                            className={cn(
-                                                                "px-3 py-1.5 text-sm rounded-lg transition-colors text-left whitespace-nowrap",
-                                                                pathname === child.href
-                                                                    ? "text-[#1DB954] bg-black/5 dark:bg-white/5 font-semibold"
-                                                                    : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
-                                                            )}
-                                                        >
-                                                            {child.name}
-                                                        </Link>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                            {/* Portal dropdown to body for proper backdrop-filter */}
+                                            {isMounted && desktopDropdownOpen === link.name && dropdownPosition && createPortal(
+                                                <div
+                                                    id="navbar-dropdown-portal"
+                                                    className="fixed z-[10000] transition-all duration-200 ease-out"
+                                                    style={{ top: dropdownPosition.top, left: dropdownPosition.left, transform: 'translateX(-50%)' }}
+                                                    onMouseEnter={() => setDesktopDropdownOpen(link.name)}
+                                                    onMouseLeave={() => setDesktopDropdownOpen(null)}
+                                                >
+                                                    <div className="bg-white/25 dark:bg-[#1e1e1e]/25 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-xl p-1.5 min-w-[140px] flex flex-col gap-0.5 overflow-hidden navbar-floating-glass">
+                                                        {link.children.map((child) => (
+                                                            <Link
+                                                                key={child.name}
+                                                                href={child.href}
+                                                                onClick={() => setDesktopDropdownOpen(null)}
+                                                                className={cn(
+                                                                    "px-3 py-2 text-sm rounded-lg transition-all duration-200 text-center whitespace-nowrap font-medium",
+                                                                    pathname === child.href
+                                                                        ? "text-[#1DB954] bg-[#1DB954]/10 font-semibold"
+                                                                        : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                                                                )}
+                                                            >
+                                                                {child.name}
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                </div>,
+                                                document.body
+                                            )}
                                         </div>
                                     );
                                 }

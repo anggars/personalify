@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import MarqueeText from "@/components/marquee-text";
 import { useRouter } from "next/navigation";
+import { staggerContainer, fadeUp, cardReveal, staggerContainerFast, listItem } from "@/lib/animations";
 
 interface Artist {
     id: string;
@@ -239,11 +240,15 @@ export default function GeniusPage() {
     const isEmpty = !selectedArtist && artists.length === 0 && !loadingState;
 
     return (
-        <div className="page-container flex flex-col w-full max-w-3xl mx-auto flex-1">
+        <motion.div 
+            className="page-container flex flex-col w-full max-w-3xl mx-auto flex-1"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="show"
+        >
             {/* Header */}
             <motion.header
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                variants={fadeUp}
                 className="text-center mt-2 mb-4 flex-none px-4"
             >
                 <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
@@ -258,10 +263,9 @@ export default function GeniusPage() {
             {/* Content - always centered */}
             <div className="flex flex-col w-full flex-1 justify-center">
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="w-full glass-card rounded-2xl p-5 md:p-6 hover:-translate-y-1 transition-transform duration-300"
+                    variants={cardReveal}
+                    className="w-full glass-card rounded-2xl p-5 md:p-6"
+                    whileHover={{ y: -4, transition: { type: "spring", stiffness: 400, damping: 17 } }}
                 >
                     <div className="relative mb-6">
                         <input
@@ -406,32 +410,47 @@ export default function GeniusPage() {
                                     <h3 className="text-center text-[#1DB954] font-bold text-lg mb-4 border-t border-neutral-300 dark:border-[#333] pt-4">
                                         Emotion Results:
                                     </h3>
-                                    <div className="flex flex-col gap-4">
+                                    <motion.div 
+                                        className="flex flex-col gap-4"
+                                        variants={staggerContainerFast}
+                                        initial="hidden"
+                                        animate="show"
+                                    >
                                         {analysis.emotion_analysis.emotions.slice(0, 5).map((e, idx) => {
                                             const maxScore = Math.max(...analysis.emotion_analysis!.emotions.map((em) => em.score));
                                             const percent = (e.score * 100).toFixed(1);
                                             const widthPercent = ((e.score / maxScore) * 100).toFixed(1);
                                             return (
-                                                <div key={idx} className="flex items-center gap-2 w-full">
+                                                <motion.div 
+                                                    key={idx} 
+                                                    className="flex items-center gap-2 w-full"
+                                                    variants={listItem}
+                                                >
                                                     <span className="font-bold text-neutral-800 dark:text-white capitalize text-sm whitespace-nowrap min-w-fit">
                                                         {e.label}
                                                     </span>
                                                     <div className="emotion-bar-bg flex-1">
-                                                        <div className="emotion-bar" style={{ width: `${widthPercent}%` }} />
+                                                        <motion.div 
+                                                            className="emotion-bar" 
+                                                            initial={{ scaleX: 0 }}
+                                                            animate={{ scaleX: 1 }}
+                                                            transition={{ type: "spring", stiffness: 100, damping: 15, delay: idx * 0.05 }}
+                                                            style={{ width: `${widthPercent}%`, transformOrigin: 'left' }} 
+                                                        />
                                                     </div>
                                                     <span className="w-10 text-right text-neutral-500 dark:text-[#b3b3b3] text-sm font-medium">
                                                         {percent}%
                                                     </span>
-                                                </div>
+                                                </motion.div>
                                             );
                                         })}
-                                    </div>
+                                    </motion.div>
                                 </div>
                             )}
                         </div>
                     )}
                 </motion.div>
             </div>
-        </div>
+        </motion.div>
     );
 }

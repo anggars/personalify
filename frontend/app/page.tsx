@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { TechStackMarquee, TECH_STACK, TechIcon } from "@/components/tech-stack-marquee";
 import { useRouter } from "next/navigation";
+import { staggerContainer, fadeUp, scalePop, hoverScale, tapScale } from "@/lib/animations";
 
 export default function HomePage() {
   const router = useRouter();
@@ -42,14 +43,11 @@ export default function HomePage() {
     }
   }, [router]);
 
-  // No rotation effect for logo anymore
-
   // Typewriter effect for paragraph
   useEffect(() => {
     if (hasTyped.current || !paragraphRef.current) return;
     hasTyped.current = true;
 
-    // Use <br class="md:hidden"/> to force 3 lines on mobile only
     const text = `Discover your most played artists, tracks, and genres through <br class="md:hidden"/>Spotify insights. Go beyond the sound and <a href="/lyrics" class="text-[#888] hover:text-[#1DB954] transition-colors">analyze the emotion <br class="md:hidden"/>hidden in the lyrics</a>. Let's explore your unique taste in music.`;
 
     let index = 0;
@@ -110,14 +108,16 @@ export default function HomePage() {
   };
 
   return (
-    <div className="page-container flex flex-col items-center justify-center flex-1 text-center">
-
+    <motion.div 
+      className="page-container flex flex-col items-center justify-center flex-1 text-center"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="show"
+    >
 
       {/* Logo */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
+        variants={fadeUp}
         className="relative mb-5 flex justify-center"
       >
         <motion.div
@@ -129,6 +129,8 @@ export default function HomePage() {
           onMouseEnter={() => !isMobileRef.current && setIsTechStackVisible(true)}
           onMouseLeave={() => !isMobileRef.current && setIsTechStackVisible(false)}
           onClick={() => isMobileRef.current && setIsTechStackVisible(!isTechStackVisible)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.98 }}
         >
           <div className={`absolute inset-0 transition-opacity duration-300 ${isTechStackVisible ? "opacity-100" : "opacity-0"}`}>
             <TechStackMarquee isVisible={isTechStackVisible} />
@@ -148,33 +150,33 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
+        variants={fadeUp}
         className="max-w-[600px]"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4">
+        <motion.h1 
+          className="text-4xl md:text-5xl font-extrabold text-foreground mb-4"
+          variants={fadeUp}
+        >
           Welcome to <span className="text">Personalify</span>!
-        </h1>
+        </motion.h1>
 
         <p
           ref={paragraphRef}
-          className="text-[2.8vw] md:text-xl text-muted-foreground font-medium leading-relaxed mb-8 tracking-tight"
+          className="text-[2.8vw] md:text-xl text-muted-foreground font-medium leading-relaxed mb-6 tracking-tight"
         />
       </motion.div>
 
       {/* Login Button */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-      >
-        <a
+      <motion.div variants={scalePop}>
+        <motion.a
           href="/login"
           onClick={handleLoginClick}
           onMouseMove={handleMouseMoveOrTouch}
           onTouchMove={handleMouseMoveOrTouch}
           className={`btn-glass group rounded-2xl ${isLoading ? "pointer-events-none" : ""}`}
+          whileHover={{ scale: 1.03, y: -2 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
           <span
             className={`transition-opacity duration-200 ${isLoading ? "opacity-0" : "opacity-100"
@@ -190,8 +192,8 @@ export default function HomePage() {
           >
             <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
           </svg>
-        </a>
+        </motion.a>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
