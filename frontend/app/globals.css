@@ -136,27 +136,27 @@
 
   header.hero h1,
   header h1 {
-    font-size: 1.75rem !important;
+    font-size: 2rem !important;
     margin-top: 1.25rem !important;
     margin-bottom: 0.5rem;
   }
 
   header.hero p,
   header p {
-    font-size: 0.9rem !important;
+    font-size: 0.95rem !important;
     margin-bottom: 0.5rem;
   }
 
   /* Dashboard mobile header styling */
   .dashboard-header h1 {
-    font-size: 2rem !important;
+    font-size: 2.15rem !important;
     margin-top: 30px !important;
     margin-bottom: 0.5rem;
   }
 
   .dashboard-header .subtitle,
   .dashboard-header p:not(.emotion-recap) {
-    font-size: 1rem !important;
+    font-size: 0.95rem !important;
     margin-top: 0;
     margin-bottom: 0.5rem;
   }

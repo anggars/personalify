@@ -280,7 +280,7 @@ export default function AboutPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className={`text-center mb-4 transition-all duration-300 ${
-          hasNotification ? "mt-8 md:mt-2" : "mt-2"
+          hasNotification ? "mt-8 md:mt-2" : "mt-1"
         }`}
       >
         <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">

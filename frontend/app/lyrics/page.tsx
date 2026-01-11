@@ -139,7 +139,7 @@ export default function LyricsPage() {
             {/* Header */}
             <motion.header
                 variants={fadeUp}
-                className="text-center mt-2 mb-4 flex-none px-4"
+                className="text-center mt-1 mb-4 flex-none px-4"
             >
                 <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
                     Lyrics Analyzer
