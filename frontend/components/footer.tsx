@@ -157,7 +157,7 @@ export function Footer() {
                 <p>
                     Created by{" "}
                     <a
-                        href="https://desty.page/anggars"
+                        href="https://aritsu.vercel.app"
                         target="_blank"
                         className="hover:text-[#1DB954] active:text-[#1DB954] transition-colors"
                     >
