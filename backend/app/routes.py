@@ -29,9 +29,17 @@ router = APIRouter()
 
 def get_redirect_uri(request: Request):
     host = str(request.headers.get("x-forwarded-host", request.headers.get("host", "")))
+    
+    # Vercel production
     if "vercel.app" in host:
         return os.getenv("SPOTIFY_REDIRECT_URI_VERCEL", "https://personalify.vercel.app/callback")
+    # Local development - use actual host (works with localhost, WiFi IP, etc)
+    elif host:
+        # Build callback URL using actual request host
+        scheme = "https" if "vercel.app" in host or request.url.scheme == "https" else "http"
+        return f"{scheme}://{host}/callback"
     else:
+        # Ultimate fallback
         return os.getenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8000/callback")
 
 @router.get("/", tags=["Root"])
@@ -42,6 +50,11 @@ def root():
 def login(request: Request):
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     redirect_uri = get_redirect_uri(request)
+    
+    # DEBUG: Print exact redirect_uri
+    print(f"DEBUG Login - Redirect URI: {redirect_uri}")
+    print(f"DEBUG Login - Request Host: {request.headers.get('host', 'N/A')}")
+    
     scope = "user-top-read"
     if not client_id or not redirect_uri:
         raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
@@ -151,18 +164,35 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         save_user_sync(spotify_id, time_range, result)
 
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+    user_agent = request.headers.get("user-agent", "").lower()
     
-    # For local development, redirect to Next.js frontend on port 3000
-    if "127.0.0.1" in original_host or "localhost" in original_host:
-        frontend_url = "http://localhost:3000"
+    # DEBUG: Print User-Agent
+    print(f"DEBUG OAuth Callback - User-Agent: {user_agent}")
+    print(f"DEBUG OAuth Callback - Contains 'flutter': {'flutter' in user_agent}")
+    print(f"DEBUG OAuth Callback - Contains 'dart': {'dart' in user_agent}")
+    
+    # Check if request is from Flutter mobile app
+    if "flutter" in user_agent or "dart" in user_agent:
+        # Mobile app - redirect to deep link (no cookies needed for mobile)
+        log_system("AUTH", f"Mobile User Login Success: {display_name}", "FLUTTER")
+        response = RedirectResponse(
+            url=f"personalify://callback?spotify_id={spotify_id}",
+            status_code=303
+        )
+        return response
     else:
-        # Production (Vercel) - use the same host
-        frontend_url = f"{request.url.scheme}://{original_host}"
-    
-    log_system("AUTH", f"User Login Success: {display_name}", "SPOTIFY")
-    response = RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
-    response.set_cookie(key="spotify_id", value=spotify_id, httponly=True)
-    return response
+        # Web app - existing flow
+        # For local development, redirect to Next.js frontend on port 3000
+        if "127.0.0.1" in original_host or "localhost" in original_host:
+            frontend_url = "http://localhost:3000"
+        else:
+            # Production (Vercel) - use the same host
+            frontend_url = f"{request.url.scheme}://{original_host}"
+        
+        log_system("AUTH", f"User Login Success: {display_name}", "SPOTIFY")
+        response = RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
+        response.set_cookie(key="spotify_id", value=spotify_id, httponly=True)
+        return response
 
 @router.post("/analyze-emotions-background", tags=["Background"])
 async def analyze_emotions_background(
