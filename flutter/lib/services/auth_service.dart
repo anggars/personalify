@@ -11,8 +11,9 @@ class AuthService {
   /// Listens for callback on personalify://callback
   Future<Map<String, String>?> loginWithSpotify() async {
     try {
-      // Construct login URL - backend will redirect to Spotify
-      final loginUrl = '${AppConstants.baseUrl}${AppConstants.loginEndpoint}';
+      // Construct login URL - add mobile=true so backend knows it's from mobile app
+      // (User-Agent detection doesn't work because this opens external browser)
+      final loginUrl = '${AppConstants.baseUrl}${AppConstants.loginEndpoint}?mobile=true';
 
       print('FLUTTER AUTH: Initiating login to $loginUrl');
 

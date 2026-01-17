@@ -47,20 +47,26 @@ def root():
     return {"status": "ok", "message": "Personalify Backend API"}
 
 @router.get("/login", tags=["Auth"])
-def login(request: Request):
+def login(request: Request, mobile: str = Query(None)):
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     redirect_uri = get_redirect_uri(request)
     
     # DEBUG: Print exact redirect_uri
     print(f"DEBUG Login - Redirect URI: {redirect_uri}")
     print(f"DEBUG Login - Request Host: {request.headers.get('host', 'N/A')}")
+    print(f"DEBUG Login - Mobile param: {mobile}")
     
     scope = "user-top-read"
     if not client_id or not redirect_uri:
         raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
+    
+    # Pass mobile param through state parameter
+    state = f"mobile={mobile}" if mobile else ""
+    
     query_params = urlencode({
         "response_type": "code", "client_id": client_id,
-        "redirect_uri": redirect_uri, "scope": scope
+        "redirect_uri": redirect_uri, "scope": scope,
+        "state": state
     })
     return RedirectResponse(url=f"https://accounts.spotify.com/authorize?{query_params}")
 
@@ -75,7 +81,7 @@ async def logout(request: Request):
     return response
 
 @router.get("/callback", tags=["Auth"])
-def callback(request: Request, code: str = Query(..., description="Spotify Authorization Code")):
+def callback(request: Request, code: str = Query(..., description="Spotify Authorization Code"), state: str = Query(None)):
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
     redirect_uri = get_redirect_uri(request)
@@ -164,15 +170,14 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         save_user_sync(spotify_id, time_range, result)
 
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-    user_agent = request.headers.get("user-agent", "").lower()
     
-    # DEBUG: Print User-Agent
-    print(f"DEBUG OAuth Callback - User-Agent: {user_agent}")
-    print(f"DEBUG OAuth Callback - Contains 'flutter': {'flutter' in user_agent}")
-    print(f"DEBUG OAuth Callback - Contains 'dart': {'dart' in user_agent}")
+    # Check if request is from mobile app via state parameter
+    # State format: "mobile=true"
+    is_mobile = state and "mobile=true" in state
     
-    # Check if request is from Flutter mobile app
-    if "flutter" in user_agent or "dart" in user_agent:
+    print(f"DEBUG Callback - State: {state}, is_mobile: {is_mobile}")
+    
+    if is_mobile:
         # Mobile app - redirect to deep link (no cookies needed for mobile)
         log_system("AUTH", f"Mobile User Login Success: {display_name}", "FLUTTER")
         response = RedirectResponse(
