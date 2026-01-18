@@ -53,42 +53,12 @@ class ApiService {
   }
 
   /// Get user profile and dashboard data
-  /// Endpoint: GET /api/dashboard/{spotifyId}?time_range={timeRange}
+  /// Backend doesn't have /top-data endpoint, so we directly sync
   Future<UserProfile?> getUserProfile(String spotifyId,
       {String timeRange = 'short_term'}) async {
-    try {
-      print('API: Fetching dashboard for $spotifyId, timeRange: $timeRange');
-
-      print('API: Fetching dashboard for $spotifyId, timeRange: $timeRange');
-      
-      // 1. Try Fetching Cached Data
-      final response = await _dio.get(
-        '/top-data',
-        queryParameters: {
-          'spotify_id': spotifyId,
-          'time_range': timeRange
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = response.data as Map<String, dynamic>;
-        
-        // Check if data is valid (has 'user') or is an error message
-        if (data.containsKey('user')) {
-           print('API: Dashboard data received from cache');
-           return UserProfile.fromJson(data);
-        } else {
-           print('API: No cached data found ("${data['message']}"). Triggering SYNC...');
-           return await syncTopData(timeRange);
-        }
-      } 
-      return null;
-    } on DioException catch (e) {
-      print('API Error fetch: $e');
-      // If 404 or other error, try sync as fallback?
-      // Only if NO CACHE found.
-      return await syncTopData(timeRange);
-    }
+    print('API: Fetching profile for $spotifyId via sync endpoint');
+    // Backend doesn't have /top-data - directly call sync
+    return await syncTopData(timeRange);
   }
 
   /// Trigger massive data sync (scrapes Spotify and updates DB/Cache)
@@ -97,7 +67,14 @@ class ApiService {
       final token = await _authService.getAccessToken();
       if (token == null) throw Exception("No token for sync");
 
+      final requestUrl = '/sync/top-data?access_token=${token.substring(0, 20)}...&time_range=$timeRange';
+      print("========================================");
       print("API: Syncing data... (This may take 5-10 seconds)");
+      print("REQUEST URL: $requestUrl");
+      print("BASE URL: ${AppConstants.baseUrl}");
+      print("FULL URL: ${AppConstants.baseUrl}/sync/top-data");
+      print("========================================");
+      
       final response = await _dio.get(
         '/sync/top-data',
         queryParameters: {
@@ -109,12 +86,26 @@ class ApiService {
         )
       );
 
+      print("========================================");
+      print("RESPONSE STATUS: ${response.statusCode}");
+      print("RESPONSE DATA TYPE: ${response.data.runtimeType}");
+      print("========================================");
+
       if (response.statusCode == 200) {
         print("API: Sync Complete!");
         return UserProfile.fromJson(response.data as Map<String, dynamic>);
       }
     } catch (e) {
-      print("API: Sync Failed: $e");
+      print("========================================");
+      print("API: Sync Failed with exception:");
+      print("Error type: ${e.runtimeType}");
+      print("Error: $e");
+      if (e is DioException) {
+        print("Response status: ${e.response?.statusCode}");
+        print("Response data: ${e.response?.data}");
+        print("Request URL: ${e.requestOptions.uri}");
+      }
+      print("========================================");
     }
     return null;
   }

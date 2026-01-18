@@ -23,6 +23,10 @@
       "destination": "/api/index.py"
     },
     {
+      "source": "/sync/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
       "source": "/analyze-emotions-background",
       "destination": "/api/index.py"
     },
