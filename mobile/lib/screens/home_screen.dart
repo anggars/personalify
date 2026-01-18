@@ -270,43 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                    const SizedBox(height: 24), // Reduced bottom spacing
-                ],
-
-                // Top Genres
-                if (_userProfile != null && _userProfile!.genres.isNotEmpty) ...[
-                  Text(
-                    'Top Genres',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: kTextPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _userProfile!.genres.take(20).map((genre) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: kSurfaceColor,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: kBorderColor),
-                        ),
-                        child: Text(
-                          genre.name,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: kTextPrimary,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                 ],
 
               // 3. Feature Explanations
               Text(

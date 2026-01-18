@@ -14,6 +14,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:url_launcher/url_launcher.dart';
 
 /// --------------------------------------------------------------------------
 /// DashboardScreen: Final Polish v2
@@ -102,31 +103,66 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     );
 
     try {
+      print('========== SHARE DEBUG START ==========');
+      print('Step 1: Creating ScreenshotController');
       final ScreenshotController controller = ScreenshotController();
       
-      // Further reduce pixelRatio for better stability
+      print('Step 2: Building widget for tab $currentTab');
+      final widget = _buildShareableWidget(currentTab);
+      print('Widget built successfully');
+      
+      print('Step 3: Capturing widget as image (360x640, pixelRatio 1.0)');
       final Uint8List image = await controller.captureFromWidget(
-        _buildShareableWidget(currentTab),
-        delay: const Duration(seconds: 1), 
-        pixelRatio: 1.5, // Reduced from 2.0 for even better performance
-        targetSize: const Size(400, 711), 
+        widget,
+        delay: const Duration(milliseconds: 800),
+        pixelRatio: 1.0,
+        targetSize: const Size(360, 640),
       );
+      print('Image captured! Size: ${image.length} bytes');
 
+      print('Step 4: Getting app directory');
       final directory = await getApplicationDocumentsDirectory();
-      final imagePath = await File('${directory.path}/personalify_share.png').create();
+      print('Directory: ${directory.path}');
+      
+      print('Step 5: Creating file path');
+      final filePath = '${directory.path}/personalify_top10.png';
+      print('File path: $filePath');
+      
+      print('Step 6: Creating file');
+      final imagePath = await File(filePath).create();
+      print('File created at: ${imagePath.path}');
+      
+      print('Step 7: Writing bytes to file');
       await imagePath.writeAsBytes(image);
+      print('Bytes written successfully');
 
-      if (mounted) Navigator.pop(context); // Close loading
-
-      await Share.shareXFiles([XFile(imagePath.path)], text: 'Check out my Personalify vibe! 🎵');
-    } catch (e) {
-      print('SHARE ERROR: $e'); // Debug logging
       if (mounted) {
-        Navigator.pop(context); // Close loading
+        print('Step 8: Closing loading dialog');
+        Navigator.pop(context);
+      }
+
+      print('Step 9: Sharing file via Share.shareXFiles');
+      await Share.shareXFiles(
+        [XFile(imagePath.path)],
+        text: 'My Personalify Top 10 🎵',
+      );
+      print('Share completed successfully!');
+      print('========== SHARE DEBUG END ==========');
+    } catch (e, stackTrace) {
+      print('========== SHARE ERROR ==========');
+      print('Error type: ${e.runtimeType}');
+      print('Error message: $e');
+      print('Stack trace:');
+      print(stackTrace);
+      print('==================================');
+      
+      if (mounted) {
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to share. Please try again.'),
+            content: Text('Error: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -218,8 +254,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           const Divider(color: kBorderColor, height: 1),
           const SizedBox(height: 16),
 
-          // 3. CONTENT (Flexible)
-          Expanded(
+          // 3. CONTENT (Fixed height instead of Expanded)
+          SizedBox(
+            height: 480, // Fixed height for content area
             child: _buildShareContent(tabIndex),
           ),
           
@@ -535,8 +572,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     textAlign: TextAlign.center,
                   ),
                 ),
-                const SizedBox(width: 16),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: CachedNetworkImage(imageUrl: track.image, width: 56, height: 56, fit: BoxFit.cover),
@@ -658,8 +694,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     textAlign: TextAlign.center,
                   ),
                 ),
-                const SizedBox(width: 16),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8), 
                   child: CachedNetworkImage(imageUrl: artist.image, width: 56, height: 56, fit: BoxFit.cover),

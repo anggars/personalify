@@ -107,7 +107,7 @@ class AboutScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-              "Personalify starts as a final exam project but has grown into a passion project. We aim to provide deeper insights into your music taste with a beautiful, modern interface.\n\nBuilt with Flutter and Python (FastAPI), Personalify leverages the Spotify Web API to fetch your top tracks, artists, and genres. It then uses advanced NLP (Natural Language Processing) to analyze the emotional sentiment of your favorite lyrics, giving you a unique 'Vibe Check' that goes beyond just numbers.\n\nWhether you're curious about your listening habits or just want to share your music personality with friends, Personalify is here to help you understand the soundtrack of your life.",
+              "Personalify starts as a final exam project but has grown into a passion project. We aim to provide deeper insights into your music taste with a beautiful, modern interface.\n\nBuilt with Flutter and Python (FastAPI), Personalify leverages the Spotify Web API to fetch your top tracks, artists, and genres. It then uses advanced NLP (Natural Language Processing) to analyze the emotional sentiment of your favorite lyrics, giving you a unique 'Vibe Check' that goes beyond just numbers.",
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 color: kTextSecondary,
