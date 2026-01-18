@@ -36,9 +36,7 @@ def get_redirect_uri(request: Request):
     # Local development - use actual host (works with localhost, WiFi IP, etc)
     elif host:
         # Build callback URL using actual request host
-        # Fix: Check x-forwarded-proto for proper scheme detection behind proxies
-        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
-        scheme = "https" if "vercel.app" in host or proto == "https" else "http"
+        scheme = "https" if "vercel.app" in host or request.url.scheme == "https" else "http"
         return f"{scheme}://{host}/callback"
     else:
         # Ultimate fallback
@@ -63,8 +61,7 @@ def login(request: Request, mobile: str = Query(None)):
         raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
     
     # Pass mobile param through state parameter
-    # Ensure state is URL-safe and clearly indicates mobile
-    state = "mobile=true" if mobile and mobile.lower() == "true" else "web"
+    state = f"mobile={mobile}" if mobile else ""
     
     query_params = urlencode({
         "response_type": "code", "client_id": client_id,
@@ -109,17 +106,43 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     user_profile = user_res.json()
     spotify_id = user_profile["id"]
     display_name = user_profile.get("display_name", "Unknown")
-    # FIX: Get User Image
-    user_image = user_profile["images"][0]["url"] if user_profile.get("images") else None
-    save_user(spotify_id, display_name) # TODO: Update DB schema later if needed
+    save_user(spotify_id, display_name)
 
     time_ranges = ["short_term", "medium_term", "long_term"]
     for time_range in time_ranges:
-        # ... (lines 113-144) ...
+        artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
+        artists = artist_resp.json().get("items", [])
+        track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20", headers=headers)
+        tracks = track_resp.json().get("items", [])
 
-        # FIX: Include image in result
-        result = {"user": display_name, "image": user_image, "artists": [], "tracks": []}
+        artists_to_save = []
+        artist_ids = []
+        for artist in artists:
+            artist_ids.append(artist["id"])
+            artists_to_save.append((
+                artist["id"],
+                artist["name"],
+                artist["popularity"],
+                artist["images"][0]["url"] if artist.get("images") else None
+            ))
 
+        tracks_to_save = []
+        track_ids = []
+        for track in tracks:
+            track_ids.append(track["id"])
+            tracks_to_save.append((
+                track["id"],
+                track["name"],
+                track["popularity"],
+                track.get("preview_url")
+            ))
+
+        save_artists_batch(artists_to_save)
+        save_tracks_batch(tracks_to_save)
+        save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
+        save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
+
+        result = {"user": display_name, "artists": [], "tracks": []}
         for artist in artists:
              result["artists"].append({
                 "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
@@ -173,9 +196,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         
         log_system("AUTH", f"User Login Success: {display_name}", "SPOTIFY")
         response = RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
-        # CRITICAL FIX: Set cookie path to "/" so it is accessible on all routes
-        # Also set SameSite to Lax to prevent some browser blocking
-        response.set_cookie(key="spotify_id", value=spotify_id, httponly=True, path="/", samesite="lax")
+        response.set_cookie(key="spotify_id", value=spotify_id, httponly=True)
         return response
 
 @router.post("/analyze-emotions-background", tags=["Background"])
@@ -274,10 +295,7 @@ def sync_top_data(
     save_tracks_batch(tracks_to_save)
     save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
     save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
-    
-    # FIX: Get User Image
-    user_image = user_profile["images"][0]["url"] if user_profile.get("images") else None
-    result = {"user": display_name, "image": user_image, "artists": [], "tracks": []}
+    result = {"user": display_name, "artists": [], "tracks": []}
 
     for artist in artists:
          result["artists"].append({
@@ -414,17 +432,6 @@ def dashboard_api(spotify_id: str, time_range: str = "medium_term"):
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
 
         emotion_paragraph = data.get("emotion_paragraph", "Vibe analysis is getting ready...")
-        top_emotions = data.get("top_emotions", [])
-
-        # REGENERATE TOP EMOTIONS IF MISSING (Backward Compatibility for old cache)
-        if not top_emotions and data.get("tracks"):
-            try:
-                print("DASHBOARD: Old cache detected (missing top_emotions). Regenerating...")
-                track_names_for_regen = [t['name'] for t in data['tracks']]
-                # We don't need the paragraph (already have it or don't care), just want top_emotions
-                _, top_emotions = generate_emotion_paragraph(track_names_for_regen, extended=False)
-            except Exception as e:
-                print(f"DASHBOARD: Failed to regenerate top_emotions: {e}")
 
         # Calculate genres from ALL artists (legacy behavior used all for extended list)
         genre_count = {}
@@ -441,11 +448,9 @@ def dashboard_api(spotify_id: str, time_range: str = "medium_term"):
 
         return {
             "user": data["user"],
-            "image": data.get("image"), # FIX: Return image
-
             "time_range": time_range,
             "emotion_paragraph": emotion_paragraph,
-            "top_emotions": top_emotions,
+            "top_emotions": data.get("top_emotions", []),
             "artists": data.get("artists", []),
             "tracks": data.get("tracks", []),
             "genres": genre_list,
