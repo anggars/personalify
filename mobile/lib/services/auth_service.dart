@@ -15,7 +15,9 @@ class AuthService {
       // (User-Agent detection doesn't work because this opens external browser)
       final loginUrl = '${AppConstants.baseUrl}${AppConstants.loginEndpoint}?mobile=true';
 
+      print('========================================');
       print('FLUTTER AUTH: Initiating login to $loginUrl');
+      print('========================================');
 
       // Start OAuth flow
       // Backend will redirect to Spotify, then back to /callback
@@ -25,10 +27,18 @@ class AuthService {
         callbackUrlScheme: AppConstants.callbackScheme,
       );
 
-      print('FLUTTER AUTH: Received callback: $result');
+      print('========================================');
+      print('FLUTTER AUTH: Received callback URL:');
+      print(result);
+      print('========================================');
 
       // Parse the callback URL
       final uri = Uri.parse(result);
+      
+      print('URI Query Parameters:');
+      print(uri.queryParameters);
+      print('URI Fragment:');
+      print(uri.fragment);
       
       // Extract spotify_id from query parameters or fragments
       final spotifyId = uri.queryParameters['spotify_id'] ?? 
@@ -43,28 +53,44 @@ class AuthService {
                             orElse: () => '',
                           ).split('&').first;
 
+      print('========================================');
+      print('PARSED spotify_id: "$spotifyId"');
+      print('PARSED access_token length: ${accessToken.length}');
+      print('PARSED access_token (first 20 chars): ${accessToken.length > 20 ? accessToken.substring(0, 20) : accessToken}');
+      print('========================================');
+
       if (spotifyId.isEmpty) {
-        print('FLUTTER AUTH: Failed to extract spotify_id from callback');
+        print('ERROR: Failed to extract spotify_id from callback!');
         return null;
       }
 
       // Store credentials securely
       await _storage.write(key: AppConstants.spotifyIdKey, value: spotifyId);
+      print('✅ Saved spotify_id to storage');
       
       // If backend provides access token in callback, store it
       // Otherwise, we'll use the spotify_id to fetch data
       if (accessToken.isNotEmpty) {
         await _storage.write(key: AppConstants.tokenKey, value: accessToken);
+        print('✅ Saved access_token to storage');
+      } else {
+        print('⚠️  WARNING: No access_token in callback!');
       }
 
-      print('FLUTTER AUTH: Login successful, spotify_id: $spotifyId');
+      print('========================================');
+      print('FLUTTER AUTH: Login successful!');
+      print('spotify_id: $spotifyId');
+      print('access_token present: ${accessToken.isNotEmpty}');
+      print('========================================');
 
       return {
         'spotify_id': spotifyId,
         if (accessToken.isNotEmpty) 'access_token': accessToken,
       };
     } catch (e) {
+      print('========================================');
       print('FLUTTER AUTH ERROR: $e');
+      print('========================================');
       return null;
     }
   }

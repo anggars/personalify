@@ -107,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                          )
                       else
                         Text(
-                          _userProfile?.displayName ?? 'Music Lover',
+                          _userProfile?.displayName ?? 'User',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
