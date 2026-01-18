@@ -2,6 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:personalify/models/user_profile.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/utils/constants.dart';
+import 'package:flutter/material.dart';
+import 'package:personalify/main.dart';
+import 'package:personalify/screens/login_screen.dart';
 
 /// API service for backend communication
 class ApiService {
@@ -14,6 +17,10 @@ class ApiService {
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
     ));
+
+
+
+// ... (existing imports)
 
     // Add interceptor to automatically inject Authorization header
     _dio.interceptors.add(InterceptorsWrapper(
@@ -32,6 +39,13 @@ class ApiService {
           print('API ERROR: 401 Unauthorized - Token expired');
           // Clear auth data and force re-login
           await _authService.logout();
+          
+          // Use Global Navigator Key to push Login Screen
+          // Removing all previous routes to prevent back button from returning
+          navigatorKey.currentState?.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
         }
         return handler.next(error);
       },
@@ -117,6 +131,90 @@ class ApiService {
       return null;
     } on DioException catch (e) {
       print('API ERROR: ${e.message}');
+      rethrow;
+    }
+  }
+  /// Analyze raw lyrics
+  /// Endpoint: POST /analyze-lyrics
+  Future<Map<String, dynamic>?> analyzeLyrics(String lyrics) async {
+    try {
+      final response = await _dio.post(
+        '/analyze-lyrics',
+        data: {'lyrics': lyrics},
+      );
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      print('API ERROR (analyzeLyrics): $e');
+      rethrow;
+    }
+  }
+
+  /// Search for an artist (Genius)
+  /// Endpoint: GET /api/genius/search-artist?q={query}
+  Future<List<dynamic>> searchArtist(String query) async {
+    try {
+      final response = await _dio.get(
+        '/api/genius/search-artist',
+        queryParameters: {'q': query},
+      );
+      if (response.statusCode == 200) {
+        return (response.data['artists'] as List<dynamic>?) ?? [];
+      }
+      return [];
+    } catch (e) {
+      print('API ERROR (searchArtist): $e');
+      rethrow;
+    }
+  }
+
+  /// Autocomplete artist name
+  /// Endpoint: GET /api/genius/autocomplete?q={query}
+  Future<List<dynamic>> autocompleteArtist(String query) async {
+    try {
+      final response = await _dio.get(
+        '/api/genius/autocomplete',
+        queryParameters: {'q': query},
+      );
+      if (response.statusCode == 200) {
+        return (response.data['results'] as List<dynamic>?) ?? [];
+      }
+      return [];
+    } catch (e) {
+      print('API ERROR (autocompleteArtist): $e');
+      // Non-critical, return empty
+      return [];
+    }
+  }
+
+  /// Get songs by artist
+  /// Endpoint: GET /api/genius/artist-songs/{artistId}
+  Future<List<dynamic>> getArtistSongs(int artistId) async {
+    try {
+      final response = await _dio.get('/api/genius/artist-songs/$artistId');
+      if (response.statusCode == 200) {
+        return (response.data['songs'] as List<dynamic>?) ?? [];
+      }
+      return [];
+    } catch (e) {
+      print('API ERROR (getArtistSongs): $e');
+      rethrow;
+    }
+  }
+
+  /// Get lyrics and emotion analysis for a song
+  /// Endpoint: GET /api/genius/lyrics/{songId}
+  Future<Map<String, dynamic>?> getLyricsEmotion(int songId) async {
+    try {
+      final response = await _dio.get('/api/genius/lyrics/$songId');
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      print('API ERROR (getLyricsEmotion): $e');
       rethrow;
     }
   }

@@ -48,14 +48,14 @@ class _MainNavigationState extends State<MainNavigation> {
             right: 16,
             bottom: 32, 
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(24),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
                   height: 72, // Slightly taller for labels
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.08), // "Bening" (Clear) Glass effect
-                    borderRadius: BorderRadius.circular(32),
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: Colors.white.withOpacity(0.15), // Glass edge
                       width: 1,

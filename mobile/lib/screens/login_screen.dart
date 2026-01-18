@@ -75,67 +75,100 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: const Color(0xFF121212), // Dark background
       body: SafeArea(
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Logo/App Name
-                const Icon(
-                  Icons.music_note,
-                  size: 80,
-                  color: Color(0xFF1DB954), // Spotify green
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Personalify',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1DB954),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1DB954).withOpacity(0.2),
+                        blurRadius: 30,
+                        spreadRadius: 10,
+                      )
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Your music, your vibe',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFFB3B3B3),
+                  child: Image.network(
+                     'https://cdn.simpleicons.org/spotify/1DB954',
+                     height: 80,
+                     width: 80,
+                     errorBuilder: (context, error, stackTrace) => const Icon(Icons.music_note, size: 80, color: Color(0xFF1DB954)),
                   ),
                 ),
                 const SizedBox(height: 48),
 
-                // Login Button
-                ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _handleLogin,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.black,
-                          ),
-                        )
-                      : const Icon(Icons.login, color: Colors.black),
-                  label: Text(
-                    _isLoading ? 'Connecting...' : 'Connect with Spotify',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                // Hero Text: "Welcome to Personalify!"
+                RichText(
+                  textAlign: TextAlign.center,
+                  text: const TextSpan(
+                    style: TextStyle(
+                      fontSize: 32, 
+                      fontWeight: FontWeight.w800, 
+                      color: Colors.white,
+                      height: 1.2,
                     ),
+                    children: [
+                       TextSpan(text: 'Welcome to '),
+                       TextSpan(text: 'Personalify', style: TextStyle(color: Color(0xFF1DB954))),
+                       TextSpan(text: '!'),
+                    ],
                   ),
+                ),
+                
+                const SizedBox(height: 16),
+
+                // Subtext
+                const Text(
+                  'Discover your most played artists, tracks, and genres through Spotify insights. Go beyond the sound and analyze the emotion hidden in the lyrics.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFFB3B3B3),
+                    height: 1.5,
+                  ),
+                ),
+                
+                const SizedBox(height: 48),
+
+                // Login Button
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1DB954),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 16,
-                    ),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(30),
                     ),
+                    elevation: 5,
+                    shadowColor: const Color(0xFF1DB954).withOpacity(0.5),
                   ),
+                  child: _isLoading 
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
+                      )
+                    : const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.login, size: 24),
+                          SizedBox(width: 12),
+                          Text(
+                            'Login with Spotify',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
                 ),
 
                 // Error Message
@@ -144,9 +177,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.2),
+                      color: Colors.red.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red),
+                      border: Border.all(color: Colors.red.withOpacity(0.5)),
                     ),
                     child: Text(
                       _errorMessage!,

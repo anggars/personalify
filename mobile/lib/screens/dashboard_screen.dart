@@ -8,7 +8,12 @@ import 'package:personalify/models/user_profile.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/screens/login_screen.dart';
-import 'package:dio/dio.dart'; // Import Dio for DioException
+import 'package:dio/dio.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
+import 'dart:typed_data';
 
 /// --------------------------------------------------------------------------
 /// DashboardScreen: Final Polish v2
@@ -82,6 +87,204 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     }
     _spotifyId = id;
     _load();
+  }
+
+  Future<void> _handleShare(BuildContext context) async {
+    if (_userProfile == null) return;
+
+    final currentTab = _tabController.index; // 0: Tracks, 1: Artists, 2: Genres
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator(color: kAccentColor)),
+    );
+
+    try {
+      final ScreenshotController controller = ScreenshotController();
+      
+      // Define a fixed logical size for the capture 
+      // width: 400 works well for text legibility
+      // 9:16 ratio -> height = 400 * (16/9) = ~711
+      
+      final Uint8List image = await controller.captureFromWidget(
+        _buildShareableWidget(currentTab),
+        delay: const Duration(seconds: 1), // Wait for images/charts
+        pixelRatio: 3.0, // High quality output (1200x2133 roughly)
+        context: context,
+        targetSize: const Size(400, 711), // Force 9:16 Layout
+      );
+
+      final directory = await getApplicationDocumentsDirectory();
+      final imagePath = await File('${directory.path}/personalify_share.png').create();
+      await imagePath.writeAsBytes(image);
+
+      if (mounted) Navigator.pop(context); // Close loading
+
+      await Share.shareXFiles([XFile(imagePath.path)], text: 'Check out my vibe on Personalify! 🎵');
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Share failed: $e')));
+      }
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Share Layout (Top 10 Snapshot - 9:16)
+  // --------------------------------------------------------------------------
+  Widget _buildShareableWidget(int tabIndex) {
+    return Container(
+      width: 400,
+      height: 711, // 9:16 Aspect Ratio
+      color: kBgColor, // Match App Background
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. TOP SPACER (Reduced significantly)
+          const SizedBox(height: 50),
+          
+          // 2. HEADER
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Row(
+                     children: [
+                       const FaIcon(FontAwesomeIcons.spotify, color: kAccentColor, size: 28),
+                       const SizedBox(width: 8),
+                       Text(
+                         'My Top 10 ${tabIndex == 0 ? "Tracks" : tabIndex == 1 ? "Artists" : "Genres"}',
+                         style: GoogleFonts.plusJakartaSans(
+                           fontSize: 22, 
+                           fontWeight: FontWeight.w800,
+                           color: kTextPrimary
+                         ),
+                       ),
+                     ],
+                   ),
+                   const SizedBox(height: 4),
+                   Text(
+                     '${_userProfile?.displayName ?? "User"} • ${_timeRangeLabels[_selectedTimeRange]}',
+                     style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 14, fontWeight: FontWeight.w600),
+                   ),
+                ],
+              ),
+              // User Profile Image (Small Circle)
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: kAccentColor, width: 2)
+                ),
+                child: ClipOval(
+                  child: CachedNetworkImage(
+                    imageUrl: _userProfile?.image ?? '',
+                    width: 48, height: 48, 
+                    fit: BoxFit.cover,
+                    errorWidget: (_,__,___) => const SizedBox(),
+                  ),
+                ),
+              )
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          const Divider(color: kBorderColor, height: 1),
+          const SizedBox(height: 16),
+
+          // 3. CONTENT (Flexible)
+          Expanded(
+            child: _buildShareContent(tabIndex),
+          ),
+          
+          // 4. FOOTER
+          Center(
+             child: Padding(
+               padding: const EdgeInsets.only(bottom: 24),
+               child: Text(
+                 'personalify.app',
+                 style: GoogleFonts.plusJakartaSans(
+                   color: kTextSecondary.withOpacity(0.5), 
+                   fontWeight: FontWeight.w900, 
+                   letterSpacing: 3,
+                   fontSize: 12,
+                 ),
+               ),
+             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShareContent(int tabIndex) {
+    if (tabIndex == 0) return _buildShareTracksList();
+    if (tabIndex == 1) return _buildShareArtistsList();
+    if (tabIndex == 2) return _buildShareGenresList();
+    return const SizedBox();
+  }
+
+  Widget _buildShareTracksList() {
+    final tracks = (_userProfile?.tracks ?? []).take(10).toList();
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kBorderColor),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        children: tracks.asMap().entries.map((entry) {
+          return _buildTrackItem(entry.value, entry.key, isLast: entry.key == tracks.length - 1, isShare: true);
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildShareArtistsList() {
+    final artists = (_userProfile?.artists ?? []).take(10).toList();
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kBorderColor),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        children: artists.asMap().entries.map((entry) {
+          return _buildArtistItem(entry.value, entry.key, isLast: entry.key == artists.length - 1, isShare: true);
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildShareGenresList() {
+    final genres = (_userProfile?.genres ?? []).take(10).toList();
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kBorderColor),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        children: genres.asMap().entries.map((entry) {
+          final g = entry.value;
+          List<String> artistsList = [];
+           if (_userProfile != null) {
+              artistsList = _userProfile!.artists
+                .where((a) => a.genres.contains(g.name))
+                .map((a) => a.name)
+                .toList();
+           }
+          return _buildGenreItem(g, entry.key, _getGenreColor(g.name), artistsList, isLast: entry.key == genres.length - 1, isShare: true);
+        }).toList(),
+      ),
+    );
   }
 
   Future<void> _handleLogout() async {
@@ -195,10 +398,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ),
         actions: [
            IconButton(
-            // AESTHETIC ICON: Right From Bracket (Exit)
-            icon: const FaIcon(FontAwesomeIcons.arrowRightFromBracket, color: Colors.redAccent, size: 20),
-            onPressed: _handleLogout, // Direct logout
-            tooltip: 'Logout',
+             // AESTHETIC ICON: Share Node (Share)
+            icon: const Icon(Icons.ios_share, color: kTextPrimary, size: 22),
+            onPressed: () => _handleShare(context), // Share functionality
+            tooltip: 'Share Top 10',
           ),
           const SizedBox(width: 8),
         ],
@@ -281,11 +484,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
     return Column(
       children: paginatedTracks.asMap().entries.map((entry) {
-        final index = entry.key;
-        final track = entry.value;
-        final isLast = index == paginatedTracks.length - 1;
+        return _buildTrackItem(entry.value, entry.key, isLast: entry.key == paginatedTracks.length - 1);
+      }).toList(),
+    );
+  }
 
-        return Container(
+  Widget _buildTrackItem(dynamic track, int index, {bool isLast = false, bool isShare = false}) {
+     return Container(
           decoration: BoxDecoration(
             border: isLast ? null : const Border(bottom: BorderSide(color: kBorderColor)),
           ),
@@ -390,8 +595,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             ),
           ),
         );
-      }).toList(),
-    );
   }
 
   // --------------------------------------------------------------------------
@@ -403,11 +606,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
     return Column(
       children: paginatedArtists.asMap().entries.map((entry) {
-        final index = entry.key;
-        final artist = entry.value;
-        final isLast = index == paginatedArtists.length - 1;
+        return _buildArtistItem(entry.value, entry.key, isLast: entry.key == paginatedArtists.length - 1);
+      }).toList(),
+    );
+  }
 
-        return Container(
+  Widget _buildArtistItem(dynamic artist, int index, {bool isLast = false, bool isShare = false}) {
+     return Container(
           decoration: BoxDecoration(
             border: isLast ? null : const Border(bottom: BorderSide(color: kBorderColor)),
           ),
@@ -491,8 +696,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             ),
           ),
         );
-      }).toList(),
-    );
   }
 
   // --------------------------------------------------------------------------
@@ -528,15 +731,20 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ...paginatedGenres.asMap().entries.map((entry) {
           final index = entry.key;
           final genre = entry.value;
-          final color = _getGenreColor(genre.name); 
-          final isLast = index == paginatedGenres.length - 1;
           
           final artistsList = _userProfile?.artists
               .where((a) => a.genres.contains(genre.name))
               .map((a) => a.name)
               .toList() ?? [];
 
-          return Container(
+          return _buildGenreItem(genre, index, _getGenreColor(genre.name), artistsList, isLast: index == paginatedGenres.length - 1);
+        }),
+      ],
+    );
+  }
+
+  Widget _buildGenreItem(dynamic genre, int index, Color color, List<String> artistsList, {bool isLast = false, bool isShare = false}) {
+     return Container(
             decoration: BoxDecoration(
               border: isLast ? null : const Border(bottom: BorderSide(color: kBorderColor)),
             ),
@@ -600,9 +808,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ),
             ),
           );
-        }),
-      ],
-    );
   }
 }
 
