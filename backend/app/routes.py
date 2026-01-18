@@ -432,6 +432,17 @@ def dashboard_api(spotify_id: str, time_range: str = "medium_term"):
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
 
         emotion_paragraph = data.get("emotion_paragraph", "Vibe analysis is getting ready...")
+        top_emotions = data.get("top_emotions", [])
+
+        # REGENERATE TOP EMOTIONS IF MISSING (Backward Compatibility for old cache)
+        if not top_emotions and data.get("tracks"):
+            try:
+                print("DASHBOARD: Old cache detected (missing top_emotions). Regenerating...")
+                track_names_for_regen = [t['name'] for t in data['tracks']]
+                # We don't need the paragraph (already have it or don't care), just want top_emotions
+                _, top_emotions = generate_emotion_paragraph(track_names_for_regen, extended=False)
+            except Exception as e:
+                print(f"DASHBOARD: Failed to regenerate top_emotions: {e}")
 
         # Calculate genres from ALL artists (legacy behavior used all for extended list)
         genre_count = {}
@@ -450,7 +461,7 @@ def dashboard_api(spotify_id: str, time_range: str = "medium_term"):
             "user": data["user"],
             "time_range": time_range,
             "emotion_paragraph": emotion_paragraph,
-            "top_emotions": data.get("top_emotions", []),
+            "top_emotions": top_emotions,
             "artists": data.get("artists", []),
             "tracks": data.get("tracks", []),
             "genres": genre_list,

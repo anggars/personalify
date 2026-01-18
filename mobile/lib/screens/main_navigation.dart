@@ -34,7 +34,7 @@ class _MainNavigationState extends State<MainNavigation> {
             child: FadeIndexedStack(
               index: _currentIndex,
               children: [
-                const HomeScreen(),
+                HomeScreen(onTabChange: _onItemTapped),
                 const DashboardScreen(),
                 AnalyzerScreen(), // Stateful
                 const AboutScreen(),
