@@ -10,6 +10,12 @@ class UserProfile {
   final List<Track> tracks;
   final List<Genre> genres;
   final Map<String, List<String>> genreArtistsMap;
+  
+  // NEW FIELDS for Account Screen
+  final String? displayName;
+  final String? image; 
+  final String? userId;
+  final List<Emotion> topEmotions;
 
   UserProfile({
     required this.userName,
@@ -19,6 +25,10 @@ class UserProfile {
     required this.tracks,
     required this.genres,
     required this.genreArtistsMap,
+    this.displayName,
+    this.image,
+    this.userId,
+    this.topEmotions = const [],
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -42,6 +52,28 @@ class UserProfile {
               ?.map((key, value) => MapEntry(
                   key, (value as List<dynamic>).map((e) => e as String).toList())) ??
           {},
+      // Parse new fields if available, otherwise default to userName
+      displayName: json['display_name'] as String? ?? json['user'] as String,
+      image: json['image'] as String?,
+      userId: json['user_id'] as String? ?? json['user'] as String,
+      topEmotions: (json['top_emotions'] as List<dynamic>?)
+              ?.map((e) => Emotion.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class Emotion {
+  final String label;
+  final double score;
+
+  Emotion({required this.label, required this.score});
+
+  factory Emotion.fromJson(Map<String, dynamic> json) {
+    return Emotion(
+      label: json['label'] as String,
+      score: (json['score'] as num).toDouble(),
     );
   }
 }

@@ -211,7 +211,7 @@ def analyze_lyrics_emotion(lyrics: str):
 
 def generate_emotion_paragraph(track_names, extended=False):
     if not track_names:
-        return "Couldn't analyze music mood."
+        return "Couldn't analyze music mood.", []
 
     num_tracks = len(track_names) if extended else min(10, len(track_names))
     tracks_to_analyze = track_names[:num_tracks]
@@ -223,17 +223,17 @@ def generate_emotion_paragraph(track_names, extended=False):
 
     if not text or len(text.strip()) == 0:
         print("NLP HANDLER: TEXT FOR ANALYSIS EMPTY AFTER TRANSLATION.")
-        return "Vibe analysis failed (empty text after translation)."
+        return "Vibe analysis failed (empty text after translation).", []
 
     emotions = get_emotion_from_text(text)
 
     if not emotions:
-        return "Vibe analysis is currently unavailable."
+        return "Vibe analysis is currently unavailable.", []
 
     try:
         em_list = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
     except Exception:
-        return "Vibe analysis failed (parsing error)."
+        return "Vibe analysis failed (parsing error).", []
 
     unique = []
     seen = set()
@@ -263,5 +263,4 @@ def generate_emotion_paragraph(track_names, extended=False):
     top3 = unique[:3]
     formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
 
-
-    return f"Shades of {formatted}."
+    return f"Shades of {formatted}.", top3

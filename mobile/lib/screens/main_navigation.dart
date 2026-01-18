@@ -5,8 +5,8 @@ import 'package:personalify/screens/dashboard_screen.dart';
 import 'package:personalify/screens/analyzer_screen.dart';
 import 'package:personalify/screens/about_screen.dart';
 import 'package:personalify/screens/settings_screen.dart';
+import 'package:personalify/widgets/fade_indexed_stack.dart';
 
-/// Main navigation with bottom navbar
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
@@ -15,95 +15,107 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 1; // Default to Dashboard
+  int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const DashboardScreen(),
-    const AnalyzerScreen(),
-    const AboutScreen(),
-    const SettingsScreen(),
-  ];
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      extendBody: true,
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+      extendBody: true, // Important for floating elements
+      body: Stack(
+        children: [
+          // Content Layer
+          Positioned.fill(
+            child: FadeIndexedStack(
+              index: _currentIndex,
+              children: [
+                const HomeScreen(),
+                const DashboardScreen(),
+                AnalyzerScreen(), // Stateful
+                const AboutScreen(),
+              ],
+            ),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E).withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
-                    width: 1.5,
+          
+          // "iOS 26" Liquid Glass Navbar Overlay
+          Positioned(
+            left: 16, // Matches Dashboard Card Margin (16)
+            right: 16,
+            bottom: 32, 
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  height: 72, // Slightly taller for labels
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08), // "Bening" (Clear) Glass effect
+                    borderRadius: BorderRadius.circular(32),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.15), // Glass edge
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                ),
-                child: BottomNavigationBar(
-                  currentIndex: _currentIndex,
-                  onTap: (index) => setState(() => _currentIndex = index),
-                  type: BottomNavigationBarType.fixed,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  selectedItemColor: const Color(0xFF1DB954),
-                  unselectedItemColor: const Color(0xFF908F8F),
-                  selectedFontSize: 11,
-                  unselectedFontSize: 10,
-                  showSelectedLabels: true,
-                  showUnselectedLabels: true,
-                  items: const [
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.home_outlined, size: 24),
-                      activeIcon: Icon(Icons.home, size: 24),
-                      label: 'Home',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.space_dashboard_outlined, size: 24),
-                      activeIcon: Icon(Icons.space_dashboard, size: 24),
-                      label: 'Dashboard',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.mic_external_on_outlined, size: 24),
-                      activeIcon: Icon(Icons.mic_external_on, size: 24),
-                      label: 'Analyzer',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.info_outline, size: 24),
-                      activeIcon: Icon(Icons.info, size: 24),
-                      label: 'About',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.settings_outlined, size: 24),
-                      activeIcon: Icon(Icons.settings, size: 24),
-                      label: 'Settings',
-                    ),
-                  ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Modern "Rounded" Icon Set (Filled vs Outlined)
+                      // Labels: Home, Dashboard, Analyzer, About
+                      _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, "Home"),
+                      _buildNavItem(1, Icons.grid_view_outlined, Icons.grid_view_rounded, "Dashboard"),
+                      _buildNavItem(2, Icons.insights_outlined, Icons.insights_rounded, "Analyzer"),
+                      _buildNavItem(3, Icons.menu_book_outlined, Icons.menu_book_rounded, "About"), // "Read" for About
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            // User requested cleaner look without the circle background ("Jangan kayak gitu")
+            // We'll rely on the color shift (White/Green) and Icon transition (Outlined -> Rounded/Filled)
+            child: Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected ? const Color(0xFF1DB954) : const Color(0xFFB3B3B3),
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? const Color(0xFF1DB954) : const Color(0xFFB3B3B3),
+              fontSize: 10,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            ),
+          )
+        ],
       ),
     );
   }
