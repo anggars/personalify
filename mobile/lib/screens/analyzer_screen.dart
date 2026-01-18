@@ -7,8 +7,12 @@ import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/widgets/ping_pong_text.dart';
 
+import 'package:personalify/models/user_profile.dart'; // Import Model
+
 class AnalyzerScreen extends StatefulWidget {
-  const AnalyzerScreen({super.key});
+  final UserProfile? userProfile;
+
+  const AnalyzerScreen({super.key, this.userProfile});
 
   @override
   State<AnalyzerScreen> createState() => _AnalyzerScreenState();
@@ -17,11 +21,12 @@ class AnalyzerScreen extends StatefulWidget {
 class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ApiService _apiService = ApiService(AuthService()); // Initialize ApiService
+  final AuthService _authService = AuthService(); // Add Auth Service
 
   // Colors
   static const Color kBgColor = Color(0xFF0a0a0a);
-  static const Color kSurfaceColor = Color(0xFF181818); 
-  static const Color kAccentColor = Color(0xFF1DB954); 
+  static const Color kSurfaceColor = Color(0xFF181818);
+  static const Color kAccentColor = Color(0xFF1DB954);
   static const Color kTextPrimary = Color(0xFFFFFFFF);
   static const Color kTextSecondary = Color(0xFFB3B3B3);
   static const Color kBorderColor = Color(0xFF282828);
@@ -35,18 +40,50 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
   List<dynamic> _artistSuggestions = [];
+  bool _suggestionsVisible = false;
+
+  Map<String, dynamic>? _selectedArtist;
   List<dynamic> _artists = []; // Search results
   List<dynamic> _songs = [];
-  Map<String, dynamic>? _selectedArtist;
-  String? _selectedSongId; // To highlight selected song
+  String? _selectedSongId;
+  bool _isLoadingSongs = false;
+  String? _geniusLoadingState; // "Searching...", "Analyzing..."
   Map<String, dynamic>? _geniusAnalysis;
-  bool _isLoadingGenius = false;
-  String? _geniusLoadingState; // 'search', 'songs', 'analyze'
+
+  // Global Vibe State
+  UserProfile? _userProfile;
+  bool _isLoadingProfile = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // Initialize UserProfile
+    if (widget.userProfile != null) {
+      _userProfile = widget.userProfile;
+    } else {
+      _fetchUserProfile();
+    }
+  }
+
+  Future<void> _fetchUserProfile() async {
+    setState(() => _isLoadingProfile = true);
+    try {
+      final id = await _authService.getSpotifyId();
+      if (id != null) {
+        final profile = await _apiService.getUserProfile(id);
+        if (mounted) {
+           setState(() {
+             _userProfile = profile;
+           });
+        }
+      }
+    } catch (e) {
+      print("Error fetching profile for analyzer: $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingProfile = false);
+    }
   }
 
   @override
@@ -112,11 +149,11 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
       return;
     }
 
-    setState(() { 
-      _geniusLoadingState = 'search'; 
-      _selectedArtist = null; 
-      _songs = []; 
-      _geniusAnalysis = null; 
+    setState(() {
+      _geniusLoadingState = 'search';
+      _selectedArtist = null;
+      _songs = [];
+      _geniusAnalysis = null;
       _artistSuggestions = [];
     });
 
@@ -179,58 +216,47 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
     });
   }
 
-  bool _suggestionsVisible = true;
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
-      appBar: AppBar(
-        backgroundColor: kBgColor,
-        surfaceTintColor: kBgColor,
-        elevation: 0,
-        toolbarHeight: 70,
-        centerTitle: true,
-        title: Text(
-          'Analyzer',
-          style: GoogleFonts.plusJakartaSans(
-            fontWeight: FontWeight.w800,
-            color: kAccentColor,
-            fontSize: 24,
-          ),
+      body: SafeArea(
+        child: Column(
+          children: [
+             const SizedBox(height: 16),
+             Container(
+               color: kBgColor,
+               padding: const EdgeInsets.symmetric(horizontal: 16),
+               child: TabBar(
+                 controller: _tabController,
+                 isScrollable: false,
+                 labelColor: kAccentColor,
+                 unselectedLabelColor: kTextSecondary,
+                 indicatorSize: TabBarIndicatorSize.label,
+                 indicatorColor: kAccentColor,
+                 indicatorWeight: 3,
+                 dividerColor: Colors.transparent,
+                 labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                 unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
+                 tabs: const [
+                   Tab(text: 'Lyrics', height: 40),
+                   Tab(text: 'Genius', height: 40),
+                 ],
+               ),
+             ),
+             Expanded(
+               child: TabBarView(
+                 controller: _tabController,
+                 children: <Widget>[
+                   _buildLyricsTab(),
+                   _buildGeniusTab(),
+                 ],
+               ),
+             ),
+          ],
         ),
-      ),
-      body: Column(
-        children: [
-          Container(
-             color: kBgColor,
-             child: TabBar(
-               controller: _tabController,
-               isScrollable: false,
-               labelColor: kAccentColor,
-               unselectedLabelColor: kTextSecondary,
-               indicatorSize: TabBarIndicatorSize.label,
-               indicatorColor: kAccentColor,
-               indicatorWeight: 3,
-               dividerColor: Colors.transparent,
-               labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
-               unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
-               tabs: const [
-                 Tab(text: 'Lyrics', height: 40),
-                 Tab(text: 'Genius', height: 40),
-               ],
-             ),
-           ),
-           Expanded(
-             child: TabBarView(
-               controller: _tabController,
-               children: [
-                 _buildLyricsTab(),
-                 _buildGeniusTab(),
-               ],
-             ),
-           ),
-        ],
       ),
     );
   }
@@ -245,22 +271,70 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
         children: [
           Text(
             'Lyrics Analyzer',
-            style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.bold, color: kAccentColor),
+            style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: kAccentColor),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Paste lyrics below to uncover the hidden emotions.',
+            'Paste lyrics below to uncover hidden emotions.',
             style: GoogleFonts.plusJakartaSans(fontSize: 14, color: kTextSecondary),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+
+          // --- GLOBAL VIBE CARD (If no result yet) ---
+          if (_isLoadingProfile) 
+             const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: CircularProgressIndicator(color: kAccentColor)),
+             )
+          else if (_lyricsResult == null && _userProfile != null && _userProfile!.topEmotions.isNotEmpty) ...[
+             Container(
+               padding: const EdgeInsets.all(20),
+               decoration: BoxDecoration(
+                 color: kSurfaceColor,
+                 borderRadius: BorderRadius.circular(20),
+                 border: Border.all(color: kBorderColor),
+               ),
+               child: Column(
+                 children: [
+                   Row(
+                     mainAxisAlignment: MainAxisAlignment.center,
+                     children: [
+                       const Icon(Icons.auto_awesome, color: kAccentColor, size: 20),
+                       const SizedBox(width: 8),
+                       Text("Your Global Vibe", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 16)),
+                     ],
+                   ),
+                   const SizedBox(height: 16),
+                   Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: _userProfile!.topEmotions.take(3).map((e) {
+                         return Column(
+                           children: [
+                             CircleAvatar(
+                               backgroundColor: kBgColor,
+                               radius: 24, // Slightly larger
+                               child: FaIcon(_getIconForEmotion(e.label), size: 20, color: kAccentColor),
+                             ),
+                             const SizedBox(height: 8),
+                             Text(e.label.toUpperCase(), style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.bold, color: kTextPrimary)),
+                             Text("${(e.score * 100).toInt()}%", style: GoogleFonts.plusJakartaSans(fontSize: 10, color: kTextSecondary)),
+                           ],
+                         );
+                      }).toList(),
+                   )
+                 ],
+               ),
+             ),
+             const SizedBox(height: 24),
+          ],
           
           Container(
             decoration: BoxDecoration(
-              color: kSurfaceColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: kBorderColor),
+              color: const Color(0xFF1A1A1A), // Darker Input BG
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.transparent), // Clean
             ),
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -614,6 +688,38 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
         ],
       ),
     );
+  }
+  // Helper: Icon Mapper (Aesthetic Icons instead of Emojis)
+  IconData _getIconForEmotion(String label) {
+    switch (label.toLowerCase()) {
+      case 'joy': return FontAwesomeIcons.faceSmileBeam;
+      case 'sadness': return FontAwesomeIcons.faceSadTear;
+      case 'anger': return FontAwesomeIcons.faceAngry;
+      case 'fear': return FontAwesomeIcons.faceFlushed;
+      case 'love': return FontAwesomeIcons.heart;
+      case 'excitement': return FontAwesomeIcons.bolt;
+      case 'surprise': return FontAwesomeIcons.faceSurprise;
+      case 'neutral': return FontAwesomeIcons.faceMeh;
+      case 'confusion': return FontAwesomeIcons.question;
+      case 'disgust': return FontAwesomeIcons.faceGrimace;
+      case 'optimism': return FontAwesomeIcons.sun;
+      case 'admiration': return FontAwesomeIcons.thumbsUp;
+      case 'anticipation': return FontAwesomeIcons.hourglassHalf; 
+      case 'approval': return FontAwesomeIcons.check;
+      case 'caring': return FontAwesomeIcons.handHoldingHeart;
+      case 'desire': return FontAwesomeIcons.fire;
+      case 'disappointment': return FontAwesomeIcons.faceFrownOpen;
+      case 'disapproval': return FontAwesomeIcons.thumbsDown;
+      case 'embarrassment': return FontAwesomeIcons.faceFlushed;
+      case 'gratitude': return FontAwesomeIcons.handsPraying;
+      case 'grief': return FontAwesomeIcons.heartCrack;
+      case 'nervousness': return FontAwesomeIcons.faceGrimace;
+      case 'pride': return FontAwesomeIcons.medal;
+      case 'realization': return FontAwesomeIcons.lightbulb;
+      case 'relief': return FontAwesomeIcons.faceSmile;
+      case 'remorse': return FontAwesomeIcons.faceSadCry;
+      default: return FontAwesomeIcons.music;
+    }
   }
 }
 

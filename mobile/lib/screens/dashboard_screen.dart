@@ -112,8 +112,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       final Uint8List image = await controller.captureFromWidget(
         _buildShareableWidget(currentTab),
         delay: const Duration(seconds: 1), 
-        pixelRatio: 3.0, 
-        context: context,
+        pixelRatio: 2.0, // Reduced from 3.0 for better performance
         targetSize: const Size(400, 711), 
       );
 
@@ -136,48 +135,36 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   // Share Layout (Top 10 Snapshot - 9:16)
   // --------------------------------------------------------------------------
   Widget _buildShareableWidget(int tabIndex) {
+    // FIXED LOGICAL SIZE for Capture (High Res)
+    // We render a larger widget and scale it down to fit perfectly
     return Container(
       width: 400,
       height: 711, // 9:16 Aspect Ratio
       color: kBgColor, // Match App Background
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: FittedBox(
+        fit: BoxFit.contain,
+        alignment: Alignment.center,
+        child: Container(
+           width: 400, // Logical width matches container
+           // Allow height to be unconstrained (or large) then scaled? 
+           // No, we want to force fit.
+           // Best approach: Render content in a fixed width column, then scale firmly.
+           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+           constraints: const BoxConstraints(minHeight: 711), 
+           child: Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             mainAxisSize: MainAxisSize.min,
+             children: [
           // 1. TOP SPACER (Reduced significantly)
           // 1. TOP SPACER (Reduced significantly)
           const SizedBox(height: 20),
           
-          // 2. HEADER
+          // 2. HEADER (Aligned with Web: Centered, Personalify Title)
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   Row(
-                     children: [
-                       const FaIcon(FontAwesomeIcons.spotify, color: kAccentColor, size: 28),
-                       const SizedBox(width: 8),
-                       Text(
-                         'My Top 10 ${tabIndex == 0 ? "Tracks" : tabIndex == 1 ? "Artists" : "Genres"}',
-                         style: GoogleFonts.plusJakartaSans(
-                           fontSize: 22, 
-                           fontWeight: FontWeight.w800,
-                           color: kTextPrimary
-                         ),
-                       ),
-                     ],
-                   ),
-                   const SizedBox(height: 4),
-                   Text(
-                     '${_userProfile?.displayName ?? "User"} • ${_timeRangeLabels[_selectedTimeRange]}',
-                     style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 14, fontWeight: FontWeight.w600),
-                   ),
-                ],
-              ),
-              // User Profile Image (Small Circle)
-              Container(
+               // Profile Pic
+               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: kAccentColor, width: 2)
@@ -190,8 +177,39 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     errorWidget: (_,__,___) => const SizedBox(),
                   ),
                 ),
-              )
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Text(
+                     'Personalify',
+                     style: GoogleFonts.plusJakartaSans(
+                       fontSize: 24, 
+                       fontWeight: FontWeight.w800,
+                       color: kAccentColor
+                     ),
+                   ),
+                   Text(
+                     '${_userProfile?.displayName ?? "User"} • ${_timeRangeLabels[_selectedTimeRange]}',
+                     style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 12, fontWeight: FontWeight.w600),
+                   ),
+                ],
+              ),
             ],
+          ),
+          
+          const SizedBox(height: 12),
+          // Subtitle
+          Center(
+             child: Text(
+               'My Top 10 ${tabIndex == 0 ? "Tracks" : tabIndex == 1 ? "Artists" : "Genres"}',
+               style: GoogleFonts.plusJakartaSans(
+                 fontSize: 14, 
+                 fontStyle: FontStyle.italic,
+                 color: kTextSecondary.withOpacity(0.8)
+               ),
+             ),
           ),
           
           const SizedBox(height: 24),
@@ -218,7 +236,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                ),
              ),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -514,6 +534,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   ),
                 ),
                 const SizedBox(width: 16),
+                const SizedBox(width: 16),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: CachedNetworkImage(imageUrl: track.image, width: 56, height: 56, fit: BoxFit.cover),
@@ -635,6 +656,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     textAlign: TextAlign.center,
                   ),
                 ),
+                const SizedBox(width: 16),
                 const SizedBox(width: 16),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8), 
@@ -761,8 +783,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     child: Text('${index + 1}', style: TextStyle(fontWeight: FontWeight.bold, color: kTextSecondary.withOpacity(0.5))),
                   ),
                   const SizedBox(width: 8), 
+                  const SizedBox(width: 8), 
                   Padding(
-                    padding: const EdgeInsets.only(top: 0), // Centered now, less padding needed
+                    padding: const EdgeInsets.only(top: 0),
                     child: Container(
                       width: 10, height: 10,
                       decoration: BoxDecoration(color: color, shape: BoxShape.circle),

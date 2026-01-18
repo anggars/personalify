@@ -59,29 +59,124 @@ class ApiService {
     try {
       print('API: Fetching dashboard for $spotifyId, timeRange: $timeRange');
 
+      print('API: Fetching dashboard for $spotifyId, timeRange: $timeRange');
+      
+      // 1. Try Fetching Cached Data
       final response = await _dio.get(
-        '${AppConstants.dashboardEndpoint}/$spotifyId',
-        queryParameters: {'time_range': timeRange},
+        '/top-data',
+        queryParameters: {
+          'spotify_id': spotifyId,
+          'time_range': timeRange
+        },
       );
 
       if (response.statusCode == 200) {
-        print('API: Dashboard data received successfully');
-        return UserProfile.fromJson(response.data as Map<String, dynamic>);
-      } else {
-        print('API ERROR: Unexpected status code ${response.statusCode}');
-        return null;
-      }
+        final data = response.data as Map<String, dynamic>;
+        
+        // Check if data is valid (has 'user') or is an error message
+        if (data.containsKey('user')) {
+           print('API: Dashboard data received from cache');
+           return UserProfile.fromJson(data);
+        } else {
+           print('API: No cached data found ("${data['message']}"). Triggering SYNC...');
+           return await syncTopData(timeRange);
+        }
+      } 
+      return null;
     } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        print('API ERROR: Dashboard data not found. User needs to login again.');
-      } else if (e.response?.statusCode == 401) {
-        print('API ERROR: Unauthorized. Token expired or invalid.');
-      } else {
-        print('API ERROR: ${e.message}');
+      print('API Error fetch: $e');
+      // If 404 or other error, try sync as fallback?
+      // Only if NO CACHE found.
+      return await syncTopData(timeRange);
+    }
+  }
+
+  /// Trigger massive data sync (scrapes Spotify and updates DB/Cache)
+  Future<UserProfile?> syncTopData(String timeRange) async {
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) throw Exception("No token for sync");
+
+      print("API: Syncing data... (This may take 5-10 seconds)");
+      final response = await _dio.get(
+        '/sync/top-data',
+        queryParameters: {
+          'access_token': token, // Required by backend endpoint
+          'time_range': timeRange
+        },
+        options: Options(
+          receiveTimeout: const Duration(seconds: 20), // Sync is slow
+        )
+      );
+
+      if (response.statusCode == 200) {
+        print("API: Sync Complete!");
+        return UserProfile.fromJson(response.data as Map<String, dynamic>);
       }
-      rethrow;
     } catch (e) {
-      print('API ERROR: Unexpected error: $e');
+      print("API: Sync Failed: $e");
+    }
+    return null;
+  }
+
+
+  // ---------------------------------------------------------------------------
+  // ANALYZER & GENIUS METHODS
+  // ---------------------------------------------------------------------------
+
+  /// Analyze raw lyrics text
+  Future<Map<String, dynamic>> analyzeLyrics(String text) async {
+    try {
+      final response = await _dio.post(
+        '/analyze-lyrics',
+        data: {'lyrics': text},
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      print('API Error analyzeLyrics: $e');
+      rethrow;
+    }
+  }
+
+  /// Autocomplete artist name
+  Future<List<dynamic>> autocompleteArtist(String query) async {
+    // Note: Mobile might not have this endpoint yet, using search as fallback or empty
+    // If backend doesn't support autocomplete, return empty or implement similar logic
+    return []; 
+  }
+
+  /// Search for artist (Genius)
+  Future<List<dynamic>> searchArtist(String query) async {
+    try {
+      final response = await _dio.get(
+        '/api/genius/search',
+        queryParameters: {'q': query},
+      );
+      return response.data['sections'][0]['hits'] as List<dynamic>;
+    } catch (e) {
+      print('API Error searchArtist: $e');
+      return [];
+    }
+  }
+
+  /// Get songs by artist (Genius)
+  Future<List<dynamic>> getArtistSongs(int artistId) async {
+    try {
+      final response = await _dio.get('/api/genius/artist-songs/$artistId');
+      return response.data['songs'] as List<dynamic>;
+    } catch (e) {
+      print('API Error getArtistSongs: $e');
+      return [];
+    }
+  }
+
+  /// Get lyrics and emotion analysis for a song (Genius)
+  Future<Map<String, dynamic>> getLyricsEmotion(int songId) async {
+    try {
+      final response = await _dio.get('/api/genius/lyrics/$songId');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      print('API Error getLyricsEmotion: $e');
       rethrow;
     }
   }
@@ -134,88 +229,5 @@ class ApiService {
       rethrow;
     }
   }
-  /// Analyze raw lyrics
-  /// Endpoint: POST /analyze-lyrics
-  Future<Map<String, dynamic>?> analyzeLyrics(String lyrics) async {
-    try {
-      final response = await _dio.post(
-        '/analyze-lyrics',
-        data: {'lyrics': lyrics},
-      );
-      if (response.statusCode == 200) {
-        return response.data as Map<String, dynamic>;
-      }
-      return null;
-    } catch (e) {
-      print('API ERROR (analyzeLyrics): $e');
-      rethrow;
-    }
-  }
 
-  /// Search for an artist (Genius)
-  /// Endpoint: GET /api/genius/search-artist?q={query}
-  Future<List<dynamic>> searchArtist(String query) async {
-    try {
-      final response = await _dio.get(
-        '/api/genius/search-artist',
-        queryParameters: {'q': query},
-      );
-      if (response.statusCode == 200) {
-        return (response.data['artists'] as List<dynamic>?) ?? [];
-      }
-      return [];
-    } catch (e) {
-      print('API ERROR (searchArtist): $e');
-      rethrow;
-    }
-  }
-
-  /// Autocomplete artist name
-  /// Endpoint: GET /api/genius/autocomplete?q={query}
-  Future<List<dynamic>> autocompleteArtist(String query) async {
-    try {
-      final response = await _dio.get(
-        '/api/genius/autocomplete',
-        queryParameters: {'q': query},
-      );
-      if (response.statusCode == 200) {
-        return (response.data['results'] as List<dynamic>?) ?? [];
-      }
-      return [];
-    } catch (e) {
-      print('API ERROR (autocompleteArtist): $e');
-      // Non-critical, return empty
-      return [];
-    }
-  }
-
-  /// Get songs by artist
-  /// Endpoint: GET /api/genius/artist-songs/{artistId}
-  Future<List<dynamic>> getArtistSongs(int artistId) async {
-    try {
-      final response = await _dio.get('/api/genius/artist-songs/$artistId');
-      if (response.statusCode == 200) {
-        return (response.data['songs'] as List<dynamic>?) ?? [];
-      }
-      return [];
-    } catch (e) {
-      print('API ERROR (getArtistSongs): $e');
-      rethrow;
-    }
-  }
-
-  /// Get lyrics and emotion analysis for a song
-  /// Endpoint: GET /api/genius/lyrics/{songId}
-  Future<Map<String, dynamic>?> getLyricsEmotion(int songId) async {
-    try {
-      final response = await _dio.get('/api/genius/lyrics/$songId');
-      if (response.statusCode == 200) {
-        return response.data as Map<String, dynamic>;
-      }
-      return null;
-    } catch (e) {
-      print('API ERROR (getLyricsEmotion): $e');
-      rethrow;
-    }
-  }
 }
