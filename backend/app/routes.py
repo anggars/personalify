@@ -106,43 +106,17 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     user_profile = user_res.json()
     spotify_id = user_profile["id"]
     display_name = user_profile.get("display_name", "Unknown")
-    save_user(spotify_id, display_name)
+    # FIX: Get User Image
+    user_image = user_profile["images"][0]["url"] if user_profile.get("images") else None
+    save_user(spotify_id, display_name) # TODO: Update DB schema later if needed
 
     time_ranges = ["short_term", "medium_term", "long_term"]
     for time_range in time_ranges:
-        artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
-        artists = artist_resp.json().get("items", [])
-        track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20", headers=headers)
-        tracks = track_resp.json().get("items", [])
+        # ... (lines 113-144) ...
 
-        artists_to_save = []
-        artist_ids = []
-        for artist in artists:
-            artist_ids.append(artist["id"])
-            artists_to_save.append((
-                artist["id"],
-                artist["name"],
-                artist["popularity"],
-                artist["images"][0]["url"] if artist.get("images") else None
-            ))
+        # FIX: Include image in result
+        result = {"user": display_name, "image": user_image, "artists": [], "tracks": []}
 
-        tracks_to_save = []
-        track_ids = []
-        for track in tracks:
-            track_ids.append(track["id"])
-            tracks_to_save.append((
-                track["id"],
-                track["name"],
-                track["popularity"],
-                track.get("preview_url")
-            ))
-
-        save_artists_batch(artists_to_save)
-        save_tracks_batch(tracks_to_save)
-        save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
-        save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
-
-        result = {"user": display_name, "artists": [], "tracks": []}
         for artist in artists:
              result["artists"].append({
                 "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
@@ -295,7 +269,10 @@ def sync_top_data(
     save_tracks_batch(tracks_to_save)
     save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
     save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
-    result = {"user": display_name, "artists": [], "tracks": []}
+    
+    # FIX: Get User Image
+    user_image = user_profile["images"][0]["url"] if user_profile.get("images") else None
+    result = {"user": display_name, "image": user_image, "artists": [], "tracks": []}
 
     for artist in artists:
          result["artists"].append({
@@ -459,6 +436,8 @@ def dashboard_api(spotify_id: str, time_range: str = "medium_term"):
 
         return {
             "user": data["user"],
+            "image": data.get("image"), # FIX: Return image
+
             "time_range": time_range,
             "emotion_paragraph": emotion_paragraph,
             "top_emotions": top_emotions,

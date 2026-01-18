@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/models/user_profile.dart'; // Ensure models are accessible
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:personalify/screens/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int) onTabChange;
@@ -55,6 +57,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _handleLogout() async {
+    await _authService.logout();
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,27 +73,83 @@ class _HomeScreenState extends State<HomeScreen> {
       // No AppBar as requested ("Ga usah ada header home")
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(), // User requested: DISABLE SCROLLING
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24), // Match Dashboard 16px
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Welcome Header
-              Text(
-                'Welcome,',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: kTextSecondary,
-                ),
-              ),
-              Text(
-                _userProfile?.displayName ?? 'Music Lover',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: kAccentColor,
-                  letterSpacing: -1.0,
-                ),
+              // 1. Welcome Header with Profile Icon
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Welcome,',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: kTextSecondary,
+                        ),
+                      ),
+                      Text(
+                        _userProfile?.displayName ?? 'Music Lover',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: kAccentColor,
+                          letterSpacing: -1.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Profile Icon with Logout Menu
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'logout') {
+                        _handleLogout();
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                       PopupMenuItem<String>(
+                        value: 'logout',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.logout_rounded, color: Colors.red, size: 20),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Logout',
+                              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: kAccentColor, width: 2),
+                      ),
+                      child: ClipOval(
+                        child: Image.network(
+                          _userProfile?.image ?? '',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: 40,
+                            height: 40,
+                            color: kSurfaceColor,
+                            child: const Icon(Icons.person, color: kTextSecondary, size: 20),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 32),
 
@@ -138,53 +205,60 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 24),
               
-              // 2.5 Top Emotions
-              if (_userProfile != null && _userProfile!.topEmotions.isNotEmpty) ...[
-                Text(
-                  'Top Emotions',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: kTextPrimary,
+                // 2.5 Top Emotions (Compact)
+                if (_userProfile != null && _userProfile!.topEmotions.isNotEmpty) ...[
+                  Text(
+                    'Top Emotions',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18, // Reduced from 20
+                      fontWeight: FontWeight.w700,
+                      color: kTextPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                  decoration: BoxDecoration(
-                     color: kSurfaceColor,
-                     borderRadius: BorderRadius.circular(16),
-                     border: Border.all(color: kBorderColor),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: _userProfile!.topEmotions.take(3).map((e) {
-                       return Column(
-                         children: [
-                           Text(
-                                _getEmojiForEmotion(e.label),
-                                style: const TextStyle(fontSize: 32),
-                           ),
-                           const SizedBox(height: 8),
-                           Text(
-                             e.label[0].toUpperCase() + e.label.substring(1),
-                             style: GoogleFonts.plusJakartaSans(
-                               fontWeight: FontWeight.bold,
-                               color: kTextPrimary,
-                               fontSize: 14,
+                  const SizedBox(height: 12), // Reduced from 16
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12), // Tighter padding
+                    decoration: BoxDecoration(
+                       color: kSurfaceColor,
+                       borderRadius: BorderRadius.circular(16),
+                       border: Border.all(color: kBorderColor),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: _userProfile!.topEmotions.take(3).map((e) {
+                         return Column(
+                           children: [
+                             // Uniform Icon Container (Smaller)
+                             Container(
+                               width: 32, 
+                               height: 32,
+                               alignment: Alignment.center,
+                               child: FaIcon(
+                                    _getIconForEmotion(e.label),
+                                    size: 20, // Smaller 24->20
+                                    color: kAccentColor,
+                               ),
                              ),
-                           ),
-                           Text(
-                             "${(e.score * 100).toInt()}%",
-                             style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 12),
-                           ),
-                         ],
-                       );
-                    }).toList(),
+                             const SizedBox(height: 4),
+                             Text(
+                               e.label[0].toUpperCase() + e.label.substring(1),
+                               style: GoogleFonts.plusJakartaSans(
+                                 fontWeight: FontWeight.bold,
+                                 color: kTextPrimary,
+                                 fontSize: 12, // Reduced from 14
+                               ),
+                             ),
+                             Text(
+                               "${(e.score * 100).toInt()}%",
+                               style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 10), // Reduced from 12
+                             ),
+                           ],
+                         );
+                      }).toList(),
+                    ),
                   ),
-                ),
-                 const SizedBox(height: 32),
-              ],
+                   const SizedBox(height: 24), // Reduced bottom spacing
+                ],
 
               // 3. Feature Explanations
               Text(
@@ -241,36 +315,40 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Helper: Emoji Mapper
-  String _getEmojiForEmotion(String label) {
+
+
+// ... (existing code)
+
+  // Helper: Icon Mapper (Aesthetic Icons instead of Emojis)
+  IconData _getIconForEmotion(String label) {
     switch (label.toLowerCase()) {
-      case 'joy': return '😄';
-      case 'sadness': return '😢';
-      case 'anger': return '😡';
-      case 'fear': return '😱';
-      case 'love': return '😍';
-      case 'excitement': return '🤩';
-      case 'surprise': return '😲';
-      case 'neutral': return '😐';
-      case 'confusion': return '😕';
-      case 'disgust': return '🤢';
-      case 'optimism': return '🌟';
-      case 'admiration': return '👏';
-      case 'anticipation': return '🫣';
-      case 'approval': return '👍';
-      case 'caring': return '🤗';
-      case 'desire': return '😏';
-      case 'disappointment': return '😞';
-      case 'disapproval': return '👎';
-      case 'embarrassment': return '😳';
-      case 'gratitude': return '🙏';
-      case 'grief': return '😭';
-      case 'nervousness': return '😬';
-      case 'pride': return '🦁';
-      case 'realization': return '💡';
-      case 'relief': return '😌';
-      case 'remorse': return '😔';
-      default: return '🎵';
+      case 'joy': return FontAwesomeIcons.faceSmileBeam;
+      case 'sadness': return FontAwesomeIcons.faceSadTear;
+      case 'anger': return FontAwesomeIcons.faceAngry;
+      case 'fear': return FontAwesomeIcons.faceFlushed;
+      case 'love': return FontAwesomeIcons.heart;
+      case 'excitement': return FontAwesomeIcons.bolt;
+      case 'surprise': return FontAwesomeIcons.faceSurprise;
+      case 'neutral': return FontAwesomeIcons.faceMeh;
+      case 'confusion': return FontAwesomeIcons.question;
+      case 'disgust': return FontAwesomeIcons.faceGrimace;
+      case 'optimism': return FontAwesomeIcons.sun;
+      case 'admiration': return FontAwesomeIcons.thumbsUp;
+      case 'anticipation': return FontAwesomeIcons.hourglassHalf; 
+      case 'approval': return FontAwesomeIcons.check;
+      case 'caring': return FontAwesomeIcons.handHoldingHeart;
+      case 'desire': return FontAwesomeIcons.fire;
+      case 'disappointment': return FontAwesomeIcons.faceFrownOpen;
+      case 'disapproval': return FontAwesomeIcons.thumbsDown;
+      case 'embarrassment': return FontAwesomeIcons.faceFlushed;
+      case 'gratitude': return FontAwesomeIcons.handsPraying;
+      case 'grief': return FontAwesomeIcons.heartCrack;
+      case 'nervousness': return FontAwesomeIcons.faceGrimace;
+      case 'pride': return FontAwesomeIcons.medal;
+      case 'realization': return FontAwesomeIcons.lightbulb;
+      case 'relief': return FontAwesomeIcons.faceSmile;
+      case 'remorse': return FontAwesomeIcons.faceSadCry;
+      default: return FontAwesomeIcons.music;
     }
   }
 

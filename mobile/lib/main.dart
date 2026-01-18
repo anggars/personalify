@@ -19,6 +19,9 @@ void main() {
   runApp(const PersonalifyApp());
 }
 
+// Global Navigator Key for Service Navigation
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class PersonalifyApp extends StatelessWidget {
   const PersonalifyApp({super.key});
 
@@ -132,6 +135,7 @@ class PersonalifyApp extends StatelessWidget {
         // Use Material 3
         useMaterial3: true,
       ),
+      navigatorKey: navigatorKey,
       home: const LoginScreen(),
     );
   }
