@@ -185,9 +185,10 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     
     if is_mobile:
         # Mobile app - redirect to deep link (no cookies needed for mobile)
+        # CRITICAL: Include access_token so mobile can call /sync/top-data
         log_system("AUTH", f"Mobile User Login Success: {display_name}", "FLUTTER")
         response = RedirectResponse(
-            url=f"personalify://callback?spotify_id={spotify_id}",
+            url=f"personalify://callback?spotify_id={spotify_id}&access_token={access_token}",
             status_code=303
         )
         return response
@@ -241,6 +242,15 @@ async def analyze_emotions_background(
     except Exception as e:
         print(f"BACKGROUND EMOTION ANALYSIS FAILED: {e}")
         return {"emotion_paragraph": "Vibe analysis is currently unavailable."}
+
+@router.post("/analyze-lyrics", tags=["NLP"])
+async def analyze_lyrics(
+    lyrics: str = Body(..., embed=True, description="Lyrics text to analyze")
+):
+    """
+    Analyze emotions from raw lyrics text.
+    """
+    return analyze_lyrics_emotion(lyrics)
 
 @router.get("/sync/top-data", tags=["Sync"])
 def sync_top_data(

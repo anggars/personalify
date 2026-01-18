@@ -94,15 +94,27 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: kTextSecondary,
                         ),
                       ),
-                      Text(
-                        _userProfile?.displayName ?? 'Music Lover',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: kAccentColor,
-                          letterSpacing: -1.0,
+                      if (_isLoading)
+                         Padding(
+                           padding: const EdgeInsets.only(top: 4),
+                           child: Row(
+                             children: [
+                               const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: kAccentColor)),
+                               const SizedBox(width: 8),
+                               Text("Syncing...", style: GoogleFonts.plusJakartaSans(fontSize: 18, color: kTextSecondary)),
+                             ],
+                           ),
+                         )
+                      else
+                        Text(
+                          _userProfile?.displayName ?? 'Music Lover',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: kAccentColor,
+                            letterSpacing: -1.0,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                   // Profile Icon with Logout Menu
@@ -195,6 +207,35 @@ class _HomeScreenState extends State<HomeScreen> {
                           _buildStatRow('Top Track', _userProfile!.tracks.isNotEmpty ? _userProfile!.tracks.first.name : '-'),
                           const SizedBox(height: 12),
                           _buildStatRow('Top Genre', _userProfile!.genres.isNotEmpty ? _userProfile!.genres.first.name : '-'),
+                          
+                          const SizedBox(height: 16),
+                          const Divider(color: kBorderColor),
+                          const SizedBox(height: 12),
+                          
+                          Row(
+                            children: [
+                               const Icon(Icons.psychology, color: kAccentColor, size: 18),
+                               const SizedBox(width: 8),
+                               Text(
+                                'Vibe Analysis',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: kTextPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _userProfile?.emotionParagraph ?? "Analyzing your music taste...",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              color: kTextSecondary, 
+                              height: 1.5,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
                         ],
                       )
                     else
