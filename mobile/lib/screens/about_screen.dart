@@ -40,22 +40,10 @@ class AboutScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24), // Match Dashboard/Home 16px
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center, // Center align for consistency with web
+            crossAxisAlignment: CrossAxisAlignment.center, 
             children: [
-              // Header
-              // Text(  <-- REMOVED REDUNDANT HEADER
-              //   'About Personalify',
-              //   style: GoogleFonts.plusJakartaSans(
-              //     fontSize: 32,
-              //     fontWeight: FontWeight.w800,
-              //     color: kAccentColor,
-              //     letterSpacing: -1.0,
-              //   ),
-              //   textAlign: TextAlign.center,
-              // ),
-              // const SizedBox(height: 8),
               Text(
                 'The project scoop, from exam brief to deployment.',
                 style: GoogleFonts.plusJakartaSans(
@@ -73,11 +61,11 @@ class AboutScreen extends StatelessWidget {
                 title: 'Just a Side-Quest?',
                 children: [
                   RichText(
-                    textAlign: TextAlign.justify,
+                    textAlign: TextAlign.left, // Cleaner than justify
                     text: TextSpan(
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
-                        color: kTextSecondary.withOpacity(0.8),
+                        color: kTextSecondary.withOpacity(0.9), // Slightly brighter for readability
                         height: 1.6,
                       ),
                       children: const [
@@ -121,11 +109,11 @@ class AboutScreen extends StatelessWidget {
                 title: 'About Me',
                 children: [
                    RichText(
-                    textAlign: TextAlign.justify,
+                    textAlign: TextAlign.left, // Cleaner
                     text: TextSpan(
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
-                        color: kTextSecondary.withOpacity(0.8),
+                        color: kTextSecondary.withOpacity(0.9),
                         height: 1.6,
                       ),
                       children: const [
