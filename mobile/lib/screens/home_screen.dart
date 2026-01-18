@@ -207,35 +207,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           _buildStatRow('Top Track', _userProfile!.tracks.isNotEmpty ? _userProfile!.tracks.first.name : '-'),
                           const SizedBox(height: 12),
                           _buildStatRow('Top Genre', _userProfile!.genres.isNotEmpty ? _userProfile!.genres.first.name : '-'),
-                          
-                          const SizedBox(height: 16),
-                          const Divider(color: kBorderColor),
-                          const SizedBox(height: 12),
-                          
-                          Row(
-                            children: [
-                               const Icon(Icons.psychology, color: kAccentColor, size: 18),
-                               const SizedBox(width: 8),
-                               Text(
-                                'Vibe Analysis',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: kTextPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _userProfile?.emotionParagraph ?? "Analyzing your music taste...",
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              color: kTextSecondary, 
-                              height: 1.5,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
                         ],
                       )
                     else
@@ -299,6 +270,42 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                    const SizedBox(height: 24), // Reduced bottom spacing
+                ],
+
+                // Top Genres
+                if (_userProfile != null && _userProfile!.genres.isNotEmpty) ...[
+                  Text(
+                    'Top Genres',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: kTextPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _userProfile!.genres.take(20).map((genre) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: kSurfaceColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: kBorderColor),
+                        ),
+                        child: Text(
+                          genre.name,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: kTextPrimary,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
                 ],
 
               // 3. Feature Explanations
