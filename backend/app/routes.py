@@ -36,7 +36,9 @@ def get_redirect_uri(request: Request):
     # Local development - use actual host (works with localhost, WiFi IP, etc)
     elif host:
         # Build callback URL using actual request host
-        scheme = "https" if "vercel.app" in host or request.url.scheme == "https" else "http"
+        # Fix: Check x-forwarded-proto for proper scheme detection behind proxies
+        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+        scheme = "https" if "vercel.app" in host or proto == "https" else "http"
         return f"{scheme}://{host}/callback"
     else:
         # Ultimate fallback
@@ -61,7 +63,8 @@ def login(request: Request, mobile: str = Query(None)):
         raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
     
     # Pass mobile param through state parameter
-    state = f"mobile={mobile}" if mobile else ""
+    # Ensure state is URL-safe and clearly indicates mobile
+    state = "mobile=true" if mobile and mobile.lower() == "true" else "web"
     
     query_params = urlencode({
         "response_type": "code", "client_id": client_id,
@@ -106,6 +109,8 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     user_profile = user_res.json()
     spotify_id = user_profile["id"]
     display_name = user_profile.get("display_name", "Unknown")
+    # FIX: Get User Image
+    user_image = user_profile["images"][0]["url"] if user_profile.get("images") else None
     save_user(spotify_id, display_name)
 
     time_ranges = ["short_term", "medium_term", "long_term"]
@@ -142,7 +147,8 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
         save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
 
-        result = {"user": display_name, "artists": [], "tracks": []}
+        # FIX: Include image in result
+        result = {"user": display_name, "image": user_image, "artists": [], "tracks": []}
         for artist in artists:
              result["artists"].append({
                 "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
@@ -196,7 +202,9 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         
         log_system("AUTH", f"User Login Success: {display_name}", "SPOTIFY")
         response = RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
-        response.set_cookie(key="spotify_id", value=spotify_id, httponly=True)
+        # CRITICAL FIX: Set cookie path to "/" so it is accessible on all routes
+        # Also set SameSite to Lax to prevent some browser blocking
+        response.set_cookie(key="spotify_id", value=spotify_id, httponly=True, path="/", samesite="lax")
         return response
 
 @router.post("/analyze-emotions-background", tags=["Background"])

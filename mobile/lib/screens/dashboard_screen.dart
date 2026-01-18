@@ -105,15 +105,16 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       final ScreenshotController controller = ScreenshotController();
       
       // Define a fixed logical size for the capture 
-      // width: 400 works well for text legibility
-      // 9:16 ratio -> height = 400 * (16/9) = ~711
+      // width: 400 seems good, but we want it to fit the screen better.
+      // Reducing height calculation slightly to avoid overflow issues if content is short?
+      // No, let's keep 400x711 (9:16) but ensure content fits.
       
       final Uint8List image = await controller.captureFromWidget(
         _buildShareableWidget(currentTab),
-        delay: const Duration(seconds: 1), // Wait for images/charts
-        pixelRatio: 3.0, // High quality output (1200x2133 roughly)
+        delay: const Duration(seconds: 1), 
+        pixelRatio: 3.0, 
         context: context,
-        targetSize: const Size(400, 711), // Force 9:16 Layout
+        targetSize: const Size(400, 711), 
       );
 
       final directory = await getApplicationDocumentsDirectory();
@@ -144,7 +145,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. TOP SPACER (Reduced significantly)
-          const SizedBox(height: 50),
+          // 1. TOP SPACER (Reduced significantly)
+          const SizedBox(height: 20),
           
           // 2. HEADER
           Row(
@@ -495,7 +497,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             border: isLast ? null : const Border(bottom: BorderSide(color: kBorderColor)),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: isShare ? 6 : 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -525,7 +527,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       // PING-PONG Marquee Title if name is long
                       SizedBox(
                         height: 20, 
-                        child: track.name.length > 25 
+                        child: (track.name.length > 25 && !isShare) // FIX: Disable Marquee for Share
                         ? PingPongScrollingText(
                             text: track.name,
                             width: double.infinity,
@@ -749,7 +751,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               border: isLast ? null : const Border(bottom: BorderSide(color: kBorderColor)),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: isShare ? 6 : 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center, // 4. CENTER VERTICAL
                 children: [
