@@ -215,7 +215,7 @@ async def analyze_emotions_background(
             track_names = [track['name'] for track in tracks_to_analyze]
         else:
             track_names = [track['name'] for track in tracks_to_analyze[:10]]
-        emotion_paragraph = generate_emotion_paragraph(track_names, extended=extended)
+        emotion_paragraph, top_emotions = generate_emotion_paragraph(track_names, extended=extended)
 
         if extended:
 
@@ -224,10 +224,11 @@ async def analyze_emotions_background(
 
             print("STANDARD ANALYSIS. UPDATING CACHE AND DATABASE.")
             cached_data['emotion_paragraph'] = emotion_paragraph
+            cached_data['top_emotions'] = top_emotions
             cache_top_data("top_v2", spotify_id, time_range, cached_data)
             save_user_sync(spotify_id, time_range, cached_data)
 
-        return {"emotion_paragraph": emotion_paragraph}
+        return {"emotion_paragraph": emotion_paragraph, "top_emotions": top_emotions}
 
     except Exception as e:
         print(f"BACKGROUND EMOTION ANALYSIS FAILED: {e}")
@@ -323,8 +324,9 @@ def sync_top_data(
         })
 
     track_names = [track['name'] for track in result.get("tracks", [])]
-    emotion_paragraph = generate_emotion_paragraph(track_names)
+    emotion_paragraph, top_emotions = generate_emotion_paragraph(track_names)
     result['emotion_paragraph'] = emotion_paragraph
+    result['top_emotions'] = top_emotions
 
     cache_top_data("top_v2", spotify_id, time_range, result)
     save_user_sync(spotify_id, time_range, result)
@@ -448,6 +450,7 @@ def dashboard_api(spotify_id: str, time_range: str = "medium_term"):
             "user": data["user"],
             "time_range": time_range,
             "emotion_paragraph": emotion_paragraph,
+            "top_emotions": data.get("top_emotions", []),
             "artists": data.get("artists", []),
             "tracks": data.get("tracks", []),
             "genres": genre_list,
