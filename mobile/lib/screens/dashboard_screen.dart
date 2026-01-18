@@ -104,15 +104,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     try {
       final ScreenshotController controller = ScreenshotController();
       
-      // Define a fixed logical size for the capture 
-      // width: 400 seems good, but we want it to fit the screen better.
-      // Reducing height calculation slightly to avoid overflow issues if content is short?
-      // No, let's keep 400x711 (9:16) but ensure content fits.
-      
+      // Further reduce pixelRatio for better stability
       final Uint8List image = await controller.captureFromWidget(
         _buildShareableWidget(currentTab),
         delay: const Duration(seconds: 1), 
-        pixelRatio: 2.0, // Reduced from 3.0 for better performance
+        pixelRatio: 1.5, // Reduced from 2.0 for even better performance
         targetSize: const Size(400, 711), 
       );
 
@@ -122,11 +118,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
       if (mounted) Navigator.pop(context); // Close loading
 
-      await Share.shareXFiles([XFile(imagePath.path)], text: 'Check out my vibe on Personalify! 🎵');
+      await Share.shareXFiles([XFile(imagePath.path)], text: 'Check out my Personalify vibe! 🎵');
     } catch (e) {
+      print('SHARE ERROR: $e'); // Debug logging
       if (mounted) {
         Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Share failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }

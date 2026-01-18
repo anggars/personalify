@@ -313,7 +313,25 @@ def sync_top_data(
     save_tracks_batch(tracks_to_save)
     save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
     save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
-    result = {"user": display_name, "artists": [], "tracks": []}
+    
+    # Extract genres from artists for mobile app
+    genre_count = {}
+    for artist in artists:
+        for genre in artist.get("genres", []):
+            genre_count[genre] = genre_count.get(genre, 0) + 1
+    
+    # Sort genres by count and create list
+    sorted_genres = sorted(genre_count.items(), key=lambda x: x[1], reverse=True)
+    genres_list = [{"name": genre, "count": count} for genre, count in sorted_genres[:20]]
+    
+    result = {
+        "user": display_name, 
+        "image": user_profile["images"][0]["url"] if user_profile.get("images") else None,
+        "artists": [], 
+        "tracks": [],
+        "genres": genres_list,
+        "time_range": time_range
+    }
 
     for artist in artists:
          result["artists"].append({
