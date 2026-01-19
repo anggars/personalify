@@ -17,7 +17,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  UserProfile? _profile;
+  Map<String, dynamic>? _profileData;
   bool _isLoading = true;
 
   @override
@@ -28,20 +28,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfile() async {
     try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final spotifyId = await authService.getSpotifyId();
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      final data = await apiService.getFullUserProfile();
       
-      if (spotifyId != null) {
-        final apiService = Provider.of<ApiService>(context, listen: false);
-        final profile = await apiService.getUserProfile(spotifyId);
-        // Note: Basic user profile might not have followers/following yet if not added to UserProfile model properly
-        // For now, using what's available.
-        if (mounted) {
-          setState(() {
-            _profile = profile;
-            _isLoading = false;
-          });
-        }
+      if (mounted) {
+        setState(() {
+          _profileData = data;
+          _isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
@@ -65,183 +59,190 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Header Style (Matching Dashboard)
+    final headerStyle = GoogleFonts.plusJakartaSans(
+      fontSize: 24, 
+      fontWeight: FontWeight.bold,
+      color: kTextPrimary
+    );
+
     if (_isLoading) return const Center(child: CircularProgressIndicator(color: kAccentColor));
-    if (_profile == null) return const Center(child: Text("Profile not found"));
+    if (_profileData == null) return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text("Profile Failed to Load"),
+          TextButton(onPressed: _loadProfile, child: const Text("Retry"))
+        ],
+      )
+    );
+
+    final name = _profileData!['display_name'] ?? 'Spotify User';
+    final userid = _profileData!['id'] ?? '';
+    final image = _profileData!['image_url'] ?? '';
+    final followers = '${_profileData!['followers'] ?? 0}';
+    final country = _profileData!['country'] ?? '-';
+    final product = (_profileData!['product'] ?? 'free').toString().toUpperCase();
 
     return Scaffold(
       backgroundColor: kBgColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 120), // For navbar
-          child: Column(
-            children: [
-              const SizedBox(height: 32),
-              
-              // Profile Image
-              Container(
+      appBar: AppBar(
+        title: Text('Profile', style: headerStyle), // Matched Header Size
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+            IconButton(
+                icon: const Icon(Icons.settings_outlined, color: kTextPrimary),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+            )
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+        child: Column(
+          children: [
+            // 1. Large Profile Image
+            Center(
+              child: Container(
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: kAccentColor, width: 3),
-                  boxShadow: [
-                     BoxShadow(color: kAccentColor.withOpacity(0.3), blurRadius: 20),
-                  ]
+                  color: kSurfaceColor,
+                  image: image.isNotEmpty 
+                      ? DecorationImage(image: CachedNetworkImageProvider(image), fit: BoxFit.cover)
+                      : null,
                 ),
-                child: ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: _profile?.image ?? '',
-                    width: 120,
-                    height: 120,
-                    fit: BoxFit.cover,
-                    placeholder: (_,__) => Container(color: kSurfaceColor),
-                    errorWidget: (_,__,__) => const Icon(Icons.person, size: 60, color: Colors.white),
-                  ),
-                ),
+                child: image.isEmpty 
+                    ? const Icon(Icons.person_rounded, size: 80, color: Colors.grey)
+                    : null,
               ),
-              
-              const SizedBox(height: 16),
-              
-              // Name & Flag
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _profile?.displayName ?? 'User',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 24, 
-                      fontWeight: FontWeight.bold,
-                      color: kTextPrimary
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Dummy flag if not in model, user requested flag.
-                  // Assuming backend doesn't return country code in UserProfile yet.
-                  // Will skip or use placeholder if unavailable.
-                ],
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // Premium Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: kAccentColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: kAccentColor),
-                ),
-                child: Text(
-                  'PREMIUM', // Static for now as requested
+            ),
+            
+            const SizedBox(height: 24),
+
+            // 2. Name & Verified Badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  name,
                   style: GoogleFonts.plusJakartaSans(
-                    color: kAccentColor,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    letterSpacing: 1.0,
+                    color: kTextPrimary,
                   ),
                 ),
+                const SizedBox(width: 8),
+                const Icon(Icons.verified_rounded, color: kAccentColor, size: 24),
+              ],
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Spotify ID
+            Text(
+              '@$userid',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                color: kTextSecondary,
               ),
-              
-              const SizedBox(height: 32),
-              
-              // Stats
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildStatItem('Followers', '1.2k'), // Mock data as requested in layout logic? No, fetch real if possible.
-                  const SizedBox(width: 40),
-                  _buildStatItem('Following', '48'),
-                ],
-              ),
-              
-              const SizedBox(height: 32),
-              
-              // Action Button
-              OutlinedButton(
-                onPressed: _openSpotify,
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: kAccentColor),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                ),
-                child: Text(
-                  'Open in Spotify',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: kAccentColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 48),
-              
-              // Menu
-              _buildMenuItem(
-                icon: Icons.settings_rounded, 
-                title: 'Settings',
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-                }
-              ),
-              _buildMenuItem(
-                icon: Icons.logout_rounded, 
-                title: 'Log Out',
-                color: Colors.redAccent,
-                onTap: _logout
-              ),
-            ],
-          ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // 3. Real Info (Stats)
+            _buildInfoGroup([
+              _buildInfoRow(Icons.people_outline_rounded, "Followers", followers),
+              _buildInfoRow(Icons.star_outline_rounded, "Subscription", product),
+              _buildInfoRow(Icons.flag_outlined, "Country", country),
+            ]),
+
+            const SizedBox(height: 24),
+
+            // 4. Actions
+            _buildInfoGroup([
+              _buildActionRow(Icons.open_in_new_rounded, "Open Spotify", kAccentColor, _openSpotify),
+              _buildActionRow(Icons.logout_rounded, "Log Out", Colors.redAccent, _logout),
+            ]),
+            
+            const SizedBox(height: 24),
+            Text(
+              "Personalify for Spotify",
+              style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.white24),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: kTextPrimary,
-          ),
-        ),
-        Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 14,
-            color: kTextSecondary,
-          ),
-        ),
-      ],
+  // Helper: Group Container (Rounded Card like WA/Settings iOS)
+  Widget _buildInfoGroup(List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurfaceColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: children,
+      ),
     );
   }
 
-  Widget _buildMenuItem({
-    required IconData icon, 
-    required String title, 
-    required VoidCallback onTap,
-    Color color = kTextPrimary,
-  }) {
-    return ListTile(
+  // Helper: Info Row
+  Widget _buildInfoRow(IconData icon, String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Row(
+        children: [
+          Icon(icon, color: kTextSecondary, size: 22),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                color: kTextPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              color: kTextSecondary, // Value is simpler
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper: Action Row (Clickable)
+  Widget _buildActionRow(IconData icon, String title, Color color, VoidCallback onTap) {
+    return InkWell(
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: kSurfaceColor,
-          borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
-        child: Icon(icon, color: color == kTextPrimary ? kTextPrimary : color, size: 20),
       ),
-      title: Text(
-        title,
-        style: GoogleFonts.plusJakartaSans(
-          fontWeight: FontWeight.w600,
-          fontSize: 16,
-          color: color,
-        ),
-      ),
-      trailing: Icon(Icons.chevron_right_rounded, color: kTextSecondary),
     );
   }
 }

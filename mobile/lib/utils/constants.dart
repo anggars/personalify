@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Application-wide constants
 class AppConstants {
   // API Configuration
@@ -28,3 +30,11 @@ class AppConstants {
   static const String dashboardEndpoint = '/api/dashboard';
   static const String syncEndpoint = '/sync/top-data';
 }
+
+// Global Color Constants (Requested for consistency)
+const Color kBgColor = Color(0xFF0a0a0a);
+const Color kSurfaceColor = Color(0xFF181818); 
+const Color kAccentColor = Color(0xFF1DB954); 
+const Color kTextPrimary = Color(0xFFFFFFFF);
+const Color kTextSecondary = Color(0xFFB3B3B3);
+const Color kBorderColor = Color(0xFF282828);
