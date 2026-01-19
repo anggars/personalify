@@ -98,6 +98,25 @@ class ApiService {
     } catch (e) {
       print("========================================");
       print("API: Sync Failed with exception:");
+      print(e);
+      return null;
+    }
+  }
+
+  /// NEW: Get recently played tracks
+  Future<List<dynamic>> getRecentlyPlayed() async {
+    try {
+      final response = await _dio.get('/api/spotify/recently-played?limit=50');
+      if (response.statusCode == 200) {
+        return response.data as List<dynamic>;
+      }
+      return [];
+    } catch (e) {
+      print('API Error (History): $e');
+      return [];
+    }
+  }
+}
       print("Error type: ${e.runtimeType}");
       print("Error: $e");
       if (e is DioException) {

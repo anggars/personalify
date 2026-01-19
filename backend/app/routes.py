@@ -58,7 +58,7 @@ def login(request: Request, mobile: str = Query(None)):
     print(f"DEBUG Login - Request Host: {request.headers.get('host', 'N/A')}")
     print(f"DEBUG Login - Mobile param: {mobile}")
     
-    scope = "user-top-read"
+    scope = "user-top-read user-read-recently-played user-read-private"
     if not client_id or not redirect_uri:
         raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
     
@@ -847,3 +847,46 @@ async def log_activity_task(request: Request):
     data = await request.json()
     print(f"Activity Logged: {data.get('action')}")
     return {"status": "Activity Logged"}
+
+@router.get("/api/spotify/recently-played", tags=["Spotify Data"])
+def get_recently_played(request: Request, limit: int = 50):
+    # Extract Access Token from Header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    access_token = auth_header.split(" ")[1]
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"https://api.spotify.com/v1/me/player/recently-played?limit={limit}"
+    
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+             raise HTTPException(status_code=response.status_code, detail=f"Spotify API Error: {response.text}")
+        
+        data = response.json()
+        items = data.get("items", [])
+        
+        result = []
+        for item in items:
+            track = item.get("track", {})
+            played_at = item.get("played_at")
+            
+            # Simple Image (Smallest)
+            images = track.get("album", {}).get("images", [])
+            image_url = images[-1]["url"] if images else "" # Smallest is usually last
+            
+            result.append({
+                "played_at": played_at,
+                "track_name": track.get("name", "Unknown"),
+                "artist_name": track.get("artists", [{}])[0].get("name", "Unknown"),
+                "image_url": image_url,
+                "spotify_url": track.get("external_urls", {}).get("spotify", "")
+            })
+            
+        return result
+
+    except Exception as e:
+        print(f"Error fetching recently played: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
