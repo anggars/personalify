@@ -19,6 +19,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _profileData;
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -27,18 +28,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
     try {
       final apiService = Provider.of<ApiService>(context, listen: false);
       final data = await apiService.getFullUserProfile();
       
       if (mounted) {
+        if (data != null) {
+          setState(() {
+            _profileData = data;
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _errorMessage = "Failed to fetch profile (404/500)";
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          _profileData = data;
+          _errorMessage = e.toString();
           _isLoading = false;
         });
       }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -59,19 +77,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Header Style (Matching Dashboard)
+    // Header Style (Standardized: 24px ExtraBold, Centered)
     final headerStyle = GoogleFonts.plusJakartaSans(
       fontSize: 24, 
-      fontWeight: FontWeight.bold,
-      color: kTextPrimary
+      fontWeight: FontWeight.w800,
+      color: kAccentColor,
+      letterSpacing: -0.5,
     );
 
     if (_isLoading) return const Center(child: CircularProgressIndicator(color: kAccentColor));
-    if (_profileData == null) return Center(
+    
+    if (_errorMessage != null || _profileData == null) return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text("Profile Failed to Load"),
+          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage ?? "Unknown Error",
+            style: const TextStyle(color: Colors.red),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
           TextButton(onPressed: _loadProfile, child: const Text("Retry"))
         ],
       )
@@ -91,6 +118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        toolbarHeight: 70, // Consistent Header Height
         actions: [
             IconButton(
                 icon: const Icon(Icons.settings_outlined, color: kTextPrimary),
