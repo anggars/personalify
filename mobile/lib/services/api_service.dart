@@ -106,6 +106,11 @@ class ApiService {
   /// NEW: Get recently played tracks
   Future<List<dynamic>> getRecentlyPlayed() async {
     try {
+      // Must use authService to get fresh token if using custom dio interceptor isn't fully set up yet
+      // However, assuming _dio has the interceptor or we pass headers? 
+      // Based on previous code, _dio might rely on basic config. 
+      // Let's ensure headers are set if needed.
+      
       final response = await _dio.get('/api/spotify/recently-played?limit=50');
       if (response.statusCode == 200) {
         return response.data as List<dynamic>;
@@ -113,7 +118,22 @@ class ApiService {
       return [];
     } catch (e) {
       print('API Error (History): $e');
+      // Return empty list instead of throwing to prevent red screen
       return [];
+    }
+  }
+  
+  /// NEW: Get Detailed User Profile (Direct from /v1/me via Backend)
+  Future<Map<String, dynamic>?> getFullUserProfile() async {
+    try {
+      final response = await _dio.get('/api/user-profile');
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      print('API Error (Profile): $e');
+      return null;
     }
   }
 

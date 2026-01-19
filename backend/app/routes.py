@@ -890,3 +890,43 @@ def get_recently_played(request: Request, limit: int = 50):
     except Exception as e:
         print(f"Error fetching recently played: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/user-profile", tags=["Spotify Data"])
+def get_user_profile_detail(request: Request):
+    """
+    Get detailed user profile directly from Spotify /v1/me
+    Includes: Display Name, Followers, Product, Country, Image
+    """
+    # Extract Access Token
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    access_token = auth_header.split(" ")[1]
+    headers = {"Authorization": f"Bearer {access_token}"}
+    
+    try:
+        response = requests.get("https://api.spotify.com/v1/me", headers=headers)
+        if response.status_code != 200:
+             raise HTTPException(status_code=response.status_code, detail=f"Spotify API Error: {response.text}")
+        
+        data = response.json()
+        
+        # Parse Image (Get largest)
+        images = data.get("images", [])
+        image_url = images[0]["url"] if images else ""
+        
+        result = {
+            "display_name": data.get("display_name", "Spotify User"),
+            "id": data.get("id"),
+            "followers": data.get("followers", {}).get("total", 0),
+            "country": data.get("country", "Unknown"),
+            "product": data.get("product", "free"),
+            "image_url": image_url,
+            "email": data.get("email", "")
+        }
+        return result
+
+    except Exception as e:
+        print(f"Error fetching user profile: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

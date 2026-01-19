@@ -15,6 +15,7 @@ class UserProfile {
   final String? displayName;
   final String? image; 
   final String? userId;
+  final int? followers; // Added followers
   final List<Emotion> topEmotions;
 
   UserProfile({
@@ -28,8 +29,12 @@ class UserProfile {
     this.displayName,
     this.image,
     this.userId,
+    this.followers,
     this.topEmotions = const [],
   });
+  
+  // Getter alias consistent with ProfileScreen usage
+  String get id => userId ?? userName;
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
@@ -56,6 +61,7 @@ class UserProfile {
       displayName: json['display_name'] as String? ?? json['user'] as String,
       image: json['image'] as String?,
       userId: json['user_id'] as String? ?? json['user'] as String,
+      followers: json['followers'] as int?,
       topEmotions: (json['top_emotions'] as List<dynamic>?)
               ?.map((e) => Emotion.fromJson(e as Map<String, dynamic>))
               .toList() ??

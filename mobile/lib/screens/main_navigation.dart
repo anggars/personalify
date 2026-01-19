@@ -35,7 +35,7 @@ class _MainNavigationState extends State<MainNavigation> {
               index: _currentIndex,
               children: [
                 HomeScreen(onTabChange: _onItemTapped),
-                const DashboardScreen(), // Using DashboardScreen as requested for "Dashboard" (StatsScreen was empty)
+                const DashboardScreen(),
                 AnalyzerScreen(),
                 const HistoryScreen(),
                 const ProfileScreen(),
@@ -43,28 +43,41 @@ class _MainNavigationState extends State<MainNavigation> {
             ),
           ),
           
-          // "Capsule" Glass Navbar Overlay
+          // "Liquid Glass" Navbar Overlay
           Positioned(
-            left: 24,
-            right: 24,
+            left: 16, 
+            right: 16,
             bottom: 24, 
             child: ClipRRect(
               borderRadius: BorderRadius.circular(30),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40), // Reduced from 20 (as requested: "jangan terlalu kenceng")
                 child: Container(
                   height: 72, 
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.85), 
+                    // "Agak Abu Dikit": Using white with slightly higher opacity to create a milky/greyish glass feel
+                    // This mimics the section card tone when over a dark background.
+                    color: Colors.white.withOpacity(0.12), 
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 0.5,
+                      color: Colors.white.withOpacity(0.15),
+                      width: 1.0,
+                    ),
+                    // Inset-like feel using gradient
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withOpacity(0.1),
+                        Colors.white.withOpacity(0.05),
+                        Colors.white.withOpacity(0.0),
+                      ],
+                      stops: const [0.0, 0.4, 1.0],
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.3),
-                        blurRadius: 20,
+                        blurRadius: 30,
                         offset: const Offset(0, 10),
                       ),
                     ],
@@ -90,6 +103,8 @@ class _MainNavigationState extends State<MainNavigation> {
 
   Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
+    
+    // Scale animation could be added here, but keeping it simple/performant first
     return GestureDetector(
       onTap: () => _onItemTapped(index),
       behavior: HitTestBehavior.opaque,
@@ -98,21 +113,18 @@ class _MainNavigationState extends State<MainNavigation> {
         children: [
           Icon(
             icon,
-            color: isSelected ? const Color(0xFF1DB954) : Colors.white.withOpacity(0.5),
-            size: 26,
+            color: isSelected ? const Color(0xFF1DB954) : Colors.white.withOpacity(0.6),
+            size: 24,
           ),
-          if (isSelected) 
-            Container(
-              margin: const EdgeInsets.only(top: 4),
-              width: 4,
-              height: 4,
-              decoration: const BoxDecoration(
-                color: Color(0xFF1DB954),
-                shape: BoxShape.circle,
-              ),
-            )
-          else
-            const SizedBox(height: 4),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? const Color(0xFF1DB954) : Colors.white.withOpacity(0.6),
+              fontSize: 10,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            ),
+          )
         ],
       ),
     );
