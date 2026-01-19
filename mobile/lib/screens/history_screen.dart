@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -5,6 +6,7 @@ import 'package:personalify/utils/constants.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:personalify/screens/song_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -16,7 +18,7 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   bool _isLoading = true;
   List<dynamic> _history = [];
-  String? _error;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -25,6 +27,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _fetchHistory() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
       final apiService = Provider.of<ApiService>(context, listen: false);
       final history = await apiService.getRecentlyPlayed();
@@ -33,11 +40,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
           _history = history;
           _isLoading = false;
         });
+        
+        if (history.isEmpty) {
+           // Debug: check if it's empty because of error or actual no data
+           // We might want to set a flag or message here
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _errorMessage = e.toString();
           _isLoading = false;
         });
       }
@@ -56,118 +68,169 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Header Style (Standardized from Dashboard)
+    final headerStyle = GoogleFonts.plusJakartaSans(
+      fontSize: 24, 
+      fontWeight: FontWeight.w800,
+      color: kAccentColor,
+      letterSpacing: -0.5,
+    );
+
     return Scaffold(
       backgroundColor: kBgColor,
-      body: SafeArea(
-        bottom: false, // For floating navbar overlap
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Row(
-                children: [
-                  const Icon(Icons.history_rounded, color: kAccentColor, size: 28),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Recently Played',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: kTextPrimary,
-                    ),
-                  ),
-                ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Adjust for blur intensity
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    kBgColor.withOpacity(0.85),
+                    kBgColor.withOpacity(0.75),
+                    kBgColor.withOpacity(0.6),
+                    kBgColor.withOpacity(0.0),
+                  ],
+                  stops: const [0.0, 0.7, 0.9, 1.0],
+                ),
+              ),
+              child: AppBar(
+                title: Text('Recently Played', style: headerStyle),
+                centerTitle: true,
+                backgroundColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                toolbarHeight: 70,
+                automaticallyImplyLeading: false,
               ),
             ),
-            
-            // Content
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: kAccentColor))
-                  : _error != null
-                      ? Center(child: Text('Error: $_error', style: const TextStyle(color: Colors.red)))
-                      : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 120), // Bottom padding for navbar
-                          itemCount: _history.length,
-                          itemBuilder: (context, index) {
-                            final item = _history[index];
-                            final time = _formatTime(item['played_at']);
-                            final title = item['track_name'] ?? 'Unknown';
-                            final artist = item['artist_name'] ?? 'Unknown';
-                            final image = item['image_url'] ?? '';
+          ),
+        ),
+      ),
+      body: RefreshIndicator(
+        color: kAccentColor,
+        backgroundColor: kSurfaceColor,
+        onRefresh: _fetchHistory,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: kAccentColor))
+            : _errorMessage != null
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 200),
+                        child: Center(child: Text('Failed to load: $_errorMessage', style: const TextStyle(color: Colors.red))),
+                      )
+                    ],
+                  )
+                : SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: kSurfaceColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: Column(
+                        children: _history.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final item = entry.value;
+                          final time = _formatTime(item['played_at'] ?? '');
+                          final title = item['track_name'] ?? 'Unknown';
+                          final artist = item['artist_name'] ?? 'Unknown';
+                          final image = item['image_url'] ?? '';
 
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: Row(
-                                children: [
-                                  // Time (Left)
-                                  SizedBox(
-                                    width: 50,
-                                    child: Text(
-                                      time,
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: kTextSecondary,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
+                          return Column(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SongDetailScreen(
+                                        song: {
+                                          'track_name': title,
+                                          'artist_name': artist,
+                                          'image_url': image,
+                                        },
                                       ),
                                     ),
-                                  ),
-                                  
-                                  const SizedBox(width: 12),
-                                  
-                                  // Info (Center)
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          title,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            color: kTextPrimary,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        Text(
-                                          artist,
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Row(
+                                    children: [
+                                      // Time (Left)
+                                      SizedBox(
+                                        width: 50,
+                                        child: Text(
+                                          time,
                                           style: GoogleFonts.plusJakartaSans(
                                             color: kTextSecondary,
                                             fontSize: 13,
+                                            fontWeight: FontWeight.w600,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                          textAlign: TextAlign.center,
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      // Image
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: CachedNetworkImage(
+                                          imageUrl: image,
+                                          width: 48,
+                                          height: 48,
+                                          fit: BoxFit.cover,
+                                          placeholder: (_,__) => Container(color: kSurfaceColor),
+                                          errorWidget: (_, __, ___) => Container(color: kSurfaceColor, child: const Icon(Icons.music_note, color: Colors.white24)),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      // Details
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              title,
+                                              style: GoogleFonts.plusJakartaSans(
+                                                color: kTextPrimary,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 15,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            Text(
+                                              artist,
+                                              style: GoogleFonts.plusJakartaSans(
+                                                color: kTextSecondary,
+                                                fontSize: 13,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  
-                                  const SizedBox(width: 12),
-                                  
-                                  // Cover (Right)
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: image.isNotEmpty
-                                        ? CachedNetworkImage(
-                                            imageUrl: image,
-                                            width: 48,
-                                            height: 48,
-                                            fit: BoxFit.cover,
-                                            placeholder: (context, url) => Container(color: kSurfaceColor),
-                                            errorWidget: (context, url, error) => Container(color: kSurfaceColor),
-                                          )
-                                        : Container(width: 48, height: 48, color: kSurfaceColor),
-                                  ),
-                                ],
+                                ),
                               ),
-                            );
-                          },
-                        ),
-            ),
-          ],
-        ),
+                              if (index != _history.length - 1)
+                                const Divider(height: 1, color: Colors.white10),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
       ),
     );
   }

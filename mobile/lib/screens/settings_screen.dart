@@ -80,6 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        toolbarHeight: 70, // Consistent Header Height
         title: Text(
           'Settings',
           style: GoogleFonts.plusJakartaSans(

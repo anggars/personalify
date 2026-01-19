@@ -1,13 +1,13 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
-import 'package:personalify/widgets/ping_pong_text.dart';
-
-import 'package:personalify/models/user_profile.dart'; // Import Model
+import 'package:personalify/models/user_profile.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class AnalyzerScreen extends StatefulWidget {
   final UserProfile? userProfile;
@@ -20,70 +20,34 @@ class AnalyzerScreen extends StatefulWidget {
 
 class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final ApiService _apiService = ApiService(AuthService()); // Initialize ApiService
-  final AuthService _authService = AuthService(); // Add Auth Service
-
-  // Colors
+  final ApiService _apiService = ApiService(AuthService()); 
+  
   static const Color kBgColor = Color(0xFF0a0a0a);
   static const Color kSurfaceColor = Color(0xFF181818);
   static const Color kAccentColor = Color(0xFF1DB954);
   static const Color kTextPrimary = Color(0xFFFFFFFF);
   static const Color kTextSecondary = Color(0xFFB3B3B3);
-  static const Color kBorderColor = Color(0xFF282828);
+  static const Color kCardBorderColor = Colors.white12;
 
-  // --- LYRICS TAB STATE ---
   final TextEditingController _lyricsController = TextEditingController();
   bool _isAnalyzingLyrics = false;
   Map<String, dynamic>? _lyricsResult;
 
-  // --- GENIUS TAB STATE ---
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
   List<dynamic> _artistSuggestions = [];
-  bool _suggestionsVisible = false;
 
   Map<String, dynamic>? _selectedArtist;
-  List<dynamic> _artists = []; // Search results
+  List<dynamic> _artists = []; 
   List<dynamic> _songs = [];
   String? _selectedSongId;
-  bool _isLoadingSongs = false;
-  String? _geniusLoadingState; // "Searching...", "Analyzing..."
+  String? _geniusLoadingState; 
   Map<String, dynamic>? _geniusAnalysis;
-
-  // Global Vibe State
-  UserProfile? _userProfile;
-  bool _isLoadingProfile = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-
-    // Initialize UserProfile
-    if (widget.userProfile != null) {
-      _userProfile = widget.userProfile;
-    } else {
-      _fetchUserProfile();
-    }
-  }
-
-  Future<void> _fetchUserProfile() async {
-    setState(() => _isLoadingProfile = true);
-    try {
-      final id = await _authService.getSpotifyId();
-      if (id != null) {
-        final profile = await _apiService.getUserProfile(id);
-        if (mounted) {
-           setState(() {
-             _userProfile = profile;
-           });
-        }
-      }
-    } catch (e) {
-      print("Error fetching profile for analyzer: $e");
-    } finally {
-      if (mounted) setState(() => _isLoadingProfile = false);
-    }
   }
 
   @override
@@ -97,66 +61,47 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (context) => TopToast(
+        message: message, 
+        onDismissed: () => entry.remove(),
+      ),
     );
+    Overlay.of(context).insert(entry);
   }
-
-  // --- LYRICS LOGIC ---
 
   Future<void> _analyzeLyrics() async {
     final text = _lyricsController.text.trim();
-    if (text.isEmpty) {
-      _showError("Please paste some lyrics first!");
-      return;
-    }
-
+    if (text.isEmpty) { _showError("Please paste some lyrics first!"); return; }
+    FocusScope.of(context).unfocus();
     setState(() { _isAnalyzingLyrics = true; _lyricsResult = null; });
-
     try {
       final result = await _apiService.analyzeLyrics(text);
       if (mounted) setState(() => _lyricsResult = result);
     } catch (e) {
-      _showError("Analysis failed. Please try again.");
+      _showError("Analysis failed.");
     } finally {
       if (mounted) setState(() => _isAnalyzingLyrics = false);
     }
   }
 
-  // --- GENIUS LOGIC ---
-
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    if (query.isEmpty) {
-      setState(() => _artistSuggestions = []);
-      return;
-    }
-
-    _debounce = Timer(const Duration(milliseconds: 500), () async {
+    if (query.isEmpty) { setState(() => _artistSuggestions = []); return; }
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
       try {
-        final results = await _apiService.autocompleteArtist(query);
+        final results = await _apiService.searchArtist(query); 
         if (mounted) setState(() => _artistSuggestions = results);
-      } catch (e) {
-        // Silent fail for autocomplete
-      }
+      } catch (e) {}
     });
   }
 
   Future<void> _searchArtist() async {
     final query = _searchController.text.trim();
-    if (query.isEmpty) {
-      _showError("Please enter an artist name.");
-      return;
-    }
-
-    setState(() {
-      _geniusLoadingState = 'search';
-      _selectedArtist = null;
-      _songs = [];
-      _geniusAnalysis = null;
-      _artistSuggestions = [];
-    });
-
+    if (query.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    setState(() { _geniusLoadingState = 'search'; _selectedArtist = null; _songs = []; _geniusAnalysis = null; _artistSuggestions = []; });
     try {
       final results = await _apiService.searchArtist(query);
       if (results.isEmpty) _showError("No artist found.");
@@ -169,14 +114,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   }
 
   Future<void> _loadSongs(Map<String, dynamic> artist) async {
-    setState(() {
-      _selectedArtist = artist;
-      _artists = []; // Clear list to show selected view
-      _suggestionsVisible = false;
-      _geniusLoadingState = 'songs';
-      _searchController.text = artist['name']; // Auto-fill
-    });
-
+    setState(() { _selectedArtist = artist; _artists = []; _geniusLoadingState = 'songs'; _searchController.text = artist['name']; });
     try {
       final songs = await _apiService.getArtistSongs(artist['id']);
       if (mounted) setState(() => _songs = songs);
@@ -188,12 +126,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   }
 
   Future<void> _analyzeSong(int songId) async {
-    setState(() {
-      _selectedSongId = songId.toString();
-      _geniusLoadingState = 'analyze';
-      _geniusAnalysis = null;
-    });
-
+    setState(() { _selectedSongId = songId.toString(); _geniusLoadingState = 'analyze'; _geniusAnalysis = null; });
     try {
       final result = await _apiService.getLyricsEmotion(songId);
       if (mounted) setState(() => _geniusAnalysis = result);
@@ -205,521 +138,334 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   }
 
   void _clearGenius() {
-    setState(() {
-      _searchController.clear();
-      _artists = [];
-      _songs = [];
-      _selectedArtist = null;
-      _selectedSongId = null;
-      _geniusAnalysis = null;
-      _artistSuggestions = [];
-    });
+    setState(() { _searchController.clear(); _artists = []; _songs = []; _selectedArtist = null; _selectedSongId = null; _geniusAnalysis = null; _artistSuggestions = []; });
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-             const SizedBox(height: 16),
-             Container(
-               color: kBgColor,
-               padding: const EdgeInsets.symmetric(horizontal: 16),
-               child: TabBar(
-                 controller: _tabController,
-                 isScrollable: false,
-                 labelColor: kAccentColor,
-                 unselectedLabelColor: kTextSecondary,
-                 indicatorSize: TabBarIndicatorSize.label,
-                 indicatorColor: kAccentColor,
-                 indicatorWeight: 3,
-                 dividerColor: Colors.transparent,
-                 labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
-                 unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
-                 tabs: const [
-                   Tab(text: 'Lyrics', height: 40),
-                   Tab(text: 'Genius', height: 40),
-                 ],
-               ),
-             ),
-             Expanded(
-               child: TabBarView(
-                 controller: _tabController,
-                 children: <Widget>[
-                   _buildLyricsTab(),
-                   _buildGeniusTab(),
-                 ],
-               ),
-             ),
-          ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(118), // 70 toolbar + 48 tabs
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Adjust for blur intensity
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    kBgColor.withOpacity(0.85),
+                    kBgColor.withOpacity(0.75),
+                    kBgColor.withOpacity(0.6),
+                    kBgColor.withOpacity(0.0),
+                  ],
+                  stops: const [0.0, 0.7, 0.9, 1.0],
+                ),
+              ),
+              child: Column(
+                children: [
+                  AppBar(
+                    title: Text('Analyzer', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: kAccentColor, letterSpacing: -0.5)),
+                    centerTitle: true,
+                    backgroundColor: Colors.transparent,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 0,
+                    toolbarHeight: 70,
+                  ),
+                  Container(
+                    color: Colors.transparent,
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: false,
+                      labelColor: kAccentColor,
+                      unselectedLabelColor: kTextSecondary,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      indicatorColor: kAccentColor,
+                      indicatorWeight: 3,
+                      dividerColor: Colors.transparent,
+                      labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                      unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
+                      tabs: const [ Tab(text: "Lyrics", height: 40), Tab(text: "Genius", height: 40) ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [ _buildLyricsTab(), _buildGeniusTab() ],
+      ),
+    );
+  }
+
+  Widget _buildUnifiedCard({required List<Widget> children}) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20), // Slightly reduced padding
+          decoration: BoxDecoration(
+            color: kSurfaceColor, 
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: kCardBorderColor),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))]
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
         ),
       ),
     );
   }
 
-  // --- WIDGETS: LYRICS TAB ---
-
   Widget _buildLyricsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Lyrics Analyzer',
-            style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: kAccentColor),
-            textAlign: TextAlign.center,
+    return _buildUnifiedCard(children: [
+      Container(
+        decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+        child: TextField(
+          controller: _lyricsController, maxLines: 8, minLines: 4,
+          style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontSize: 16, height: 1.5),
+          decoration: InputDecoration(
+            hintText: "Write or paste your lyrics here...", 
+            hintStyle: GoogleFonts.plusJakartaSans(color: kTextSecondary.withOpacity(0.5)),
+            border: InputBorder.none, 
+            contentPadding: const EdgeInsets.all(16),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Paste lyrics below to uncover hidden emotions.',
-            style: GoogleFonts.plusJakartaSans(fontSize: 14, color: kTextSecondary),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-
-          // --- GLOBAL VIBE CARD (If no result yet) ---
-          if (_isLoadingProfile) 
-             const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(child: CircularProgressIndicator(color: kAccentColor)),
-             )
-          else if (_lyricsResult == null && _userProfile != null && _userProfile!.topEmotions.isNotEmpty) ...[
-             Container(
-               padding: const EdgeInsets.all(20),
-               decoration: BoxDecoration(
-                 color: kSurfaceColor,
-                 borderRadius: BorderRadius.circular(20),
-                 border: Border.all(color: kBorderColor),
-               ),
-               child: Column(
-                 children: [
-                   Row(
-                     mainAxisAlignment: MainAxisAlignment.center,
-                     children: [
-                       const Icon(Icons.auto_awesome, color: kAccentColor, size: 20),
-                       const SizedBox(width: 8),
-                       Text("Your Global Vibe", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 16)),
-                     ],
-                   ),
-                   const SizedBox(height: 16),
-                   Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: _userProfile!.topEmotions.take(3).map((e) {
-                         return Column(
-                           children: [
-                             CircleAvatar(
-                               backgroundColor: kBgColor,
-                               radius: 24, // Slightly larger
-                               child: FaIcon(_getIconForEmotion(e.label), size: 20, color: kAccentColor),
-                             ),
-                             const SizedBox(height: 8),
-                             Text(e.label.toUpperCase(), style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.bold, color: kTextPrimary)),
-                             Text("${(e.score * 100).toInt()}%", style: GoogleFonts.plusJakartaSans(fontSize: 10, color: kTextSecondary)),
-                           ],
-                         );
-                      }).toList(),
-                   )
-                 ],
-               ),
-             ),
-             const SizedBox(height: 24),
-          ],
-          
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A), // Darker Input BG
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.transparent), // Clean
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _lyricsController,
-                  maxLines: 8,
-                  style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: "Write or paste your lyrics here...",
-                    hintStyle: GoogleFonts.plusJakartaSans(color: kTextSecondary.withOpacity(0.5)),
-                    border: InputBorder.none,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isAnalyzingLyrics ? null : _analyzeLyrics,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kAccentColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    child: _isAnalyzingLyrics 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : Text('Analyze Emotions', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          if (_lyricsResult != null) ...[
-            const SizedBox(height: 24),
-            _buildEmotionResults(_lyricsResult!['emotions']),
-          ]
-        ],
+        ),
       ),
-    );
+      const SizedBox(height: 20),
+      SizedBox(height: 50, child: ElevatedButton(onPressed: _isAnalyzingLyrics ? null : _analyzeLyrics, style: ElevatedButton.styleFrom(backgroundColor: kSurfaceColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), side: const BorderSide(color: Colors.white12), elevation: 0), child: _isAnalyzingLyrics ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text('Analyze Emotions', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)))),
+      if (_lyricsResult != null) ...[const SizedBox(height: 32), _buildEmotionResults(_lyricsResult!['emotions'])]
+      else if (!_isAnalyzingLyrics && _lyricsController.text.isEmpty) ...[Padding(padding: const EdgeInsets.only(top: 32), child: Column(children: [Icon(Symbols.lyrics, color: kTextSecondary, size: 32), const SizedBox(height: 8), Text("Uncover the emotions hidden in text", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 13))]))]
+    ]);
   }
-
-  Widget _buildEmotionResults(List<dynamic>? emotions) {
-    if (emotions == null || emotions.isEmpty) {
-      return Center(child: Text("No significant emotions found.", style: GoogleFonts.plusJakartaSans(color: kTextSecondary)));
-    }
-
-    // Filter and sort
-    final filtered = emotions.where((e) => (e['score'] as num) > 0.05).toList();
-    if (filtered.isEmpty) return const SizedBox();
-    
-    final maxScore = filtered.map((e) => (e['score'] as num).toDouble()).reduce((a, b) => a > b ? a : b);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Emotion Results:", style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold, fontSize: 16)),
-        const SizedBox(height: 12),
-        ...filtered.take(10).map((e) {
-          final score = (e['score'] as num).toDouble();
-          final percentage = (score * 100).toStringAsFixed(1);
-          final relativeWidth = score / maxScore;
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                 SizedBox(
-                   width: 80,
-                   child: Text(
-                     e['label'].toString().toUpperCase(),
-                     style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontWeight: FontWeight.bold, fontSize: 12),
-                     overflow: TextOverflow.ellipsis,
-                   ),
-                 ),
-                 Expanded(
-                   child: Container(
-                     height: 8,
-                     margin: const EdgeInsets.symmetric(horizontal: 12),
-                     decoration: BoxDecoration(
-                       color: kSurfaceColor,
-                       borderRadius: BorderRadius.circular(4),
-                     ),
-                     child: FractionallySizedBox(
-                       alignment: Alignment.centerLeft,
-                       widthFactor: relativeWidth,
-                       child: Container(
-                         decoration: BoxDecoration(
-                           color: kAccentColor,
-                           borderRadius: BorderRadius.circular(4),
-                         ),
-                       ),
-                     ),
-                   ),
-                 ),
-                 Text(
-                   "$percentage%",
-                   style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontWeight: FontWeight.bold, fontSize: 12),
-                 ),
-              ],
-            ),
-          );
-        }).toList(),
-      ],
-    );
-  }
-
-  // --- WIDGETS: GENIUS TAB ---
 
   Widget _buildGeniusTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Genius Analyzer',
-            style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.bold, color: kAccentColor),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Pick a song to deep dive into meanings.',
-            style: GoogleFonts.plusJakartaSans(fontSize: 14, color: kTextSecondary),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-
-          // Search Bar
+     return _buildUnifiedCard(children: [
           Container(
-            decoration: BoxDecoration(
-              color: kSurfaceColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: kBorderColor),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
-                  onSubmitted: (_) => _searchArtist(),
-                  style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: "Type artist name (e.g. The Beatles)...",
-                    hintStyle: GoogleFonts.plusJakartaSans(color: kTextSecondary.withOpacity(0.5)),
-                    border: InputBorder.none,
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.search, color: kAccentColor),
-                      onPressed: _searchArtist,
-                    ),
-                  ),
-                ),
-                if (_selectedArtist != null) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                       onPressed: _clearGenius,
-                       style: OutlinedButton.styleFrom(
-                         foregroundColor: Colors.redAccent,
-                         side: const BorderSide(color: Colors.redAccent),
-                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                       ),
-                       child: const Text("Clear Search"),
-                    ),
-                  ),
-                ]
-              ],
-            ),
-          ),
-
-          // Suggestions
-          if (_artistSuggestions.isNotEmpty && _suggestionsVisible && _selectedArtist == null)
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              decoration: BoxDecoration(color: kSurfaceColor, borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                children: _artistSuggestions.map((artist) => ListTile(
-                  leading: const Icon(Icons.music_note, color: kTextSecondary, size: 20),
-                  title: Text(artist['name'], style: GoogleFonts.plusJakartaSans(color: kTextPrimary)),
-                  onTap: () {
-                    _searchController.text = artist['name'];
-                    _searchArtist();
-                  },
-                )).toList(),
-              ),
-            ),
-          
-          const SizedBox(height: 24),
-
-          // Loading Indicator
-          if (_geniusLoadingState != null)
-             const Padding(
-               padding: EdgeInsets.all(24.0),
-               child: Center(child: CircularProgressIndicator(color: kAccentColor)),
+             decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+             child: TextField(
+               controller: _searchController, onChanged: _onSearchChanged, textAlignVertical: TextAlignVertical.center, style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontSize: 15),
+               decoration: InputDecoration(hintText: "Type artist name...", hintStyle: GoogleFonts.plusJakartaSans(color: kTextSecondary.withOpacity(0.5)), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), suffixIcon: _searchController.text.isNotEmpty ? IconButton(icon: const Icon(Icons.clear, color: kTextSecondary), onPressed: _clearGenius) : null), onSubmitted: (_) => _searchArtist(),
              ),
-
-          // Artist Results Grid
-          if (_artists.isNotEmpty && _geniusLoadingState == null)
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.8,
-                crossAxisSpacing: 12, 
-                mainAxisSpacing: 12,
-              ),
-              itemCount: _artists.length,
-              itemBuilder: (context, index) {
-                final artist = _artists[index];
-                return GestureDetector(
-                  onTap: () => _loadSongs(artist),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: kSurfaceColor, 
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: kBorderColor),
-                    ),
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(50),
-                          child: CachedNetworkImage(
-                            imageUrl: artist['image_url'] ?? '',
-                            width: 80, height: 80, fit: BoxFit.cover,
-                            errorWidget: (_,__,___) => Container(color: Colors.grey, width: 80, height: 80),
+           ),
+           const SizedBox(height: 16),
+           SizedBox(height: 50, child: ElevatedButton(onPressed: _selectedArtist == null ? _searchArtist : _clearGenius, style: ElevatedButton.styleFrom(backgroundColor: kSurfaceColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0, side: _selectedArtist == null ? const BorderSide(color: Colors.white12) : BorderSide(color: Colors.red.withOpacity(0.3))), child: _geniusLoadingState == 'search' ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(_selectedArtist == null ? "Search Artist" : "Clear Search", style: GoogleFonts.plusJakartaSans(color: _selectedArtist == null ? Colors.white : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 15)))),
+           if (_artistSuggestions.isNotEmpty && _selectedArtist == null) ...[const SizedBox(height: 16), const Divider(color: Colors.white10), ..._artistSuggestions.take(5).map((artist) => ListTile(dense: true, contentPadding: EdgeInsets.zero, leading: ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 32, height: 32, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 32, height: 32))), title: Text(artist['name'], style: GoogleFonts.plusJakartaSans(color: Colors.white)), onTap: () { _searchController.text = artist['name']; _searchArtist(); }))],
+           if (_geniusLoadingState == 'songs' || _geniusLoadingState == 'analyze') const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator(color: kAccentColor))),
+           if (_artists.isNotEmpty && _geniusLoadingState == null) ...[const SizedBox(height: 24), const Divider(color: Colors.white10), const SizedBox(height: 16), GridView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.85, crossAxisSpacing: 12, mainAxisSpacing: 12), itemCount: _artists.length, itemBuilder: (context, index) { final artist = _artists[index]; return GestureDetector(onTap: () => _loadSongs(artist), child: Container(decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white10)), padding: const EdgeInsets.all(12), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 60, height: 60, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 60, height: 60))), const SizedBox(height: 12), Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 13), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)]))); })],
+           
+           if (_songs.isNotEmpty && _geniusLoadingState == null) ...[
+             const SizedBox(height: 24),
+             Text("Songs by ${_selectedArtist!['name']}", style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+             const SizedBox(height: 16),
+             
+             Container(
+               height: 325,
+               decoration: BoxDecoration(
+                 color: Colors.transparent, // MATCHING ORIGINAL STYLE
+                 borderRadius: BorderRadius.circular(16), 
+                 border: Border.all(color: kCardBorderColor)
+               ),
+               child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 0),
+                    itemCount: _songs.length,
+                    separatorBuilder: (_, __) => const Divider(color: kCardBorderColor, height: 1),
+                    itemBuilder: (context, index) {
+                      final song = _songs[index];
+                      final isSelected = _selectedSongId == song['id'].toString();
+                      return Material(
+                        color: isSelected ? kAccentColor.withOpacity(0.1) : Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _analyzeSong(song['id']),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Row(
+                              children: [
+                                ClipRRect(borderRadius: BorderRadius.circular(4), child: CachedNetworkImage(imageUrl: song['image'] ?? '', width: 40, height: 40, fit: BoxFit.cover)),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(song['title'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 13, color: isSelected ? kAccentColor : kTextPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      Text(song['album'] ?? "Single", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    ],
+                                  ),
+                                ),
+                                if (isSelected) const Icon(Icons.check_circle, color: kAccentColor, size: 16)
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          artist['name'], 
-                          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary),
-                          textAlign: TextAlign.center,
-                          maxLines: 2, overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-
-           // Song List
-           if (_songs.isNotEmpty && _geniusLoadingState == null) ...[
-             const SizedBox(height: 8),
-             Text(
-               "Top Songs by ${_selectedArtist?['name']}",
-               style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold),
-             ),
-             const SizedBox(height: 12),
-             ListView.builder(
-               shrinkWrap: true,
-               physics: const NeverScrollableScrollPhysics(),
-               itemCount: _songs.length,
-               itemBuilder: (context, index) {
-                 final song = _songs[index];
-                 final isSelected = _selectedSongId == song['id'].toString();
-                 return GestureDetector(
-                   onTap: () => _analyzeSong(song['id']),
-                   child: Container(
-                     margin: const EdgeInsets.only(bottom: 12),
-                     padding: const EdgeInsets.all(12),
-                     decoration: BoxDecoration(
-                       color: isSelected ? kAccentColor.withOpacity(0.1) : kSurfaceColor,
-                       borderRadius: BorderRadius.circular(12),
-                       border: Border.all(color: isSelected ? kAccentColor : kBorderColor),
-                     ),
-                     child: Row(
-                       children: [
-                         ClipRRect(
-                           borderRadius: BorderRadius.circular(8),
-                           child: CachedNetworkImage(
-                             imageUrl: song['image'] ?? '',
-                             width: 48, height: 48, fit: BoxFit.cover,
-                             errorWidget: (_,__,___) => Container(color: Colors.grey, width: 48, height: 48),
-                           ),
-                         ),
-                         const SizedBox(width: 12),
-                         Expanded(
-                           child: Column(
-                             crossAxisAlignment: CrossAxisAlignment.start,
-                             children: [
-                               Text(
-                                 song['title'],
-                                 style: GoogleFonts.plusJakartaSans(
-                                   fontWeight: FontWeight.bold, 
-                                   color: isSelected ? kAccentColor : kTextPrimary
-                                 ),
-                               ),
-                               Text(
-                                 song['album'] ?? "Single",
-                                 style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 12),
-                               ),
-                             ],
-                           ),
-                         ),
-                       ],
-                     ),
-                   ),
-                 );
-               },
+               ),
              ),
            ],
 
-           // Analysis Result
            if (_geniusAnalysis != null) ...[
-             const SizedBox(height: 32),
-             Container(
-               decoration: BoxDecoration(
-                 color: kSurfaceColor,
-                 borderRadius: BorderRadius.circular(16),
-                 border: Border.all(color: kBorderColor),
-               ),
-               padding: const EdgeInsets.all(16),
-               child: Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 32), const Divider(color: Colors.white10), const SizedBox(height: 24),
+              Text(_geniusAnalysis!['track_info']['title'], style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: kAccentColor), textAlign: TextAlign.center),
+              Text(_geniusAnalysis!['track_info']['artist'], style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 14), textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              Container(
+                height: 300, 
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: kCardBorderColor)),
+                child: SingleChildScrollView(
+                  child: Text(
+                     _geniusAnalysis!['lyrics'], 
+                     style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 13, height: 1.6),
+                     textAlign: TextAlign.left,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              if (_geniusAnalysis!['emotion_analysis'] != null) _buildEmotionResults(_geniusAnalysis!['emotion_analysis']['emotions']),
+           ],
+     ]);
+  }
+
+  Widget _buildEmotionResults(List<dynamic>? emotions) {
+    if (emotions == null || emotions.isEmpty) return const SizedBox();
+    final filtered = emotions.where((e) => (e['score'] as num) > 0.05).toList();
+    if (filtered.isEmpty) return Text("No distinct emotions found.", style: GoogleFonts.plusJakartaSans(color: kTextSecondary), textAlign: TextAlign.center);
+    final maxScore = filtered.map((e) => (e['score'] as num).toDouble()).reduce((a, b) => a > b ? a : b);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text("Emotion Results:", style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.center),
+        const SizedBox(height: 16),
+        ...filtered.take(5).map((e) {
+             final score = (e['score'] as num).toDouble();
+             final percentage = (score * 100).toStringAsFixed(1); 
+             final relativeWidth = score / maxScore;
+             
+             return Padding(
+               padding: const EdgeInsets.only(bottom: 12),
+               child: Row(
+                 crossAxisAlignment: CrossAxisAlignment.center,
                  children: [
-                    Center(
-                      child: Text(
-                        _geniusAnalysis!['track_info']['title'],
-                        style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: kAccentColor),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                   const SizedBox(height: 16),
-                   Container(
-                     constraints: const BoxConstraints(maxHeight: 200),
-                     child: SingleChildScrollView(
-                       child: Text(
-                         _geniusAnalysis!['lyrics'] ?? '',
-                         style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 13, height: 1.5),
+                   // DYNAMIC WIDTH LABEL
+                   Text(
+                      e['label'].toString().replaceFirstMapped(RegExp(r'^[a-z]'), (m) => m[0]!.toUpperCase()), 
+                      style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                   ),
+                   const SizedBox(width: 8), // Reduced spacing
+                   Expanded(
+                     child: Container(
+                       height: 8,
+                       decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(4)), 
+                       alignment: Alignment.centerLeft,
+                       child: FractionallySizedBox(
+                         widthFactor: relativeWidth,
+                         child: Container( decoration: BoxDecoration(color: kAccentColor, borderRadius: BorderRadius.circular(4), boxShadow: [BoxShadow(color: kAccentColor.withOpacity(0.5), blurRadius: 6)]) ),
                        ),
                      ),
                    ),
-                   const SizedBox(height: 24),
-                   const Divider(color: kBorderColor),
-                   const SizedBox(height: 24),
-                   if (_geniusAnalysis!['emotion_analysis'] != null)
-                      _buildEmotionResults(_geniusAnalysis!['emotion_analysis']['emotions']),
+                   const SizedBox(width: 8), // Reduced spacing
+                   SizedBox(width: 36, child: Text("$percentage%", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 12, fontWeight: FontWeight.w500), textAlign: TextAlign.right)),
                  ],
                ),
-             ),
-           ]
-
-        ],
-      ),
+             );
+           }).toList(),
+      ],
     );
-  }
-  // Helper: Icon Mapper (Aesthetic Icons instead of Emojis)
-  IconData _getIconForEmotion(String label) {
-    switch (label.toLowerCase()) {
-      case 'joy': return FontAwesomeIcons.faceSmileBeam;
-      case 'sadness': return FontAwesomeIcons.faceSadTear;
-      case 'anger': return FontAwesomeIcons.faceAngry;
-      case 'fear': return FontAwesomeIcons.faceFlushed;
-      case 'love': return FontAwesomeIcons.heart;
-      case 'excitement': return FontAwesomeIcons.bolt;
-      case 'surprise': return FontAwesomeIcons.faceSurprise;
-      case 'neutral': return FontAwesomeIcons.faceMeh;
-      case 'confusion': return FontAwesomeIcons.question;
-      case 'disgust': return FontAwesomeIcons.faceGrimace;
-      case 'optimism': return FontAwesomeIcons.sun;
-      case 'admiration': return FontAwesomeIcons.thumbsUp;
-      case 'anticipation': return FontAwesomeIcons.hourglassHalf; 
-      case 'approval': return FontAwesomeIcons.check;
-      case 'caring': return FontAwesomeIcons.handHoldingHeart;
-      case 'desire': return FontAwesomeIcons.fire;
-      case 'disappointment': return FontAwesomeIcons.faceFrownOpen;
-      case 'disapproval': return FontAwesomeIcons.thumbsDown;
-      case 'embarrassment': return FontAwesomeIcons.faceFlushed;
-      case 'gratitude': return FontAwesomeIcons.handsPraying;
-      case 'grief': return FontAwesomeIcons.heartCrack;
-      case 'nervousness': return FontAwesomeIcons.faceGrimace;
-      case 'pride': return FontAwesomeIcons.medal;
-      case 'realization': return FontAwesomeIcons.lightbulb;
-      case 'relief': return FontAwesomeIcons.faceSmile;
-      case 'remorse': return FontAwesomeIcons.faceSadCry;
-      default: return FontAwesomeIcons.music;
-    }
   }
 }
 
+class TopToast extends StatefulWidget {
+  final String message;
+  final VoidCallback onDismissed;
+
+  const TopToast({super.key, required this.message, required this.onDismissed});
+
+  @override
+  State<TopToast> createState() => _TopToastState();
+}
+
+class _TopToastState extends State<TopToast> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _slide = Tween<Offset>(begin: const Offset(0, -1.0), end: Offset.zero).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+
+    _controller.forward();
+
+    // Auto dismiss
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        _controller.reverse().then((_) => widget.onDismissed());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 16,
+      left: 24,
+      right: 24,
+      child: Material(
+        type: MaterialType.transparency,
+        child: FadeTransition(
+          opacity: _opacity,
+          child: SlideTransition(
+            position: _slide,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF181818),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 16, offset: const Offset(0, 8)),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                   Container(
+                     padding: const EdgeInsets.all(4),
+                     decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
+                     child: const Icon(Icons.close, color: Colors.white, size: 12),
+                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.message,
+                      style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

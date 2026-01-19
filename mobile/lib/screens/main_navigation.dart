@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:personalify/screens/home_screen.dart';
 import 'package:personalify/screens/dashboard_screen.dart';
 import 'package:personalify/screens/analyzer_screen.dart';
@@ -16,6 +17,7 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+  String _selectedTimeRange = 'short_term'; // Shared time range state
 
   void _onItemTapped(int index) {
     setState(() {
@@ -23,80 +25,123 @@ class _MainNavigationState extends State<MainNavigation> {
     });
   }
 
+  void _onTimeRangeChanged(String timeRange) {
+    setState(() {
+      _selectedTimeRange = timeRange;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true, // Important for floating elements
-      body: Stack(
-        children: [
-          // Content Layer
-          Positioned.fill(
-            child: FadeIndexedStack(
-              index: _currentIndex,
-              children: [
-                HomeScreen(onTabChange: _onItemTapped),
-                const DashboardScreen(),
-                AnalyzerScreen(),
-                const HistoryScreen(),
-                const ProfileScreen(),
-              ],
-            ),
-          ),
-          
-          // "Liquid Glass" Navbar Overlay
-          Positioned(
-            left: 16, 
-            right: 16,
-            bottom: 24, 
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40), // Reduced from 20 (as requested: "jangan terlalu kenceng")
-                child: Container(
-                  height: 72, 
-                  decoration: BoxDecoration(
-                    // "Agak Abu Dikit": Using white with slightly higher opacity to create a milky/greyish glass feel
-                    // This mimics the section card tone when over a dark background.
-                    color: Colors.white.withOpacity(0.12), 
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.15),
-                      width: 1.0,
-                    ),
-                    // Inset-like feel using gradient
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withOpacity(0.1),
-                        Colors.white.withOpacity(0.05),
-                        Colors.white.withOpacity(0.0),
-                      ],
-                      stops: const [0.0, 0.4, 1.0],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+    // Check if keyboard is visible
+    final bool isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        extendBody: true, // Important for floating elements
+        body: Stack(
+          children: [
+            // Content Layer
+            Positioned.fill(
+              child: FadeIndexedStack(
+                index: _currentIndex,
+                children: [
+                  HomeScreen(
+                    onTabChange: _onItemTapped,
+                    selectedTimeRange: _selectedTimeRange,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildNavItem(0, Icons.home_rounded, "Home"),
-                      _buildNavItem(1, Icons.bar_chart_rounded, "Dashboard"),
-                      _buildNavItem(2, Icons.auto_awesome_rounded, "Analyzer"),
-                      _buildNavItem(3, Icons.history_rounded, "History"),
-                      _buildNavItem(4, Icons.person_rounded, "Profile"),
-                    ],
+                  DashboardScreen(
+                    onTimeRangeChanged: _onTimeRangeChanged,
+                  ),
+                  AnalyzerScreen(),
+                  const HistoryScreen(),
+                  const ProfileScreen(),
+                ],
+              ),
+            ),
+            
+            // Bottom Privacy Curtain (Blur Gradient)
+            if (!isKeyboardVisible)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 25, // Height reduced to cover ONLY bottom gap
+                child: ClipRect( // ClipRect needed for BackdropFilter
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.8), // "Agak solid"
+                          ],
+                          stops: const [0.0, 0.8],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+             // "Liquid Glass" Navbar Overlay
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              left: 16, 
+              right: 16,
+              bottom: isKeyboardVisible ? -100 : 24, // Hide when keyboard is open
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40), 
+                  child: Container(
+                    height: 72, 
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12), 
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.15),
+                        width: 1.0,
+                      ),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.1),
+                          Colors.white.withOpacity(0.05),
+                          Colors.white.withOpacity(0.0),
+                        ],
+                        stops: const [0.0, 0.4, 1.0],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildNavItem(0, Symbols.home_app_logo, "Home"),
+                        _buildNavItem(1, Symbols.space_dashboard, "Dashboard"),
+                        _buildNavItem(2, Symbols.lyrics, "Analyzer"),
+                        _buildNavItem(3, Symbols.music_history, "History"),
+                        _buildNavItem(4, Symbols.person, "Profile"),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

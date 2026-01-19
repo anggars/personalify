@@ -166,10 +166,11 @@ class ApiService {
   Future<List<dynamic>> searchArtist(String query) async {
     try {
       final response = await _dio.get(
-        '/api/genius/search',
+        '/api/genius/search-artist',
         queryParameters: {'q': query},
       );
-      return response.data['sections'][0]['hits'] as List<dynamic>;
+      // Backend returns {"artists": [...]}
+      return response.data['artists'] as List<dynamic>;
     } catch (e) {
       print('API Error searchArtist: $e');
       return [];

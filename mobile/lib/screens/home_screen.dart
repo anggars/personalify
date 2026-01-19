@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
-import 'package:personalify/models/user_profile.dart'; // Ensure models are accessible
+import 'package:personalify/models/user_profile.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:personalify/screens/login_screen.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int) onTabChange;
+  final String selectedTimeRange;
 
-  const HomeScreen({super.key, required this.onTabChange});
+  const HomeScreen({
+    super.key,
+    required this.onTabChange,
+    required this.selectedTimeRange,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -41,8 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final id = await _authService.getSpotifyId();
     if (id != null) {
       try {
-        // Fetch short term data for quick summary
-        final p = await _apiService.getUserProfile(id, timeRange: 'short_term');
+        // Use time range from prop (synced with Dashboard)
+        final p = await _apiService.getUserProfile(id, timeRange: widget.selectedTimeRange);
         if (mounted) {
            setState(() {
              _userProfile = p;
@@ -54,6 +60,15 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } else {
         if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload when time range changes
+    if (oldWidget.selectedTimeRange != widget.selectedTimeRange) {
+      _loadSummary();
     }
   }
 
@@ -186,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const Icon(Icons.insights_rounded, color: kAccentColor),
                         const SizedBox(width: 8),
                         Text(
-                          'Your Vibe (Last 4 Weeks)',
+                          _getTimeRangeLabel(widget.selectedTimeRange),
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -272,9 +287,9 @@ class _HomeScreenState extends State<HomeScreen> {
                    const SizedBox(height: 24), // Reduced bottom spacing
                  ],
 
-              // 3. Feature Explanations
+              // 3. Menu Shortcuts
               Text(
-                'Features',
+                'Menu',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -282,24 +297,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Uniform Styling - No "Colors"
+              // Uniform Styling
               _buildFeatureCard(
-                icon: Icons.grid_view_rounded,
+                icon: Symbols.space_dashboard,
                 title: 'Dashboard',
-                description: 'Deep dive into your top tracks, artists, and genres with interactive charts.',
-                onTap: () => widget.onTabChange(1), // Index 1: Dashboard
+                description: 'Deep dive into your top tracks, artists, and genres.',
+                onTap: () => widget.onTabChange(1),
               ),
               _buildFeatureCard(
-                 icon: Icons.insights_rounded,
+                 icon: Symbols.lyrics,
                  title: 'Analyzer',
-                 description: 'Analyze lyrics and get AI-powered insights into the meaning of songs.',
-                 onTap: () => widget.onTabChange(2), // Index 2: Analyzer
+                 description: 'Analyze lyrics and get AI-powered insights.',
+                 onTap: () => widget.onTabChange(2),
               ),
                _buildFeatureCard(
-                 icon: Icons.menu_book_rounded,
-                 title: 'About',
-                 description: 'Learn more about Personalify, privacy, and how we use data.',
-                 onTap: () => widget.onTabChange(3), // Index 3: About
+                 icon: Symbols.music_history,
+                 title: 'History',
+                 description: 'See your recently played tracks from Spotify.',
+                 onTap: () => widget.onTabChange(3),
               ),
               
               const SizedBox(height: 100), // Bottom padding
@@ -331,36 +346,45 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // ... (existing code)
 
-  // Helper: Icon Mapper (Aesthetic Icons instead of Emojis)
+  String _getTimeRangeLabel(String range) {
+    switch (range) {
+      case 'medium_term': return 'Your Vibe (Last 6 Months)';
+      case 'long_term': return 'Your Vibe (All Time)';
+      case 'short_term':
+      default: return 'Your Vibe (Last 4 Weeks)';
+    }
+  }
+
+  // Helper: Icon Mapper (Material Symbols for consistency)
   IconData _getIconForEmotion(String label) {
     switch (label.toLowerCase()) {
-      case 'joy': return FontAwesomeIcons.faceSmileBeam;
-      case 'sadness': return FontAwesomeIcons.faceSadTear;
-      case 'anger': return FontAwesomeIcons.faceAngry;
-      case 'fear': return FontAwesomeIcons.faceFlushed;
-      case 'love': return FontAwesomeIcons.heart;
-      case 'excitement': return FontAwesomeIcons.bolt;
-      case 'surprise': return FontAwesomeIcons.faceSurprise;
-      case 'neutral': return FontAwesomeIcons.faceMeh;
-      case 'confusion': return FontAwesomeIcons.question;
-      case 'disgust': return FontAwesomeIcons.faceGrimace;
-      case 'optimism': return FontAwesomeIcons.sun;
-      case 'admiration': return FontAwesomeIcons.thumbsUp;
-      case 'anticipation': return FontAwesomeIcons.hourglassHalf; 
-      case 'approval': return FontAwesomeIcons.check;
-      case 'caring': return FontAwesomeIcons.handHoldingHeart;
-      case 'desire': return FontAwesomeIcons.fire;
-      case 'disappointment': return FontAwesomeIcons.faceFrownOpen;
-      case 'disapproval': return FontAwesomeIcons.thumbsDown;
-      case 'embarrassment': return FontAwesomeIcons.faceFlushed;
-      case 'gratitude': return FontAwesomeIcons.handsPraying;
-      case 'grief': return FontAwesomeIcons.heartCrack;
-      case 'nervousness': return FontAwesomeIcons.faceGrimace;
-      case 'pride': return FontAwesomeIcons.medal;
-      case 'realization': return FontAwesomeIcons.lightbulb;
-      case 'relief': return FontAwesomeIcons.faceSmile;
-      case 'remorse': return FontAwesomeIcons.faceSadCry;
-      default: return FontAwesomeIcons.music;
+      case 'joy': return Symbols.sentiment_very_satisfied;
+      case 'sadness': return Symbols.sentiment_very_dissatisfied;
+      case 'anger': return Symbols.sentiment_extremely_dissatisfied;
+      case 'fear': return Symbols.sentiment_worried;
+      case 'love': return Symbols.favorite;
+      case 'excitement': return Symbols.bolt;
+      case 'surprise': return Symbols.add_reaction;
+      case 'neutral': return Symbols.sentiment_neutral;
+      case 'confusion': return Symbols.help;
+      case 'disgust': return Symbols.mood_bad;
+      case 'optimism': return Symbols.light_mode;
+      case 'admiration': return Symbols.thumb_up;
+      case 'anticipation': return Symbols.hourglass_empty;
+      case 'approval': return Symbols.check_circle;
+      case 'caring': return Symbols.favorite;
+      case 'desire': return Symbols.local_fire_department;
+      case 'disappointment': return Symbols.sentiment_dissatisfied;
+      case 'disapproval': return Symbols.thumb_down;
+      case 'embarrassment': return Symbols.face;
+      case 'gratitude': return Symbols.volunteer_activism;
+      case 'grief': return Symbols.heart_broken;
+      case 'nervousness': return Symbols.sentiment_dissatisfied;
+      case 'pride': return Symbols.military_tech;
+      case 'realization': return Symbols.lightbulb;
+      case 'relief': return Symbols.sentiment_satisfied;
+      case 'remorse': return Symbols.sentiment_sad;
+      default: return Symbols.music_note;
     }
   }
 

@@ -1,4 +1,7 @@
 import 'dart:math';
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -8,13 +11,13 @@ import 'package:personalify/models/user_profile.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/screens/login_screen.dart';
+import 'package:personalify/screens/song_detail_screen.dart';
 import 'package:dio/dio.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// --------------------------------------------------------------------------
 /// DashboardScreen: Final Polish v2
@@ -24,7 +27,8 @@ import 'package:url_launcher/url_launcher.dart';
 /// 4. Strict Top 10 Logic (Chart + List)
 /// --------------------------------------------------------------------------
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final Function(String)? onTimeRangeChanged;
+  const DashboardScreen({super.key, this.onTimeRangeChanged});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -65,11 +69,26 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     Color(0xFFFFEB3B), Color(0xFF76FF03), Color(0xFFF50057), Color(0xFF651FFF),
   ];
 
+  int _currentTabIndex = 0; 
+
   @override
   void initState() {
     super.initState();
     _apiService = ApiService(_authService);
     _tabController = TabController(length: 3, vsync: this);
+    
+    // Add listener to track VISUAL tab position continuously
+    _tabController.animation!.addListener(() {
+      final visualIndex = _tabController.animation!.value.round();
+      print('🔄 Animation Listener: value=${_tabController.animation!.value}, rounded=$visualIndex, current=$_currentTabIndex');
+      if (visualIndex != _currentTabIndex) {
+        setState(() {
+          _currentTabIndex = visualIndex;
+          print('✅ Updated _currentTabIndex to: $visualIndex');
+        });
+      }
+    });
+    
     _init();
   }
 
@@ -79,7 +98,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     _scrollController.dispose();
     super.dispose();
   }
-
+  
   Future<void> _init() async {
     final id = await _authService.getSpotifyId();
     if (id == null && mounted) {
@@ -89,83 +108,91 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     _spotifyId = id;
     _load();
   }
-
+  
   Future<void> _handleShare(BuildContext context) async {
     if (_userProfile == null) return;
-
-    final currentTab = _tabController.index; // 0: Tracks, 1: Artists, 2: Genres
-
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => const Center(child: CircularProgressIndicator(color: kAccentColor)),
+    
+    // Use _currentTabIndex from state (synced via animation listener)
+    final currentTab = _currentTabIndex;
+    
+    print('📤 SHARE START: _currentTabIndex=$_currentTabIndex, controller.index=${_tabController.index}, animation.value=${_tabController.animation?.value}');
+    
+    // DEBUG: Tell user what we are sharing
+    final tabName = currentTab == 0 ? "Tracks" : currentTab == 1 ? "Artists" : "Genres";
+    print('🎯 Will capture: $tabName (index $currentTab)');
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Sharing: $tabName'),
+        duration: const Duration(seconds: 1),
+        backgroundColor: kSurfaceColor,
+      )
     );
 
+    // Show loading indicator
+    if (context.mounted) {
+       showDialog(
+         context: context,
+         barrierDismissible: false,
+         builder: (ctx) => const Center(child: CircularProgressIndicator(color: kAccentColor)),
+       );
+    }
+
     try {
-      print('========== SHARE DEBUG START ==========');
-      print('Step 1: Creating ScreenshotController');
-      final ScreenshotController controller = ScreenshotController();
+      print('========== SHARE: Tab $currentTab ==========');
+      final ScreenshotController screenshotController = ScreenshotController();
       
-      print('Step 2: Building widget for tab $currentTab');
-      final widget = _buildShareableWidget(currentTab);
-      print('Widget built successfully');
+      // Build widget with unique timestamp key to force rebuild
+      final widget = KeyedSubtree(
+        key: ValueKey('share_tab_${currentTab}_${DateTime.now().millisecondsSinceEpoch}'),
+        child: _buildShareableWidget(currentTab),
+      );
       
-      print('Step 3: Capturing widget as image (360x640, pixelRatio 1.0)');
-      final Uint8List image = await controller.captureFromWidget(
+      final Uint8List image = await screenshotController.captureFromWidget(
         widget,
-        delay: const Duration(milliseconds: 800),
-        pixelRatio: 1.0,
-        targetSize: const Size(360, 640),
+        delay: const Duration(milliseconds: 500),
+        pixelRatio: 3.0, 
+        targetSize: const Size(400, 711),
       );
-      print('Image captured! Size: ${image.length} bytes');
 
-      print('Step 4: Getting app directory');
       final directory = await getApplicationDocumentsDirectory();
-      print('Directory: ${directory.path}');
       
-      print('Step 5: Creating file path');
-      final filePath = '${directory.path}/personalify_top10.png';
-      print('File path: $filePath');
+      // CRITICAL FIX: Use unique filename with timestamp to prevent Android caching
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filePath = '${directory.path}/personalify_share_$timestamp.png';
+      print('💾 Saving to: $filePath');
       
-      print('Step 6: Creating file');
-      final imagePath = await File(filePath).create();
-      print('File created at: ${imagePath.path}');
-      
-      print('Step 7: Writing bytes to file');
-      await imagePath.writeAsBytes(image);
-      print('Bytes written successfully');
-
-      if (mounted) {
-        print('Step 8: Closing loading dialog');
-        Navigator.pop(context);
+      // Clean up old share files (keep only last 5)
+      try {
+        final files = directory.listSync()
+            .where((f) => f.path.contains('personalify_share_'))
+            .map((f) => f as File)
+            .toList();
+        files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+        if (files.length > 5) {
+          for (var i = 5; i < files.length; i++) {
+            files[i].deleteSync();
+          }
+        }
+      } catch (e) {
+        print('⚠️ Cleanup failed: $e');
       }
+      
+      final imagePath = await File(filePath).create();
+      await imagePath.writeAsBytes(image);
 
-      print('Step 9: Sharing file via Share.shareXFiles');
-      await Share.shareXFiles(
-        [XFile(imagePath.path)],
-        text: 'My Personalify Top 10 🎵',
-      );
-      print('Share completed successfully!');
-      print('========== SHARE DEBUG END ==========');
+      if (mounted) Navigator.pop(context);
+      if (mounted) _showCustomShareSheet(context, imagePath.path);
+      
+      print('========== SHARE COMPLETE ==========');
     } catch (e, stackTrace) {
       print('========== SHARE ERROR ==========');
-      print('Error type: ${e.runtimeType}');
-      print('Error message: $e');
-      print('Stack trace:');
-      print(stackTrace);
-      print('==================================');
+      print('$e\n$stackTrace');
       
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
+      if (mounted) Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to share: $e')),
+      );
     }
   }
 
@@ -173,116 +200,136 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   // Share Layout (Top 10 Snapshot - 9:16)
   // --------------------------------------------------------------------------
   Widget _buildShareableWidget(int tabIndex) {
-    // FIXED LOGICAL SIZE for Capture (High Res)
-    // We render a larger widget and scale it down to fit perfectly
+    print('🎨 _buildShareableWidget called with tabIndex=$tabIndex');
+    
+    // WEB HEADER STYLE: 
+    // Title: Personalify (Green, 2.5rem/40px)
+    // Sub: Time Range, User
+    // Emotion: Italic paragraph
+    
+    // remove HTML tags from emotion paragraph just in case
+    final rawEmotion = _userProfile?.emotionParagraph ?? "";
+    final cleanEmotion = rawEmotion.replaceAll(RegExp(r'<[^>]*>'), '');
+
     return Container(
       width: 400,
-      height: 711, // 9:16 Aspect Ratio
-      color: kBgColor, // Match App Background
+      height: 711, // 9:16 Aspect Ratio (Outer Canvas)
+      color: kBgColor, 
       child: FittedBox(
         fit: BoxFit.contain,
         alignment: Alignment.center,
         child: Container(
-           width: 400, // Logical width matches container
-           // Allow height to be unconstrained (or large) then scaled? 
-           // No, we want to force fit.
-           // Best approach: Render content in a fixed width column, then scale firmly.
-           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+           width: 550, // WIDER CONTENT
+           // NO BOUNDED HEIGHT
            constraints: const BoxConstraints(minHeight: 711), 
+           padding: const EdgeInsets.fromLTRB(32, 80, 32, 40), // More Top Padding for IG
+           decoration: const BoxDecoration(color: kBgColor), 
            child: Column(
-             crossAxisAlignment: CrossAxisAlignment.start,
-             mainAxisSize: MainAxisSize.min,
+             crossAxisAlignment: CrossAxisAlignment.center,
+             mainAxisSize: MainAxisSize.min, 
              children: [
-          // 1. TOP SPACER (Reduced significantly)
-          // 1. TOP SPACER (Reduced significantly)
-          const SizedBox(height: 20),
-          
-          // 2. HEADER (Aligned with Web: Centered, Personalify Title)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-               // Profile Pic
-               Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: kAccentColor, width: 2)
-                ),
-                child: ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: _userProfile?.image ?? '',
-                    width: 48, height: 48, 
-                    fit: BoxFit.cover,
-                    errorWidget: (_,__,___) => const SizedBox(),
+                // 1. HEADER
+                Text(
+                  'Personalify',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 32, // REDUCED from 40
+                    fontWeight: FontWeight.w800,
+                    color: kAccentColor,
+                    height: 1.0,
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   Text(
-                     'Personalify',
-                     style: GoogleFonts.plusJakartaSans(
-                       fontSize: 24, 
-                       fontWeight: FontWeight.w800,
-                       color: kAccentColor
-                     ),
-                   ),
-                   Text(
-                     '${_userProfile?.displayName ?? "User"} • ${_timeRangeLabels[_selectedTimeRange]}',
-                     style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 12, fontWeight: FontWeight.w600),
-                   ),
+                const SizedBox(height: 8),
+                Text(
+                  _selectedTimeRange == 0 ? "Here's your monthly recap"
+                  : _selectedTimeRange == 1 ? "A look at your last 6 months"
+                  : "Your listening overview for the year",
+                  style: GoogleFonts.plusJakartaSans(
+                    color: kTextSecondary, 
+                    fontSize: 16, 
+                    fontWeight: FontWeight.w600
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (cleanEmotion.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: 340,
+                    child: Text(
+                      cleanEmotion,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: kTextSecondary,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 12),
-          // Subtitle
-          Center(
-             child: Text(
-               'My Top 10 ${tabIndex == 0 ? "Tracks" : tabIndex == 1 ? "Artists" : "Genres"}',
-               style: GoogleFonts.plusJakartaSans(
-                 fontSize: 14, 
-                 fontStyle: FontStyle.italic,
-                 color: kTextSecondary.withOpacity(0.8)
-               ),
-             ),
-          ),
-          
-          const SizedBox(height: 24),
-          const Divider(color: kBorderColor, height: 1),
-          const SizedBox(height: 16),
+                
+                const SizedBox(height: 24), // GAP
 
-          // 3. CONTENT (Fixed height instead of Expanded)
-          SizedBox(
-            height: 480, // Fixed height for content area
-            child: _buildShareContent(tabIndex),
-          ),
-          
-          // 4. FOOTER
-          Center(
-             child: Padding(
-               padding: const EdgeInsets.only(bottom: 24),
-               child: Text(
-                 'personalify.app',
-                 style: GoogleFonts.plusJakartaSans(
-                   color: kTextSecondary.withOpacity(0.5), 
-                   fontWeight: FontWeight.w900, 
-                   letterSpacing: 3,
-                   fontSize: 12,
-                 ),
-               ),
-             ),
-          ),
-            ],
-          ),
+                // 2. CARD
+                Container(
+                  width: double.infinity,
+                  // Remove constraints here, let it size by content but flexible?
+                  // Actually content is fixed top 5.
+                  decoration: BoxDecoration(
+                    color: kSurfaceColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: kBorderColor),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))],
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // Card Title
+                      Container(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        decoration: const BoxDecoration(
+                          border: Border(bottom: BorderSide(color: kBorderColor))
+                        ),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        width: double.infinity,
+                        child: Text(
+                          'Top 10 ${tabIndex == 0 ? "Tracks" : tabIndex == 1 ? "Artists" : "Genres"}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: kAccentColor
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      
+                      // Content
+                      _buildShareContent(tabIndex),
+                    ],
+                  ),
+                ),
+                
+                // 3. FOOTER
+                const SizedBox(height: 24), // REDUCED Spacing (Equal to Header-Card gap)
+                Text(
+                  'personalify.app',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: kTextSecondary.withOpacity(0.5), 
+                    fontWeight: FontWeight.w900, 
+                    letterSpacing: 3,
+                    fontSize: 12,
+                  ),
+                ),
+             ],
+           ),
         ),
       ),
     );
   }
 
   Widget _buildShareContent(int tabIndex) {
+    print('🔀 _buildShareContent: tabIndex=$tabIndex → ${tabIndex == 0 ? "Tracks" : tabIndex == 1 ? "Artists" : "Genres"}');
     if (tabIndex == 0) return _buildShareTracksList();
     if (tabIndex == 1) return _buildShareArtistsList();
     if (tabIndex == 2) return _buildShareGenresList();
@@ -291,6 +338,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Widget _buildShareTracksList() {
     final tracks = (_userProfile?.tracks ?? []).take(10).toList();
+    print('🎵 _buildShareTracksList: rendering ${tracks.length} tracks');
     return Container(
       decoration: BoxDecoration(
         color: kSurfaceColor,
@@ -300,7 +348,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         children: tracks.asMap().entries.map((entry) {
-          return _buildTrackItem(entry.value, entry.key, isLast: entry.key == tracks.length - 1, isShare: true);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12), // INCREASE SPACING
+            child: _buildTrackItem(entry.value, entry.key, isLast: entry.key == tracks.length - 1, isShare: true),
+          );
         }).toList(),
       ),
     );
@@ -308,6 +359,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Widget _buildShareArtistsList() {
     final artists = (_userProfile?.artists ?? []).take(10).toList();
+    print('🎤 _buildShareArtistsList: rendering ${artists.length} artists');
     return Container(
       decoration: BoxDecoration(
         color: kSurfaceColor,
@@ -317,7 +369,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         children: artists.asMap().entries.map((entry) {
-          return _buildArtistItem(entry.value, entry.key, isLast: entry.key == artists.length - 1, isShare: true);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12), // INCREASE SPACING
+            child: _buildArtistItem(entry.value, entry.key, isLast: entry.key == artists.length - 1, isShare: true),
+          );
         }).toList(),
       ),
     );
@@ -325,6 +380,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Widget _buildShareGenresList() {
     final genres = (_userProfile?.genres ?? []).take(10).toList();
+    print('🎸 _buildShareGenresList: rendering ${genres.length} genres');
     return Container(
       decoration: BoxDecoration(
         color: kSurfaceColor,
@@ -342,7 +398,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 .map((a) => a.name)
                 .toList();
            }
-          return _buildGenreItem(g, entry.key, _getGenreColor(g.name), artistsList, isLast: entry.key == genres.length - 1, isShare: true);
+           return Padding(
+             padding: const EdgeInsets.only(bottom: 12), // INCREASE SPACING
+             child: _buildGenreItem(g, entry.key, _getGenreColor(g.name), artistsList, isLast: entry.key == genres.length - 1, isShare: true),
+           );
         }).toList(),
       ),
     );
@@ -401,112 +460,136 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: kBgColor,
+        body: Center(child: CircularProgressIndicator(color: kAccentColor)),
+      );
+    }
+
     return Scaffold(
       backgroundColor: kBgColor,
-      appBar: AppBar(
-        backgroundColor: kBgColor,
-        surfaceTintColor: kBgColor,
-        elevation: 0,
-        toolbarHeight: 70,
-        // HEADER: Time (Left), Title (Center), Logout (Right)
-        leading: Theme(
-          data: Theme.of(context).copyWith(
-            popupMenuTheme: PopupMenuThemeData(
-              color: kSurfaceColor,
-              surfaceTintColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                  side: const BorderSide(color: kBorderColor),
-                  borderRadius: BorderRadius.circular(12)
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(118), // 70 toolbar + 48 tabs
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Adjust these values for blur intensity
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    kBgColor.withOpacity(0.85),
+                    kBgColor.withOpacity(0.75),
+                    kBgColor.withOpacity(0.6),
+                    kBgColor.withOpacity(0.0),
+                  ],
+                  stops: const [0.0, 0.7, 0.9, 1.0],
+                ),
               ),
-              textStyle: GoogleFonts.plusJakartaSans(color: kTextPrimary),
-            ),
-          ),
-          child: PopupMenuButton<int>(
-            offset: const Offset(0, 48),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            // AESTHETIC ICON: Clock for Time Range (History/Time)
-            icon: const FaIcon(FontAwesomeIcons.clock, color: kTextPrimary, size: 20), 
-            tooltip: 'Time Range',
-            onSelected: (i) {
-              setState(() => _selectedTimeRange = i);
-              _load();
-            },
-            itemBuilder: (context) => List.generate(3, (i) => PopupMenuItem(
-              value: i,
-              height: 40,
-              child: Row(
-                children: [
-                   if (_selectedTimeRange == i) 
-                     const FaIcon(FontAwesomeIcons.check, size: 12, color: kAccentColor)
-                   else 
-                     const SizedBox(width: 12),
-                   const SizedBox(width: 8),
-                   Text(_timeRangeLabels[i], style: GoogleFonts.plusJakartaSans(fontSize: 13)),
-                ],
-              ),
-            )),
-          ),
-        ),
-        centerTitle: true,
-        title: Text(
-          'Personalify',
-          style: GoogleFonts.plusJakartaSans(
-            fontWeight: FontWeight.w800,
-            color: kAccentColor,
-            letterSpacing: -0.5,
-            fontSize: 24,
-          ),
-        ),
-        actions: [
-           IconButton(
-             // AESTHETIC ICON: Share Node (Share)
-            icon: const Icon(Icons.ios_share, color: kTextPrimary, size: 22),
-            onPressed: () => _handleShare(context), // Share functionality
-            tooltip: 'Share Top 10',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: kAccentColor))
-          : Column(
-              children: [
-                Container(
-                  color: kBgColor,
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: false,
-                    labelColor: kAccentColor,
-                    unselectedLabelColor: kTextSecondary,
-                    indicatorSize: TabBarIndicatorSize.label,
-                    indicatorColor: kAccentColor,
-                    indicatorWeight: 3,
-                    dividerColor: Colors.transparent, // "Garis tipis" removed/hidden
-                    labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
-                    unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
-                    tabs: const [
-                      Tab(text: 'Tracks', height: 40),
-                      Tab(text: 'Artists', height: 40),
-                      Tab(text: 'Genres', height: 40),
-                    ],
+              child: AppBar(
+                backgroundColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                toolbarHeight: 70,
+                leading: Theme(
+                  data: Theme.of(context).copyWith(
+                    popupMenuTheme: PopupMenuThemeData(
+                      color: kSurfaceColor,
+                      surfaceTintColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                          side: const BorderSide(color: kBorderColor),
+                          borderRadius: BorderRadius.circular(12)
+                      ),
+                      textStyle: GoogleFonts.plusJakartaSans(color: kTextPrimary),
+                    ),
+                  ),
+                  child: PopupMenuButton<int>(
+                    offset: const Offset(0, 48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    icon: Icon(Symbols.view_day, color: kTextPrimary, size: 20), // view_day Material Symbol 
+                    tooltip: 'Time Range',
+                    onSelected: (i) {
+                      setState(() => _selectedTimeRange = i);
+                      final timeRanges = ['short_term', 'medium_term', 'long_term'];
+                      widget.onTimeRangeChanged?.call(timeRanges[i]); // Notify parent
+                      _load();
+                    },
+                    itemBuilder: (context) => List.generate(3, (i) => PopupMenuItem(
+                      value: i,
+                      height: 40,
+                      child: Row(
+                        children: [
+                           if (_selectedTimeRange == i) 
+                             const FaIcon(FontAwesomeIcons.check, size: 12, color: kAccentColor)
+                           else 
+                             const SizedBox(width: 12),
+                           const SizedBox(width: 8),
+                           Text(_timeRangeLabels[i], style: GoogleFonts.plusJakartaSans(fontSize: 13)),
+                        ],
+                      ),
+                    )),
                   ),
                 ),
-                Expanded(
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: _onScrollNotification,
-                    child: TabBarView(
+                centerTitle: true,
+                title: Text(
+                  'Personalify',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                    color: kAccentColor,
+                    letterSpacing: -0.5,
+                    fontSize: 24,
+                  ),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.ios_share, color: kTextPrimary, size: 22),
+                    onPressed: () => _handleShare(context),
+                    tooltip: 'Share Top 10',
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(48),
+                  child: Container(
+                    color: Colors.transparent,
+                    child: TabBar(
                       controller: _tabController,
-                      physics: const BouncingScrollPhysics(),
-                      children: [
-                        _buildSectionList(_buildTracksList()),
-                        _buildSectionList(_buildArtistsList()),
-                        _buildSectionList(_buildGenresList()),
+                      isScrollable: false,
+                      labelColor: kAccentColor,
+                      unselectedLabelColor: kTextSecondary,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      indicatorColor: kAccentColor,
+                      indicatorWeight: 3,
+                      dividerColor: Colors.transparent,
+                      labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                      unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
+                      tabs: const [
+                        Tab(text: 'Tracks', height: 40),
+                        Tab(text: 'Artists', height: 40),
+                        Tab(text: 'Genres', height: 40),
                       ],
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
+          ),
+        ),
+      ),
+      body: NotificationListener<ScrollNotification>(
+        onNotification: _onScrollNotification,
+        child: TabBarView(
+          controller: _tabController,
+          physics: const BouncingScrollPhysics(),
+          children: [
+            _buildSectionList(_buildTracksList()),
+            _buildSectionList(_buildArtistsList()),
+            _buildSectionList(_buildGenresList()),
+          ],
+        ),
+      ),
     );
   }
 
@@ -551,12 +634,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 
   Widget _buildTrackItem(dynamic track, int index, {bool isLast = false, bool isShare = false}) {
-     return Container(
+     final trackItem = Container(
           decoration: BoxDecoration(
             border: isLast ? null : const Border(bottom: BorderSide(color: kBorderColor)),
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: isShare ? 6 : 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -581,12 +664,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min, // Important for layout
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // PING-PONG Marquee Title if name is long
                       SizedBox(
                         height: 20, 
-                        child: (track.name.length > 25 && !isShare) // FIX: Disable Marquee for Share
+                        child: (track.name.length > 25 && !isShare)
                         ? PingPongScrollingText(
                             text: track.name,
                             width: double.infinity,
@@ -620,7 +702,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        // Strict Logic
                         () {
                           final total = track.album.totalTracks;
                           final name = track.album.name;
@@ -656,6 +737,31 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             ),
           ),
         );
+     
+     // Wrap in GestureDetector for navigation (except for share mode)
+     if (isShare) {
+       return trackItem;
+     }
+     
+     return GestureDetector(
+       onTap: () {
+         Navigator.push(
+           context,
+           MaterialPageRoute(
+             builder: (context) => SongDetailScreen(
+               song: {
+                 'title': track.name,
+                 'artist': track.artistsString,
+                 'image': track.image,
+                 'album': track.album.name,
+                 'popularity': track.popularity,
+               },
+             ),
+           ),
+         );
+       },
+       child: trackItem,
+     );
   }
 
   // --------------------------------------------------------------------------
@@ -810,7 +916,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               border: isLast ? null : const Border(bottom: BorderSide(color: kBorderColor)),
             ),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: isShare ? 6 : 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center, // 4. CENTER VERTICAL
                 children: [
@@ -870,6 +976,102 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ),
             ),
           );
+  }
+  void _showCustomShareSheet(BuildContext context, String imagePath) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        height: 600, 
+        decoration: BoxDecoration(
+          color: kBgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Container(margin: const EdgeInsets.only(top: 12, bottom: 24), width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            
+            // Title
+            Text("Share your vibe", style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+
+            // Image Preview (Small Card)
+            Expanded(
+              child: Center(
+                child: Container(
+                   margin: const EdgeInsets.symmetric(horizontal: 40),
+                   decoration: BoxDecoration(
+                     borderRadius: BorderRadius.circular(16),
+                     boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 20, offset: const Offset(0, 10))]
+                   ),
+                   child: ClipRRect(
+                     borderRadius: BorderRadius.circular(16), 
+                     child: Image.file(File(imagePath), fit: BoxFit.contain)
+                   ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Share Button (Big Green)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Share.shareXFiles([XFile(imagePath)], text: 'My Personalify Top 10 🎵 personalify.app');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kAccentColor,
+                    foregroundColor: kBgColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    elevation: 0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.share_rounded, size: 20),
+                      const SizedBox(width: 12),
+                      Text("Share via...", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Other options
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                 TextButton.icon(
+                   onPressed: () {
+                     // Since we can't save easily to public gallery w/o permission, standard Share is safer 
+                     Navigator.pop(ctx);
+                     Share.shareXFiles([XFile(imagePath)], text: 'My Personalify Top 10 🎵 personalify.app');
+                   }, 
+                   icon: const Icon(Icons.download_rounded, color: kTextSecondary, size: 20), 
+                   label: Text("Save Image", style: GoogleFonts.plusJakartaSans(color: kTextSecondary))
+                 ),
+                 const SizedBox(width: 24),
+                 TextButton.icon(
+                   onPressed: () => Navigator.pop(ctx), 
+                   icon: const Icon(Icons.close, color: kTextSecondary, size: 20), 
+                   label: Text("Cancel", style: GoogleFonts.plusJakartaSans(color: kTextSecondary))
+                 ),
+              ],
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
   }
 }
 
