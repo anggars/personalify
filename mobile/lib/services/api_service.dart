@@ -116,19 +116,6 @@ class ApiService {
       return [];
     }
   }
-}
-      print("Error type: ${e.runtimeType}");
-      print("Error: $e");
-      if (e is DioException) {
-        print("Response status: ${e.response?.statusCode}");
-        print("Response data: ${e.response?.data}");
-        print("Request URL: ${e.requestOptions.uri}");
-      }
-      print("========================================");
-    }
-    return null;
-  }
-
 
   // ---------------------------------------------------------------------------
   // ANALYZER & GENIUS METHODS
@@ -192,7 +179,6 @@ class ApiService {
   }
 
   /// Get top tracks for a user
-  /// Endpoint: GET /top-data?spotify_id={spotifyId}&time_range={timeRange}
   Future<List<dynamic>?> getTopTracks(String spotifyId,
       {String timeRange = 'short_term', int limit = 10}) async {
     try {
@@ -220,7 +206,6 @@ class ApiService {
   }
 
   /// Get user's sync history
-  /// Endpoint: GET /history?spotify_id={spotifyId}
   Future<Map<String, dynamic>?> getRecentHistory(String spotifyId) async {
     try {
       print('API: Fetching sync history for $spotifyId');
@@ -239,5 +224,4 @@ class ApiService {
       rethrow;
     }
   }
-
 }

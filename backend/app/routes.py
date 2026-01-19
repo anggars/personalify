@@ -58,7 +58,7 @@ def login(request: Request, mobile: str = Query(None)):
     print(f"DEBUG Login - Request Host: {request.headers.get('host', 'N/A')}")
     print(f"DEBUG Login - Mobile param: {mobile}")
     
-    scope = "user-top-read user-read-recently-played user-read-private"
+    scope = "user-top-read user-read-recently-played user-read-private user-read-email"
     if not client_id or not redirect_uri:
         raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
     
