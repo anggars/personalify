@@ -13,6 +13,14 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  // Colors & Styles (Copied from HomeScreen)
+  static const Color kBgColor = Color(0xFF0a0a0a);
+  static const Color kSurfaceColor = Color(0xFF181818); 
+  static const Color kAccentColor = Color(0xFF1DB954); 
+  static const Color kTextPrimary = Color(0xFFFFFFFF);
+  static const Color kTextSecondary = Color(0xFFB3B3B3);
+  static const Color kBorderColor = Color(0xFF282828);
+
   String _version = '';
 
   @override
@@ -32,15 +40,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _clearImageCache() async {
     try {
-      await ImageCache().clear();
-      await ImageCache().clearLiveImages();
-      // Note: cached_network_image usually uses DefaultCacheManager
-      // But clearing ImageCache is also good. 
-      // For DefaultCacheManager, we'd need flutter_cache_manager package import.
-      // Assuming basic ImageCache for now as requested.
+      // Clear Memory Cache (Synchronous)
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      
+      // Clear Disk Cache (Async) - Requires flutter_cache_manager
+      // Since we didn't explicitly add flutter_cache_manager to pubspec for this screen (though cached_network_image uses it),
+      // we'll stick to the safe approach of just clearing memory which is what imageCache does.
+      // If we want to be thorough we can assume DefaultCacheManager is available.
+      
+      // However, to fix the IMMEDIATE build error which is "await ImageCache()", we just remove await and fix the calls.
+      // ImageCache() constructor is internal/factory, usually accessed via PaintingBinding.
+      
       if (mounted) {
          ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image cache cleared!')),
+          const SnackBar(content: Text('Memory cache cleared!')),
         );
       }
     } catch (e) {
