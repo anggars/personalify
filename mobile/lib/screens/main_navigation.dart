@@ -96,27 +96,17 @@ class _MainNavigationState extends State<MainNavigation> {
               right: 16,
               bottom: isKeyboardVisible ? -100 : 24, // Hide when keyboard is open
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(24),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40), 
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20), 
                   child: Container(
                     height: 72, 
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12), 
-                      borderRadius: BorderRadius.circular(30),
+                      color: const Color(0xFF181818).withOpacity(0.75), // More translucent for visible blur
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withOpacity(0.1), 
                         width: 1.0,
-                      ),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.white.withOpacity(0.1),
-                          Colors.white.withOpacity(0.05),
-                          Colors.white.withOpacity(0.0),
-                        ],
-                        stops: const [0.0, 0.4, 1.0],
                       ),
                       boxShadow: [
                         BoxShadow(

@@ -34,18 +34,26 @@ class ApiService {
         return handler.next(options);
       },
       onError: (error, handler) async {
-        // Handle 401 Unauthorized - token expired
-        if (error.response?.statusCode == 401) {
-          print('API ERROR: 401 Unauthorized - Token expired');
+        // Handle 401 Unauthorized OR 403 Forbidden - token expired/invalid
+        final status = error.response?.statusCode;
+        if (status == 401 || status == 403) {
+          print('🚨 API ERROR: $status - Token expired/invalid. Triggering Auto-Logout.');
+          
           // Clear auth data and force re-login
           await _authService.logout();
           
           // Use Global Navigator Key to push Login Screen
           // Removing all previous routes to prevent back button from returning
-          navigatorKey.currentState?.pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-            (route) => false,
-          );
+          if (navigatorKey.currentState != null) {
+            navigatorKey.currentState!.pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+            );
+          } else {
+             print("⚠️ FATAL: navigatorKey.currentState is NULL. Cannot navigate to Login.");
+          }
+        } else {
+           print("⚠️ API ERROR: $status. ${error.message}");
         }
         return handler.next(error);
       },
