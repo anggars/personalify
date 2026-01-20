@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:personalify/widgets/top_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -65,6 +66,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
     entry = OverlayEntry(
       builder: (context) => TopToast(
         message: message, 
+        type: ToastType.error,
         onDismissed: () => entry.remove(),
       ),
     );
@@ -114,7 +116,8 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   }
 
   Future<void> _loadSongs(Map<String, dynamic> artist) async {
-    setState(() { _selectedArtist = artist; _artists = []; _geniusLoadingState = 'songs'; _searchController.text = artist['name']; });
+    FocusScope.of(context).unfocus(); // Dismiss Keyboard
+    setState(() { _selectedArtist = artist; _artists = []; _geniusLoadingState = 'songs'; _searchController.text = artist['name']; _artistSuggestions = []; });
     try {
       final songs = await _apiService.getArtistSongs(artist['id']);
       if (mounted) setState(() => _songs = songs);
@@ -145,57 +148,48 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(118), // 70 toolbar + 48 tabs
-        child: ClipRect(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: Text('Analyzer', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: kAccentColor, letterSpacing: -0.5)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent, // Show blur
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 70,
+        flexibleSpace: ClipRect(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Adjust for blur intensity
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    kBgColor.withOpacity(0.85),
-                    kBgColor.withOpacity(0.75),
-                    kBgColor.withOpacity(0.6),
-                    kBgColor.withOpacity(0.0),
-                  ],
-                  stops: const [0.0, 0.7, 0.9, 1.0],
-                ),
+              color: kBgColor.withOpacity(0.9), // Semi-transparent
+            ),
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            color: Colors.transparent,
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: false,
+              labelColor: kAccentColor,
+              unselectedLabelColor: kTextSecondary,
+              indicatorSize: TabBarIndicatorSize.label,
+              indicatorColor: kAccentColor,
+              indicatorWeight: 2,
+              indicator: const UnderlineTabIndicator(
+                borderSide: BorderSide(color: kAccentColor, width: 2),
+                borderRadius: BorderRadius.zero,
               ),
-              child: Column(
-                children: [
-                  AppBar(
-                    title: Text('Analyzer', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: kAccentColor, letterSpacing: -0.5)),
-                    centerTitle: true,
-                    backgroundColor: Colors.transparent,
-                    surfaceTintColor: Colors.transparent,
-                    elevation: 0,
-                    toolbarHeight: 70,
-                  ),
-                  Container(
-                    color: Colors.transparent,
-                    child: TabBar(
-                      controller: _tabController,
-                      isScrollable: false,
-                      labelColor: kAccentColor,
-                      unselectedLabelColor: kTextSecondary,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      indicatorColor: kAccentColor,
-                      indicatorWeight: 3,
-                      dividerColor: Colors.transparent,
-                      labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
-                      unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
-                      tabs: const [ Tab(text: "Lyrics", height: 40), Tab(text: "Genius", height: 40) ],
-                    ),
-                  ),
-                ],
-              ),
+              overlayColor: MaterialStateProperty.all(Colors.transparent),
+              dividerColor: Colors.transparent,
+              labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+              unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
+              tabs: const [ Tab(text: "Lyrics", height: 40), Tab(text: "Genius", height: 40) ],
             ),
           ),
         ),
       ),
+
       body: TabBarView(
         controller: _tabController,
         children: [ _buildLyricsTab(), _buildGeniusTab() ],
@@ -206,7 +200,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   Widget _buildUnifiedCard({required List<Widget> children}) {
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
+        padding: const EdgeInsets.fromLTRB(20, 175, 20, 120),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20), // Slightly reduced padding
@@ -237,9 +231,9 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
           ),
         ),
       ),
-      const SizedBox(height: 20),
+      const SizedBox(height: 16), // Reduced from 20
       SizedBox(height: 50, child: ElevatedButton(onPressed: _isAnalyzingLyrics ? null : _analyzeLyrics, style: ElevatedButton.styleFrom(backgroundColor: kSurfaceColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), side: const BorderSide(color: Colors.white12), elevation: 0), child: _isAnalyzingLyrics ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text('Analyze Emotions', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)))),
-      if (_lyricsResult != null) ...[const SizedBox(height: 32), _buildEmotionResults(_lyricsResult!['emotions'])]
+      if (_lyricsResult != null) ...[const SizedBox(height: 16), _buildEmotionResults(_lyricsResult!['emotions'])] // Reduced from 32
       else if (!_isAnalyzingLyrics && _lyricsController.text.isEmpty) ...[Padding(padding: const EdgeInsets.only(top: 32), child: Column(children: [Icon(Symbols.lyrics, color: kTextSecondary, size: 32), const SizedBox(height: 8), Text("Uncover the emotions hidden in text", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 13))]))]
     ]);
   }
@@ -250,17 +244,94 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
              decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
              child: TextField(
                controller: _searchController, onChanged: _onSearchChanged, textAlignVertical: TextAlignVertical.center, style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontSize: 15),
-               decoration: InputDecoration(hintText: "Type artist name...", hintStyle: GoogleFonts.plusJakartaSans(color: kTextSecondary.withOpacity(0.5)), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), suffixIcon: _searchController.text.isNotEmpty ? IconButton(icon: const Icon(Icons.clear, color: kTextSecondary), onPressed: _clearGenius) : null), onSubmitted: (_) => _searchArtist(),
+               decoration: InputDecoration(hintText: "Type artist name...", hintStyle: GoogleFonts.plusJakartaSans(color: kTextSecondary.withOpacity(0.5)), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)), onSubmitted: (_) => _searchArtist(),
              ),
            ),
            const SizedBox(height: 16),
            SizedBox(height: 50, child: ElevatedButton(onPressed: _selectedArtist == null ? _searchArtist : _clearGenius, style: ElevatedButton.styleFrom(backgroundColor: kSurfaceColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0, side: _selectedArtist == null ? const BorderSide(color: Colors.white12) : BorderSide(color: Colors.red.withOpacity(0.3))), child: _geniusLoadingState == 'search' ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(_selectedArtist == null ? "Search Artist" : "Clear Search", style: GoogleFonts.plusJakartaSans(color: _selectedArtist == null ? Colors.white : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 15)))),
-           if (_artistSuggestions.isNotEmpty && _selectedArtist == null) ...[const SizedBox(height: 16), const Divider(color: Colors.white10), ..._artistSuggestions.take(5).map((artist) => ListTile(dense: true, contentPadding: EdgeInsets.zero, leading: ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 32, height: 32, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 32, height: 32))), title: Text(artist['name'], style: GoogleFonts.plusJakartaSans(color: Colors.white)), onTap: () { _searchController.text = artist['name']; _searchArtist(); }))],
+           
+           // Artist Suggestions Grid (Hide if Artists Results are shown)
+           if (_artistSuggestions.isNotEmpty && _selectedArtist == null && _artists.isEmpty) ...[
+              const SizedBox(height: 8), 
+              const Divider(color: Colors.white10), 
+              const SizedBox(height: 8),
+              GridView.builder(
+                key: const ValueKey('suggestions_grid'),
+                shrinkWrap: true, 
+                padding: EdgeInsets.zero,
+                physics: const NeverScrollableScrollPhysics(), 
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, // Reverted to 2 Cols
+                  childAspectRatio: 1.0, 
+                  crossAxisSpacing: 12, 
+                  mainAxisSpacing: 12
+                ), 
+                itemCount: _artistSuggestions.length, 
+                itemBuilder: (context, index) { 
+                  final artist = _artistSuggestions[index]; 
+                  return GestureDetector(
+                    onTap: () {
+                        // Direct Load Songs
+                       _selectedArtist = artist;
+                       _loadSongs(artist);
+                    }, 
+                    child: Container(
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white10)), 
+                      padding: const EdgeInsets.all(8), 
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center, 
+                        children: [
+                          ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 50, height: 50, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 50, height: 50))), 
+                          const SizedBox(height: 8), 
+                          Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 11), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)
+                        ]
+                      )
+                    )
+                  ); 
+                }
+              )
+           ],
+
            if (_geniusLoadingState == 'songs' || _geniusLoadingState == 'analyze') const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator(color: kAccentColor))),
-           if (_artists.isNotEmpty && _geniusLoadingState == null) ...[const SizedBox(height: 24), const Divider(color: Colors.white10), const SizedBox(height: 16), GridView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.85, crossAxisSpacing: 12, mainAxisSpacing: 12), itemCount: _artists.length, itemBuilder: (context, index) { final artist = _artists[index]; return GestureDetector(onTap: () => _loadSongs(artist), child: Container(decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white10)), padding: const EdgeInsets.all(12), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 60, height: 60, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 60, height: 60))), const SizedBox(height: 12), Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 13), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)]))); })],
+           if (_artists.isNotEmpty && _geniusLoadingState == null) ...[
+             const SizedBox(height: 12), // Reduced Gap
+             // const Divider(color: Colors.white10), // Removed Divider to reduce gap
+             
+             GridView.builder(
+               key: const ValueKey('results_grid'),
+               shrinkWrap: true, 
+               padding: EdgeInsets.zero, // Force Zero Padding
+               physics: const NeverScrollableScrollPhysics(), 
+               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                 crossAxisCount: 2, // Reverted to 2 Cols
+                 childAspectRatio: 1.0, // Square ratio (Compact vertical)
+                 crossAxisSpacing: 12, 
+                 mainAxisSpacing: 12
+               ), 
+               itemCount: _artists.length, 
+               itemBuilder: (context, index) { 
+                 final artist = _artists[index]; 
+                 return GestureDetector(
+                   onTap: () => _loadSongs(artist), 
+                   child: Container(
+                     decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white10)), 
+                     padding: const EdgeInsets.all(12), 
+                     child: Column(
+                       mainAxisAlignment: MainAxisAlignment.center, 
+                       children: [
+                         ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 55, height: 55, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 55, height: 55))), 
+                         const SizedBox(height: 8), 
+                         Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 13), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)
+                       ]
+                     )
+                   )
+                 ); 
+               }
+             )
+           ],
            
            if (_songs.isNotEmpty && _geniusLoadingState == null) ...[
-             const SizedBox(height: 24),
+             const SizedBox(height: 16),
              Text("Songs by ${_selectedArtist!['name']}", style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
              const SizedBox(height: 16),
              
@@ -312,10 +383,12 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
            ],
 
            if (_geniusAnalysis != null) ...[
-              const SizedBox(height: 32), const Divider(color: Colors.white10), const SizedBox(height: 24),
-              Text(_geniusAnalysis!['track_info']['title'], style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: kAccentColor), textAlign: TextAlign.center),
+              const SizedBox(height: 16), // Unified Gap (Divider Removed)
+              
+              // <-- ATUR JARAK MARGIN TOP JUDUL LAGU DI SINI (Image 1)
+              Text(_geniusAnalysis!['track_info']['title'], style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: kAccentColor), textAlign: TextAlign.center), // Matches Emotion Results (16)
               Text(_geniusAnalysis!['track_info']['artist'], style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 14), textAlign: TextAlign.center),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16), // Reduced from 20
               Container(
                 height: 300, 
                 padding: const EdgeInsets.all(16),
@@ -328,7 +401,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16), // Reduced from 24
               if (_geniusAnalysis!['emotion_analysis'] != null) _buildEmotionResults(_geniusAnalysis!['emotion_analysis']['emotions']),
            ],
      ]);
@@ -343,15 +416,19 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Symmetric Title Spacing (20px)
         Text("Emotion Results:", style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.center),
-        const SizedBox(height: 16),
-        ...filtered.take(5).map((e) {
+        const SizedBox(height: 12), // Top Spacing = 20px
+        
+        ...List.generate(filtered.take(5).length, (index) {
+             final e = filtered[index];
              final score = (e['score'] as num).toDouble();
              final percentage = (score * 100).toStringAsFixed(1); 
              final relativeWidth = score / maxScore;
+             final isLast = index == filtered.take(5).length - 1;
              
              return Padding(
-               padding: const EdgeInsets.only(bottom: 12),
+               padding: EdgeInsets.only(bottom: isLast ? 0 : 10), // Zero padding for last item
                child: Row(
                  crossAxisAlignment: CrossAxisAlignment.center,
                  children: [
@@ -360,59 +437,45 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                       e['label'].toString().replaceFirstMapped(RegExp(r'^[a-z]'), (m) => m[0]!.toUpperCase()), 
                       style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
                    ),
-                   const SizedBox(width: 8), // Reduced spacing
+                   const SizedBox(width: 8), 
                    Expanded(
                      child: Container(
-                       height: 8,
-                       decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(4)), 
+                       height: 6, // Thinner Bar (6px)
+                       decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(3)), 
                        alignment: Alignment.centerLeft,
                        child: FractionallySizedBox(
                          widthFactor: relativeWidth,
-                         child: Container( decoration: BoxDecoration(color: kAccentColor, borderRadius: BorderRadius.circular(4), boxShadow: [BoxShadow(color: kAccentColor.withOpacity(0.5), blurRadius: 6)]) ),
+                         child: _ShimmerBar(color: kAccentColor), // Custom Shimmer Widget
                        ),
                      ),
                    ),
-                   const SizedBox(width: 8), // Reduced spacing
+                   const SizedBox(width: 8),
                    SizedBox(width: 36, child: Text("$percentage%", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 12, fontWeight: FontWeight.w500), textAlign: TextAlign.right)),
                  ],
                ),
              );
-           }).toList(),
+           }),
       ],
     );
   }
 }
 
-class TopToast extends StatefulWidget {
-  final String message;
-  final VoidCallback onDismissed;
-
-  const TopToast({super.key, required this.message, required this.onDismissed});
+// Custom Shimmer Bar Widget
+class _ShimmerBar extends StatefulWidget {
+  final Color color;
+  const _ShimmerBar({required this.color});
 
   @override
-  State<TopToast> createState() => _TopToastState();
+  State<_ShimmerBar> createState() => _ShimmerBarState();
 }
 
-class _TopToastState extends State<TopToast> with SingleTickerProviderStateMixin {
+class _ShimmerBarState extends State<_ShimmerBar> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _opacity;
-  late Animation<Offset> _slide;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
-    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _slide = Tween<Offset>(begin: const Offset(0, -1.0), end: Offset.zero).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
-
-    _controller.forward();
-
-    // Auto dismiss
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _controller.reverse().then((_) => widget.onDismissed());
-      }
-    });
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))..repeat();
   }
 
   @override
@@ -423,49 +486,34 @@ class _TopToastState extends State<TopToast> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 16,
-      left: 24,
-      right: 24,
-      child: Material(
-        type: MaterialType.transparency,
-        child: FadeTransition(
-          opacity: _opacity,
-          child: SlideTransition(
-            position: _slide,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF181818),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 16, offset: const Offset(0, 8)),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                   Container(
-                     padding: const EdgeInsets.all(4),
-                     decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
-                     child: const Icon(Icons.close, color: Colors.white, size: 12),
-                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      widget.message,
-                      style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(3), // Match parent radius
+            gradient: LinearGradient(
+              begin: Alignment(-2.0 + _controller.value * 4, -0.5), // Move gradient
+              end: Alignment(-1.0 + _controller.value * 4, 0.5),
+              colors: [
+                widget.color,
+                widget.color.withOpacity(0.3), // Reduced Highlight (Less Shining)
+                widget.color, 
+              ],
+              stops: const [0.0, 0.5, 1.0],
             ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(0.15), // Reduced Shadow Opacity
+                blurRadius: 4, // Reduced Blur
+                offset: const Offset(0, 0), 
+              )
+            ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
+
+

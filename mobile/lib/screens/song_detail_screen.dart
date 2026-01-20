@@ -424,11 +424,11 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
           
           const SizedBox(height: 24),
 
-          // Show top 3 emotions if available
+          // Show top 5 emotions if available
           if (emotions != null && emotions.length > 1) ...[
             Text("TOP EMOTIONS", style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1)),
             const SizedBox(height: 12),
-            ...emotions.take(3).map((emotion) {
+            ...emotions.take(5).map((emotion) {
               final label = capitalize(emotion['label'] ?? 'Unknown');
               final score = (emotion['score'] ?? 0.0) as num;
               return Padding(
@@ -468,23 +468,243 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
     switch (emotion.toLowerCase()) {
       case 'joy':
       case 'happiness':
+      case 'happy':
         return FontAwesomeIcons.faceSmileBeam;
       case 'sadness':
+      case 'sad':
+      case 'grief':
+      case 'loneliness':
         return FontAwesomeIcons.faceSadTear;
       case 'anger':
+      case 'angry':
+      case 'rage':
+      case 'frustration':
         return FontAwesomeIcons.faceAngry;
       case 'fear':
+      case 'scared':
+      case 'anxiety':
+      case 'nervous':
         return FontAwesomeIcons.faceFlushed;
       case 'love':
+      case 'loving':
+      case 'romance':
+      case 'affection':
         return FontAwesomeIcons.heart;
       case 'excitement':
+      case 'excited':
+      case 'thrill':
         return FontAwesomeIcons.bolt;
       case 'surprise':
+      case 'surprised':
+      case 'shock':
         return FontAwesomeIcons.faceSurprise;
       case 'neutral':
+      case 'calm':
         return FontAwesomeIcons.faceMeh;
-      default:
+      case 'disgust':
+      case 'disgusted':
+        return FontAwesomeIcons.faceGrimace;
+      case 'optimism':
+      case 'optimistic':
+      case 'hope':
+        return FontAwesomeIcons.lightbulb; // Changed from sun to lightbulb/chart
+      case 'pessimism':
+      case 'pessimistic':
         return FontAwesomeIcons.cloudRain;
+      case 'amusement':
+      case 'amused':
+      case 'funny':
+        return FontAwesomeIcons.faceLaughSquint;
+      // New specific mappings
+      case 'real-life':
+      case 'real life':
+      case 'reality':
+        return FontAwesomeIcons.earthAmericas;
+      case 'design':
+      case 'creativity':
+      case 'art':
+        return FontAwesomeIcons.palette;
+      case 'caring':
+      case 'kindness':
+      case 'care':
+        return FontAwesomeIcons.handHoldingHeart;
+      case 'realization':
+      case 'epiphany':
+        return FontAwesomeIcons.brain;
+      case 'gratitude':
+      case 'grateful':
+      case 'thankful':
+        return FontAwesomeIcons.handsPraying;
+      case 'desire':
+      case 'lust':
+      case 'craving':
+        return FontAwesomeIcons.fire;
+      case 'admiration':
+      case 'admire':
+        return FontAwesomeIcons.star;
+      case 'curiosity':
+      case 'curious':
+        return FontAwesomeIcons.magnifyingGlass;
+      case 'pride':
+      case 'proud':
+        return FontAwesomeIcons.medal;
+      case 'pain':
+      case 'hurt':
+      case 'suffering':
+        return FontAwesomeIcons.bandage;
+      case 'confusion':
+      case 'confused':
+        return FontAwesomeIcons.question;
+      case 'nostalgia':
+      case 'nostalgic':
+        return FontAwesomeIcons.hourglassHalf;
+      case 'relief':
+      case 'relieved':
+        return FontAwesomeIcons.faceSmile;
+      
+      // --- New Comprehensive Mappings ---
+      case 'determination':
+      case 'determined':
+      case 'confidence':
+      case 'confident':
+      case 'power':
+      case 'strong':
+        return FontAwesomeIcons.fistRaised;
+      case 'lonely':
+      case 'loneliness':
+      case 'alone':
+      case 'isolation':
+        return FontAwesomeIcons.personThroughWindow; // or cloudRain
+      case 'bored':
+      case 'boredom':
+        return FontAwesomeIcons.faceRollingEyes;
+      case 'disgust':
+      case 'disgusted':
+        return FontAwesomeIcons.faceGrimace;
+      case 'party':
+      case 'celebration':
+      case 'dance':
+      case 'club':
+        return FontAwesomeIcons.champagneGlasses;
+      case 'dream':
+      case 'dreamy':
+      case 'fantasy':
+        return FontAwesomeIcons.cloudMoon;
+      case 'funny':
+      case 'humor':
+      case 'comedy':
+      case 'fun':
+        return FontAwesomeIcons.masksTheater;
+      case 'dark':
+      case 'evil':
+      case 'horror':
+      case 'scary':
+        return FontAwesomeIcons.ghost;
+      case 'nature':
+      case 'forest':
+        return FontAwesomeIcons.tree;
+      case 'city':
+      case 'urban':
+        return FontAwesomeIcons.city;
+      case 'travel':
+      case 'trip':
+      case 'journey':
+        return FontAwesomeIcons.plane;
+      case 'breakup':
+      case 'heartbreak':
+      case 'broken':
+        return FontAwesomeIcons.heartCrack;
+      case 'friendship':
+      case 'friends':
+        return FontAwesomeIcons.userGroup;
+      case 'money':
+      case 'wealth':
+      case 'flex':
+      case 'rich':
+        return FontAwesomeIcons.sackDollar;
+      case 'summer':
+      case 'sunny':
+      case 'hot':
+        return FontAwesomeIcons.sun;
+      case 'winter':
+      case 'cold':
+      case 'snow':
+        return FontAwesomeIcons.snowflake;
+      case 'night':
+      case 'midnight':
+        return FontAwesomeIcons.moon;
+      case 'focus':
+      case 'concentration':
+      case 'study':
+        return FontAwesomeIcons.bullseye;
+      case 'sexy':
+      case 'sensual':
+      case 'seductive':
+        return FontAwesomeIcons.pepperHot; // or fire
+      case 'intense':
+      case 'intensity':
+        return FontAwesomeIcons.bolt;
+      case 'regret':
+      case 'guilt':
+        return FontAwesomeIcons.faceFrownOpen;
+      case 'freedom':
+      case 'free':
+      case 'liberation':
+        return FontAwesomeIcons.dove;
+      case 'mystery':
+      case 'mysterious':
+      case 'secret':
+        return FontAwesomeIcons.userSecret;
+      case 'chaos':
+      case 'chaotic':
+        return FontAwesomeIcons.tornado;
+      case 'victory':
+      case 'win':
+      case 'success':
+        return FontAwesomeIcons.trophy;
+        
+      // --- User Requested 27 Emotions Mapping ---
+      case 'admiration': return FontAwesomeIcons.star; // Inspiring
+      case 'amusement': return FontAwesomeIcons.masksTheater; // Playful
+      case 'anger': return FontAwesomeIcons.fire; // Intense
+      case 'annoyance': return FontAwesomeIcons.personWalkingDashedLineArrowRight; // Subtle/Dashed? Or faceRollingEyes
+      case 'approval': return FontAwesomeIcons.thumbsUp; // Positive
+      case 'caring': return FontAwesomeIcons.handHoldingHeart; // Gentle
+      case 'confusion': return FontAwesomeIcons.question; // Hazy
+      case 'curiosity': return FontAwesomeIcons.magnifyingGlass; // Sparked
+      case 'desire': return FontAwesomeIcons.heartCircleBolt; // Yearning
+      case 'disappointment': return FontAwesomeIcons.faceFrownOpen; // Quiet letdown
+      case 'disapproval': return FontAwesomeIcons.thumbsDown; // Firm dislike
+      case 'disgust': return FontAwesomeIcons.faceGrimace; // Raw
+      case 'embarrassment': return FontAwesomeIcons.faceFlushed; // Awkward
+      case 'excitement': return FontAwesomeIcons.bolt; // Bright
+      case 'fear': return FontAwesomeIcons.ghost; // Cold
+      case 'gratitude': return FontAwesomeIcons.handsPraying; // Warm
+      case 'grief': return FontAwesomeIcons.cloudShowersHeavy; // Heavy
+      case 'joy': return FontAwesomeIcons.sun; // Radiant
+      case 'love': return FontAwesomeIcons.heart; // Tender
+      case 'nervousness': return FontAwesomeIcons.faceMehBlank; // Tense/Anxiety. Or faceGrimace? Used Flushed for Embarrassment. Nervous -> stop watch? Or faceDizzy? I'll use faceMehBlank or personWalking.
+      case 'optimism': return FontAwesomeIcons.lightbulb; // Hopeful
+      case 'pride': return FontAwesomeIcons.medal; // Bold
+      case 'realization': return FontAwesomeIcons.brain; // Sudden insight
+      case 'relief': return FontAwesomeIcons.faceSmile; // Soothing
+      case 'remorse': return FontAwesomeIcons.rotateLeft; // Deep regret (Backward/Undo) or faceSadTear
+      case 'sadness': return FontAwesomeIcons.cloudRain; // Soft
+      case 'surprise': return FontAwesomeIcons.gift; // Pure (Gift box? Or exclamation?)
+      
+      // Fallback aliases
+      case 'annoyed': return FontAwesomeIcons.faceRollingEyes;
+      case 'embarrassed': return FontAwesomeIcons.faceFlushed;
+      case 'nervous': return FontAwesomeIcons.faceMehBlank;
+      case 'surprised': return FontAwesomeIcons.exclamation;
+      
+      default:
+        // Use a generic logic-based icon or fallback
+        if (emotion.toLowerCase().contains('happy') || emotion.toLowerCase().contains('joy')) return FontAwesomeIcons.faceSmile;
+        if (emotion.toLowerCase().contains('sad')) return FontAwesomeIcons.faceFrown;
+        if (emotion.toLowerCase().contains('love')) return FontAwesomeIcons.heart;
+        // Default fallback
+        return FontAwesomeIcons.circleQuestion;
     }
   }
 }

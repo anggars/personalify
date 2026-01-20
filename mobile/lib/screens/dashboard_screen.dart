@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:personalify/widgets/top_toast.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
@@ -18,6 +19,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:gal/gal.dart';
 
 /// --------------------------------------------------------------------------
 /// DashboardScreen: Final Polish v2
@@ -203,9 +205,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     print('🎨 _buildShareableWidget called with tabIndex=$tabIndex');
     
     // WEB HEADER STYLE: 
-    // Title: Personalify (Green, 2.5rem/40px)
-    // Sub: Time Range, User
-    // Emotion: Italic paragraph
+    // Title: Share your vibe
+    // Sub: Discover... (Web Footer Text)
     
     // remove HTML tags from emotion paragraph just in case
     final rawEmotion = _userProfile?.emotionParagraph ?? "";
@@ -222,7 +223,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
            width: 550, // WIDER CONTENT
            // NO BOUNDED HEIGHT
            constraints: const BoxConstraints(minHeight: 711), 
-           padding: const EdgeInsets.fromLTRB(32, 80, 32, 40), // More Top Padding for IG
+           // Increased Top Padding for Instagram Stories safety
+           padding: const EdgeInsets.fromLTRB(32, 100, 32, 40), 
            decoration: const BoxDecoration(color: kBgColor), 
            child: Column(
              crossAxisAlignment: CrossAxisAlignment.center,
@@ -232,33 +234,36 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 Text(
                   'Personalify',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 32, // REDUCED from 40
+                    fontSize: 40, 
                     fontWeight: FontWeight.w800,
                     color: kAccentColor,
                     height: 1.0,
+                    letterSpacing: -1.0,
                   ),
                 ),
+                
                 const SizedBox(height: 8),
                 Text(
-                  _selectedTimeRange == 0 ? "Here's your monthly recap"
-                  : _selectedTimeRange == 1 ? "A look at your last 6 months"
-                  : "Your listening overview for the year",
+                  _selectedTimeRange == 0 ? "Here's your monthly recap, ${_userProfile?.displayName?.split(' ').first ?? 'User'}!"
+                  : _selectedTimeRange == 1 ? "A look at your last 6 months, ${_userProfile?.displayName?.split(' ').first ?? 'User'}!"
+                  : "Your listening overview for the year, ${_userProfile?.displayName?.split(' ').first ?? 'User'}!",
                   style: GoogleFonts.plusJakartaSans(
                     color: kTextSecondary, 
-                    fontSize: 16, 
-                    fontWeight: FontWeight.w600
+                    fontSize: 14, 
+                    fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,
                 ),
+
                 if (cleanEmotion.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   SizedBox(
-                    width: 340,
+                    width: 380,
                     child: Text(
                       cleanEmotion,
                       style: GoogleFonts.plusJakartaSans(
-                        color: kTextSecondary,
-                        fontSize: 12,
+                        color: kTextPrimary.withOpacity(0.9),
+                        fontSize: 14,
                         fontStyle: FontStyle.italic,
                         height: 1.4,
                       ),
@@ -269,36 +274,35 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   ),
                 ],
                 
-                const SizedBox(height: 24), // GAP
+                const SizedBox(height: 32), // GAP
 
                 // 2. CARD
                 Container(
                   width: double.infinity,
-                  // Remove constraints here, let it size by content but flexible?
-                  // Actually content is fixed top 5.
                   decoration: BoxDecoration(
                     color: kSurfaceColor,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: kBorderColor),
                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))],
                   ),
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      // Card Title
+                      // Card Title (Green, No Number, No Icon)
                       Container(
                         padding: const EdgeInsets.only(bottom: 12),
                         decoration: const BoxDecoration(
                           border: Border(bottom: BorderSide(color: kBorderColor))
                         ),
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin: const EdgeInsets.only(bottom: 12), // Tighter margin
                         width: double.infinity,
+                        alignment: Alignment.center,
                         child: Text(
-                          'Top 10 ${tabIndex == 0 ? "Tracks" : tabIndex == 1 ? "Artists" : "Genres"}',
+                          tabIndex == 0 ? "Top Tracks" : tabIndex == 1 ? "Top Artists" : "Top Genres",
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: kAccentColor
+                             fontSize: 18,
+                             fontWeight: FontWeight.bold,
+                             color: kAccentColor
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -310,14 +314,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   ),
                 ),
                 
-                // 3. FOOTER
-                const SizedBox(height: 24), // REDUCED Spacing (Equal to Header-Card gap)
+                // 3. FOOTER (Text Only, No Icon)
+                const SizedBox(height: 32), 
                 Text(
-                  'personalify.app',
+                  'Personalify © 2026 • Powered by Spotify API',
                   style: GoogleFonts.plusJakartaSans(
-                    color: kTextSecondary.withOpacity(0.5), 
-                    fontWeight: FontWeight.w900, 
-                    letterSpacing: 3,
+                    color: kTextSecondary, 
+                    fontWeight: FontWeight.bold, 
                     fontSize: 12,
                   ),
                 ),
@@ -329,7 +332,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 
   Widget _buildShareContent(int tabIndex) {
-    print('🔀 _buildShareContent: tabIndex=$tabIndex → ${tabIndex == 0 ? "Tracks" : tabIndex == 1 ? "Artists" : "Genres"}');
     if (tabIndex == 0) return _buildShareTracksList();
     if (tabIndex == 1) return _buildShareArtistsList();
     if (tabIndex == 2) return _buildShareGenresList();
@@ -338,19 +340,25 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Widget _buildShareTracksList() {
     final tracks = (_userProfile?.tracks ?? []).take(10).toList();
-    print('🎵 _buildShareTracksList: rendering ${tracks.length} tracks');
     return Container(
       decoration: BoxDecoration(
         color: kSurfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: kBorderColor),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      // Use vertical:0 because items have internal vertical:12. 
+      // Need 12 at top and 12 at bottom? No, internal handles it?
+      // WAIT. If I put 0, first item top text is 12px from border. 
+      // Gap between items (border) is 12+12=24.
+      // So Top/Bottom should be 12 to match? 12 (container) + 12 (internal) = 24.
+      // YES. vertical: 12.
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
       child: Column(
         children: tracks.asMap().entries.map((entry) {
+          final isLast = entry.key == tracks.length - 1;
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12), // INCREASE SPACING
-            child: _buildTrackItem(entry.value, entry.key, isLast: entry.key == tracks.length - 1, isShare: true),
+            padding: EdgeInsets.zero, // NO EXTERNAL GAP. Let internal padding handle it.
+            child: _buildTrackItem(entry.value, entry.key, isLast: isLast, isShare: true),
           );
         }).toList(),
       ),
@@ -359,19 +367,19 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Widget _buildShareArtistsList() {
     final artists = (_userProfile?.artists ?? []).take(10).toList();
-    print('🎤 _buildShareArtistsList: rendering ${artists.length} artists');
     return Container(
       decoration: BoxDecoration(
         color: kSurfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: kBorderColor),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Column(
         children: artists.asMap().entries.map((entry) {
+          final isLast = entry.key == artists.length - 1;
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12), // INCREASE SPACING
-            child: _buildArtistItem(entry.value, entry.key, isLast: entry.key == artists.length - 1, isShare: true),
+            padding: EdgeInsets.zero,
+            child: _buildArtistItem(entry.value, entry.key, isLast: isLast, isShare: true),
           );
         }).toList(),
       ),
@@ -380,14 +388,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Widget _buildShareGenresList() {
     final genres = (_userProfile?.genres ?? []).take(10).toList();
-    print('🎸 _buildShareGenresList: rendering ${genres.length} genres');
     return Container(
       decoration: BoxDecoration(
         color: kSurfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: kBorderColor),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Column(
         children: genres.asMap().entries.map((entry) {
           final g = entry.value;
@@ -398,9 +405,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 .map((a) => a.name)
                 .toList();
            }
+           final isLast = entry.key == genres.length - 1;
            return Padding(
-             padding: const EdgeInsets.only(bottom: 12), // INCREASE SPACING
-             child: _buildGenreItem(g, entry.key, _getGenreColor(g.name), artistsList, isLast: entry.key == genres.length - 1, isShare: true),
+             padding: EdgeInsets.zero,
+             child: _buildGenreItem(g, entry.key, _getGenreColor(g.name), artistsList, isLast: isLast, isShare: true),
            );
         }).toList(),
       ),
@@ -417,9 +425,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     }
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool isRefresh = false}) async {
     if (_spotifyId == null) return;
-    setState(() => _isLoading = true);
+    if (!isRefresh) setState(() => _isLoading = true);
     try {
       final p = await _apiService.getUserProfile(_spotifyId!, timeRange: _timeRangeKeys[_selectedTimeRange]);
       setState(() { 
@@ -469,31 +477,22 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
     return Scaffold(
       backgroundColor: kBgColor,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(118), // 70 toolbar + 48 tabs
-        child: ClipRect(
+      extendBodyBehindAppBar: true, // Allow body to scroll behind app bar
+      appBar: AppBar(
+        backgroundColor: Colors.transparent, // Transparent to show blur
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 70,
+        flexibleSpace: ClipRect(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Adjust these values for blur intensity
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), 
             child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    kBgColor.withOpacity(0.85),
-                    kBgColor.withOpacity(0.75),
-                    kBgColor.withOpacity(0.6),
-                    kBgColor.withOpacity(0.0),
-                  ],
-                  stops: const [0.0, 0.7, 0.9, 1.0],
-                ),
-              ),
-              child: AppBar(
-                backgroundColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                elevation: 0,
-                toolbarHeight: 70,
-                leading: Theme(
+              color: kBgColor.withOpacity(0.9), // Darker, less transparent
+            ),
+          ),
+        ),
+        leading: Theme(
+
                   data: Theme.of(context).copyWith(
                     popupMenuTheme: PopupMenuThemeData(
                       color: kSurfaceColor,
@@ -557,11 +556,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     child: TabBar(
                       controller: _tabController,
                       isScrollable: false,
-                      labelColor: kAccentColor,
+                      labelColor: kAccentColor, // Green Active
                       unselectedLabelColor: kTextSecondary,
                       indicatorSize: TabBarIndicatorSize.label,
                       indicatorColor: kAccentColor,
-                      indicatorWeight: 3,
+                      indicatorWeight: 2, // Thinner (ignored by custom indicator but good practice)
+                      // Custom Indicator: Green, Thinner (2px)
+                      indicator: const UnderlineTabIndicator(
+                         borderSide: BorderSide(color: kAccentColor, width: 2),
+                         borderRadius: BorderRadius.zero, 
+                      ),
+                      overlayColor: MaterialStateProperty.all(Colors.transparent), // Remove Hover/Splash Box
                       dividerColor: Colors.transparent,
                       labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
                       unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
@@ -571,12 +576,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         Tab(text: 'Genres', height: 40),
                       ],
                     ),
-                  ),
                 ),
               ),
-            ),
-          ),
-        ),
       ),
       body: NotificationListener<ScrollNotification>(
         onNotification: _onScrollNotification,
@@ -597,7 +598,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     return SingleChildScrollView(
       controller: _scrollController,
       physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120), // Outer Safe Padding
+      padding: const EdgeInsets.fromLTRB(16, 175, 16, 120), // Increased to 150 for Glass Header
       child: Container(
         decoration: BoxDecoration(
           color: kSurfaceColor,
@@ -1016,30 +1017,47 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             ),
             const SizedBox(height: 32),
 
-            // Share Button (Big Green)
+            // Share Button (Liquid Glass - Navbar Style)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: SizedBox(
+              child: Container(
                 width: double.infinity,
                 height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Share.shareXFiles([XFile(imagePath)], text: 'My Personalify Top 10 🎵 personalify.app');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kAccentColor,
-                    foregroundColor: kBgColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    elevation: 0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.share_rounded, size: 20),
-                      const SizedBox(width: 12),
-                      Text("Share via...", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 16)),
-                    ],
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                     BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10)),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1), // Glass
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            Share.shareXFiles([XFile(imagePath)], text: 'My Personalify Top 10 🎵 personalify.app');
+                          },
+                          splashColor: Colors.white24,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Symbols.ios_share, size: 22, color: kTextPrimary),
+                              const SizedBox(width: 12),
+                              Text("Share via...", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 16, color: kTextPrimary)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1051,18 +1069,28 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                  TextButton.icon(
-                   onPressed: () {
-                     // Since we can't save easily to public gallery w/o permission, standard Share is safer 
-                     Navigator.pop(ctx);
-                     Share.shareXFiles([XFile(imagePath)], text: 'My Personalify Top 10 🎵 personalify.app');
+                   onPressed: () async {
+                     try {
+                        await Gal.putImage(imagePath);
+                        if (ctx.mounted) {
+                           Navigator.pop(ctx);
+                           // Show Top Toast instead of SnackBar
+                           showTopToast(context, "Saved to Gallery!", type: ToastType.success);
+                        }
+                     } catch (e) {
+                        print("Save Error: $e");
+                        if (ctx.mounted) {
+                           ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text("Error saving: $e")));
+                        }
+                     }
                    }, 
-                   icon: const Icon(Icons.download_rounded, color: kTextSecondary, size: 20), 
+                   icon: Icon(Symbols.arrow_circle_down, color: kTextSecondary, size: 24), 
                    label: Text("Save Image", style: GoogleFonts.plusJakartaSans(color: kTextSecondary))
                  ),
                  const SizedBox(width: 24),
                  TextButton.icon(
                    onPressed: () => Navigator.pop(ctx), 
-                   icon: const Icon(Icons.close, color: kTextSecondary, size: 20), 
+                   icon: Icon(Symbols.cancel, color: kTextSecondary, size: 24), 
                    label: Text("Cancel", style: GoogleFonts.plusJakartaSans(color: kTextSecondary))
                  ),
               ],

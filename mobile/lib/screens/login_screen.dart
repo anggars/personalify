@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui'; // Added for BackdropFilter
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -19,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   String? _errorMessage;
   
   // Animation State
-  bool _isTechStackVisible = false;
+  // bool _isTechStackVisible = false; // Removed unused state
 
   @override
   void initState() {
@@ -72,138 +73,81 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 1. Animated Logo (Pill)
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isTechStackVisible = !_isTechStackVisible;
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 400),
-                    curve: Curves.elasticOut,
-                    width: _isTechStackVisible ? 180 : 60,
-                    height: 60, // Smaller, more symmetric
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Marquee Content (Tech Stack)
-                        AnimatedOpacity(
-                          duration: const Duration(milliseconds: 300),
-                          opacity: _isTechStackVisible ? 1.0 : 0.0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: Colors.white10)
-                            ),
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              children: const [
-                                Icon(FontAwesomeIcons.spotify, color: kAccentColor, size: 20),
-                                SizedBox(width: 12),
-                                Icon(FontAwesomeIcons.react, color: Colors.blue, size: 20),
-                                SizedBox(width: 12),
-                                Icon(FontAwesomeIcons.python, color: Colors.yellow, size: 20),
-                                SizedBox(width: 12),
-                                Icon(FontAwesomeIcons.robot, color: Colors.purple, size: 20),
-                              ],
-                            ),
-                          ),
-                        ),
-                        
-                        // Spotify Logo (Centered)
-                        AnimatedOpacity(
-                          duration: const Duration(milliseconds: 300),
-                          opacity: _isTechStackVisible ? 0.0 : 1.0,
-                          child: Hero(
-                            tag: 'logo',
-                            child: Image.network(
-                              'https://cdn.simpleicons.org/spotify/1DB954',
-                              height: 60, width: 60,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_,__,___) => const Icon(FontAwesomeIcons.spotify, color: kAccentColor, size: 60),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                // 1. Static Logo
+                Hero(
+                  tag: 'logo',
+                  child: Image.network(
+                    'https://cdn.simpleicons.org/spotify/1DB954',
+                    height: 60, width: 60,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_,__,___) => const Icon(FontAwesomeIcons.spotify, color: kAccentColor, size: 60),
                   ),
                 ),
                 
-                const SizedBox(height: 20), // Reduced from 32
+                const SizedBox(height: 16), // Reduced from 32
 
-                // 2. Hero Text
-                RichText(
+                // 2. Hero Text (Single White Color)
+                Text(
+                  'Welcome to Personalify!',
                   textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 36, // ~text-4xl
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      height: 1.2,
-                    ),
-                    children: const [
-                      TextSpan(text: 'Welcome to '),
-                      TextSpan(text: 'Personalify', style: TextStyle(color: kAccentColor)),
-                      TextSpan(text: '!'),
-                    ],
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 36, // ~text-4xl
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    height: 1.2,
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // 3. Typewriter Subtitle
-                SizedBox(
-                  height: 70, // Adjusted for smaller font
-                  child: TypewriterText(
-                    text: "Discover your most played artists, tracks, and genres through Spotify insights. Go beyond the sound and analyze the emotion hidden in the lyrics. Let's explore your unique taste in music.",
+                // 3. Static Subtitle (No Typing)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    "Discover your most played artists, tracks, and genres through Spotify insights. Go beyond the sound and analyze the emotion hidden in the lyrics. Let's explore your unique taste in music.",
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12.5, // Smaller font to fit 3 lines
+                      fontSize: 12.5, // Revert to 12.5
                       color: const Color(0xFFB3B3B3),
                       fontWeight: FontWeight.w500,
-                      height: 1.4,
+                      height: 1.5,
                     ),
                     textAlign: TextAlign.center,
                   ),
                 ),
 
-                const SizedBox(height: 20), // Reduced from 48
+                const SizedBox(height: 22), // Breathing room
 
-                // 4. Glass Login Button
+                // 4. Glass Login Button (No Shadow, No Green, Reverted Radius/Icon)
                 GestureDetector(
                   onTap: _isLoading ? null : _handleLogin,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: 54,
-                    constraints: const BoxConstraints(maxWidth: 200), // Fit to text width
-                    decoration: BoxDecoration(
-                      color: kAccentColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white24),
-                      boxShadow: [
-                         BoxShadow(color: kAccentColor.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 4))
-                      ]
-                    ),
-                    child: Center(
-                       child: _isLoading 
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text(
-                            "Login with Spotify",
-                            style: GoogleFonts.plusJakartaSans(
-                               fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16), // Reverted to 16
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        height: 54,
+                        width: 200,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08), // Subtle Glass
+                          borderRadius: BorderRadius.circular(16), // Reverted to 16
+                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          // No Shadow
+                        ),
+                        child: _isLoading 
+                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : Text(
+                              "Login with Spotify",
+                              style: GoogleFonts.plusJakartaSans(
+                                 fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5
+                              ), // Reverted Size to 16, Removed Icon
                             ),
-                          ),
+                      ),
                     ),
                   ),
                 ),
                 
-                 if (_errorMessage != null)
+                if (_errorMessage != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 24),
                     child: Text(_errorMessage!, style: const TextStyle(color: Colors.redAccent)),
@@ -212,74 +156,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-// --- TYPEWRITER WIDGET ---
-
-class TypewriterText extends StatefulWidget {
-  final String text;
-  final TextStyle? style;
-  final TextAlign textAlign;
-  final Duration speed;
-
-  const TypewriterText({
-    super.key, 
-    required this.text, 
-    this.style, 
-    this.textAlign = TextAlign.start,
-    this.speed = const Duration(milliseconds: 30),
-  });
-
-  @override
-  State<TypewriterText> createState() => _TypewriterTextState();
-}
-
-class _TypewriterTextState extends State<TypewriterText> {
-  String _displayedString = "";
-  late Timer _timer;
-  int _currentIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _startTyping();
-  }
-
-  void _startTyping() {
-    _timer = Timer.periodic(widget.speed, (timer) {
-      if (_currentIndex < widget.text.length) {
-        if (mounted) {
-          setState(() {
-            _displayedString += widget.text[_currentIndex];
-            _currentIndex++;
-          });
-        }
-      } else {
-        timer.cancel();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return RichText(
-      textAlign: widget.textAlign,
-      text: TextSpan(
-        style: widget.style,
-        children: [
-          TextSpan(text: _displayedString),
-          if (_currentIndex < widget.text.length)
-             const TextSpan(text: "|", style: TextStyle(color: Color(0xFF1DB954))), // Cursor
-        ],
       ),
     );
   }

@@ -192,7 +192,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // 4. Actions
             _buildInfoGroup([
               _buildActionRow(Icons.open_in_new_rounded, "Open Spotify", kAccentColor, _openSpotify),
-              _buildActionRow(Icons.logout_rounded, "Log Out", Colors.redAccent, _logout),
+              _buildActionRow(Icons.logout_rounded, "Logout", Colors.redAccent, _logout),
             ]),
             
             const SizedBox(height: 24),
@@ -212,6 +212,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: kSurfaceColor,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kBorderColor), // Added Border
       ),
       child: Column(
         children: children,

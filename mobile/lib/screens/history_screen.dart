@@ -7,6 +7,7 @@ import 'package:personalify/services/api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:personalify/screens/song_detail_screen.dart';
+import 'package:personalify/widgets/ping_pong_text.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -26,11 +27,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _fetchHistory();
   }
 
-  Future<void> _fetchHistory() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  Future<void> _fetchHistory({bool isRefresh = false}) async {
+    if (!isRefresh) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final apiService = Provider.of<ApiService>(context, listen: false);
@@ -43,7 +46,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
         
         if (history.isEmpty) {
            // Debug: check if it's empty because of error or actual no data
-           // We might want to set a flag or message here
         }
       }
     } catch (e) {
@@ -56,14 +58,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  String _formatTime(String timestamp) {
-    if (timestamp.isEmpty) return '';
-    try {
-      final dt = DateTime.parse(timestamp).toLocal();
-      return DateFormat('HH:mm').format(dt);
-    } catch (e) {
-      return '';
-    }
+  String _getMetadata(Map<String, dynamic> item) {
+    if (!item.containsKey('album_type') && !item.containsKey('total_tracks')) return '';
+    
+    final type = item['album_type'] as String? ?? 'album';
+    final total = item['total_tracks'] as int? ?? 0;
+    final name = item['album_name'] as String? ?? '';
+
+    if (total == 1 || type == 'single') return 'Single';
+    if (total >= 2 && total <= 3) return 'Maxi-Single: $name';
+    if (total >= 4 && total <= 6) return 'EP: $name';
+    return 'Album: $name';
   }
 
   @override
@@ -78,34 +83,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Scaffold(
       backgroundColor: kBgColor,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: ClipRect(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: Text('Recently Played', style: headerStyle),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 70,
+        automaticallyImplyLeading: false,
+        flexibleSpace: ClipRect(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Adjust for blur intensity
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    kBgColor.withOpacity(0.85),
-                    kBgColor.withOpacity(0.75),
-                    kBgColor.withOpacity(0.6),
-                    kBgColor.withOpacity(0.0),
-                  ],
-                  stops: const [0.0, 0.7, 0.9, 1.0],
-                ),
-              ),
-              child: AppBar(
-                title: Text('Recently Played', style: headerStyle),
-                centerTitle: true,
-                backgroundColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                elevation: 0,
-                toolbarHeight: 70,
-                automaticallyImplyLeading: false,
-              ),
+              color: kBgColor.withOpacity(0.9),
             ),
           ),
         ),
@@ -113,7 +104,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: RefreshIndicator(
         color: kAccentColor,
         backgroundColor: kSurfaceColor,
-        onRefresh: _fetchHistory,
+        edgeOffset: 120, // Push spinner below Glass Header
+        onRefresh: () async => await _fetchHistory(isRefresh: true),
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: kAccentColor))
             : _errorMessage != null
@@ -128,7 +120,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   )
                 : SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                    padding: const EdgeInsets.fromLTRB(16, 115, 16, 120),
                     child: Container(
                       decoration: BoxDecoration(
                         color: kSurfaceColor,
@@ -139,10 +131,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         children: _history.asMap().entries.map((entry) {
                           final index = entry.key;
                           final item = entry.value;
-                          final time = _formatTime(item['played_at'] ?? '');
                           final title = item['track_name'] ?? 'Unknown';
                           final artist = item['artist_name'] ?? 'Unknown';
                           final image = item['image_url'] ?? '';
+                          // Parse Time
+                          DateTime? dt;
+                          try {
+                            dt = DateTime.parse(item['played_at'] ?? '').toLocal();
+                          } catch (_) {}
+                          
+                          final hour = dt != null ? DateFormat('HH').format(dt) : '--';
+                          final min = dt != null ? DateFormat('mm').format(dt) : '--';
 
                           return Column(
                             children: [
@@ -162,60 +161,101 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   );
                                 },
                                 child: Padding(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                   child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
-                                      // Time (Left)
+                                      // Vertical Time (Like Rank)
                                       SizedBox(
-                                        width: 50,
-                                        child: Text(
-                                          time,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            color: kTextSecondary,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          textAlign: TextAlign.center,
+                                        width: 24,
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              hour,
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold, // Bold like rank
+                                                color: kTextSecondary.withOpacity(0.7),
+                                                height: 1.0,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                             Text(
+                                              min,
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color: kTextSecondary.withOpacity(0.7),
+                                                height: 1.0,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: 16), // Increased spacing
+                                      
                                       // Image
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
                                         child: CachedNetworkImage(
                                           imageUrl: image,
-                                          width: 48,
-                                          height: 48,
+                                          width: 56, // Match dashboard size
+                                          height: 56,
                                           fit: BoxFit.cover,
                                           placeholder: (_,__) => Container(color: kSurfaceColor),
                                           errorWidget: (_, __, ___) => Container(color: kSurfaceColor, child: const Icon(Icons.music_note, color: Colors.white24)),
                                         ),
                                       ),
-                                      const SizedBox(width: 16),
+                                      const SizedBox(width: 12),
+                                      
                                       // Details
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              title,
-                                              style: GoogleFonts.plusJakartaSans(
-                                                color: kTextPrimary,
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 15,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
+                                            SizedBox(
+                                              height: 20,
+                                              child: (title.length > 25)
+                                              ? PingPongScrollingText(
+                                                  text: title,
+                                                  width: double.infinity,
+                                                  style: GoogleFonts.plusJakartaSans(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 14,
+                                                    color: kTextPrimary,
+                                                  ),
+                                                )
+                                              : Text(
+                                                  title,
+                                                  style: GoogleFonts.plusJakartaSans(
+                                                    color: kTextPrimary,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 14,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
                                             ),
+                                            const SizedBox(height: 2),
                                             Text(
                                               artist,
                                               style: GoogleFonts.plusJakartaSans(
-                                                color: kTextSecondary,
+                                                color: kTextPrimary.withOpacity(0.9), // Match dashboard
                                                 fontSize: 13,
+                                                fontWeight: FontWeight.w500,
                                               ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              _getMetadata(item),
+                                              style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)),
+                                              maxLines: 1, 
+                                              overflow: TextOverflow.ellipsis,
+                                            )
                                           ],
                                         ),
                                       ),

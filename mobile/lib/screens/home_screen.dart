@@ -88,12 +88,12 @@ class _HomeScreenState extends State<HomeScreen> {
       // No AppBar as requested ("Ga usah ada header home")
       body: SafeArea(
         child: SingleChildScrollView(
-          physics: const NeverScrollableScrollPhysics(), // User requested: DISABLE SCROLLING
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24), // Match Dashboard 16px
+          physics: const BouncingScrollPhysics(), // Allow scrolling naturally
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Welcome Header with Profile Icon
+              // 1. Welcome Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,8 +132,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                     ],
                   ),
-                  // Profile Icon with Logout Menu
                   PopupMenuButton<String>(
+                    elevation: 4,
+                    color: kSurfaceColor, // Dark Background
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Modern Rounded
+                    offset: const Offset(0, 60), // Position below icon with gap
+                    // Removed child: ... (it's the icon)
                     onSelected: (value) {
                       if (value == 'logout') {
                         _handleLogout();
@@ -142,13 +146,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                        PopupMenuItem<String>(
                         value: 'logout',
+                        height: 40, // Compact height
                         child: Row(
                           children: [
-                            const Icon(Icons.logout_rounded, color: Colors.red, size: 20),
+                            const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
                             const SizedBox(width: 12),
                             Text(
                               'Logout',
-                              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: Colors.white),
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w600, 
+                                color: kTextPrimary,
+                                fontSize: 14 // Smaller text
+                              ),
                             ),
                           ],
                         ),
@@ -158,19 +167,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: kAccentColor, width: 2),
+                        border: Border.all(color: kAccentColor.withOpacity(0.5), width: 2), // Sublime border
                       ),
                       child: ClipOval(
                         child: Image.network(
                           _userProfile?.image ?? '',
-                          width: 40,
-                          height: 40,
+                          width: 44, // Slightly larger touch target
+                          height: 44,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) => Container(
-                            width: 40,
-                            height: 40,
+                            width: 44,
+                            height: 44,
                             color: kSurfaceColor,
-                            child: const Icon(Icons.person, color: kTextSecondary, size: 20),
+                            child: const Icon(Icons.person, color: kTextSecondary, size: 24),
                           ),
                         ),
                       ),
@@ -178,126 +187,113 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
 
-              // 2. Summary Card (Quick Stats)
+              const SizedBox(height: 32), // Consistent Gap
+
+              // 2. Summary Section
+              Text(
+                _getTimeRangeLabel(widget.selectedTimeRange),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.w700,
+                  color: kTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [kSurfaceColor, kBgColor], // Cleaner Gradient
+                    colors: [kSurfaceColor, kBgColor], 
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: kBorderColor),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.insights_rounded, color: kAccentColor),
-                        const SizedBox(width: 8),
-                        Text(
-                          _getTimeRangeLabel(widget.selectedTimeRange),
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: kTextPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    if (_isLoading)
-                      const Center(child: CircularProgressIndicator(color: kAccentColor))
-                    else if (_userProfile != null)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildStatRow('Top Artist', _userProfile!.artists.isNotEmpty ? _userProfile!.artists.first.name : '-'),
-                          const SizedBox(height: 12),
-                          _buildStatRow('Top Track', _userProfile!.tracks.isNotEmpty ? _userProfile!.tracks.first.name : '-'),
-                          const SizedBox(height: 12),
-                          _buildStatRow('Top Genre', _userProfile!.genres.isNotEmpty ? _userProfile!.genres.first.name : '-'),
-                        ],
-                      )
-                    else
-                      Text("Connect to see stats", style: GoogleFonts.plusJakartaSans(color: kTextSecondary)),
-                  ],
-                ),
+                child: (_isLoading)
+                    ? const Center(child: CircularProgressIndicator(color: kAccentColor))
+                    : (_userProfile != null)
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildStatRow('Top Artist', _userProfile!.artists.isNotEmpty ? _userProfile!.artists.first.name : '-'),
+                            const SizedBox(height: 12),
+                            _buildStatRow('Top Track', _userProfile!.tracks.isNotEmpty ? _userProfile!.tracks.first.name : '-'),
+                            const SizedBox(height: 12),
+                            _buildStatRow('Top Genre', _userProfile!.genres.isNotEmpty ? _userProfile!.genres.first.name : '-'),
+                          ],
+                        )
+                      : Text("Connect to see stats", style: GoogleFonts.plusJakartaSans(color: kTextSecondary)),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               
-                // 2.5 Top Emotions (Compact)
-                if (_userProfile != null && _userProfile!.topEmotions.isNotEmpty) ...[
-                  Text(
-                    'Top Emotions',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18, // Reduced from 20
-                      fontWeight: FontWeight.w700,
-                      color: kTextPrimary,
-                    ),
+              // 2.5 Top Emotions (Compact)
+              if (_userProfile != null && _userProfile!.topEmotions.isNotEmpty) ...[
+                Text(
+                  'Top Emotions',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18, 
+                    fontWeight: FontWeight.w700,
+                    color: kTextPrimary,
                   ),
-                  const SizedBox(height: 12), // Reduced from 16
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12), // Tighter padding
-                    decoration: BoxDecoration(
-                       color: kSurfaceColor,
-                       borderRadius: BorderRadius.circular(16),
-                       border: Border.all(color: kBorderColor),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: _userProfile!.topEmotions.take(3).map((e) {
-                         return Column(
-                           children: [
-                             // Uniform Icon Container (Smaller)
-                             Container(
-                               width: 32, 
-                               height: 32,
-                               alignment: Alignment.center,
-                               child: FaIcon(
-                                    _getIconForEmotion(e.label),
-                                    size: 20, // Smaller 24->20
-                                    color: kAccentColor,
-                               ),
-                             ),
-                             const SizedBox(height: 4),
-                             Text(
-                               e.label[0].toUpperCase() + e.label.substring(1),
-                               style: GoogleFonts.plusJakartaSans(
-                                 fontWeight: FontWeight.bold,
-                                 color: kTextPrimary,
-                                 fontSize: 12, // Reduced from 14
-                               ),
-                             ),
-                             Text(
-                               "${(e.score * 100).toInt()}%",
-                               style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 10), // Reduced from 12
-                             ),
-                           ],
-                         );
-                      }).toList(),
-                    ),
+                ),
+                const SizedBox(height: 12), 
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  decoration: BoxDecoration(
+                     color: kSurfaceColor,
+                     borderRadius: BorderRadius.circular(16),
+                     border: Border.all(color: kBorderColor),
                   ),
-                   const SizedBox(height: 24), // Reduced bottom spacing
-                 ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: _userProfile!.topEmotions.take(3).map((e) {
+                       return Column(
+                         children: [
+                           Container(
+                             width: 32, 
+                             height: 32,
+                             alignment: Alignment.center,
+                             child: FaIcon(
+                                  _getIconForEmotion(e.label),
+                                  size: 20,
+                                  color: kAccentColor,
+                             ),
+                           ),
+                           const SizedBox(height: 4),
+                           Text(
+                             e.label[0].toUpperCase() + e.label.substring(1),
+                             style: GoogleFonts.plusJakartaSans(
+                               fontWeight: FontWeight.bold,
+                               color: kTextPrimary,
+                               fontSize: 12,
+                             ),
+                           ),
+                           Text(
+                             "${(e.score * 100).toInt()}%",
+                             style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 10),
+                           ),
+                         ],
+                       );
+                    }).toList(),
+                  ),
+                ),
+                 const SizedBox(height: 32),
+               ],
 
               // 3. Menu Shortcuts
               Text(
                 'Menu',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 20,
+                  fontSize: 18, 
                   fontWeight: FontWeight.w700,
                   color: kTextPrimary,
                 ),
               ),
-              const SizedBox(height: 16),
-              // Uniform Styling
+              const SizedBox(height: 12), 
               _buildFeatureCard(
                 icon: Symbols.space_dashboard,
                 title: 'Dashboard',
@@ -317,7 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
                  onTap: () => widget.onTabChange(3),
               ),
               
-              const SizedBox(height: 100), // Bottom padding
+              const SizedBox(height: 48), // Bottom padding
             ],
           ),
         ),
@@ -348,10 +344,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _getTimeRangeLabel(String range) {
     switch (range) {
-      case 'medium_term': return 'Your Vibe (Last 6 Months)';
-      case 'long_term': return 'Your Vibe (All Time)';
+      case 'medium_term': return 'Your Summary (Last 6 Months)';
+      case 'long_term': return 'Your Summary (All Time)';
       case 'short_term':
-      default: return 'Your Vibe (Last 4 Weeks)';
+      default: return 'Your Summary (Last 4 Weeks)';
     }
   }
 
