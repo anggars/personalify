@@ -882,7 +882,10 @@ def get_recently_played(request: Request, limit: int = 50):
                 "track_name": track.get("name", "Unknown"),
                 "artist_name": track.get("artists", [{}])[0].get("name", "Unknown"),
                 "image_url": image_url,
-                "spotify_url": track.get("external_urls", {}).get("spotify", "")
+                "spotify_url": track.get("external_urls", {}).get("spotify", ""),
+                "album_name": track.get("album", {}).get("name", ""),
+                "album_type": track.get("album", {}).get("album_type", "album"),
+                "total_tracks": track.get("album", {}).get("total_tracks", 0)
             })
             
         return result
