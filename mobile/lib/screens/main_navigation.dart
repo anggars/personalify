@@ -39,6 +39,7 @@ class _MainNavigationState extends State<MainNavigation> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
+        resizeToAvoidBottomInset: false, // NO LAYOUT THRASHING
         extendBody: true, // Important for floating elements
         body: Stack(
           children: [

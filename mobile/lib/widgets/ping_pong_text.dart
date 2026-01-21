@@ -78,16 +78,18 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: widget.width,
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(), 
-        child: Container(
-          constraints: BoxConstraints(minWidth: widget.width),
-          alignment: widget.alignment,
-          child: Text(widget.text, style: widget.style),
+    return RepaintBoundary(
+      child: SizedBox(
+        width: widget.width,
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(), 
+          child: Container(
+            constraints: BoxConstraints(minWidth: widget.width),
+            alignment: widget.alignment,
+            child: Text(widget.text, style: widget.style),
+          ),
         ),
       ),
     );

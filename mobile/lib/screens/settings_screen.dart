@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -38,32 +39,142 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _clearImageCache() async {
+  Future<void> _performClearCache() async {
     try {
-      // Clear Memory Cache (Synchronous)
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
       
-      // Clear Disk Cache (Async) - Requires flutter_cache_manager
-      // Since we didn't explicitly add flutter_cache_manager to pubspec for this screen (though cached_network_image uses it),
-      // we'll stick to the safe approach of just clearing memory which is what imageCache does.
-      // If we want to be thorough we can assume DefaultCacheManager is available.
-      
-      // However, to fix the IMMEDIATE build error which is "await ImageCache()", we just remove await and fix the calls.
-      // ImageCache() constructor is internal/factory, usually accessed via PaintingBinding.
-      
       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Memory cache cleared!')),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cache cleared successfully!', style: GoogleFonts.plusJakartaSans(color: Colors.white)),
+            backgroundColor: kAccentColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to clear cache: $e')),
+           SnackBar(content: Text('Failed: $e')),
         );
       }
     }
+  }
+
+  void _showClearCacheDialog() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "Clear Cache",
+      barrierColor: Colors.transparent, // We handle blur manually
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, anim1, anim2) {
+        return Stack(
+          children: [
+            // Full Screen Blur Backdrop
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(color: Colors.black.withOpacity(0.6)),
+              ),
+            ),
+            
+            // Dialog Content
+            Center(
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.85,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF191414).withOpacity(0.8), // Semi-transparent for glass
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 30, offset: const Offset(0, 10)),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.cleaning_services_rounded, color: kAccentColor, size: 48),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Clear Image Cache?",
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "This will remove all temporary images to free up space. Images will be re-downloaded when needed.",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 13, height: 1.5),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                height: 50,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                                ),
+                                child: Text(
+                                  "Cancel", 
+                                  style: GoogleFonts.plusJakartaSans(color: Colors.redAccent, fontWeight: FontWeight.bold)
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);
+                            _performClearCache();
+                          },
+                          child: Container(
+                            height: 50,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1), // Liquid Glass
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withOpacity(0.2)),
+                              boxShadow: [
+                                BoxShadow(color: kAccentColor.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+                              ],
+                            ),
+                            child: Text(
+                              "Clear Now",
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white, 
+                                fontWeight: FontWeight.bold
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          ),
+            ), // Center
+          ],
+        ); // Stack
+      },
+    );
   }
 
   Future<void> _launchUrl(String url) async {
@@ -98,7 +209,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.cleaning_services_rounded,
             title: 'Clear Image Cache',
             subtitle: 'Free up space by removing cached images',
-            onTap: _clearImageCache,
+            onTap: _showClearCacheDialog,
           ),
           
           const SizedBox(height: 32),

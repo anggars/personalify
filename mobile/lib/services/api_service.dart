@@ -37,21 +37,35 @@ class ApiService {
         // Handle 401 Unauthorized OR 403 Forbidden - token expired/invalid
         final status = error.response?.statusCode;
         if (status == 401 || status == 403) {
-          print('🚨 API ERROR: $status - Token expired/invalid. Triggering Auto-Logout.');
+          print('🚨 API ERROR: $status - Token expired. Showing Dialog.');
           
-          // Clear auth data and force re-login
-          await _authService.logout();
-          
-          // Use Global Navigator Key to push Login Screen
-          // Removing all previous routes to prevent back button from returning
-          if (navigatorKey.currentState != null) {
-            navigatorKey.currentState!.pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-              (route) => false,
+          final context = navigatorKey.currentState?.context;
+          if (context != null && context.mounted) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF1E1E1E),
+                title: const Text("Session Expired", style: TextStyle(color: Colors.white)),
+                content: const Text("Your Spotify session has ended. Please log in again.", style: TextStyle(color: Colors.white70)),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx); // Close Dialog
+                      await _authService.logout();
+                      navigatorKey.currentState?.pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        (route) => false,
+                      );
+                    },
+                    child: const Text("Log In", style: TextStyle(color: Color(0xFF1DB954))),
+                  ),
+                ],
+              ),
             );
-          } else {
-             print("⚠️ FATAL: navigatorKey.currentState is NULL. Cannot navigate to Login.");
           }
+          // Reject to stop downstream processing
+          return handler.reject(error);
         } else {
            print("⚠️ API ERROR: $status. ${error.message}");
         }
