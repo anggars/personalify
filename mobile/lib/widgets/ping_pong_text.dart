@@ -5,12 +5,14 @@ class PingPongScrollingText extends StatefulWidget {
   final String text;
   final TextStyle style;
   final double width;
+  final Alignment alignment;
 
   const PingPongScrollingText({
     super.key,
     required this.text,
     required this.style,
     required this.width,
+    this.alignment = Alignment.centerLeft,
   });
 
   @override
@@ -82,7 +84,11 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> {
         controller: _scrollController,
         scrollDirection: Axis.horizontal,
         physics: const NeverScrollableScrollPhysics(), 
-        child: Text(widget.text, style: widget.style),
+        child: Container(
+          constraints: BoxConstraints(minWidth: widget.width),
+          alignment: widget.alignment,
+          child: Text(widget.text, style: widget.style),
+        ),
       ),
     );
   }

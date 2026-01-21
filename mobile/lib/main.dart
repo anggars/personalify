@@ -5,6 +5,7 @@ import 'package:personalify/screens/login_screen.dart';
 import 'package:personalify/screens/main_navigation.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
+import 'package:personalify/utils/navigation.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,9 +28,6 @@ void main() {
 
   runApp(const PersonalifyApp());
 }
-
-// Global Navigator Key for Service Navigation
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class PersonalifyApp extends StatelessWidget {
   const PersonalifyApp({super.key});

@@ -3,7 +3,7 @@ import 'package:personalify/models/user_profile.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/utils/constants.dart';
 import 'package:flutter/material.dart';
-import 'package:personalify/main.dart';
+import 'package:personalify/utils/navigation.dart';
 import 'package:personalify/screens/login_screen.dart';
 
 /// API service for backend communication
