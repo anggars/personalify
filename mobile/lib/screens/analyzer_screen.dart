@@ -320,7 +320,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                      child: Column(
                        mainAxisAlignment: MainAxisAlignment.center, 
                        children: [
-                         ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 90, height: 90, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 90, height: 90))), 
+                         ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 90, height: 90, memCacheWidth: 200, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 90, height: 90))), 
                          const SizedBox(height: 12), 
                          Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 14), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)
                        ]
@@ -360,7 +360,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             child: Row(
                               children: [
-                                ClipRRect(borderRadius: BorderRadius.circular(4), child: CachedNetworkImage(imageUrl: song['image'] ?? '', width: 40, height: 40, fit: BoxFit.cover)),
+                                ClipRRect(borderRadius: BorderRadius.circular(4), child: CachedNetworkImage(imageUrl: song['image'] ?? '', width: 40, height: 40, memCacheWidth: 100, fit: BoxFit.cover)),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(

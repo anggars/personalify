@@ -139,7 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   shape: BoxShape.circle,
                   color: kSurfaceColor,
                   image: image.isNotEmpty 
-                      ? DecorationImage(image: CachedNetworkImageProvider(image), fit: BoxFit.cover)
+                      ? DecorationImage(image: CachedNetworkImageProvider(image, maxWidth: 320), fit: BoxFit.cover)
                       : null,
                 ),
                 child: image.isEmpty 

@@ -23,6 +23,10 @@
       "destination": "/api/index.py"
     },
     {
+      "source": "/request-access",
+      "destination": "/api/index.py"
+    },
+    {
       "source": "/sync/(.*)",
       "destination": "/api/index.py"
     },

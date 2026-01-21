@@ -670,14 +670,18 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       SizedBox(
                         height: 20, 
                         child: (track.name.length > 25 && !isShare)
-                        ? PingPongScrollingText(
-                            text: track.name,
-                            width: double.infinity,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: kTextPrimary,
-                            ),
+                        ? LayoutBuilder(
+                            builder: (context, constraints) {
+                              return PingPongScrollingText(
+                                text: track.name,
+                                width: constraints.maxWidth,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: kTextPrimary,
+                                ),
+                              );
+                            }
                           )
                         : Text(
                             track.name,

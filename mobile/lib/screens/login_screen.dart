@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/screens/main_navigation.dart';
+import 'package:provider/provider.dart';
+import 'package:personalify/services/api_service.dart';
 
 /// Animated Login Screen mimicking the Web Design
 class LoginScreen extends StatefulWidget {
@@ -141,8 +143,22 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               style: GoogleFonts.plusJakartaSans(
                                  fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5
                               ), // Reverted Size to 16, Removed Icon
-                            ),
                       ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 5. Request Access (Dev Mode)
+                TextButton(
+                  onPressed: () => _showRequestAccessDialog(context),
+                  child: Text(
+                    "Request Access (Dev Mode)",
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
@@ -155,6 +171,70 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showRequestAccessDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          title: Text("Request Access", style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Spotify Dev Mode requires manual whitelisting. Request access below.",
+                style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: nameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: "Your Name", hintText: "Budi"),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: emailController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: "Spotify Email", hintText: "email@example.com"),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+            if (isSubmitting)
+              const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+            else
+              ElevatedButton(
+                onPressed: () async {
+                  if (nameController.text.isEmpty || emailController.text.isEmpty) return;
+                  
+                  setState(() => isSubmitting = true);
+                  final api = Provider.of<ApiService>(context, listen: false);
+                  final success = await api.requestAccess(nameController.text, emailController.text);
+                  setState(() => isSubmitting = false);
+                  Navigator.pop(context); // Close Dialog
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(success ? "Request Sent! Check your email later." : "Failed to send request."),
+                        backgroundColor: success ? Colors.green : Colors.red,
+                      ),
+                    );
+                  }
+                },
+                child: const Text("Submit"),
+              ),
+          ],
         ),
       ),
     );

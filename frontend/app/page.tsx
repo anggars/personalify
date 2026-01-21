@@ -4,17 +4,81 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { TechStackMarquee, TECH_STACK, TechIcon } from "@/components/tech-stack-marquee";
-import { useRouter } from "next/navigation";
-import { staggerContainer, fadeUp, scalePop, hoverScale, tapScale } from "@/lib/animations";
+import {
+  TechStackMarquee,
+  TECH_STACK,
+  TechIcon,
+} from "@/components/tech-stack-marquee";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  staggerContainer,
+  fadeUp,
+  scalePop,
+  hoverScale,
+  tapScale,
+} from "@/lib/animations";
 
 export default function HomePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const authError = searchParams.get("error");
   const [isLoading, setIsLoading] = useState(false);
   const paragraphRef = useRef<HTMLParagraphElement>(null);
   const hasTyped = useRef(false);
   const [isTechStackVisible, setIsTechStackVisible] = useState(false);
+
   const isMobileRef = useRef(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    el.style.setProperty("--mouse-x", `${x}%`);
+    el.style.setProperty("--mouse-y", `${y}%`);
+  };
+
+  // Request Access State
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestName, setRequestName] = useState("");
+  const [requestEmail, setRequestEmail] = useState("");
+  const [isRequesting, setIsRequesting] = useState(false);
+  const showToast = (message: string, type: "success" | "error") => {
+    const event = new CustomEvent("personalify-notification", {
+      detail: { type, message },
+    });
+    window.dispatchEvent(event);
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("personalify-notification", { detail: null }),
+      );
+    }, 3000);
+  };
+
+  const handleRequestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestName || !requestEmail) return;
+    setIsRequesting(true);
+    try {
+      const res = await fetch("/request-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: requestName, email: requestEmail }),
+      });
+      if (res.ok) {
+        showToast("Request sent!", "success");
+        setShowRequestModal(false);
+        setRequestName("");
+        setRequestEmail("");
+      } else {
+        showToast("Failed to send request.", "error");
+      }
+    } catch (err) {
+      showToast("Error sending request.", "error");
+    } finally {
+      setIsRequesting(false);
+    }
+  };
 
   // Detect mobile device
   useEffect(() => {
@@ -22,24 +86,27 @@ export default function HomePage() {
       isMobileRef.current = window.innerWidth < 768;
     };
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // Handle SPA navigation for typewriter links
   useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.tagName === 'A' && target.getAttribute('href')?.startsWith('/')) {
+      if (
+        target.tagName === "A" &&
+        target.getAttribute("href")?.startsWith("/")
+      ) {
         e.preventDefault();
-        router.push(target.getAttribute('href')!);
+        router.push(target.getAttribute("href")!);
       }
     };
 
     const el = paragraphRef.current;
     if (el) {
-      el.addEventListener('click', handleLinkClick);
-      return () => el.removeEventListener('click', handleLinkClick);
+      el.addEventListener("click", handleLinkClick);
+      return () => el.removeEventListener("click", handleLinkClick);
     }
   }, [router]);
 
@@ -70,7 +137,8 @@ export default function HomePage() {
           index++;
         }
         if (paragraphRef.current) {
-          paragraphRef.current.innerHTML = currentHtml + '<span class="typing-cursor"></span>';
+          paragraphRef.current.innerHTML =
+            currentHtml + '<span class="typing-cursor"></span>';
         }
         setTimeout(typeWriter, 20);
       } else {
@@ -84,12 +152,16 @@ export default function HomePage() {
     setTimeout(typeWriter, 500);
   }, []);
 
-  const handleMouseMoveOrTouch = (e: React.MouseEvent<HTMLAnchorElement> | React.TouchEvent<HTMLAnchorElement>) => {
+  const handleMouseMoveOrTouch = (
+    e:
+      | React.MouseEvent<HTMLAnchorElement>
+      | React.TouchEvent<HTMLAnchorElement>,
+  ) => {
     const el = e.currentTarget;
     const rect = el.getBoundingClientRect();
     let clientX, clientY;
 
-    if ('touches' in e) {
+    if ("touches" in e) {
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
     } else {
@@ -108,13 +180,12 @@ export default function HomePage() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="page-container flex flex-col items-center justify-center flex-1 text-center"
       variants={staggerContainer}
       initial="hidden"
       animate="show"
     >
-
       {/* Logo */}
       <motion.div
         variants={fadeUp}
@@ -123,20 +194,36 @@ export default function HomePage() {
         <motion.div
           className="relative h-[80px] max-md:h-[60px] rounded-full overflow-hidden cursor-pointer"
           animate={{
-            width: isTechStackVisible ? (isMobileRef.current ? 180 : 240) : (isMobileRef.current ? 60 : 80),
+            width: isTechStackVisible
+              ? isMobileRef.current
+                ? 180
+                : 240
+              : isMobileRef.current
+                ? 60
+                : 80,
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          onMouseEnter={() => !isMobileRef.current && setIsTechStackVisible(true)}
-          onMouseLeave={() => !isMobileRef.current && setIsTechStackVisible(false)}
-          onClick={() => isMobileRef.current && setIsTechStackVisible(!isTechStackVisible)}
+          onMouseEnter={() =>
+            !isMobileRef.current && setIsTechStackVisible(true)
+          }
+          onMouseLeave={() =>
+            !isMobileRef.current && setIsTechStackVisible(false)
+          }
+          onClick={() =>
+            isMobileRef.current && setIsTechStackVisible(!isTechStackVisible)
+          }
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.98 }}
         >
-          <div className={`absolute inset-0 transition-opacity duration-300 ${isTechStackVisible ? "opacity-100" : "opacity-0"}`}>
+          <div
+            className={`absolute inset-0 transition-opacity duration-300 ${isTechStackVisible ? "opacity-100" : "opacity-0"}`}
+          >
             <TechStackMarquee isVisible={isTechStackVisible} />
           </div>
 
-          <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isTechStackVisible ? "opacity-0" : "opacity-100"}`}>
+          <div
+            className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isTechStackVisible ? "opacity-0" : "opacity-100"}`}
+          >
             <div className="w-full h-full p-0 flex items-center justify-center">
               <img
                 src="https://cdn.simpleicons.org/spotify/1DB954"
@@ -149,11 +236,8 @@ export default function HomePage() {
       </motion.div>
 
       {/* Hero Section */}
-      <motion.div
-        variants={fadeUp}
-        className="max-w-[600px]"
-      >
-        <motion.h1 
+      <motion.div variants={fadeUp} className="max-w-[600px]">
+        <motion.h1
           className="text-4xl md:text-5xl font-extrabold text-foreground mb-4"
           variants={fadeUp}
         >
@@ -179,21 +263,140 @@ export default function HomePage() {
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
           <span
-            className={`transition-opacity duration-200 ${isLoading ? "opacity-0" : "opacity-100"
-              }`}
+            className={`transition-opacity duration-200 ${
+              isLoading ? "opacity-0" : "opacity-100"
+            }`}
           >
             Login with Spotify
           </span>
           <svg
-            className={`absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 transition-opacity duration-200 spinner-svg ${isLoading ? "opacity-100" : "opacity-0"
-              }`}
-            style={{ position: 'absolute' }}
+            className={`absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 transition-opacity duration-200 spinner-svg ${
+              isLoading ? "opacity-100" : "opacity-0"
+            }`}
+            style={{ position: "absolute" }}
             viewBox="0 0 50 50"
           >
-            <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
+            <circle
+              className="spinner-path"
+              cx="25"
+              cy="25"
+              r="20"
+              fill="none"
+            />
           </svg>
         </motion.a>
       </motion.div>
+
+      {/* Request Access Button - Condition: Show ONLY if error exists */}
+      {authError && (
+        <motion.div variants={scalePop} className="mt-4 text-center">
+          <p className="text-red-400 text-xs mb-1">
+            Login Failed. Not registered?
+          </p>
+          <button
+            onClick={() => setShowRequestModal(true)}
+            className="text-white/50 text-xs hover:text-white transition-colors cursor-pointer"
+          >
+            Request Access (Dev Mode)
+          </button>
+        </motion.div>
+      )}
+
+      {/* Request Access Modal */}
+      <AnimatePresence>
+        {showRequestModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative bg-white/5 border border-white/20 rounded-3xl p-8 w-full max-w-sm shadow-2xl backdrop-blur-xl transition-all"
+            >
+              <h2 className="text-2xl font-bold text-white mb-2 text-center tracking-tight">
+                Request Access
+              </h2>
+              <p className="text-white/60 text-sm mb-6 text-center leading-relaxed">
+                Spotify Dev Mode restriction.
+                <br />
+                Enter details to get whitelisted!
+              </p>
+
+              <form
+                onSubmit={handleRequestSubmit}
+                className="flex flex-col gap-4"
+              >
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="Your Name"
+                    value={requestName}
+                    onChange={(e) => setRequestName(e.target.value)}
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-[#1DB954]/50 focus:ring-1 focus:ring-[#1DB954]/50 transition-all font-medium"
+                    required
+                  />
+                  <input
+                    type="email"
+                    placeholder="Spotify Email Address"
+                    value={requestEmail}
+                    onChange={(e) => setRequestEmail(e.target.value)}
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-[#1DB954]/50 focus:ring-1 focus:ring-[#1DB954]/50 transition-all font-medium"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowRequestModal(false)}
+                    onMouseMove={handleMouseMove}
+                    className="btn-glass-red flex-1 py-3 rounded-xl text-red-500 font-bold text-sm tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isRequesting}
+                    onMouseMove={handleMouseMove}
+                    className="btn-glass flex-1 py-3 rounded-xl text-white font-bold text-sm tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center gap-2 whitespace-nowrap"
+                  >
+                    {isRequesting ? (
+                      <>
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Sending...
+                      </>
+                    ) : (
+                      "Send Request"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

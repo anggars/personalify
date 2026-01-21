@@ -9,6 +9,10 @@ from fastapi import APIRouter, Request, Query, HTTPException, Body, BackgroundTa
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from typing import Optional
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from pydantic import BaseModel
 from app.nlp_handler import generate_emotion_paragraph, analyze_lyrics_emotion
 from app.admin import get_system_wide_stats, get_user_report, export_users_to_csv
 from app.db_handler import (
@@ -23,6 +27,12 @@ from app.mongo_handler import save_user_sync, get_user_history
 from app.qstash_handler import get_qstash_client, get_qstash_receiver
 from app.genius_lyrics import get_suggestions, search_artist_id, get_songs_by_artist, get_lyrics_by_id
 
+
+# Request Access Model
+class RequestAccessModel(BaseModel):
+    name: str
+    email: str
+
 router = APIRouter()
 # Templates removed
 # templates = Jinja2Templates(directory=templates_dir)
@@ -30,23 +40,61 @@ router = APIRouter()
 def get_redirect_uri(request: Request):
     host = str(request.headers.get("x-forwarded-host", request.headers.get("host", "")))
     
+    # PRIORITIZE Env Var (Fixed URI) to avoid Proxy Host mismatch
+    env_redirect = os.getenv("SPOTIFY_REDIRECT_URI")
+    if env_redirect and "vercel.app" not in host:
+        return env_redirect
+
     # Vercel production
     if "vercel.app" in host:
         return os.getenv("SPOTIFY_REDIRECT_URI_VERCEL", "https://personalify.vercel.app/callback")
-    # Local development - use actual host (works with localhost, WiFi IP, etc)
-    elif host:
-        # Build callback URL using actual request host
-        # Fix: Check x-forwarded-proto for proper scheme detection behind proxies
+    
+    # Fallback: Build callback URL using actual request host
+    if host:
         proto = request.headers.get("x-forwarded-proto", request.url.scheme)
         scheme = "https" if "vercel.app" in host or proto == "https" else "http"
         return f"{scheme}://{host}/callback"
     else:
-        # Ultimate fallback
-        return os.getenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8000/callback")
+        return "http://127.0.0.1:8000/callback"
 
 @router.get("/", tags=["Root"])
 def root():
     return {"status": "ok", "message": "Personalify Backend API"}
+
+@router.post("/request-access", tags=["Admin"])
+def request_access(data: RequestAccessModel):
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+    if not bot_token or not chat_id:
+        print(f"[MOCK REQUEST] Request from {data.name} ({data.email}) - No Telegram Config")
+        return {"status": "ok", "message": "Request received (Mock Mode)"}
+
+    try:
+        message = (
+            f"**New Access Request!**\n\n"
+            f"**Name:** {data.name}\n"
+            f"**Email:** {data.email}\n\n"
+            f"Please add this email to Spotify Developer Dashboard > Users and Access!"
+        )
+        
+        telegram_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": message,
+            "parse_mode": "Markdown"
+        }
+        
+        res = requests.post(telegram_url, json=payload)
+        
+        if res.status_code != 200:
+            print(f"TELEGRAM ERROR: {res.text}")
+            raise HTTPException(status_code=500, detail="Failed to send notification")
+            
+        return {"status": "ok", "message": "Request sent successfully"}
+    except Exception as e:
+        print(f"TELEGRAM EXCEPTION: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/login", tags=["Auth"])
 def login(request: Request, mobile: str = Query(None)):
@@ -85,6 +133,31 @@ async def logout(request: Request):
 
 @router.get("/callback", tags=["Auth"])
 def callback(request: Request, code: str = Query(..., description="Spotify Authorization Code"), state: str = Query(None)):
+    
+    # 1. Determine Client Type & Host immediately
+    original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+    # State format: "mobile=true" (Wait, mobile sends state="mobile=true"?)
+    # If state is None, is_mobile is False.
+    is_mobile = state and "mobile=true" in state
+    
+    # helper to get frontend url
+    if "127.0.0.1" in original_host or "localhost" in original_host:
+        frontend_url = "http://localhost:3000"
+    else:
+        frontend_url = f"{request.url.scheme}://{original_host}"
+
+    def error_redirect(reason: str):
+        if is_mobile:
+            return RedirectResponse(
+                url=f"personalify://callback?error={reason}",
+                status_code=303
+            )
+        else:
+            return RedirectResponse(
+                url=f"{frontend_url}/?error={reason}",
+                status_code=303
+            )
+
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
     redirect_uri = get_redirect_uri(request)
@@ -94,113 +167,111 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         "client_id": client_id, "client_secret": client_secret
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
-    if res.status_code != 200:
-        raise HTTPException(status_code=res.status_code, detail=res.text)
-    tokens = res.json()
-    access_token = tokens.get("access_token")
-    if not access_token:
-        raise HTTPException(status_code=400, detail="Access token not found in response.")
-
-    headers = {"Authorization": f"Bearer {access_token}"}
-    user_res = requests.get("https://api.spotify.com/v1/me", headers=headers)
-    if user_res.status_code != 200:
-        raise HTTPException(status_code=user_res.status_code, detail=user_res.text)
-    user_profile = user_res.json()
-    spotify_id = user_profile["id"]
-    display_name = user_profile.get("display_name", "Unknown")
-    # FIX: Get User Image
-    user_image = user_profile["images"][0]["url"] if user_profile.get("images") else None
-    save_user(spotify_id, display_name)
-
-    time_ranges = ["short_term", "medium_term", "long_term"]
-    for time_range in time_ranges:
-        artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
-        artists = artist_resp.json().get("items", [])
-        track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20", headers=headers)
-        tracks = track_resp.json().get("items", [])
-
-        artists_to_save = []
-        artist_ids = []
-        for artist in artists:
-            artist_ids.append(artist["id"])
-            artists_to_save.append((
-                artist["id"],
-                artist["name"],
-                artist["popularity"],
-                artist["images"][0]["url"] if artist.get("images") else None
-            ))
-
-        tracks_to_save = []
-        track_ids = []
-        for track in tracks:
-            track_ids.append(track["id"])
-            tracks_to_save.append((
-                track["id"],
-                track["name"],
-                track["popularity"],
-                track.get("preview_url")
-            ))
-
-        save_artists_batch(artists_to_save)
-        save_tracks_batch(tracks_to_save)
-        save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
-        save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
-
-        # FIX: Include image in result
-        result = {"user": display_name, "image": user_image, "artists": [], "tracks": []}
-        for artist in artists:
-             result["artists"].append({
-                "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
-                "popularity": artist["popularity"], "image": artist["images"][0]["url"] if artist.get("images") else ""
-            })
-        for track in tracks:
-            album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
-            result["tracks"].append({
-                "id": track["id"], 
-                "name": track["name"],
-                "artists": [a["name"] for a in track.get("artists", [])],
-                "album": {
-                    "name": track["album"]["name"],
-                    "type": track["album"]["album_type"],
-                    "total_tracks": track["album"]["total_tracks"]
-                },
-                "popularity": track["popularity"],
-                "preview_url": track.get("preview_url"), 
-                "image": album_image_url,
-                "duration_ms": track["duration_ms"]
-            })
-
-        result['emotion_paragraph'] = "Your music vibe is being analyzed..."
-        cache_top_data("top_v2", spotify_id, time_range, result)
-        save_user_sync(spotify_id, time_range, result)
-
-    original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
     
-    # Check if request is from mobile app via state parameter
-    # State format: "mobile=true"
-    is_mobile = state and "mobile=true" in state
+    try:
+        res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
+        if res.status_code != 200:
+            print(f"AUTH ERROR: Token Exchange Failed: {res.text}")
+            return error_redirect("token_error")
+            
+        tokens = res.json()
+        access_token = tokens.get("access_token")
+        if not access_token:
+            return error_redirect("no_access_token")
+
+        headers = {"Authorization": f"Bearer {access_token}"}
+        user_res = requests.get("https://api.spotify.com/v1/me", headers=headers)
+        if user_res.status_code != 200:
+            print(f"AUTH ERROR: Profile Fetch Failed: {user_res.text}")
+            # Likely not whitelisted
+            return error_redirect("access_denied") # "User not registered..." usually is 403 here?
+            
+        user_profile = user_res.json()
+        spotify_id = user_profile["id"]
+        display_name = user_profile.get("display_name", "Unknown")
+        # FIX: Get User Image
+        user_image = user_profile["images"][0]["url"] if user_profile.get("images") else None
+        save_user(spotify_id, display_name)
+
+        time_ranges = ["short_term", "medium_term", "long_term"]
+        for time_range in time_ranges:
+            artist_resp = requests.get(f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20", headers=headers)
+            artists = artist_resp.json().get("items", [])
+            track_resp = requests.get(f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20", headers=headers)
+            tracks = track_resp.json().get("items", [])
+
+            artists_to_save = []
+            artist_ids = []
+            for artist in artists:
+                artist_ids.append(artist["id"])
+                artists_to_save.append((
+                    artist["id"],
+                    artist["name"],
+                    artist["popularity"],
+                    artist["images"][0]["url"] if artist.get("images") else None
+                ))
+
+            tracks_to_save = []
+            track_ids = []
+            for track in tracks:
+                track_ids.append(track["id"])
+                tracks_to_save.append((
+                    track["id"],
+                    track["name"],
+                    track["popularity"],
+                    track.get("preview_url")
+                ))
+
+            save_artists_batch(artists_to_save)
+            save_tracks_batch(tracks_to_save)
+            save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
+            save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
+
+            # FIX: Include image in result
+            result = {"user": display_name, "image": user_image, "artists": [], "tracks": []}
+            for artist in artists:
+                 result["artists"].append({
+                    "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
+                    "popularity": artist["popularity"], "image": artist["images"][0]["url"] if artist.get("images") else ""
+                })
+            for track in tracks:
+                album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
+                result["tracks"].append({
+                    "id": track["id"], 
+                    "name": track["name"],
+                    "artists": [a["name"] for a in track.get("artists", [])],
+                    "album": {
+                        "name": track["album"]["name"],
+                        "type": track["album"]["album_type"],
+                        "total_tracks": track["album"]["total_tracks"]
+                    },
+                    "popularity": track["popularity"],
+                    "preview_url": track.get("preview_url"), 
+                    "image": album_image_url,
+                    "duration_ms": track["duration_ms"]
+                })
+
+            result['emotion_paragraph'] = "Your music vibe is being analyzed..."
+            cache_top_data("top_v2", spotify_id, time_range, result)
+            save_user_sync(spotify_id, time_range, result)
+            
+    except Exception as e:
+        print(f"AUTH EXCEPTION: {e}")
+        return error_redirect("server_error")
     
+    # Success Redirect
     print(f"DEBUG Callback - State: {state}, is_mobile: {is_mobile}")
-    
     if is_mobile:
         # Mobile app - redirect to deep link (no cookies needed for mobile)
         # CRITICAL: Include access_token so mobile can call /sync/top-data
         log_system("AUTH", f"Mobile User Login Success: {display_name}", "FLUTTER")
-        response = RedirectResponse(
+        return RedirectResponse(
             url=f"personalify://callback?spotify_id={spotify_id}&access_token={access_token}",
             status_code=303
         )
-        return response
     else:
         # Web app - existing flow
         # For local development, redirect to Next.js frontend on port 3000
-        if "127.0.0.1" in original_host or "localhost" in original_host:
-            frontend_url = "http://localhost:3000"
-        else:
-            # Production (Vercel) - use the same host
-            frontend_url = f"{request.url.scheme}://{original_host}"
-        
         log_system("AUTH", f"User Login Success: {display_name}", "SPOTIFY")
         response = RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
         # CRITICAL FIX: Set cookie path to "/" so it is accessible on all routes

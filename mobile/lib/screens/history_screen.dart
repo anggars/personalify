@@ -203,6 +203,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           imageUrl: image,
                                           width: 56, // Match dashboard size
                                           height: 56,
+                                          memCacheWidth: 150,
                                           fit: BoxFit.cover,
                                           placeholder: (_,__) => Container(color: kSurfaceColor),
                                           errorWidget: (_, __, ___) => Container(color: kSurfaceColor, child: const Icon(Icons.music_note, color: Colors.white24)),
@@ -218,14 +219,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                             SizedBox(
                                               height: 20,
                                               child: (title.length > 25)
-                                              ? PingPongScrollingText(
-                                                  text: title,
-                                                  width: double.infinity,
-                                                  style: GoogleFonts.plusJakartaSans(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
-                                                    color: kTextPrimary,
-                                                  ),
+                                              ? LayoutBuilder(
+                                                  builder: (context, constraints) {
+                                                    return PingPongScrollingText(
+                                                      text: title,
+                                                      width: constraints.maxWidth,
+                                                      style: GoogleFonts.plusJakartaSans(
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 14,
+                                                        color: kTextPrimary,
+                                                      ),
+                                                    );
+                                                  }
                                                 )
                                               : Text(
                                                   title,

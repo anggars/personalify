@@ -253,4 +253,22 @@ class ApiService {
       rethrow;
     }
   }
+  /// Request Access to Dev App
+  Future<bool> requestAccess(String name, String email) async {
+    try {
+      // Use _dio directly. If it fails due to auth interceptor, create a fresh dio instance?
+      // But this endpoint is public/admin, shouldn't require Spotify Auth.
+      // However, my interceptor adds Token if available. 
+      // If user is NOT logged in, token is null. OK.
+      
+      final response = await _dio.post(
+        '/request-access',
+        data: {'name': name, 'email': email},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('API Error requestAccess: $e');
+      return false;
+    }
+  }
 }
