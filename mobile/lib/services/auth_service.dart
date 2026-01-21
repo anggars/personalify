@@ -32,14 +32,18 @@ class AuthService {
       print(result);
       print('========================================');
 
-      // Parse the callback URL
       final uri = Uri.parse(result);
       
       print('URI Query Parameters:');
       print(uri.queryParameters);
-      print('URI Fragment:');
-      print(uri.fragment);
       
+      // Check for errors (e.g. access_denied)
+      final error = uri.queryParameters['error'];
+      if (error != null) {
+        print('FLUTTER AUTH ERROR REPORTED: $error');
+        return {'error': error};
+      }
+
       // Extract spotify_id from query parameters or fragments
       final spotifyId = uri.queryParameters['spotify_id'] ?? 
                         uri.fragment.split('spotify_id=').lastWhere(

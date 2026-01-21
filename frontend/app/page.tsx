@@ -80,6 +80,13 @@ function HomeContent() {
     }
   };
 
+  // Auto-open modal if access_denied
+  useEffect(() => {
+    if (authError === "access_denied") {
+      setShowRequestModal(true);
+    }
+  }, [authError]);
+
   // Detect mobile device
   useEffect(() => {
     const checkMobile = () => {
@@ -288,10 +295,10 @@ function HomeContent() {
       </motion.div>
 
       {/* Request Access Button - Condition: Show ONLY if error exists */}
-      {authError && (
-        <motion.div variants={scalePop} className="mt-4 text-center">
+      {authError === "access_denied" && (
+        <motion.div variants={scalePop} className="mt-6 text-center">
           <p className="text-red-400 text-xs mb-1">
-            Login Failed. Not registered?
+            Login failed! Not registered?
           </p>
           <button
             onClick={() => setShowRequestModal(true)}
@@ -321,7 +328,7 @@ function HomeContent() {
                 Request Access
               </h2>
               <p className="text-white/60 text-sm mb-6 text-center leading-relaxed">
-                Spotify Dev Mode restriction.
+                Spotify dev mode restriction.
                 <br />
                 Enter details to get whitelisted!
               </p>

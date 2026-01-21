@@ -1,5 +1,6 @@
 *.csv linguist-vendored
 *.ipynb linguist-vendored
 *.html linguist-language=Dart
+*.js linguist-language=Dart
 *.ipynb linguist-language=Python
 backend/**/*.py linguist-language=Python

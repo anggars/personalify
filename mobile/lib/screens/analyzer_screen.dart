@@ -149,21 +149,17 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
+      resizeToAvoidBottomInset: false, // Disable expensive scaffold resize
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text('Analyzer', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: kAccentColor, letterSpacing: -0.5)),
         centerTitle: true,
-        backgroundColor: Colors.transparent, // Show blur
+        backgroundColor: Colors.transparent, 
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 70,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: kBgColor.withOpacity(0.9), // Semi-transparent
-            ),
-          ),
+        flexibleSpace: Container(
+          color: kBgColor.withOpacity(0.95), 
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
@@ -199,19 +195,23 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   }
 
   Widget _buildUnifiedCard({required List<Widget> children}) {
+    // Manually handle keyboard padding
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    
     return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 175, 20, 120),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20), // Slightly reduced padding
-          decoration: BoxDecoration(
-            color: kSurfaceColor, 
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: kCardBorderColor),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))]
+      child: RepaintBoundary( 
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(20, 175, 20, 120 + bottomPadding), // Dynamic Padding
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: kSurfaceColor, 
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: kCardBorderColor),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
         ),
       ),
     );

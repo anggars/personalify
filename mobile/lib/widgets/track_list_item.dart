@@ -53,17 +53,14 @@ class TrackListItem extends StatelessWidget {
                 imageUrl: track.image,
                 width: 56,
                 height: 56,
+                // OPTIMIZATION: Reduce memory usage by caching resizing image
+                memCacheWidth: 150,
+                maxWidthDiskCache: 150,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   width: 56,
                   height: 56,
-                  color: const Color(0xFF1E1E1E),
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Color(0xFF1DB954),
-                    ),
-                  ),
+                  color: const Color(0xFF1E1E1E), // Solid color is faster than Shimmer/Progress
                 ),
                 errorWidget: (context, url, error) => Container(
                   width: 56,
