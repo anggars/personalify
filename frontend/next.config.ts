@@ -3,9 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Image domains
   images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "**" },
-    ],
+    remotePatterns: [{ protocol: "https", hostname: "**" }],
   },
 
   // API Rewrites to backend
@@ -43,6 +41,11 @@ const nextConfig: NextConfig = {
       {
         source: "/logout",
         destination: "http://127.0.0.1:8000/logout",
+      },
+      // Request Access
+      {
+        source: "/request-access",
+        destination: "http://127.0.0.1:8000/request-access",
       },
     ];
   },

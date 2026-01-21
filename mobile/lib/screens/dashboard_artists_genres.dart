@@ -75,7 +75,7 @@
                       color: const Color(0xFF282828),
                       image: artist.image.isNotEmpty
                           ? DecorationImage(
-                              image: CachedNetworkImageProvider(artist.image),
+                              image: CachedNetworkImageProvider(artist.image, maxWidth: 160),
                               fit: BoxFit.cover,
                             )
                           : null,

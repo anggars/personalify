@@ -162,6 +162,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
               child: CachedNetworkImage(
                 imageUrl: cover,
                 fit: BoxFit.cover,
+                memCacheWidth: 600, // Optimize memory (approx screen width * 1.5)
                 errorWidget: (_, __, ___) => Container(color: Colors.black),
               ),
             ),
