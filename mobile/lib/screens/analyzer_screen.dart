@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:personalify/widgets/ping_pong_text.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/models/user_profile.dart';
@@ -281,9 +282,9 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center, 
                         children: [
-                          ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 50, height: 50, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 50, height: 50))), 
-                          const SizedBox(height: 8), 
-                          Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 11), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)
+                          ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 80, height: 80, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 80, height: 80))), 
+                          const SizedBox(height: 12), 
+                          Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 13), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)
                         ]
                       )
                     )
@@ -304,7 +305,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                physics: const NeverScrollableScrollPhysics(), 
                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                  crossAxisCount: 2, // Reverted to 2 Cols
-                 childAspectRatio: 1.0, // Square ratio (Compact vertical)
+                 childAspectRatio: 0.9, // Slightly taller for bigger text
                  crossAxisSpacing: 12, 
                  mainAxisSpacing: 12
                ), 
@@ -319,9 +320,9 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                      child: Column(
                        mainAxisAlignment: MainAxisAlignment.center, 
                        children: [
-                         ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 55, height: 55, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 55, height: 55))), 
-                         const SizedBox(height: 8), 
-                         Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 13), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)
+                         ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 90, height: 90, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 90, height: 90))), 
+                         const SizedBox(height: 12), 
+                         Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 14), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)
                        ]
                      )
                    )
@@ -332,7 +333,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
            
            if (_songs.isNotEmpty && _geniusLoadingState == null) ...[
              const SizedBox(height: 16),
-             Text("Songs by ${_selectedArtist!['name']}", style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+             Text("Songs by ${_selectedArtist!['name']}", style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.center),
              const SizedBox(height: 16),
              
              Container(
@@ -365,8 +366,17 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(song['title'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 13, color: isSelected ? kAccentColor : kTextPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                      Text(song['album'] ?? "Single", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          return PingPongScrollingText(
+                                            text: song['title'],
+                                            width: constraints.maxWidth,
+                                            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 13, color: isSelected ? kAccentColor : kTextPrimary),
+                                          );
+                                        }
+                                      ),
+                                      const SizedBox(height: 4), 
+                                      Text(song['release_date_for_display'] ?? song['date'] ?? song['release_date'] ?? "Unknown Date", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
                                     ],
                                   ),
                                 ),
@@ -386,7 +396,19 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
               const SizedBox(height: 16), // Unified Gap (Divider Removed)
               
               // <-- ATUR JARAK MARGIN TOP JUDUL LAGU DI SINI (Image 1)
-              Text(_geniusAnalysis!['track_info']['title'], style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: kAccentColor), textAlign: TextAlign.center), // Matches Emotion Results (16)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24), // Avoid edge touching
+                child: LayoutBuilder(
+                   builder: (context, constraints) {
+                     return PingPongScrollingText(
+                       text: _geniusAnalysis!['track_info']['title'],
+                       width: constraints.maxWidth,
+                       alignment: Alignment.center,
+                       style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: kAccentColor),
+                     );
+                   }
+                ),
+              ), 
               Text(_geniusAnalysis!['track_info']['artist'], style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 14), textAlign: TextAlign.center),
               const SizedBox(height: 16), // Reduced from 20
               Container(
@@ -515,5 +537,3 @@ class _ShimmerBarState extends State<_ShimmerBar> with SingleTickerProviderState
     );
   }
 }
-
-

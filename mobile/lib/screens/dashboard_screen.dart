@@ -659,7 +659,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 const SizedBox(width: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(imageUrl: track.image, width: 56, height: 56, fit: BoxFit.cover),
+                  child: CachedNetworkImage(imageUrl: track.image, width: 56, height: 56, memCacheWidth: 150, fit: BoxFit.cover),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -804,7 +804,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 const SizedBox(width: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8), 
-                  child: CachedNetworkImage(imageUrl: artist.image, width: 56, height: 56, fit: BoxFit.cover),
+                  child: CachedNetworkImage(imageUrl: artist.image, width: 56, height: 56, memCacheWidth: 150, fit: BoxFit.cover),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
