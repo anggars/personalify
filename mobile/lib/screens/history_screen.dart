@@ -118,171 +118,79 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       )
                     ],
                   )
-                : Container(
-                    margin: const EdgeInsets.fromLTRB(16, 115, 16, 0),
-                    decoration: BoxDecoration(
-                      color: kSurfaceColor,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)), // Only top radius if extending to bottom
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    clipBehavior: Clip.hardEdge,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(0, 0, 0, 120),
-                      physics: const BouncingScrollPhysics(),
-                      itemExtent: 81.0, // Fixed height for optimization
-                      itemCount: _history.length,
-                      itemBuilder: (context, index) {
-                        final item = _history[index];
-                        final title = item['track_name'] ?? 'Unknown';
-                        final artist = item['artist_name'] ?? 'Unknown';
-                        final image = item['image_url'] ?? '';
-                        // Parse Time
-                        DateTime? dt;
-                        try {
-                          dt = DateTime.parse(item['played_at'] ?? '').toLocal();
-                        } catch (_) {}
-                        
-                        final hour = dt != null ? DateFormat('HH').format(dt) : '--';
-                        final min = dt != null ? DateFormat('mm').format(dt) : '--';
-
-                        return Column(
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SongDetailScreen(
-                                      song: {
-                                        'track_name': title,
-                                        'artist_name': artist,
-                                        'image_url': image,
-                                      },
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Container( // Transparent container for tap target
-                                height: 80, // Content height
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    // Vertical Time
-                                    SizedBox(
-                                      width: 24,
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            hour,
-                                            style: GoogleFonts.plusJakartaSans(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: kTextSecondary.withOpacity(0.7),
-                                              height: 1.0,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          Text(
-                                            min,
-                                            style: GoogleFonts.plusJakartaSans(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: kTextSecondary.withOpacity(0.7),
-                                              height: 1.0,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    
-                                    // Image
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: CachedNetworkImage(
-                                        imageUrl: image,
-                                        width: 56,
-                                        height: 56,
-                                        memCacheWidth: 150, // Optimize Memory
-                                        maxWidthDiskCache: 150,
-                                        fit: BoxFit.cover,
-                                        placeholder: (_,__) => Container(color: kSurfaceColor),
-                                        errorWidget: (_, __, ___) => Container(color: kSurfaceColor, child: const Icon(Icons.music_note, color: Colors.white24)),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    
-                                    // Details
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          SizedBox(
-                                            height: 20,
-                                            child: (title.length > 25)
-                                            ? LayoutBuilder(
-                                                builder: (context, constraints) {
-                                                  return PingPongScrollingText(
-                                                    text: title,
-                                                    width: constraints.maxWidth,
-                                                    style: GoogleFonts.plusJakartaSans(
-                                                      fontWeight: FontWeight.w600,
-                                                      fontSize: 14,
-                                                      color: kTextPrimary,
-                                                    ),
-                                                  );
-                                                }
-                                              )
-                                            : Text(
-                                                title,
-                                                style: GoogleFonts.plusJakartaSans(
-                                                  color: kTextPrimary,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 14,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            artist,
-                                            style: GoogleFonts.plusJakartaSans(
-                                              color: kTextPrimary.withOpacity(0.9),
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          // Removed Metadata line to fit height if needed, OR keep it if it fits. 
-                                          // 56px image space. Text: 20+2+13 = 35. Room for 11px meta? 35 + 2 + 11 = 48. Fits.
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            _getMetadata(item),
-                                            style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)),
-                                            maxLines: 1, 
-                                            overflow: TextOverflow.ellipsis,
-                                          )
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            if (index != _history.length - 1)
-                              const Divider(height: 1, color: Colors.white10),
-                          ],
-                        );
-                      },
+                : SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 115, 16, 120),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: kSurfaceColor,
+                        borderRadius: BorderRadius.circular(16), 
+                        border: Border.all(color: Colors.white10),
+                      ),
+                       clipBehavior: Clip.hardEdge,
+                       child: Column(
+                         children: _history.asMap().entries.map((entry) {
+                            return _buildHistoryItem(entry.value, entry.key); 
+                         }).toList(),
+                       ),
                     ),
                   ),
+
       ),
     );
+  }
+
+  Widget _buildHistoryItem(Map<String, dynamic> item, int index) {
+      final title = item['track_name'] ?? 'Unknown';
+      final artist = item['artist_name'] ?? 'Unknown';
+      final image = item['image_url'] ?? '';
+      // Parse Time
+      DateTime? dt;
+      try { dt = DateTime.parse(item['played_at'] ?? '').toLocal(); } catch (_) {}
+      final hour = dt != null ? DateFormat('HH').format(dt) : '--';
+      final min = dt != null ? DateFormat('mm').format(dt) : '--';
+
+      return Column(
+        children: [
+          GestureDetector(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => SongDetailScreen(song: item)));
+            },
+            child: Container( 
+              height: 80, 
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: Colors.transparent,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(width: 24, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Text(hour, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.bold, color: kTextSecondary.withOpacity(0.7), height: 1.0)),
+                    Text(min, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.bold, color: kTextSecondary.withOpacity(0.7), height: 1.0)),
+                  ])),
+                  const SizedBox(width: 16),
+                  ClipRRect(borderRadius: BorderRadius.circular(8), child: CachedNetworkImage(imageUrl: image, width: 56, height: 56, fit: BoxFit.cover, errorWidget: (_,__,___)=>Container(color:Colors.grey[900], child:const Icon(Icons.music_note, color:Colors.white54)))),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        return PingPongScrollingText(
+                          text: title,
+                          width: constraints.maxWidth,
+                          style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontWeight: FontWeight.w600, fontSize: 14),
+                        );
+                      }
+                    ),
+                    const SizedBox(height: 2),
+                    Text(artist, style: GoogleFonts.plusJakartaSans(color: kTextPrimary.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 2),
+                    Text(_getMetadata(item), style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)), maxLines: 1, overflow: TextOverflow.ellipsis)
+                  ])),
+                ],
+              ),
+            ),
+          ),
+          if (index != _history.length - 1) const Divider(height: 1, color: Colors.white10),
+        ],
+      );
   }
 }

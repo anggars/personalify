@@ -86,9 +86,10 @@ class _TopToastState extends State<TopToast> with SingleTickerProviderStateMixin
     
     return Positioned(
       top: MediaQuery.of(context).padding.top + 16,
-      left: 24,
-      right: 24,
-      child: Material(
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Material(
         type: MaterialType.transparency,
         child: FadeTransition(
           opacity: _opacity,
@@ -126,6 +127,7 @@ class _TopToastState extends State<TopToast> with SingleTickerProviderStateMixin
             ),
           ),
         ),
+      ),
       ),
     );
   }

@@ -1092,11 +1092,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                    label: Text("Save Image", style: GoogleFonts.plusJakartaSans(color: kTextSecondary))
                  ),
                  const SizedBox(width: 24),
-                 TextButton.icon(
-                   onPressed: () => Navigator.pop(ctx), 
-                   icon: Icon(Symbols.cancel, color: kTextSecondary, size: 24), 
-                   label: Text("Cancel", style: GoogleFonts.plusJakartaSans(color: kTextSecondary))
-                 ),
+                   TextButton.icon(
+                     onPressed: () => Navigator.pop(ctx), 
+                     icon: Icon(Symbols.cancel, color: Colors.redAccent, size: 24), 
+                     label: Text("Cancel", style: GoogleFonts.plusJakartaSans(color: Colors.redAccent))
+                   ),
               ],
             ),
             const SizedBox(height: 32),
