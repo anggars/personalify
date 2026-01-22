@@ -196,6 +196,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
+           SizedBox(height: 70), // Header Space
+           // Storage Section
           _buildSectionHeader('Storage'),
           _buildSettingsTile(
             icon: Icons.cleaning_services_rounded,

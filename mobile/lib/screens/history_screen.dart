@@ -65,7 +65,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final total = item['total_tracks'] as int? ?? 0;
     final name = item['album_name'] as String? ?? '';
 
-    if (total == 1 || type == 'single') return 'Single';
+    if (total == 1) return 'Single';
     if (total >= 2 && total <= 3) return 'Maxi-Single: $name';
     if (total >= 4 && total <= 6) return 'EP: $name';
     return 'Album: $name';
@@ -150,47 +150,49 @@ class _HistoryScreenState extends State<HistoryScreen> {
       final hour = dt != null ? DateFormat('HH').format(dt) : '--';
       final min = dt != null ? DateFormat('mm').format(dt) : '--';
 
-      return Column(
-        children: [
-          GestureDetector(
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => SongDetailScreen(song: item)));
-            },
-            child: Container( 
-              height: 80, 
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.transparent,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(width: 24, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Text(hour, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.bold, color: kTextSecondary.withOpacity(0.7), height: 1.0)),
-                    Text(min, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.bold, color: kTextSecondary.withOpacity(0.7), height: 1.0)),
-                  ])),
-                  const SizedBox(width: 16),
-                  ClipRRect(borderRadius: BorderRadius.circular(8), child: CachedNetworkImage(imageUrl: image, width: 56, height: 56, fit: BoxFit.cover, errorWidget: (_,__,___)=>Container(color:Colors.grey[900], child:const Icon(Icons.music_note, color:Colors.white54)))),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        return PingPongScrollingText(
-                          text: title,
-                          width: constraints.maxWidth,
-                          style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontWeight: FontWeight.w600, fontSize: 14),
-                        );
-                      }
-                    ),
-                    const SizedBox(height: 2),
-                    Text(artist, style: GoogleFonts.plusJakartaSans(color: kTextPrimary.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 2),
-                    Text(_getMetadata(item), style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)), maxLines: 1, overflow: TextOverflow.ellipsis)
-                  ])),
-                ],
+      return RepaintBoundary(
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => SongDetailScreen(song: item)));
+              },
+              child: Container( 
+                height: 80, 
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: Colors.transparent,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(width: 24, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Text(hour, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.bold, color: kTextSecondary.withOpacity(0.7), height: 1.0)),
+                      Text(min, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.bold, color: kTextSecondary.withOpacity(0.7), height: 1.0)),
+                    ])),
+                    const SizedBox(width: 16),
+                    ClipRRect(borderRadius: BorderRadius.circular(8), child: CachedNetworkImage(imageUrl: image, width: 56, height: 56, memCacheWidth: 200, fit: BoxFit.cover, errorWidget: (_,__,___)=>Container(color:Colors.grey[900], child:const Icon(Icons.music_note, color:Colors.white54)))),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return PingPongScrollingText(
+                            text: title,
+                            width: constraints.maxWidth,
+                            style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontWeight: FontWeight.w600, fontSize: 14),
+                          );
+                        }
+                      ),
+                      const SizedBox(height: 2),
+                      Text(artist, style: GoogleFonts.plusJakartaSans(color: kTextPrimary.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Text(_getMetadata(item), style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)), maxLines: 1, overflow: TextOverflow.ellipsis)
+                    ])),
+                  ],
+                ),
               ),
             ),
-          ),
-          if (index != _history.length - 1) const Divider(height: 1, color: Colors.white10),
-        ],
+            if (index != _history.length - 1) const Divider(height: 1, color: Colors.white10),
+          ],
+        ),
       );
   }
 }

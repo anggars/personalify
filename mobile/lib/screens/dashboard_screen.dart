@@ -598,18 +598,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     return SingleChildScrollView(
       controller: _scrollController,
       physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-      padding: const EdgeInsets.fromLTRB(16, 175, 16, 120), // Increased to 150 for Glass Header
-      child: Container(
+      padding: const EdgeInsets.fromLTRB(16, 175, 16, 120), // RESTORED 175
+      child: Container( // RESTORED CONTAINER
         decoration: BoxDecoration(
           color: kSurfaceColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: kBorderColor),
         ),
-        // ZERO internal padding. Let the list items define their own vertical padding.
-        // This ensures the first item is right at the top (with its own padding)
-        // and last item is right at bottom.
-        clipBehavior: Clip.hardEdge, // Clip to border radius
-        child: content,
+        clipBehavior: Clip.hardEdge, 
+        child: RepaintBoundary( // OPTIMIZATION KEPT INSIDE
+           child: content,
+        ),
       ),
     );
   }

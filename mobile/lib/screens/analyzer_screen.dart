@@ -211,7 +211,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
     return Center(
       child: RepaintBoundary( 
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(20, 175, 20, 120 + bottomPadding), // Dynamic Padding
+          padding: EdgeInsets.fromLTRB(16, 175, 16, 120 + bottomPadding), // Dynamic Padding
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -280,7 +280,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                 itemCount: _artistSuggestions.length, 
                 itemBuilder: (context, index) { 
                   final artist = _artistSuggestions[index]; 
-                  return GestureDetector(
+                  return RepaintBoundary(child: GestureDetector(
                     onTap: () {
                         // Direct Load Songs
                        _selectedArtist = artist;
@@ -292,12 +292,13 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center, 
                         children: [
-                          ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 80, height: 80, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 80, height: 80))), 
+                          ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 80, height: 80, memCacheWidth: 200, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 80, height: 80))), 
                           const SizedBox(height: 12), 
                           Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 13), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)
                         ]
                       )
-                    )
+                      )
+                    ),
                   ); 
                 }
               )
