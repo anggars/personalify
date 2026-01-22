@@ -30,6 +30,9 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   static const Color kTextPrimary = Color(0xFFFFFFFF);
   static const Color kTextSecondary = Color(0xFFB3B3B3);
   static const Color kCardBorderColor = Colors.white12;
+  
+  // OPTIMIZE: Cache blur filter
+  static final _appBarBlur = ImageFilter.blur(sigmaX: 10, sigmaY: 10);
 
   final TextEditingController _lyricsController = TextEditingController();
   bool _isAnalyzingLyrics = false;
@@ -46,10 +49,26 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   String? _geniusLoadingState; 
   Map<String, dynamic>? _geniusAnalysis;
 
+  // OPTIMIZE: Track keyboard state via FocusNode instead of MediaQuery
+  final FocusNode _lyricsFocusNode = FocusNode();
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _isKeyboardOpen = false;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    
+    // OPTIMIZE: Listen to focus changes instead of MediaQuery
+    _lyricsFocusNode.addListener(_onFocusChange);
+    _searchFocusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    final newState = _lyricsFocusNode.hasFocus || _searchFocusNode.hasFocus;
+    if (_isKeyboardOpen != newState) {
+      setState(() => _isKeyboardOpen = newState);
+    }
   }
 
   @override
@@ -57,6 +76,10 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
     _tabController.dispose();
     _lyricsController.dispose();
     _searchController.dispose();
+    _lyricsFocusNode.removeListener(_onFocusChange);
+    _searchFocusNode.removeListener(_onFocusChange);
+    _lyricsFocusNode.dispose();
+    _searchFocusNode.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -150,68 +173,81 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    // OPTIMIZE: Use focus-based keyboard detection instead of MediaQuery
+    // MediaQuery.viewInsets triggers rebuild on EVERY animation frame during keyboard show/hide
+    // FocusNode-based detection only triggers rebuild twice: on focus gain and focus loss
+    final isKeyboardOpen = _isKeyboardOpen;
 
     return Scaffold(
       backgroundColor: kBgColor,
       resizeToAvoidBottomInset: false, // Disable expensive scaffold resize
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text('Analyzer', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: kAccentColor, letterSpacing: -0.5)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent, 
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: 70,
-        flexibleSpace: isKeyboardOpen 
-          ? Container(color: kBgColor) // Cheap solid color when typing
-          : ClipRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(color: kBgColor.withOpacity(0.9)),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(118), // 70 toolbar + 48 tabbar
+        child: RepaintBoundary( // OPTIMIZE: Isolate entire AppBar
+          child: AppBar(
+            title: Text('Analyzer', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: kAccentColor, letterSpacing: -0.5)),
+            centerTitle: true,
+            backgroundColor: Colors.transparent, 
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            toolbarHeight: 70,
+            flexibleSpace: isKeyboardOpen 
+              ? Container(color: kBgColor)
+              : ClipRect(
+                  child: BackdropFilter(
+                    filter: _appBarBlur,
+                    child: Container(color: kBgColor.withOpacity(0.9)),
+                  ),
+                ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(48),
+              child: Container(
+                color: Colors.transparent,
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: false,
+                  labelColor: kAccentColor,
+                  unselectedLabelColor: kTextSecondary,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  indicatorColor: kAccentColor,
+                  indicatorWeight: 2,
+                  indicator: const UnderlineTabIndicator(
+                    borderSide: BorderSide(color: kAccentColor, width: 2),
+                    borderRadius: BorderRadius.zero,
+                  ),
+                  overlayColor: WidgetStateProperty.all(Colors.transparent),
+                  dividerColor: Colors.transparent,
+                  labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                  unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
+                  tabs: const [ Tab(text: "Lyrics", height: 40), Tab(text: "Genius", height: 40) ],
+                ),
               ),
-            ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            color: Colors.transparent,
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: false,
-              labelColor: kAccentColor,
-              unselectedLabelColor: kTextSecondary,
-              indicatorSize: TabBarIndicatorSize.label,
-              indicatorColor: kAccentColor,
-              indicatorWeight: 2,
-              indicator: const UnderlineTabIndicator(
-                borderSide: BorderSide(color: kAccentColor, width: 2),
-                borderRadius: BorderRadius.zero,
-              ),
-              overlayColor: MaterialStateProperty.all(Colors.transparent),
-              dividerColor: Colors.transparent,
-              labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
-              unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
-              tabs: const [ Tab(text: "Lyrics", height: 40), Tab(text: "Genius", height: 40) ],
             ),
           ),
         ),
       ),
 
-      body: TabBarView(
-        controller: _tabController,
-        children: [ _buildLyricsTab(isKeyboardOpen), _buildGeniusTab(isKeyboardOpen) ],
+      body: RepaintBoundary( // OPTIMIZE: Isolate body from AppBar repaints
+        child: TabBarView(
+          controller: _tabController,
+          children: [ 
+            _buildLyricsTab(isKeyboardOpen), 
+            _buildGeniusTab(isKeyboardOpen) 
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildUnifiedCard({required List<Widget> children}) {
-    // Manually handle keyboard padding
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-    
+    // OPTIMIZE: No more MediaQuery dependency - keyboard detected via FocusNode
     return Center(
       child: RepaintBoundary( 
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(16, 175, 16, 120 + bottomPadding), // Dynamic Padding
+          // OPTIMIZE: Fixed padding - no keyboard-dependent sizing needed
+          // The focus state handles blur/shimmer freeze, padding stays constant
+          padding: const EdgeInsets.fromLTRB(16, 175, 16, 120),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -232,7 +268,9 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
       Container(
         decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
         child: TextField(
-          controller: _lyricsController, maxLines: 8, minLines: 4,
+          controller: _lyricsController, 
+          focusNode: _lyricsFocusNode, // OPTIMIZE: Attach FocusNode for keyboard detection
+          maxLines: 8, minLines: 4,
           style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontSize: 16, height: 1.5),
           decoration: InputDecoration(
             hintText: "Write or paste your lyrics here...", 
@@ -242,9 +280,9 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
           ),
         ),
       ),
-      const SizedBox(height: 16), // Reduced from 20
+      const SizedBox(height: 16),
       SizedBox(height: 50, child: ElevatedButton(onPressed: _isAnalyzingLyrics ? null : _analyzeLyrics, style: ElevatedButton.styleFrom(backgroundColor: kSurfaceColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), side: const BorderSide(color: Colors.white12), elevation: 0), child: _isAnalyzingLyrics ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text('Analyze Emotions', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)))),
-      if (_lyricsResult != null) ...[const SizedBox(height: 16), _buildEmotionResults(_lyricsResult!['emotions'], isKeyboardOpen)] // Reduced from 32
+      if (_lyricsResult != null) ...[const SizedBox(height: 16), _buildEmotionResults(_lyricsResult!['emotions'], isKeyboardOpen)]
       else if (!_isAnalyzingLyrics && _lyricsController.text.isEmpty) ...[Padding(padding: const EdgeInsets.only(top: 32), child: Column(children: [Icon(Symbols.lyrics, color: kTextSecondary, size: 32), const SizedBox(height: 8), Text("Uncover the emotions hidden in text", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 13))]))]
     ]);
   }
@@ -254,8 +292,13 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
           Container(
              decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
              child: TextField(
-               controller: _searchController, onChanged: _onSearchChanged, textAlignVertical: TextAlignVertical.center, style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontSize: 15),
-               decoration: InputDecoration(hintText: "Type artist name...", hintStyle: GoogleFonts.plusJakartaSans(color: kTextSecondary.withOpacity(0.5)), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)), onSubmitted: (_) => _searchArtist(),
+               controller: _searchController, 
+               focusNode: _searchFocusNode, // OPTIMIZE: Attach FocusNode for keyboard detection
+               onChanged: _onSearchChanged, 
+               textAlignVertical: TextAlignVertical.center, 
+               style: GoogleFonts.plusJakartaSans(color: kTextPrimary, fontSize: 15),
+               decoration: InputDecoration(hintText: "Type artist name...", hintStyle: GoogleFonts.plusJakartaSans(color: kTextSecondary.withOpacity(0.5)), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)), 
+               onSubmitted: (_) => _searchArtist(),
              ),
            ),
            const SizedBox(height: 16),
@@ -493,7 +536,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   }
 }
 
-// Custom Shimmer Bar Widget
+// Custom Shimmer Bar Widget - OPTIMIZED
 class _ShimmerBar extends StatefulWidget {
   final Color color;
   final bool isFrozen;
@@ -509,7 +552,22 @@ class _ShimmerBarState extends State<_ShimmerBar> with SingleTickerProviderState
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))..repeat();
+    // OPTIMIZE: Slower animation = less CPU (was 2000ms, keep it but ensure proper control)
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000));
+    if (!widget.isFrozen) _controller.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ShimmerBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // OPTIMIZE: Only start/stop when isFrozen actually changes
+    if (oldWidget.isFrozen != widget.isFrozen) {
+      if (widget.isFrozen) {
+        _controller.stop();
+      } else {
+        _controller.repeat();
+      }
+    }
   }
 
   @override
@@ -520,35 +578,35 @@ class _ShimmerBarState extends State<_ShimmerBar> with SingleTickerProviderState
 
   @override
   Widget build(BuildContext context) {
-    if (widget.isFrozen && _controller.isAnimating) _controller.stop();
-    if (!widget.isFrozen && !_controller.isAnimating) _controller.repeat();
-    
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(3), // Match parent radius
-            gradient: LinearGradient(
-              begin: Alignment(-2.0 + _controller.value * 4, -0.5), // Move gradient
-              end: Alignment(-1.0 + _controller.value * 4, 0.5),
-              colors: [
-                widget.color,
-                widget.color.withOpacity(0.3), // Reduced Highlight (Less Shining)
-                widget.color, 
+    // OPTIMIZE: Wrap in RepaintBoundary to isolate animation repaints
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(3),
+              gradient: LinearGradient(
+                begin: Alignment(-2.0 + _controller.value * 4, -0.5),
+                end: Alignment(-1.0 + _controller.value * 4, 0.5),
+                colors: [
+                  widget.color,
+                  widget.color.withOpacity(0.3),
+                  widget.color, 
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
+              boxShadow: widget.isFrozen ? null : [
+                BoxShadow(
+                  color: widget.color.withOpacity(0.15),
+                  blurRadius: 4,
+                  offset: Offset.zero, 
+                )
               ],
-              stops: const [0.0, 0.5, 1.0],
             ),
-            boxShadow: [
-              if (!widget.isFrozen) BoxShadow(
-                color: widget.color.withOpacity(0.15), // Reduced Shadow Opacity
-                blurRadius: 4, // Reduced Blur
-                offset: const Offset(0, 0), 
-              )
-            ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
