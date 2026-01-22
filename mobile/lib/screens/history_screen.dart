@@ -11,6 +11,9 @@ import 'package:personalify/widgets/ping_pong_text.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
+  
+  // OPTIMIZE: Cache blur filter
+  static final _appBarBlur = ImageFilter.blur(sigmaX: 10, sigmaY: 10);
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -92,11 +95,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         elevation: 0,
         toolbarHeight: 70,
         automaticallyImplyLeading: false,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: kBgColor.withOpacity(0.9),
+        flexibleSpace: RepaintBoundary( // OPTIMIZE: Isolate blur repaints
+          child: ClipRect(
+            child: BackdropFilter(
+              filter: HistoryScreen._appBarBlur, // OPTIMIZE: Use cached filter
+              child: Container(
+                color: kBgColor.withOpacity(0.9),
+              ),
             ),
           ),
         ),

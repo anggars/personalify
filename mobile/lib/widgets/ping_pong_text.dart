@@ -22,6 +22,7 @@ class PingPongScrollingText extends StatefulWidget {
 class _PingPongScrollingTextState extends State<PingPongScrollingText> {
   final ScrollController _scrollController = ScrollController();
   bool _scrollingRight = true;
+  bool _isAnimating = false; // OPTIMIZE: Track animation state
 
   @override
   void initState() {
@@ -33,11 +34,22 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> {
 
   void _startScrolling() async {
     if (!mounted) return;
+    
+    // OPTIMIZE: Check if TickerMode is enabled (widget is visible in tree)
+    if (!TickerMode.of(context)) {
+      // Retry after a delay when TickerMode might be enabled again
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) _startScrolling();
+      return;
+    }
+    
     if (_scrollController.hasClients && _scrollController.position.maxScrollExtent <= 0) return;
+    if (_isAnimating) return; // Prevent multiple animations
 
     try {
+      _isAnimating = true;
       final maxScroll = _scrollController.position.maxScrollExtent;
-      // SLOWER SPEED: 50ms per pixel (was 30ms) for smoother, readable text
+      // OPTIMIZE: Slower speed = less CPU (50ms per pixel)
       final duration = Duration(milliseconds: (maxScroll * 50).toInt()); 
 
       if (_scrollingRight) {
@@ -59,13 +71,17 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> {
       // Pause at ends
       await Future.delayed(const Duration(seconds: 2));
       
-      if (mounted) {
+      if (mounted && TickerMode.of(context)) { // OPTIMIZE: Check visibility again
         setState(() {
           _scrollingRight = !_scrollingRight;
         });
+        _isAnimating = false;
         _startScrolling();
+      } else {
+        _isAnimating = false;
       }
     } catch (_) {
+      _isAnimating = false;
       // Handle ScrollController detached during disposal
     }
   }
@@ -95,3 +111,4 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> {
     );
   }
 }
+

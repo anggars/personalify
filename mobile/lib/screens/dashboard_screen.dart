@@ -63,6 +63,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   static const Color kTextSecondary = Color(0xFFB3B3B3);
   static const Color kBorderColor = Color(0xFF282828);
   
+  // OPTIMIZE: Cache blur filter
+  static final _appBarBlur = ImageFilter.blur(sigmaX: 10, sigmaY: 10);
+  
   static const _genreColors = [
     Color(0xFF1DB954), Color(0xFF00C7B7), Color(0xFF2496ED), Color(0xFF9333EA),
     Color(0xFFE91E63), Color(0xFFFFD21E), Color(0xFFFF5722), Color(0xFF88B04B),
@@ -79,14 +82,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     _apiService = ApiService(_authService);
     _tabController = TabController(length: 3, vsync: this);
     
-    // Add listener to track VISUAL tab position continuously
-    _tabController.animation!.addListener(() {
-      final visualIndex = _tabController.animation!.value.round();
-      print('🔄 Animation Listener: value=${_tabController.animation!.value}, rounded=$visualIndex, current=$_currentTabIndex');
-      if (visualIndex != _currentTabIndex) {
+    // Add listener to track VISUAL tab position
+    // OPTIMIZE: Use addListener on controller instead of animation for less frequent updates
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging && _currentTabIndex != _tabController.index) {
         setState(() {
-          _currentTabIndex = visualIndex;
-          print('✅ Updated _currentTabIndex to: $visualIndex');
+          _currentTabIndex = _tabController.index;
         });
       }
     });
@@ -483,11 +484,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 70,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), 
-            child: Container(
-              color: kBgColor.withOpacity(0.9), // Darker, less transparent
+        flexibleSpace: RepaintBoundary( // OPTIMIZE: Isolate blur repaints
+          child: ClipRect(
+            child: BackdropFilter(
+              filter: _appBarBlur, // OPTIMIZE: Use cached filter
+              child: Container(
+                color: kBgColor.withOpacity(0.9),
+              ),
             ),
           ),
         ),

@@ -18,6 +18,10 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   String _selectedTimeRange = 'short_term'; // Shared time range state
+  
+  // OPTIMIZE: Cache blur filter as static to avoid recreating every build
+  static final _navbarBlur = ImageFilter.blur(sigmaX: 20, sigmaY: 20);
+  static final _curtainBlur = ImageFilter.blur(sigmaX: 10, sigmaY: 10);
 
   void _onItemTapped(int index) {
     setState(() {
@@ -68,20 +72,22 @@ class _MainNavigationState extends State<MainNavigation> {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: 25, // Height reduced to cover ONLY bottom gap
-                child: ClipRect( // ClipRect needed for BackdropFilter
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.8), // "Agak solid"
-                          ],
-                          stops: const [0.0, 0.8],
+                height: 25,
+                child: RepaintBoundary( // OPTIMIZE: Isolate blur repaints
+                  child: ClipRect(
+                    child: BackdropFilter(
+                      filter: _curtainBlur, // OPTIMIZE: Use cached filter
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.8),
+                            ],
+                            stops: const [0.0, 0.8],
+                          ),
                         ),
                       ),
                     ),
@@ -96,36 +102,38 @@ class _MainNavigationState extends State<MainNavigation> {
               left: 16, 
               right: 16,
               bottom: isKeyboardVisible ? -100 : 24, // Hide when keyboard is open
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20), 
-                  child: Container(
-                    height: 72, 
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF181818).withOpacity(0.75), // More translucent for visible blur
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.1), 
-                        width: 1.0,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 30,
-                          offset: const Offset(0, 10),
+              child: RepaintBoundary( // OPTIMIZE: Isolate navbar blur repaints
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: _navbarBlur, // OPTIMIZE: Use cached filter
+                    child: Container(
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF181818).withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 1.0,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildNavItem(0, Symbols.home_app_logo, "Home"),
-                        _buildNavItem(1, Symbols.space_dashboard, "Dashboard"),
-                        _buildNavItem(2, Symbols.lyrics, "Analyzer"),
-                        _buildNavItem(3, Symbols.music_history, "History"),
-                        _buildNavItem(4, Symbols.person, "Profile"),
-                      ],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 30,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildNavItem(0, Symbols.home_app_logo, "Home"),
+                          _buildNavItem(1, Symbols.space_dashboard, "Dashboard"),
+                          _buildNavItem(2, Symbols.lyrics, "Analyzer"),
+                          _buildNavItem(3, Symbols.music_history, "History"),
+                          _buildNavItem(4, Symbols.person, "Profile"),
+                        ],
+                      ),
                     ),
                   ),
                 ),

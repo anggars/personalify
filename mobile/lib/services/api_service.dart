@@ -50,7 +50,6 @@ class ApiService {
             );
           }
           
-          return handler.reject(error);
           // Reject to stop downstream processing
           return handler.reject(error);
         } else {

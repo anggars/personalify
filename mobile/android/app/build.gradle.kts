@@ -42,3 +42,8 @@ android {
 flutter {
     source = "../.."
 }
+
+// Suppress obsolete options warning
+tasks.withType<org.gradle.api.tasks.compile.JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-options")
+}

@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:personalify/screens/login_screen.dart';
 import 'package:personalify/screens/main_navigation.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/utils/navigation.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // OPTIMIZE: Preload Google Fonts to prevent runtime font loading lag
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   // OPTIMIZE: Limit memory usage for Image Cache
   // 50 MB Max total size (default is 100MB)

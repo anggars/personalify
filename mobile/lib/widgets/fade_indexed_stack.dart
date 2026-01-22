@@ -68,7 +68,8 @@ class _FadeIndexedStackState extends State<FadeIndexedStack> with SingleTickerPr
           scale: _scaleAnimation,
           child: IndexedStack(
             index: _currentIndex,
-            children: widget.children,
+            // OPTIMIZE: Wrap each child in RepaintBoundary to isolate repaints
+            children: widget.children.map((child) => RepaintBoundary(child: child)).toList(),
           ),
         ),
       ),
