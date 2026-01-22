@@ -102,7 +102,10 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
 
   Future<void> _searchArtist() async {
     final query = _searchController.text.trim();
-    if (query.isEmpty) return;
+    if (query.isEmpty) {
+      showTopToast(context, 'Please enter artist name first!', type: ToastType.error);
+      return;
+    }
     FocusScope.of(context).unfocus();
     setState(() { _geniusLoadingState = 'search'; _selectedArtist = null; _songs = []; _geniusAnalysis = null; _artistSuggestions = []; });
     try {
@@ -147,6 +150,8 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Scaffold(
       backgroundColor: kBgColor,
       resizeToAvoidBottomInset: false, // Disable expensive scaffold resize
@@ -158,9 +163,14 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 70,
-        flexibleSpace: Container(
-          color: kBgColor.withOpacity(0.95), 
-        ),
+        flexibleSpace: isKeyboardOpen 
+          ? Container(color: kBgColor) // Cheap solid color when typing
+          : ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(color: kBgColor.withOpacity(0.9)),
+              ),
+            ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
@@ -189,7 +199,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
 
       body: TabBarView(
         controller: _tabController,
-        children: [ _buildLyricsTab(), _buildGeniusTab() ],
+        children: [ _buildLyricsTab(isKeyboardOpen), _buildGeniusTab(isKeyboardOpen) ],
       ),
     );
   }
@@ -217,7 +227,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildLyricsTab() {
+  Widget _buildLyricsTab(bool isKeyboardOpen) {
     return _buildUnifiedCard(children: [
       Container(
         decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
@@ -234,12 +244,12 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
       ),
       const SizedBox(height: 16), // Reduced from 20
       SizedBox(height: 50, child: ElevatedButton(onPressed: _isAnalyzingLyrics ? null : _analyzeLyrics, style: ElevatedButton.styleFrom(backgroundColor: kSurfaceColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), side: const BorderSide(color: Colors.white12), elevation: 0), child: _isAnalyzingLyrics ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text('Analyze Emotions', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)))),
-      if (_lyricsResult != null) ...[const SizedBox(height: 16), _buildEmotionResults(_lyricsResult!['emotions'])] // Reduced from 32
+      if (_lyricsResult != null) ...[const SizedBox(height: 16), _buildEmotionResults(_lyricsResult!['emotions'], isKeyboardOpen)] // Reduced from 32
       else if (!_isAnalyzingLyrics && _lyricsController.text.isEmpty) ...[Padding(padding: const EdgeInsets.only(top: 32), child: Column(children: [Icon(Symbols.lyrics, color: kTextSecondary, size: 32), const SizedBox(height: 8), Text("Uncover the emotions hidden in text", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 13))]))]
     ]);
   }
 
-  Widget _buildGeniusTab() {
+  Widget _buildGeniusTab(bool isKeyboardOpen) {
      return _buildUnifiedCard(children: [
           Container(
              decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
@@ -424,12 +434,12 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                 ),
               ),
               const SizedBox(height: 16), // Reduced from 24
-              if (_geniusAnalysis!['emotion_analysis'] != null) _buildEmotionResults(_geniusAnalysis!['emotion_analysis']['emotions']),
+              if (_geniusAnalysis!['emotion_analysis'] != null) _buildEmotionResults(_geniusAnalysis!['emotion_analysis']['emotions'], isKeyboardOpen),
            ],
      ]);
   }
 
-  Widget _buildEmotionResults(List<dynamic>? emotions) {
+  Widget _buildEmotionResults(List<dynamic>? emotions, bool isKeyboardOpen) {
     if (emotions == null || emotions.isEmpty) return const SizedBox();
     final filtered = emotions.where((e) => (e['score'] as num) > 0.05).toList();
     if (filtered.isEmpty) return Text("No distinct emotions found.", style: GoogleFonts.plusJakartaSans(color: kTextSecondary), textAlign: TextAlign.center);
@@ -467,7 +477,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                        alignment: Alignment.centerLeft,
                        child: FractionallySizedBox(
                          widthFactor: relativeWidth,
-                         child: _ShimmerBar(color: kAccentColor), // Custom Shimmer Widget
+                         child: _ShimmerBar(color: kAccentColor, isFrozen: isKeyboardOpen), // Custom Shimmer Widget
                        ),
                      ),
                    ),
@@ -485,7 +495,8 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
 // Custom Shimmer Bar Widget
 class _ShimmerBar extends StatefulWidget {
   final Color color;
-  const _ShimmerBar({required this.color});
+  final bool isFrozen;
+  const _ShimmerBar({required this.color, this.isFrozen = false});
 
   @override
   State<_ShimmerBar> createState() => _ShimmerBarState();
@@ -508,6 +519,9 @@ class _ShimmerBarState extends State<_ShimmerBar> with SingleTickerProviderState
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isFrozen && _controller.isAnimating) _controller.stop();
+    if (!widget.isFrozen && !_controller.isAnimating) _controller.repeat();
+    
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -525,7 +539,7 @@ class _ShimmerBarState extends State<_ShimmerBar> with SingleTickerProviderState
               stops: const [0.0, 0.5, 1.0],
             ),
             boxShadow: [
-              BoxShadow(
+              if (!widget.isFrozen) BoxShadow(
                 color: widget.color.withOpacity(0.15), // Reduced Shadow Opacity
                 blurRadius: 4, // Reduced Blur
                 offset: const Offset(0, 0), 

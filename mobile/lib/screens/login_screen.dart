@@ -123,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   'Welcome to Personalify!',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 36, // ~text-4xl
+                    fontSize: 40,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                     height: 1.2,

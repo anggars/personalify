@@ -69,9 +69,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openSpotify() async {
-     const url = 'https://open.spotify.com';
-     if (await canLaunchUrl(Uri.parse(url))) {
-       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+     final userid = _profileData?['id'];
+     final deepLink = userid != null ? 'spotify:user:$userid' : 'spotify:';
+     final webUrl = userid != null ? 'https://open.spotify.com/user/$userid' : 'https://open.spotify.com';
+
+     try {
+       // Try Native App
+       final uri = Uri.parse(deepLink);
+       if (await canLaunchUrl(uri)) {
+          await launchUrl(uri); 
+          return;
+       }
+     } catch (_) {}
+
+     // Fallback to Web (External App Mode)
+     try {
+       await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+     } catch (e) {
+       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Could not open Spotify: $e")));
      }
   }
 
@@ -139,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   shape: BoxShape.circle,
                   color: kSurfaceColor,
                   image: image.isNotEmpty 
-                      ? DecorationImage(image: CachedNetworkImageProvider(image, maxWidth: 320), fit: BoxFit.cover)
+                      ? DecorationImage(image: CachedNetworkImageProvider(image, maxWidth: 400), fit: BoxFit.cover)
                       : null,
                 ),
                 child: image.isEmpty 

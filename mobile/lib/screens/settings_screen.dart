@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:personalify/utils/constants.dart';
+import 'package:personalify/widgets/top_toast.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -45,20 +46,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       PaintingBinding.instance.imageCache.clearLiveImages();
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Cache cleared successfully!', style: GoogleFonts.plusJakartaSans(color: Colors.white)),
-            backgroundColor: kAccentColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        showTopToast(context, 'Cache cleared successfully!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('Failed: $e')),
-        );
+        showTopToast(context, 'Failed: $e', type: ToastType.error);
       }
     }
   }
@@ -284,14 +276,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: ListTile(
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: kBgColor,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: kAccentColor, size: 20),
-        ),
+        leading: Icon(icon, color: kAccentColor, size: 24),
         title: Text(
           title,
           style: GoogleFonts.plusJakartaSans(
