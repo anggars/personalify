@@ -143,8 +143,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-        child: Column(
-          children: [
+        child: RepaintBoundary(
+          child: Column(
+            children: [
             // 1. Large Profile Image
             Center(
               child: Container(
@@ -207,6 +208,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // 4. Actions
             _buildInfoGroup([
               _buildActionRow(Icons.open_in_new_rounded, "Open Spotify", kAccentColor, _openSpotify),
+              _buildActionRow(Icons.logout_rounded, "Top Up", Colors.green, () {}),
+              const SizedBox(height: 8),
               _buildActionRow(Icons.logout_rounded, "Logout", Colors.redAccent, _logout),
             ]),
             
@@ -217,6 +220,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
