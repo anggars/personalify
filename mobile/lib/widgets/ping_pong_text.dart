@@ -66,16 +66,24 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> {
         );
       }
       
-      if (!mounted) return;
+      if (!mounted) {
+        _isAnimating = false;
+        return;
+      }
 
-      // Pause at ends
+      // RESTORED PAUSE: 2 Seconds at each end
       await Future.delayed(const Duration(seconds: 2));
       
-      if (mounted && TickerMode.of(context)) { // OPTIMIZE: Check visibility again
+      if (mounted) { 
+        // Always try to continue if mounted
         setState(() {
           _scrollingRight = !_scrollingRight;
         });
-        _isAnimating = false;
+        
+        // Critical Fix: Ensure we don't block based on TickerMode here, 
+        // just recurse. If TickerMode is off, the NEXT _startScrolling call 
+        // (at the top of the function) will handle the waiting/retry logic.
+        _isAnimating = false; 
         _startScrolling();
       } else {
         _isAnimating = false;

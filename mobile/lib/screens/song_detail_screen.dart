@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:personalify/widgets/analysis_card.dart';
 import 'package:personalify/services/api_service.dart';
+import 'package:personalify/widgets/ping_pong_text.dart'; // Import Marquee Widget
 import 'package:provider/provider.dart';
 
 class SongDetailScreen extends StatefulWidget {
@@ -186,11 +187,49 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
               onPressed: () => Navigator.pop(context),
             ),
             centerTitle: true,
-            title: Column(
-              children: [
-                Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text(artist, style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.white70)),
-              ],
+            title: SizedBox(
+               width: 250, // Constrain width to prevent overflow
+               child: Column(
+                children: [
+                  // Title Marquee
+                  if (title.length > 20)
+                    SizedBox(
+                      height: 20,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return PingPongScrollingText(
+                            text: title,
+                            width: constraints.maxWidth,
+                            alignment: Alignment.center,
+                            style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                          );
+                        }
+                      ),
+                    )
+                  else
+                    Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                  
+                  const SizedBox(height: 2),
+                  
+                  // Artist Marquee
+                  if (artist.length > 30)
+                    SizedBox(
+                      height: 16,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return PingPongScrollingText(
+                             text: artist,
+                             width: constraints.maxWidth,
+                             alignment: Alignment.center,
+                             style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.white70),
+                          );
+                        }
+                      ),
+                    )
+                  else
+                    Text(artist, style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.white70)),
+                ],
+              ),
             ),
           ),
           body: Column(

@@ -8,14 +8,13 @@ export const size = {
 export const contentType = 'image/png';
 
 // Generate the favicon
-export default function Icon() {
+export default async function Icon() {
     return new ImageResponse(
         (
-            // ImageResponse JSX element
             <div
                 style={{
                     fontSize: 20,
-                    background: '#282828', // Placeholder dark background similar to navbar button in dark mode
+                    background: '#282828',
                     width: '100%',
                     height: '100%',
                     display: 'flex',
@@ -30,7 +29,6 @@ export default function Icon() {
                 P
             </div>
         ),
-        // ImageResponse options
         {
             ...size,
         }
