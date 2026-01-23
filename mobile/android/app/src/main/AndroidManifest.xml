@@ -5,7 +5,7 @@
         android:label="Personalify"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@drawable/ic_legacy_vector"
+        android:roundIcon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"

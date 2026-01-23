@@ -708,23 +708,44 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        () {
-                          final total = track.album.totalTracks;
-                          final name = track.album.name;
-                          
-                          if (total == 1) return 'Single';
-                          if (total >= 2 && total <= 3) return 'Maxi-Single: $name';
-                          if (total >= 4 && total <= 6) return 'EP: $name';
-                          return 'Album: $name';
-                        }(),
-                        style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)),
-                        maxLines: 1, 
-                        overflow: TextOverflow.ellipsis,
+                      SizedBox(
+                        height: 16,
+                        child: Builder(
+                          builder: (context) {
+                            final total = track.album.totalTracks;
+                            final name = track.album.name;
+                            String albumText;
+                            
+                            if (total == 1) albumText = 'Single';
+                            else if (total >= 2 && total <= 3) albumText = 'Maxi-Single: $name';
+                            else if (total >= 4 && total <= 6) albumText = 'EP: $name';
+                            else albumText = 'Album: $name';
+
+                            if (albumText.length > 30 && !isShare) {
+                               return LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return PingPongScrollingText(
+                                    text: albumText,
+                                    width: constraints.maxWidth,
+                                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)),
+                                  );
+                                }
+                              );
+                            }
+                            
+                            return Text(
+                                albumText,
+                                style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)),
+                                maxLines: 1, 
+                                overflow: TextOverflow.ellipsis,
+                              );
+                          }
+                        ),
                       )
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

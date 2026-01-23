@@ -8,20 +8,19 @@ export const size = {
 export const contentType = 'image/png';
 
 // Generate the apple touch icon
-export default function Icon() {
+export default async function Icon() {
     return new ImageResponse(
         (
-            // ImageResponse JSX element
             <div
                 style={{
                     fontSize: 100,
-                    background: '#282828', // Placeholder dark background similar to navbar button in dark mode
+                    background: '#282828',
                     width: '100%',
                     height: '100%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    borderRadius: '32px', // Larger radius for larger icon
+                    borderRadius: '32px',
                     color: '#1DB954',
                     fontWeight: 800,
                     fontFamily: 'sans-serif',
@@ -30,7 +29,6 @@ export default function Icon() {
                 P
             </div>
         ),
-        // ImageResponse options
         {
             ...size,
         }

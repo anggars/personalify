@@ -189,7 +189,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       const SizedBox(height: 2),
                       Text(artist, style: GoogleFonts.plusJakartaSans(color: kTextPrimary.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 2),
-                      Text(_getMetadata(item), style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)), maxLines: 1, overflow: TextOverflow.ellipsis)
+                      SizedBox(
+                        height: 16,
+                        child: Builder(
+                          builder: (context) {
+                            final metadataText = _getMetadata(item);
+                            if (metadataText.length > 30) {
+                               return LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return PingPongScrollingText(
+                                    text: metadataText,
+                                    width: constraints.maxWidth,
+                                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)),
+                                  );
+                                }
+                              );
+                            }
+                            return Text(metadataText, style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)), maxLines: 1, overflow: TextOverflow.ellipsis);
+                          }
+                        ),
+                      )
                     ])),
                   ],
                 ),
