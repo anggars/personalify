@@ -8,12 +8,15 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:personalify/screens/song_detail_screen.dart';
 import 'package:personalify/widgets/ping_pong_text.dart';
+import 'package:personalify/widgets/error_view.dart';
+import 'package:personalify/services/auth_service.dart';
+import 'package:personalify/screens/login_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
   
   // OPTIMIZE: Cache blur filter
-  static final _appBarBlur = ImageFilter.blur(sigmaX: 10, sigmaY: 10);
+
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -74,6 +77,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return 'Album: $name';
   }
 
+  Future<void> _logout() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    await authService.logout();
+    if (mounted) {
+       Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+         MaterialPageRoute(builder: (_) => const LoginScreen()),
+         (route) => false
+       );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Header Style (Standardized from Dashboard)
@@ -98,9 +112,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
         flexibleSpace: RepaintBoundary( // OPTIMIZE: Isolate blur repaints
           child: ClipRect(
             child: BackdropFilter(
-              filter: HistoryScreen._appBarBlur, // OPTIMIZE: Use cached filter
+              filter: ImageFilter.blur(sigmaX: kGlassBlurSigma, sigmaY: kGlassBlurSigma),
               child: Container(
-                color: kBgColor.withOpacity(0.9),
+                color: kBgColor.withOpacity(kGlassOpacity),
               ),
             ),
           ),
@@ -114,16 +128,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: kAccentColor))
             : _errorMessage != null
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 200),
-                        child: Center(child: Text('Failed to load: $_errorMessage', style: const TextStyle(color: Colors.red))),
-                      )
-                    ],
+                ? ErrorView(
+                    title: "History Unavailable", 
+                    message: _errorMessage!,
+                    onRetry: () => _fetchHistory(isRefresh: true),
+                    onLogout: _logout,
                   )
-                : SingleChildScrollView(
+                : _history.isEmpty
+                    ? ErrorView(
+                        title: "No History Yet",
+                        message: "Play some songs on Spotify to see them here!",
+                        onRetry: () => _fetchHistory(isRefresh: true),
+                        onLogout: _logout, // User requested login even on empty? why not.
+                      )
+                    : SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 115, 16, 120),
                     child: Container(

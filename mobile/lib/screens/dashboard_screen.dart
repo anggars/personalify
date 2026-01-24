@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:personalify/utils/constants.dart';
 import 'package:personalify/widgets/top_toast.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -8,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:personalify/widgets/ping_pong_text.dart';
+import 'package:personalify/widgets/error_view.dart';
 import 'package:personalify/models/user_profile.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
@@ -63,8 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   static const Color kTextSecondary = Color(0xFFB3B3B3);
   static const Color kBorderColor = Color(0xFF282828);
   
-  // OPTIMIZE: Cache blur filter
-  static final _appBarBlur = ImageFilter.blur(sigmaX: 10, sigmaY: 10);
+
   
   static const _genreColors = [
     Color(0xFF1DB954), Color(0xFF00C7B7), Color(0xFF2496ED), Color(0xFF9333EA),
@@ -476,20 +477,32 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       );
     }
 
+    if (_userProfile == null) {
+      return Scaffold(
+        backgroundColor: kBgColor,
+        body: ErrorView(
+          title: "Connection Issue",
+          message: "Could not load your dashboard. Your session might have expired.",
+          onRetry: () => _load(isRefresh: false),
+          onLogout: _handleLogout,
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: kBgColor,
       extendBodyBehindAppBar: true, // Allow body to scroll behind app bar
       appBar: AppBar(
-        backgroundColor: Colors.transparent, // Transparent to show blur
+        backgroundColor: Colors.transparent, // Transparent to show blur (User requested blur back)
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 70,
-        flexibleSpace: RepaintBoundary( // OPTIMIZE: Isolate blur repaints
-          child: ClipRect(
+        flexibleSpace: RepaintBoundary( // Still wrapping in RepaintBoundary for performance
+          child: ClipRect( // Strict clipping to prevent "liquid" artifacts
             child: BackdropFilter(
-              filter: _appBarBlur, // OPTIMIZE: Use cached filter
+              filter: ImageFilter.blur(sigmaX: kGlassBlurSigma, sigmaY: kGlassBlurSigma), // Low Sigma (5.0) for performance
               child: Container(
-                color: kBgColor.withOpacity(0.9),
+                color: kBgColor.withOpacity(kGlassOpacity), // Slightly more transparent to emphasize blur
               ),
             ),
           ),
@@ -661,7 +674,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 const SizedBox(width: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(imageUrl: track.image, width: 56, height: 56, memCacheWidth: 150, fit: BoxFit.cover),
+                  child: CachedNetworkImage(imageUrl: track.image, width: 56, height: 56, memCacheWidth: 120, fit: BoxFit.cover),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -831,7 +844,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 const SizedBox(width: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8), 
-                  child: CachedNetworkImage(imageUrl: artist.image, width: 56, height: 56, memCacheWidth: 150, fit: BoxFit.cover),
+                  child: CachedNetworkImage(imageUrl: artist.image, width: 56, height: 56, memCacheWidth: 120, fit: BoxFit.cover),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

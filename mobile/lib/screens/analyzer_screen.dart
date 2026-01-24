@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:personalify/utils/constants.dart';
 import 'dart:ui';
 import 'package:personalify/widgets/top_toast.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +33,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   static const Color kCardBorderColor = Colors.white12;
   
   // OPTIMIZE: Cache blur filter
-  static final _appBarBlur = ImageFilter.blur(sigmaX: 10, sigmaY: 10);
+
 
   final TextEditingController _lyricsController = TextEditingController();
   bool _isAnalyzingLyrics = false;
@@ -196,8 +197,8 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
               ? Container(color: kBgColor)
               : ClipRect(
                   child: BackdropFilter(
-                    filter: _appBarBlur,
-                    child: Container(color: kBgColor.withOpacity(0.9)),
+                    filter: ImageFilter.blur(sigmaX: kGlassBlurSigma, sigmaY: kGlassBlurSigma),
+                    child: Container(color: kBgColor.withOpacity(kGlassOpacity)),
                   ),
                 ),
             bottom: PreferredSize(
@@ -289,8 +290,8 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
 
   Widget _buildGeniusTab(bool isKeyboardOpen) {
      return _buildUnifiedCard(children: [
-          Container(
-             decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+      Container(
+        decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
              child: TextField(
                controller: _searchController, 
                focusNode: _searchFocusNode, // OPTIMIZE: Attach FocusNode for keyboard detection
@@ -434,7 +435,10 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                                     ],
                                   ),
                                 ),
-                                if (isSelected) const Icon(Icons.check_circle, color: kAccentColor, size: 16)
+                                if (isSelected) ...[
+                                  const SizedBox(width: 12),
+                                  const Icon(Icons.check_circle, color: kAccentColor, size: 16)
+                                ]
                               ],
                             ),
                           ),
