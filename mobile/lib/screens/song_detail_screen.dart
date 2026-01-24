@@ -187,50 +187,6 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
               onPressed: () => Navigator.pop(context),
             ),
             centerTitle: true,
-            title: SizedBox(
-               width: 250, // Constrain width to prevent overflow
-               child: Column(
-                children: [
-                  // Title Marquee
-                  if (title.length > 20)
-                    SizedBox(
-                      height: 20,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return PingPongScrollingText(
-                            text: title,
-                            width: constraints.maxWidth,
-                            alignment: Alignment.center,
-                            style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                          );
-                        }
-                      ),
-                    )
-                  else
-                    Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                  
-                  const SizedBox(height: 2),
-                  
-                  // Artist Marquee
-                  if (artist.length > 30)
-                    SizedBox(
-                      height: 16,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return PingPongScrollingText(
-                             text: artist,
-                             width: constraints.maxWidth,
-                             alignment: Alignment.center,
-                             style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.white70),
-                          );
-                        }
-                      ),
-                    )
-                  else
-                    Text(artist, style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.white70)),
-                ],
-              ),
-            ),
           ),
           body: Column(
             children: [
@@ -249,6 +205,50 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
                 ),
               ),
             ],
+          ),
+        ),
+
+        // 4. Floating Title (Unrestricted Width & Perfectly Centered)
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 10,
+          left: 50,
+          right: 50,
+          child: Material( // FIX: Prevents "Yellow Underline" artifact
+            type: MaterialType.transparency,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title Marquee
+                SizedBox(
+                  height: 24, // Keep height comfortable
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return PingPongScrollingText(
+                        text: title,
+                        width: constraints.maxWidth,
+                        alignment: Alignment.center,
+                        style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white), // Reverted to 14
+                      );
+                    }
+                  ),
+                ),
+                
+                // Artist Marquee
+                SizedBox(
+                  height: 18,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return PingPongScrollingText(
+                          text: artist,
+                          width: constraints.maxWidth,
+                          alignment: Alignment.center,
+                          style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.white70), // Reverted to 12
+                      );
+                    }
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],

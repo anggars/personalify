@@ -7,6 +7,7 @@ import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:personalify/widgets/error_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -102,22 +103,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (_isLoading) return const Center(child: CircularProgressIndicator(color: kAccentColor));
     
-    if (_errorMessage != null || _profileData == null) return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 48),
-          const SizedBox(height: 16),
-          Text(
-            _errorMessage ?? "Unknown Error",
-            style: const TextStyle(color: Colors.red),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          TextButton(onPressed: _loadProfile, child: const Text("Retry"))
-        ],
-      )
-    );
+    if (_errorMessage != null || _profileData == null) {
+      return Scaffold( // Ensure it has a scaffold background if full screen
+        backgroundColor: kBgColor,
+        body: ErrorView(
+          title: "Profile Unavailable",
+          message: _errorMessage ?? "Failed to load profile data.\nPlease try refreshing or logging in again.",
+          onRetry: _loadProfile,
+          onLogout: _logout,
+        ),
+      );
+    }
 
     final name = _profileData!['display_name'] ?? 'Spotify User';
     final userid = _profileData!['id'] ?? '';
@@ -155,7 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   shape: BoxShape.circle,
                   color: kSurfaceColor,
                   image: image.isNotEmpty 
-                      ? DecorationImage(image: CachedNetworkImageProvider(image, maxWidth: 400), fit: BoxFit.cover)
+                      ? DecorationImage(image: CachedNetworkImageProvider(image, maxWidth: 320), fit: BoxFit.cover)
                       : null,
                 ),
                 child: image.isEmpty 
@@ -208,7 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // 4. Actions
             _buildInfoGroup([
               _buildActionRow(Icons.open_in_new_rounded, "Open Spotify", kAccentColor, _openSpotify),
-              _buildActionRow(Icons.logout_rounded, "Top Up", Colors.green, () {}),
+
               const SizedBox(height: 8),
               _buildActionRow(Icons.logout_rounded, "Logout", Colors.redAccent, _logout),
             ]),

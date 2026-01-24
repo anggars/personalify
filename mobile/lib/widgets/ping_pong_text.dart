@@ -71,8 +71,8 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> {
         return;
       }
 
-      // RESTORED PAUSE: 2 Seconds at each end
-      await Future.delayed(const Duration(seconds: 2));
+      // No Pause: Instant bounce (User Request)
+      // await Future.delayed(const Duration(milliseconds: 500));
       
       if (mounted) { 
         // Always try to continue if mounted
