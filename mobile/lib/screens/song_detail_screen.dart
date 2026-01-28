@@ -39,6 +39,8 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
     ]
   };
 
+  bool _isTransitionComplete = false;
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +50,12 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
         _selectedTabIndex = _tabController.index;
       });
     });
+    
+    // Defer heavy blur rendering until transition is likely done
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) setState(() => _isTransitionComplete = true);
+    });
+
     _fetchLyrics();
   }
 
@@ -152,19 +160,33 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
     final title = widget.song?['title'] ?? widget.song?['track_name'] ?? 'Unknown Track';
     final artist = widget.song?['artist'] ?? widget.song?['artist_name'] ?? 'Unknown Artist';
     final cover = widget.song?['image'] ?? widget.song?['image_url'] ?? '';
+    final trackId = widget.song?['id']?.toString() ?? '';
 
     return Stack(
       children: [
         // 1. Immersive Animated Background
+        // OPTIMIZE: Fade in expensive blur ONLY after transition completes
+        // Prevents "Jank" during the slide animation
+        Positioned.fill(
+           child: Container(color: Colors.black), // Base color
+        ),
+        
         if (cover.isNotEmpty)
           Positioned.fill(
-            child: ImageFiltered(
-              imageFilter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-              child: CachedNetworkImage(
-                imageUrl: cover,
-                fit: BoxFit.cover,
-                memCacheWidth: 800, // Optimize memory (approx for screen width * pixel ratio)
-                errorWidget: (_, __, ___) => Container(color: Colors.black),
+             child: AnimatedOpacity(
+               duration: const Duration(milliseconds: 500),
+               opacity: _isTransitionComplete ? 1.0 : 0.0,
+               child: RepaintBoundary( 
+                child: ImageFiltered(
+                  // OPTIMIZE: Reduced blur from 20 to 10 as requested ("biar enteng")
+                  imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: CachedNetworkImage(
+                    imageUrl: cover,
+                    fit: BoxFit.cover,
+                    memCacheWidth: 800,
+                    errorWidget: (_, __, ___) => Container(color: Colors.black),
+                  ),
+                ),
               ),
             ),
           ),
@@ -208,16 +230,18 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
           ),
         ),
 
-        // 4. Floating Title (Unrestricted Width & Perfectly Centered)
+        // 4. Floating Header (Text Only - No Artwork Collision)
         Positioned(
           top: MediaQuery.of(context).padding.top + 10,
           left: 50,
           right: 50,
-          child: Material( // FIX: Prevents "Yellow Underline" artifact
+          child: Material( 
             type: MaterialType.transparency,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // REMOVED: Small Hero Image (Fixed "nabrak" issue)
+                
                 // Title Marquee
                 SizedBox(
                   height: 24, // Keep height comfortable
@@ -227,7 +251,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
                         text: title,
                         width: constraints.maxWidth,
                         alignment: Alignment.center,
-                        style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white), // Reverted to 14
+                        style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white), 
                       );
                     }
                   ),
@@ -242,7 +266,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
                           text: artist,
                           width: constraints.maxWidth,
                           alignment: Alignment.center,
-                          style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.white70), // Reverted to 12
+                          style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.white70),
                       );
                     }
                   ),
@@ -339,28 +363,30 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
       );
     }
 
-    return ShaderMask(
-      shaderCallback: (rect) {
-        return const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.black, Colors.black, Colors.transparent],
-          stops: [0.0, 0.8, 1.0],
-        ).createShader(rect);
-      },
-      blendMode: BlendMode.dstIn,
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
-        child: Text(
-          _lyrics!,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            height: 1.5,
+    return RepaintBoundary( // FIX: Cache shader mask for smoother tab swipe
+      child: ShaderMask(
+        shaderCallback: (rect) {
+          return const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.black, Colors.black, Colors.transparent],
+            stops: [0.0, 0.8, 1.0],
+          ).createShader(rect);
+        },
+        blendMode: BlendMode.dstIn,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+          child: Text(
+            _lyrics!,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.start,
           ),
-          textAlign: TextAlign.start,
         ),
       ),
     );

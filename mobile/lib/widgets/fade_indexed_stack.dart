@@ -19,22 +19,19 @@ class FadeIndexedStack extends StatefulWidget {
 class _FadeIndexedStackState extends State<FadeIndexedStack> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _scaleAnimation;
   int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.index;
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 600)); // Longer duration for smooth curve
+    // OPTIMIZED: Shorter duration (600ms -> 200ms) for snappier feel
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
     
-    // "Framer Motion" styled Curve (Fast Out, Slow Settle)
-    const curve = Curves.fastLinearToSlowEaseIn;
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutQuad));
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(CurvedAnimation(parent: _controller, curve: curve)); // Smooth slide up
-    _scaleAnimation = Tween<double>(begin: 0.98, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: curve)); // Very subtle scale
+    // OPTIMIZED: Fade only (removed slide & scale for 66% less animation overhead)
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut)
+    );
 
     _controller.forward();
   }
@@ -43,12 +40,9 @@ class _FadeIndexedStackState extends State<FadeIndexedStack> with SingleTickerPr
   void didUpdateWidget(FadeIndexedStack oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.index != _currentIndex) {
-      // Instant reverse? Or smooth?
-      // For "Framer" feel, usually existing page vanishes quickly, new page springs in.
       _controller.value = 0; 
       setState(() => _currentIndex = widget.index);
       _controller.forward();
-      // Skipping reverse animation makes it feel snappier like React/Framer switching tabs.
     }
   }
 
@@ -60,18 +54,13 @@ class _FadeIndexedStackState extends State<FadeIndexedStack> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    // OPTIMIZED: Single FadeTransition (removed SlideTransition + ScaleTransition)
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: IndexedStack(
-            index: _currentIndex,
-            // OPTIMIZE: Wrap each child in RepaintBoundary to isolate repaints
-            children: widget.children.map((child) => RepaintBoundary(child: child)).toList(),
-          ),
-        ),
+      child: IndexedStack(
+        index: _currentIndex,
+        // OPTIMIZE: Wrap each child in RepaintBoundary to isolate repaints
+        children: widget.children.map((child) => RepaintBoundary(child: child)).toList(),
       ),
     );
   }

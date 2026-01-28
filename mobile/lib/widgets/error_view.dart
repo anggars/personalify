@@ -24,17 +24,7 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Aesthetic Icon Container
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
-              ),
-              child: const Icon(Icons.bolt_rounded, color: Colors.amberAccent, size: 40),
-            ),
+            const Icon(Icons.error_outline, color: Colors.white24, size: 64),
             const SizedBox(height: 24),
             
             // Text
@@ -69,7 +59,7 @@ class ErrorView extends StatelessWidget {
                   onPressed: onRetry,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kAccentColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Match Login Radius
                     elevation: 0,
                   ),
                   child: Text(
@@ -91,7 +81,7 @@ class ErrorView extends StatelessWidget {
                   onPressed: onLogout,
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Match Login Radius
                   ),
                   child: Text(
                     "Re-Login",

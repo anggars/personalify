@@ -19,38 +19,37 @@ class PingPongScrollingText extends StatefulWidget {
   State<PingPongScrollingText> createState() => _PingPongScrollingTextState();
 }
 
-class _PingPongScrollingTextState extends State<PingPongScrollingText> {
+class _PingPongScrollingTextState extends State<PingPongScrollingText> with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
   bool _scrollingRight = true;
-  bool _isAnimating = false; // OPTIMIZE: Track animation state
+  bool _isAnimating = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startScrolling();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) _startScrolling();
     });
   }
 
   void _startScrolling() async {
     if (!mounted) return;
     
-    // OPTIMIZE: Check if TickerMode is enabled (widget is visible in tree)
     if (!TickerMode.of(context)) {
-      // Retry after a delay when TickerMode might be enabled again
       await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) _startScrolling();
       return;
     }
     
     if (_scrollController.hasClients && _scrollController.position.maxScrollExtent <= 0) return;
-    if (_isAnimating) return; // Prevent multiple animations
+    if (_isAnimating) return;
 
     try {
       _isAnimating = true;
       final maxScroll = _scrollController.position.maxScrollExtent;
-      // OPTIMIZE: Slower speed = less CPU (50ms per pixel)
-      final duration = Duration(milliseconds: (maxScroll * 50).toInt()); 
+      final duration = Duration(milliseconds: (maxScroll * 40).toInt()); 
 
       if (_scrollingRight) {
         await _scrollController.animateTo(
@@ -70,19 +69,12 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> {
         _isAnimating = false;
         return;
       }
-
-      // No Pause: Instant bounce (User Request)
-      // await Future.delayed(const Duration(milliseconds: 500));
       
       if (mounted) { 
-        // Always try to continue if mounted
         setState(() {
           _scrollingRight = !_scrollingRight;
         });
         
-        // Critical Fix: Ensure we don't block based on TickerMode here, 
-        // just recurse. If TickerMode is off, the NEXT _startScrolling call 
-        // (at the top of the function) will handle the waiting/retry logic.
         _isAnimating = false; 
         _startScrolling();
       } else {
@@ -90,12 +82,24 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> {
       }
     } catch (_) {
       _isAnimating = false;
-      // Handle ScrollController detached during disposal
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      _isAnimating = false;
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.offset); 
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      if (mounted) _startScrolling();
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
   }
@@ -119,4 +123,3 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> {
     );
   }
 }
-

@@ -19,8 +19,9 @@ if not HF_API_KEY:
     hf_client = None
 else:
     try:
-        hf_client = InferenceClient(token=HF_API_KEY)
-        print("NLP HANDLER: HUGGING FACE INFERENCE CLIENT READY.")
+        # TIMEOUT ADDED: Fail fast (5s) so we can switch to backup model quickly
+        hf_client = InferenceClient(token=HF_API_KEY, timeout=5.0)
+        print("NLP HANDLER: HUGGING FACE INFERENCE CLIENT READY (Timeout=5s).")
     except Exception as e:
         print(f"NLP HANDLER: FAILED TO INITIALIZE CLIENT. ERROR: {e}")
         hf_client = None
@@ -143,23 +144,36 @@ def get_emotion_from_text(text: str):
 
         print(f"NLP HANDLER: COMPRESSED TEXT LENGTH: {len(text_to_analyze)} chars")
 
-        print(" > Calling RoBERTa...")
-        results_roberta = hf_client.text_classification(text_to_analyze, model=MODEL_ROBERTA, top_k=28)
-        
-        print(" > Calling DistilBERT...")
-        results_distilbert = hf_client.text_classification(text_to_analyze, model=MODEL_DISTILBERT, top_k=28)
-
         combined_scores = {}
+        successful_models = 0
 
-        for item in results_roberta:
-            label = item['label']
-            score = item['score']
-            combined_scores[label] = combined_scores.get(label, 0) + score
+        # 1. Try RoBERTa (SamLowe)
+        try:
+            print(" > Calling RoBERTa (SamLowe)...")
+            results_roberta = hf_client.text_classification(text_to_analyze, model=MODEL_ROBERTA, top_k=28)
+            for item in results_roberta:
+                label = item['label']
+                score = item['score']
+                combined_scores[label] = combined_scores.get(label, 0) + score
+            successful_models += 1
+        except Exception as e_roberta:
+             print(f"⚠️ NLP HANDLER: RoBERTa Failed (Skipping): {e_roberta}")
 
-        for item in results_distilbert:
-            label = item['label']
-            score = item['score']
-            combined_scores[label] = combined_scores.get(label, 0) + score
+        # 2. Try DistilBERT (Joeddav)
+        try:
+            print(" > Calling DistilBERT (Joeddav)...")
+            results_distilbert = hf_client.text_classification(text_to_analyze, model=MODEL_DISTILBERT, top_k=28)
+            for item in results_distilbert:
+                label = item['label']
+                score = item['score']
+                combined_scores[label] = combined_scores.get(label, 0) + score
+            successful_models += 1
+        except Exception as e_bert:
+             print(f"⚠️ NLP HANDLER: DistilBERT Failed (Skipping): {e_bert}")
+
+        if successful_models == 0:
+             print("❌ NLP HANDLER: BOTH MODELS FAILED.")
+             return None
 
         if 'neutral' in combined_scores:
             del combined_scores['neutral']

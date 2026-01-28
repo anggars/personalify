@@ -20,7 +20,7 @@ class AnalysisCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Glass effect
+          filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6), // OPTIMIZED: Reduced from 10
           child: Container(
             padding: padding ?? const EdgeInsets.all(20),
             decoration: BoxDecoration(

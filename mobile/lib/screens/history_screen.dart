@@ -8,15 +8,15 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:personalify/screens/song_detail_screen.dart';
 import 'package:personalify/widgets/ping_pong_text.dart';
-import 'package:personalify/widgets/error_view.dart';
-import 'package:personalify/services/auth_service.dart';
+import 'package:dio/dio.dart';
 import 'package:personalify/screens/login_screen.dart';
+import 'package:personalify/services/auth_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
   
   // OPTIMIZE: Cache blur filter
-
+  static final _appBarBlur = ImageFilter.blur(sigmaX: 6, sigmaY: 6); // OPTIMIZED: Reduced from 10
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -55,12 +55,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
         }
       }
     } catch (e) {
+      if (e is DioException && (e.response?.statusCode == 401 || e.response?.statusCode == 403)) {
+           print("HISTORY: Token Expired (401/403) -> Force Logout");
+           await _handleLogout(); // Defined below
+           return;
+      }
       if (mounted) {
         setState(() {
           _errorMessage = e.toString();
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    await auth.logout();
+    if (mounted) {
+       Navigator.of(context).pushAndRemoveUntil(
+         MaterialPageRoute(builder: (_) => const LoginScreen()),
+         (route) => false
+       );
     }
   }
 
@@ -75,17 +91,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (total >= 2 && total <= 3) return 'Maxi-Single: $name';
     if (total >= 4 && total <= 6) return 'EP: $name';
     return 'Album: $name';
-  }
-
-  Future<void> _logout() async {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    await authService.logout();
-    if (mounted) {
-       Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-         MaterialPageRoute(builder: (_) => const LoginScreen()),
-         (route) => false
-       );
-    }
   }
 
   @override
@@ -104,21 +109,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
       appBar: AppBar(
         title: Text('Recently Played', style: headerStyle),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: kBgColor, // OPTIMIZED: Solid instead of blur
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 70,
         automaticallyImplyLeading: false,
-        flexibleSpace: RepaintBoundary( // OPTIMIZE: Isolate blur repaints
-          child: ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: kGlassBlurSigma, sigmaY: kGlassBlurSigma),
-              child: Container(
-                color: kBgColor.withOpacity(kGlassOpacity),
-              ),
-            ),
-          ),
-        ),
+        // OPTIMIZED: Removed blur for performance
       ),
       body: RefreshIndicator(
         color: kAccentColor,
@@ -128,20 +124,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: kAccentColor))
             : _errorMessage != null
-                ? ErrorView(
-                    title: "History Unavailable", 
-                    message: _errorMessage!,
-                    onRetry: () => _fetchHistory(isRefresh: true),
-                    onLogout: _logout,
-                  )
-                : _history.isEmpty
-                    ? ErrorView(
-                        title: "No History Yet",
-                        message: "Play some songs on Spotify to see them here!",
-                        onRetry: () => _fetchHistory(isRefresh: true),
-                        onLogout: _logout, // User requested login even on empty? why not.
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 200),
+                        child: Center(child: Text('Failed to load: $_errorMessage', style: const TextStyle(color: Colors.red))),
                       )
-                    : SingleChildScrollView(
+                    ],
+                  )
+                : SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 115, 16, 120),
                     child: Container(
@@ -207,26 +199,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       const SizedBox(height: 2),
                       Text(artist, style: GoogleFonts.plusJakartaSans(color: kTextPrimary.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 2),
-                      SizedBox(
-                        height: 16,
-                        child: Builder(
-                          builder: (context) {
-                            final metadataText = _getMetadata(item);
-                            if (metadataText.length > 30) {
-                               return LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return PingPongScrollingText(
-                                    text: metadataText,
-                                    width: constraints.maxWidth,
-                                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)),
-                                  );
-                                }
-                              );
-                            }
-                            return Text(metadataText, style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)), maxLines: 1, overflow: TextOverflow.ellipsis);
-                          }
-                        ),
-                      )
+                      Text(_getMetadata(item), style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF888888)), maxLines: 1, overflow: TextOverflow.ellipsis)
                     ])),
                   ],
                 ),

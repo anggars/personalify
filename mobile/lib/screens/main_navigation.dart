@@ -7,6 +7,9 @@ import 'package:personalify/screens/analyzer_screen.dart';
 import 'package:personalify/screens/history_screen.dart';
 import 'package:personalify/screens/profile_screen.dart';
 import 'package:personalify/widgets/fade_indexed_stack.dart';
+import 'package:provider/provider.dart';
+import 'package:personalify/services/api_service.dart';
+import 'package:personalify/utils/text_styles.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -20,13 +23,16 @@ class _MainNavigationState extends State<MainNavigation> {
   String _selectedTimeRange = 'short_term'; // Shared time range state
   
   // OPTIMIZE: Cache blur filter as static to avoid recreating every build
-  static final _navbarBlur = ImageFilter.blur(sigmaX: 20, sigmaY: 20);
-  static final _curtainBlur = ImageFilter.blur(sigmaX: 10, sigmaY: 10);
+  static final _navbarBlur = ImageFilter.blur(sigmaX: 5, sigmaY: 5);
+  static final _curtainBlur = ImageFilter.blur(sigmaX: 3, sigmaY: 3);
 
   void _onItemTapped(int index) {
     setState(() {
       _currentIndex = index;
     });
+    // Update API Service that Analyzer (index 2) is active or inactive
+    // Use read (do not listen) to prevent rebuild loops
+    context.read<ApiService>().setAnalyzerScreen(index == 2);
   }
 
   void _onTimeRangeChanged(String timeRange) {
@@ -73,22 +79,17 @@ class _MainNavigationState extends State<MainNavigation> {
                 left: 0,
                 right: 0,
                 height: 25,
-                child: RepaintBoundary( // OPTIMIZE: Isolate blur repaints
-                  child: ClipRect(
-                    child: BackdropFilter(
-                      filter: _curtainBlur, // OPTIMIZE: Use cached filter
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.8),
-                            ],
-                            stops: const [0.0, 0.8],
-                          ),
-                        ),
+                child: IgnorePointer( // Ensure clicks pass through
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.8),
+                        ],
+                        stops: const [0.0, 0.8],
                       ),
                     ),
                   ),
@@ -97,7 +98,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
              // "Liquid Glass" Navbar Overlay
             AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
+              duration: Duration.zero, // OPTIMIZE: Instant move to prevent blur lag
               curve: Curves.easeInOut,
               left: 16, 
               right: 16,
@@ -119,7 +120,7 @@ class _MainNavigationState extends State<MainNavigation> {
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.3),
-                            blurRadius: 30,
+                            blurRadius: 10, // OPTIMIZE: Reduce from 30 to 10
                             offset: const Offset(0, 10),
                           ),
                         ],
@@ -163,11 +164,11 @@ class _MainNavigationState extends State<MainNavigation> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              color: isSelected ? const Color(0xFF1DB954) : Colors.white.withOpacity(0.6),
-              fontSize: 10,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            ),
+            style: (isSelected 
+              ? AppTextStyles.navLabel10Selected
+              : AppTextStyles.navLabel10).copyWith(
+                color: isSelected ? const Color(0xFF1DB954) : Colors.white.withOpacity(0.6),
+              ),
           )
         ],
       ),

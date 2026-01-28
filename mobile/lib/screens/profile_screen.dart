@@ -190,7 +190,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 24), // Reduced from 32
 
             // 3. Real Info (Stats)
             _buildInfoGroup([
@@ -199,17 +199,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildInfoRow(Icons.flag_outlined, "Country", country),
             ]),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16), // Reduced from 24
 
             // 4. Actions
             _buildInfoGroup([
               _buildActionRow(Icons.open_in_new_rounded, "Open Spotify", kAccentColor, _openSpotify),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 4), // Reduced from 8
               _buildActionRow(Icons.logout_rounded, "Logout", Colors.redAccent, _logout),
             ]),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Text(
               "Personalify for Spotify",
               style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.white24),
@@ -235,10 +235,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Helper: Info Row
+
+    // Helper: Info Row
   Widget _buildInfoRow(IconData icon, String title, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced from 16
       child: Row(
         children: [
           Icon(icon, color: kTextSecondary, size: 22),
@@ -257,7 +258,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             value,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 16,
-              color: kTextSecondary, // Value is simpler
+              color: kTextSecondary, 
             ),
           ),
         ],
@@ -271,7 +272,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced from 16
         child: Row(
           children: [
             Icon(icon, color: color, size: 22),

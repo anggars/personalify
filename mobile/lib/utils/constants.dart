@@ -39,5 +39,5 @@ const Color kTextPrimary = Color(0xFFFFFFFF);
 const Color kTextSecondary = Color(0xFFB3B3B3);
 const Color kBorderColor = Color(0xFF282828);
 // Glass Aesthetics
-const double kGlassBlurSigma = 5.0; // Low Sigma for performance & aesthetic
+const double kGlassBlurSigma = 3.0; // OPTIMIZED: Reduced from 5.0 for better performance
 const double kGlassOpacity = 0.8; // 80% Opacity for glass effect

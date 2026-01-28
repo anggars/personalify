@@ -11,6 +11,7 @@ import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/models/user_profile.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:personalify/utils/text_styles.dart';
 
 class AnalyzerScreen extends StatefulWidget {
   final UserProfile? userProfile;
@@ -114,6 +115,9 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   }
 
   void _onSearchChanged(String query) {
+    // OPTIMIZE: Clear previous search results when typing new query
+    if (_artists.isNotEmpty) setState(() => _artists = []); 
+    
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     if (query.isEmpty) { setState(() => _artistSuggestions = []); return; }
     _debounce = Timer(const Duration(milliseconds: 300), () async {
@@ -187,20 +191,13 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
         preferredSize: const Size.fromHeight(118), // 70 toolbar + 48 tabbar
         child: RepaintBoundary( // OPTIMIZE: Isolate entire AppBar
           child: AppBar(
-            title: Text('Analyzer', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: kAccentColor, letterSpacing: -0.5)),
+            title: Text('Analyzer', style: AppTextStyles.header24Bold),
             centerTitle: true,
             backgroundColor: Colors.transparent, 
             surfaceTintColor: Colors.transparent,
             elevation: 0,
             toolbarHeight: 70,
-            flexibleSpace: isKeyboardOpen 
-              ? Container(color: kBgColor)
-              : ClipRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: kGlassBlurSigma, sigmaY: kGlassBlurSigma),
-                    child: Container(color: kBgColor.withOpacity(kGlassOpacity)),
-                  ),
-                ),
+            flexibleSpace: Container(color: kBgColor),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(48),
               child: Container(
@@ -219,8 +216,8 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                   ),
                   overlayColor: WidgetStateProperty.all(Colors.transparent),
                   dividerColor: Colors.transparent,
-                  labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
-                  unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
+                  labelStyle: AppTextStyles.tabLabel,
+                  unselectedLabelStyle: AppTextStyles.tabLabelUnselected,
                   tabs: const [ Tab(text: "Lyrics", height: 40), Tab(text: "Genius", height: 40) ],
                 ),
               ),
@@ -305,21 +302,23 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
            const SizedBox(height: 16),
            SizedBox(height: 50, child: ElevatedButton(onPressed: _selectedArtist == null ? _searchArtist : _clearGenius, style: ElevatedButton.styleFrom(backgroundColor: kSurfaceColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0, side: _selectedArtist == null ? const BorderSide(color: Colors.white12) : BorderSide(color: Colors.red.withOpacity(0.3))), child: _geniusLoadingState == 'search' ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(_selectedArtist == null ? "Search Artist" : "Clear Search", style: GoogleFonts.plusJakartaSans(color: _selectedArtist == null ? Colors.white : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 15)))),
            
-           // Artist Suggestions Grid (Hide if Artists Results are shown)
-           if (_artistSuggestions.isNotEmpty && _selectedArtist == null && _artists.isEmpty) ...[
-              const SizedBox(height: 8), 
-              const Divider(color: Colors.white10), 
-              const SizedBox(height: 8),
+           // Artist Suggestions Grid (Hide if Artist is Selected, but SHOW even if search results exist)
+           if (_artistSuggestions.isNotEmpty && _selectedArtist == null) ...[
+              const SizedBox(height: 16), // Symmetric Spacing (16px)
+              // Removed Divider
               GridView.builder(
                 key: const ValueKey('suggestions_grid'),
                 shrinkWrap: true, 
                 padding: EdgeInsets.zero,
                 physics: const NeverScrollableScrollPhysics(), 
+                addAutomaticKeepAlives: false, // OPTIMIZE
+                addRepaintBoundaries: true, // OPTIMIZE
+                cacheExtent: 100, // OPTIMIZE
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // Reverted to 2 Cols
-                  childAspectRatio: 1.0, 
-                  crossAxisSpacing: 12, 
-                  mainAxisSpacing: 12
+                  crossAxisCount: 2, 
+                  childAspectRatio: 0.9, // Match Search Results (0.9)
+                  crossAxisSpacing: 16, 
+                  mainAxisSpacing: 16
                 ), 
                 itemCount: _artistSuggestions.length, 
                 itemBuilder: (context, index) { 
@@ -331,14 +330,14 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                        _loadSongs(artist);
                     }, 
                     child: Container(
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white10)), 
-                      padding: const EdgeInsets.all(8), 
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)), // Radius 16
+                      padding: const EdgeInsets.all(12),  // Increased padding to match Search Results
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center, 
                         children: [
-                          ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 80, height: 80, memCacheWidth: 200, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 80, height: 80))), 
+                          ClipOval(child: CachedNetworkImage(imageUrl: artist['image'] ?? '', width: 90, height: 90, memCacheWidth: 200, fit: BoxFit.cover, errorWidget: (_,__,___) => Container(color: Colors.grey, width: 90, height: 90))), // Match Size 90
                           const SizedBox(height: 12), 
-                          Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 13), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)
+                          Text(artist['name'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 14), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis) // Match Size 14
                         ]
                       )
                       )
@@ -350,8 +349,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
 
            if (_geniusLoadingState == 'songs' || _geniusLoadingState == 'analyze') const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator(color: kAccentColor))),
            if (_artists.isNotEmpty && _geniusLoadingState == null) ...[
-             const SizedBox(height: 12), // Reduced Gap
-             // const Divider(color: Colors.white10), // Removed Divider to reduce gap
+             const SizedBox(height: 16), // Symmetric Spacing (16px)
              
              GridView.builder(
                key: const ValueKey('results_grid'),
@@ -359,10 +357,10 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                padding: EdgeInsets.zero, // Force Zero Padding
                physics: const NeverScrollableScrollPhysics(), 
                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                 crossAxisCount: 2, // Reverted to 2 Cols
-                 childAspectRatio: 0.9, // Slightly taller for bigger text
-                 crossAxisSpacing: 12, 
-                 mainAxisSpacing: 12
+                 crossAxisCount: 2, 
+                 childAspectRatio: 0.9, 
+                 crossAxisSpacing: 16, 
+                 mainAxisSpacing: 16
                ), 
                itemCount: _artists.length, 
                itemBuilder: (context, index) { 
@@ -370,7 +368,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                  return GestureDetector(
                    onTap: () => _loadSongs(artist), 
                    child: Container(
-                     decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white10)), 
+                     decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)), // Removed Border
                      padding: const EdgeInsets.all(12), 
                      child: Column(
                        mainAxisAlignment: MainAxisAlignment.center, 
@@ -540,76 +538,35 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   }
 }
 
-// Custom Shimmer Bar Widget - OPTIMIZED
-class _ShimmerBar extends StatefulWidget {
+// OPTIMIZED: Static gradient instead of animated shimmer (performance gain)
+class _ShimmerBar extends StatelessWidget {
   final Color color;
   final bool isFrozen;
   const _ShimmerBar({required this.color, this.isFrozen = false});
 
   @override
-  State<_ShimmerBar> createState() => _ShimmerBarState();
-}
-
-class _ShimmerBarState extends State<_ShimmerBar> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    // OPTIMIZE: Slower animation = less CPU (was 2000ms, keep it but ensure proper control)
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000));
-    if (!widget.isFrozen) _controller.repeat();
-  }
-
-  @override
-  void didUpdateWidget(covariant _ShimmerBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // OPTIMIZE: Only start/stop when isFrozen actually changes
-    if (oldWidget.isFrozen != widget.isFrozen) {
-      if (widget.isFrozen) {
-        _controller.stop();
-      } else {
-        _controller.repeat();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // OPTIMIZE: Wrap in RepaintBoundary to isolate animation repaints
-    return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(3),
-              gradient: LinearGradient(
-                begin: Alignment(-2.0 + _controller.value * 4, -0.5),
-                end: Alignment(-1.0 + _controller.value * 4, 0.5),
-                colors: [
-                  widget.color,
-                  widget.color.withOpacity(0.3),
-                  widget.color, 
-                ],
-                stops: const [0.0, 0.5, 1.0],
-              ),
-              boxShadow: widget.isFrozen ? null : [
-                BoxShadow(
-                  color: widget.color.withOpacity(0.15),
-                  blurRadius: 4,
-                  offset: Offset.zero, 
-                )
-              ],
-            ),
-          );
-        },
+    // OPTIMIZED: Static gradient instead of continuous animation
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(3),
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            color,
+            color.withOpacity(0.5),
+            color,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+        boxShadow: isFrozen ? null : [
+          BoxShadow(
+            color: color.withOpacity(0.15),
+            blurRadius: 4,
+            offset: Offset.zero,
+          )
+        ],
       ),
     );
   }

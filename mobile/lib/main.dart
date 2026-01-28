@@ -15,10 +15,10 @@ void main() async {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   // OPTIMIZE: Limit memory usage for Image Cache
-  // 50 MB Max total size (default is 100MB)
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024;
-  // 50 Images max count (default is 1000)
-  PaintingBinding.instance.imageCache.maximumSize = 50;
+  // 30 MB Max total size (Reduced from 50MB to help system UI smoothness)
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 30 * 1024 * 1024;
+  // 30 Images max count (Reduced from 50)
+  PaintingBinding.instance.imageCache.maximumSize = 30;
 
   // Set system UI overlay style (status bar, navigation bar)
   SystemChrome.setSystemUIOverlayStyle(
@@ -155,6 +155,14 @@ class PersonalifyApp extends StatelessWidget {
 
           // Use Material 3
           useMaterial3: true,
+          
+          // smoother transitions
+          pageTransitionsTheme: const PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            },
+          ),
         ),
         navigatorKey: navigatorKey,
         home: const LoginScreen(),
