@@ -277,6 +277,8 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         # CRITICAL FIX: Set cookie path to "/" so it is accessible on all routes
         # Also set SameSite to Lax to prevent some browser blocking
         response.set_cookie(key="spotify_id", value=spotify_id, httponly=True, path="/", samesite="lax")
+        # NEW: Set access_token cookie for realtime sync logic (Web only)
+        response.set_cookie(key="access_token", value=access_token, httponly=True, path="/", samesite="lax", max_age=3600)
         return response
 
 @router.post("/analyze-emotions-background", tags=["Background"])
@@ -323,122 +325,20 @@ async def analyze_lyrics(
     """
     return analyze_lyrics_emotion(lyrics)
 
+from app.spotify_handler import sync_user_data
+
 @router.get("/sync/top-data", tags=["Sync"])
 def sync_top_data(
     access_token: str = Query(..., description="Spotify Access Token"),
     time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"], description="Time range")
 ):
-
-    headers = {"Authorization": f"Bearer {access_token}"}
-    res = requests.get("https://api.spotify.com/v1/me", headers=headers)
-
-    if res.status_code == 401:
-        print(f"SYNC ERROR: TOKEN EXPIRED FOR ACCESS_TOKEN={access_token[:10]}...")
-
-        raise HTTPException(status_code=401, detail="Spotify token expired. Please login again.")
-
-    if res.status_code != 200:
-        print(f"SYNC ERROR: FAILED TO FETCH USER PROFILE. STATUS: {res.status_code}")
-        raise HTTPException(status_code=res.status_code, detail=res.json())
-
-    user_profile = res.json()
-    spotify_id = user_profile["id"]
-    display_name = user_profile.get("display_name", "Unknown")
-    save_user(spotify_id, display_name)
-
-    artist_url = f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20"
-    track_url = f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20"
-
-    artist_resp = requests.get(artist_url, headers=headers)
-    track_resp = requests.get(track_url, headers=headers)
-
-    if artist_resp.status_code != 200 or track_resp.status_code != 200:
-        raise HTTPException(status_code=401, detail="Failed to sync data. Token might be expired.")
-
-    artists = artist_resp.json().get("items", [])
-    tracks = track_resp.json().get("items", [])
-
-    artists_to_save = []
-    artist_ids = []
-    for artist in artists:
-        artist_ids.append(artist["id"])
-        artists_to_save.append((
-            artist["id"],
-            artist["name"],
-            artist["popularity"],
-            artist["images"][0]["url"] if artist.get("images") else None
-        ))
-
-    tracks_to_save = []
-    track_ids = []
-    for track in tracks:
-        track_ids.append(track["id"])
-        tracks_to_save.append((
-            track["id"],
-            track["name"],
-            track["popularity"],
-            track.get("preview_url")
-        ))
-
-    save_artists_batch(artists_to_save)
-    save_tracks_batch(tracks_to_save)
-    save_user_associations_batch("user_artists", "artist_id", spotify_id, artist_ids)
-    save_user_associations_batch("user_tracks", "track_id", spotify_id, track_ids)
-    
-    # Extract genres from artists for mobile app
-    genre_count = {}
-    for artist in artists:
-        for genre in artist.get("genres", []):
-            genre_count[genre] = genre_count.get(genre, 0) + 1
-    
-    # Sort genres by count and create list
-    sorted_genres = sorted(genre_count.items(), key=lambda x: x[1], reverse=True)
-    genres_list = [{"name": genre, "count": count} for genre, count in sorted_genres[:20]]
-    
-    result = {
-        "user": display_name, 
-        "image": user_profile["images"][0]["url"] if user_profile.get("images") else None,
-        "artists": [], 
-        "tracks": [],
-        "genres": genres_list,
-        "time_range": time_range
-    }
-
-    for artist in artists:
-         result["artists"].append({
-            "id": artist["id"], 
-            "name": artist["name"], 
-            "genres": artist.get("genres", []),
-            "popularity": artist["popularity"], 
-            "image": artist["images"][0]["url"] if artist.get("images") else ""
-        })
-
-    for track in tracks:
-        album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
-        result["tracks"].append({
-            "id": track["id"], 
-            "name": track["name"],
-            "artists": [a["name"] for a in track.get("artists", [])],
-            "album": {
-                "name": track["album"]["name"],
-                "type": track["album"]["album_type"],
-                "total_tracks": track["album"]["total_tracks"]
-            },
-            "popularity": track["popularity"],
-            "preview_url": track.get("preview_url"), 
-            "image": album_image_url,
-            "duration_ms": track["duration_ms"]
-        })
-
-    track_names = [track['name'] for track in result.get("tracks", [])]
-    emotion_paragraph, top_emotions = generate_emotion_paragraph(track_names)
-    result['emotion_paragraph'] = emotion_paragraph
-    result['top_emotions'] = top_emotions
-
-    cache_top_data("top_v2", spotify_id, time_range, result)
-    save_user_sync(spotify_id, time_range, result)
-
-    return result
+    try:
+        return sync_user_data(access_token, time_range)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"SYNC WRAPPER ERROR: {e}")
+        raise HTTPException(status_code=500, detail="Sync failed.")
 
 @router.get("/top-data", tags=["Query"])
 def get_top_data(
@@ -531,10 +431,25 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         raise HTTPException(status_code=500, detail="Internal Dashboard Error")
 
 @router.get("/api/dashboard/{spotify_id}", tags=["Dashboard API"])
-def dashboard_api(spotify_id: str, time_range: str = "medium_term"):
+def dashboard_api(spotify_id: str, request: Request, time_range: str = "medium_term"):
     """JSON API endpoint for Next.js dashboard"""
     try:
-        data = get_cached_top_data("top_v2", spotify_id, time_range)
+        # NEW: Check for access_token cookie to perform REALTIME SYNC (Matches Mobile Behavior)
+        access_token = request.cookies.get("access_token")
+        
+        if access_token:
+            print(f"WEB DASHBOARD: Found access_token. Syncing fresh data for {spotify_id}...")
+            try:
+                # Sync fresh data directly
+                data = sync_user_data(access_token, time_range)
+                print("WEB DASHBOARD: Sync success!")
+            except Exception as e:
+                print(f"WEB DASHBOARD: Sync failed ({e}). Falling back to cache.")
+                data = get_cached_top_data("top_v2", spotify_id, time_range)
+        else:
+            print(f"WEB DASHBOARD: No access_token. Reading from cache for {spotify_id}.")
+            data = get_cached_top_data("top_v2", spotify_id, time_range)
+
         if not data:
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
 

@@ -235,7 +235,8 @@ export default function DashboardPage() {
   // Animated dots for loading text
   const isAnalyzing =
     emotionText?.includes("being analyzed") ||
-    emotionText?.includes("getting ready");
+    emotionText?.includes("getting ready") ||
+    emotionText?.includes("Digging deeper");
   useEffect(() => {
     if (!isAnalyzing) return;
     const dotsInterval = setInterval(() => {
@@ -308,6 +309,11 @@ export default function DashboardPage() {
 
   const fetchEmotionAnalysis = async (extended: boolean) => {
     try {
+      if (extended) {
+         setTypedHtml("");
+         setEmotionText("Digging deeper into your music vibe...");
+      }
+
       const res = await fetch("/analyze-emotions-background", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1057,7 +1063,7 @@ export default function DashboardPage() {
         <p className="emotion-recap mt-4">
           {isAnalyzing ? (
             <span className="animate-pulse text-neutral-500 dark:text-[#B3B3B3]">
-              Your music vibe is being analyzed{animatedDots}
+              {emotionText.replace(/\.\.\.$/, "")}{animatedDots}
             </span>
           ) : (
             <span dangerouslySetInnerHTML={{ __html: typedHtml }} />
