@@ -68,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Full Screen Blur Backdrop
             Positioned.fill(
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6), // OPTIMIZED: Reduced from 10
                 child: Container(color: Colors.black.withOpacity(0.6)),
               ),
             ),

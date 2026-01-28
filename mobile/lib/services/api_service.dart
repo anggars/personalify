@@ -11,16 +11,19 @@ class ApiService {
   late final Dio _dio;
   final AuthService _authService;
 
+  // TRACKING FOR CONDITIONAL LOGOUT
+  bool _onAnalyzerScreen = false;
+  void setAnalyzerScreen(bool isActive) {
+    _onAnalyzerScreen = isActive;
+    print("API: Analyzer Screen Active: $isActive");
+  }
+
   ApiService(this._authService) {
     _dio = Dio(BaseOptions(
       baseUrl: AppConstants.baseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
     ));
-
-
-
-// ... (existing imports)
 
     // Add interceptor to automatically inject Authorization header
     _dio.interceptors.add(InterceptorsWrapper(
@@ -37,7 +40,16 @@ class ApiService {
         // Handle 401 Unauthorized OR 403 Forbidden - token expired/invalid
         final status = error.response?.statusCode;
         if (status == 401 || status == 403) {
-          print('🚨 API ERROR: $status - Token expired. Auto Logout.');
+          print('🚨 API ERROR: $status - Token expired.');
+          
+          // CONDITIONAL LOGOUT: Skip if on Analyzer Screen
+          if (_onAnalyzerScreen) {
+             print('⚠️ IGNORING LOGOUT because user is on Analyzer Screen');
+             // Optionally show a toast here via navigation context if complex
+             return handler.next(error); // Pass error so UI can handle it (e.g. show "Login required")
+          }
+
+          print('Auto Logout initiated.');
           
           // Force Logout & Redirect
           await _authService.logout();
@@ -65,8 +77,22 @@ class ApiService {
   Future<UserProfile?> getUserProfile(String spotifyId,
       {String timeRange = 'short_term'}) async {
     print('API: Fetching profile for $spotifyId via sync endpoint');
-    // Backend doesn't have /top-data - directly call sync
-    return await syncTopData(timeRange);
+    
+    // 1. Try SYNC (Refreshes Data + AI Analysis)
+    var profile = await syncTopData(timeRange);
+    
+    // 2. Fallback: If Sync fails (e.g. HuggingFace Down -> Backend 500)
+    // Try to fetch existing data without sync
+    if (profile == null) {
+      print('API: Sync failed (likely HF down). Attempting readout fallback...');
+      final fallbackJson = await getFullUserProfile();
+      if (fallbackJson != null) {
+        print('API: Fallback data loaded successfully.');
+        return UserProfile.fromJson(fallbackJson);
+      }
+    }
+    
+    return profile;
   }
 
   /// Trigger massive data sync (scrapes Spotify and updates DB/Cache)
@@ -87,10 +113,11 @@ class ApiService {
         '/sync/top-data',
         queryParameters: {
           'access_token': token, // Required by backend endpoint
-          'time_range': timeRange
+          'time_range': timeRange,
+          'limit': 20, // FIX: Use top 20 for emotion analysis (was default 10)
         },
         options: Options(
-          receiveTimeout: const Duration(seconds: 20), // Sync is slow
+          receiveTimeout: const Duration(seconds: 30), // Sync can be slow (hybrid fallback takes ~6-8s)
         )
       );
 
