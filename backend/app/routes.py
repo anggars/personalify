@@ -3,7 +3,7 @@ import requests
 import json
 import datetime
 import asyncio
-import requests
+
 from urllib.parse import urlencode
 from fastapi import APIRouter, Request, Query, HTTPException, Body, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Response
