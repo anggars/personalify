@@ -210,8 +210,7 @@ export default function LyricsPage() {
                                         <p className="text-center text-neutral-400">Could not find significant emotions.</p>
                                     ) : (
                                         result.emotions
-                                            .filter((e) => e.score > 0.05)
-                                            .slice(0, 10)
+                                            .slice(0, 5) // Ensure we show top 5 explicitly (though backend usually handles this)
                                             .map((e, idx) => {
                                                 const maxScore = Math.max(...result.emotions.map((em) => em.score));
                                                 const percent = (e.score * 100).toFixed(1);

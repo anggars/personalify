@@ -487,7 +487,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
 
   Widget _buildEmotionResults(List<dynamic>? emotions, bool isKeyboardOpen, {bool showTitle = true}) {
     if (emotions == null || emotions.isEmpty) return const SizedBox();
-    final filtered = emotions.where((e) => (e['score'] as num) > 0.05).toList();
+    final filtered = emotions;
     if (filtered.isEmpty) return Text("No distinct emotions found.", style: GoogleFonts.plusJakartaSans(color: kTextSecondary), textAlign: TextAlign.center);
     final maxScore = filtered.map((e) => (e['score'] as num).toDouble()).reduce((a, b) => a > b ? a : b);
 
