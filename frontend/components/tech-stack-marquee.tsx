@@ -14,6 +14,8 @@ export const TECH_STACK = [
     { name: "shadcn/ui", slug: "shadcnui", color: "white" },
     { name: "Tailwind CSS", slug: "tailwindcss", color: "06B6D4" },
     { name: "React", slug: "react", color: "61DAFB" },
+    { name: "Flutter", slug: "flutter", color: "02569B" },
+    { name: "Dart", slug: "dart", color: "0175C2" },
     { name: "Framer Motion", slug: "framer", color: "white" },
     { name: "Vercel", slug: "vercel", color: "white" },
     { name: "Hugging Face", slug: "huggingface", color: "FFD21E" },

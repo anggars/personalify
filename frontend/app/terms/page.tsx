@@ -2,7 +2,75 @@
 
 import React, { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { cardReveal } from "@/lib/animations";
+import { staggerContainerFast, cardReveal } from "@/lib/animations";
+
+const TERMS_DATA = [
+  {
+    title: "1. Acceptance of Terms",
+    content: (
+      <p>
+        By accessing or using the Personalify web or mobile application, you
+        agree to be bound by these Terms of Service. If you do not agree,
+        strictly referring to these terms, please do not use our services.
+      </p>
+    ),
+  },
+  {
+    title: "2. Description of Service",
+    content: (
+      <p>
+        Personalify provides analytics and insights into your Spotify listening
+        habits. We also offer lyrics analysis features. The service is provided
+        "as is" and is a personal project, not an official Spotify product.
+      </p>
+    ),
+  },
+  {
+    title: "3. User Conduct",
+    content: (
+      <>
+        <p>
+          You agree not to misuse the service, including but not limited to:
+        </p>
+        <ul className="list-disc pl-5 mt-2 space-y-1">
+          <li>Attempting to bypass auth mechanisms.</li>
+          <li>Scraping or harvesting data from the app.</li>
+          <li>Using the app for illegal activities.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    title: "4. Disclaimers",
+    content: (
+      <p>
+        Personalify is not affiliated with, endorsed, or sponsored by Spotify,
+        Genius, or any other third-party API providers. We are not responsible
+        for any inaccuracies in the data provided by these third parties.
+      </p>
+    ),
+  },
+  {
+    title: "5. Limitations of Liability",
+    content: (
+      <p>
+        In no event shall Personalify or its developers be liable for any
+        indirect, incidental, special, consequential or punitive damages arising
+        out of your use of the service.
+      </p>
+    ),
+  },
+  {
+    title: "6. Changes to Terms",
+    content: (
+      <p>
+        We reserve the right to modify these terms at any time. Your continued
+        use of the service after any changes indicates your acceptance of the
+        new terms.
+      </p>
+    ),
+  },
+];
 
 export default function TermsPage() {
   const paragraphRef = useRef<HTMLParagraphElement>(null);
@@ -41,7 +109,7 @@ export default function TermsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center mb-4 mt-2"
+        className="text-center mb-4 mt-1"
       >
         <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
           Terms of Service
@@ -53,90 +121,31 @@ export default function TermsPage() {
       </motion.header>
 
       {/* Content Sections */}
-      <div className="w-full space-y-6">
-        <motion.section
-          variants={cardReveal}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-50px" }}
-          className="glass-card rounded-2xl p-6 md:p-8"
-        >
-          <div className="space-y-6 text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify hyphens-auto font-medium">
-            <div>
-              <h2 className="text-xl font-bold text-[#1DB954] mb-2">
-                1. Acceptance of Terms
-              </h2>
-              <p>
-                By accessing or using the Personalify web or mobile application,
-                you agree to be bound by these Terms of Service. If you do not
-                agree, strictly referring to these terms, please do not use our
-                services.
-              </p>
+      <motion.div
+        className="w-full space-y-6"
+        variants={staggerContainerFast}
+        initial="hidden"
+        animate="show"
+      >
+        {TERMS_DATA.map((section, idx) => (
+          <motion.section
+            key={idx}
+            variants={cardReveal}
+            className="glass-card rounded-2xl p-6 md:p-6"
+            whileHover={{
+              y: -4,
+              transition: { type: "spring", stiffness: 400, damping: 17 },
+            }}
+          >
+            <h2 className="text-xl font-bold text-[#1DB954] border-b border-neutral-200 dark:border-[#333] pb-4 mb-3 text-center md:-mt-2">
+              {section.title}
+            </h2>
+            <div className="text-neutral-700 dark:text-[#b3b3b3] leading-relaxed text-justify hyphens-auto font-medium">
+              {section.content}
             </div>
-
-            <div>
-              <h2 className="text-xl font-bold text-[#1DB954] mb-2">
-                2. Description of Service
-              </h2>
-              <p>
-                Personalify provides analytics and insights into your Spotify
-                listening habits. We also offer lyrics analysis features. The
-                service is provided "as is" and is a personal project, not an
-                official Spotify product.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-bold text-[#1DB954] mb-2">
-                3. User Conduct
-              </h2>
-              <p>
-                You agree not to misuse the service, including but not limited
-                to:
-              </p>
-              <ul className="list-disc pl-5 mt-2 space-y-1">
-                <li>Attempting to bypass auth mechanisms.</li>
-                <li>Scraping or harvesting data from the app.</li>
-                <li>Using the app for illegal activities.</li>
-              </ul>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-bold text-[#1DB954] mb-2">
-                4. Disclaimers
-              </h2>
-              <p>
-                Personalify is not affiliated with, endorsed, or sponsored by
-                Spotify, Genius, or any other third-party API providers. We are
-                not responsible for any inaccuracies in the data provided by
-                these third parties.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-bold text-[#1DB954] mb-2">
-                5. Limitations of Liability
-              </h2>
-              <p>
-                In no event shall Personalify or its developers be liable for
-                any indirect, incidental, special, consequential or punitive
-                damages arising out of your use of the service.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-bold text-[#1DB954] mb-2">
-                6. Changes to Terms
-              </h2>
-              <p>
-                We reserve the right to modify these terms at any time. Your
-                continued use of the service after any changes indicates your
-                acceptance of the new terms.
-              </p>
-            </div>
-          </div>
-        </motion.section>
-      </div>
+          </motion.section>
+        ))}
+      </motion.div>
     </div>
   );
 }

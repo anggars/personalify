@@ -46,17 +46,23 @@ export function Footer() {
         const currentStack = activeStacks[loopIndex % activeStacks.length];
         const fullPhrase = currentStack.phrase;
         const fullName = currentStack.name;
+        const isAbout = pathname === "/about";
 
         const handleTyping = () => {
             setDisplayText((prev) => {
                 if (isDeleting) {
                     if (prev.name.length > 0) {
                         return { ...prev, name: fullName.substring(0, prev.name.length - 1) };
-                    } else if (prev.phrase.length > 0) {
+                    } else if (isAbout && prev.phrase.length > 0) {
                         return { ...prev, phrase: fullPhrase.substring(0, prev.phrase.length - 1) };
                     }
                     return prev;
                 } else {
+                    // If not About page, ensure phrase is fully set immediately
+                    if (!isAbout && prev.phrase !== fullPhrase) {
+                         return { ...prev, phrase: fullPhrase };
+                    }
+
                     if (prev.phrase.length < fullPhrase.length) {
                         return { ...prev, phrase: fullPhrase.substring(0, prev.phrase.length + 1) };
                     } else if (prev.name.length < fullName.length) {
@@ -69,18 +75,25 @@ export function Footer() {
             if (!isDeleting && displayText.phrase === fullPhrase && displayText.name === fullName) {
                 setTypingSpeed(2000);
                 setIsDeleting(true);
-            } else if (isDeleting && displayText.phrase === "" && displayText.name === "") {
-                setIsDeleting(false);
-                setLoopIndex((prev) => prev + 1);
-                setTypingSpeed(500);
+            } else if (isDeleting) {
+                 const phraseDone = isAbout ? displayText.phrase === "" : true;
+                 const nameDone = displayText.name === "";
+                 
+                 if (phraseDone && nameDone) {
+                    setIsDeleting(false);
+                    setLoopIndex((prev) => prev + 1);
+                    setTypingSpeed(500);
+                 } else {
+                    setTypingSpeed(30);
+                 }
             } else {
-                setTypingSpeed(isDeleting ? 40 : 80);
+                setTypingSpeed(70);
             }
         };
 
         const timer = setTimeout(handleTyping, typingSpeed);
         return () => clearTimeout(timer);
-    }, [displayText, isDeleting, loopIndex, activeStacks, typingSpeed]);
+    }, [displayText, isDeleting, loopIndex, activeStacks, typingSpeed, pathname]);
 
     // Reset loop index if path changes (optional but good for consistency)
     useEffect(() => {
@@ -159,7 +172,7 @@ export function Footer() {
                     <a
                         href="https://aritsu.vercel.app"
                         target="_blank"
-                        className="hover:text-[#1DB954] active:text-[#1DB954] transition-colors"
+                        className="hover:text-[#C1FF00] active:text-[#C1FF00] transition-colors"
                     >
                         アリツ
                     </a>

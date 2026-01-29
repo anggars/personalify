@@ -86,29 +86,35 @@ export default function TechHover({
             const rect = containerRef.current.getBoundingClientRect();
             const screenWidth = window.innerWidth;
 
-            // Mobile: Always center on screen (to avoid edge cutoff)
-            if (window.innerWidth < 768) {
-                setCoords({
-                    top: rect.top,
-                    left: screenWidth / 2,
-                    alignment: "center",
-                });
-                return;
-            }
-
-            const threshold = 150;
-
+            // Determine horizontal alignment based on screen position
+            // This logic works for both Mobile and Desktop to ensure it stays on screen
             let align: "left" | "right" | "center" = "center";
-            if (rect.left < threshold) {
+            
+            // Boundary thresholds (px from edge)
+            const margin = 20; 
+            const tooltipWidthEstimate = 220; // Approx max width of tooltip
+            
+            // Check if too close to Left Edge
+            if (rect.left < (tooltipWidthEstimate / 2) + margin) {
                 align = "left";
-            } else if (rect.right > screenWidth - threshold) {
+            } 
+            // Check if too close to Right Edge
+            else if (rect.right > screenWidth - ((tooltipWidthEstimate / 2) + margin)) {
                 align = "right";
             }
 
-            // Calculate anchor point based on alignment
+            // Calculate anchor point
             let anchorLeft = rect.left + rect.width / 2; // Default center
-            if (align === "left") anchorLeft = rect.left;
-            if (align === "right") anchorLeft = rect.right;
+            
+            if (align === "left") {
+                // If aligned left, anchor is the left edge of text
+                // But on mobile if text is VERY left, we might strictly align to screen padding? 
+                // Let's keep it simple: strict align to text left
+                anchorLeft = rect.left;
+            } else if (align === "right") {
+                // If aligned right, anchor is the right edge of text
+                anchorLeft = rect.right;
+            }
 
             setCoords({
                 top: rect.top,

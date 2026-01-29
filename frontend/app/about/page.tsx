@@ -3,6 +3,8 @@
 import React, { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import MarqueeText from "@/components/marquee-text";
+import Link from "next/link";
+import { useTheme } from "next-themes";
 import {
   staggerContainer,
   fadeUp,
@@ -42,6 +44,7 @@ import {
   SiHuggingface,
   SiTypescript,
   SiSpotify,
+  SiFlutter,
 } from "react-icons/si";
 
 const AUDIO_DATA = {
@@ -82,6 +85,14 @@ export default function AboutPage() {
   const [hasNotification, setHasNotification] = React.useState(false);
   const paragraphRef = React.useRef<HTMLParagraphElement>(null);
   const hasTyped = React.useRef(false);
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const bwColor = mounted && resolvedTheme === "light" ? "#000000" : "#ffffff";
 
   // Listen for notification state to adjust mobile header
   useEffect(() => {
@@ -337,7 +348,7 @@ export default function AboutPage() {
                 href="https://nextjs.org/"
                 description="The React Framework for the Web. Used for server-side rendering and static generation."
                 icon={SiNextdotjs}
-                className="hover:text-black dark:hover:text-white"
+                color={bwColor}
               />{" "}
               while the backend uses{" "}
               <TechHover
@@ -346,6 +357,14 @@ export default function AboutPage() {
                 description="High performance, easy to learn, fast to code, ready for production web framework."
                 icon={SiFastapi}
                 color="#009688"
+              />
+              , and the mobile app uses{" "}
+              <TechHover
+                text="Flutter"
+                href="https://flutter.dev/"
+                description="Google's UI toolkit for building natively compiled applications for mobile, web, and desktop."
+                icon={SiFlutter}
+                color="#02569B"
               />
               . Data comes from the{" "}
               <TechHover
@@ -369,7 +388,7 @@ export default function AboutPage() {
                 href="https://vercel.com/"
                 description="Frontend Cloud needed to develop, preview, and ship Next.js."
                 icon={SiVercel}
-                className="hover:text-black dark:hover:text-white"
+                color={bwColor}
               />{" "}
               as a serverless app. For storage,{" "}
               <TechHover
