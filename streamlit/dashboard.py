@@ -189,12 +189,38 @@ def search_genius_manual(query, token):
     except: return None
 
 # --- MODEL LOADING ---
+SPACE_URL = "https://anggars-personalify.hf.space/predict"
+HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
+
+if not HF_API_KEY:
+    try:
+        if "HUGGING_FACE_API_KEY" in st.secrets:
+            HF_API_KEY = st.secrets["HUGGING_FACE_API_KEY"]
+    except:
+        pass
+
+def query_custom_space(text):
+    """Query XLM-RoBERTa via custom HF Space"""
+    headers = {"Authorization": f"Bearer {HF_API_KEY}"} if HF_API_KEY else {}
+    try:
+        response = requests.post(SPACE_URL, headers=headers, json={"text": text}, timeout=10)
+        if response.status_code == 200:
+            result = response.json()
+            if isinstance(result, list):
+                return result
+            elif isinstance(result, dict) and "emotions" in result:
+                return result["emotions"]
+        return None
+    except Exception as e:
+        print(f"XLM-RoBERTa Space Error: {e}")
+        return None
+
 @st.cache_resource
 def load_models():
+    from transformers import pipeline
     roberta = pipeline("text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None)
     distilbert = pipeline("text-classification", model="joeddav/distilbert-base-uncased-go-emotions-student", top_k=None)
-    xlm_roberta = pipeline("text-classification", model="cardiffnlp/twitter-xlm-roberta-base-sentiment-multilingual", top_k=None)
-    return roberta, distilbert, xlm_roberta
+    return roberta, distilbert
 
 # --- SIDEBAR ---
 st.sidebar.header("Configuration")
@@ -224,7 +250,7 @@ st.sidebar.divider()
 input_method = st.sidebar.radio("Input Method:", ("Search via Genius API", "Manual Input"))
 
 with st.spinner('Loading AI Engines...'):
-    roberta_model, distilbert_model, xlm_roberta_model = load_models()
+    roberta_model, distilbert_model = load_models()
 
 # --- MAIN UI ---
 st.title("Personalify: Sentiment Analysis")
@@ -344,24 +370,20 @@ if final_lyrics:
             st.error("Input text is empty after processing.")
             st.stop()
             
+        # Run all 3 models
         rob_out = roberta_model(final_input_model[:1200])[0]
         dis_out = distilbert_model(final_input_model[:1200])[0]
-        xlm_out = xlm_roberta_model(final_input_model[:1200])[0]
+        xlm_out = query_custom_space(final_input_model[:1200])  # Use Space API
 
         rob_raw = {r['label']: r['score'] for r in rob_out}
         dis_raw = {r['label']: r['score'] for r in dis_out}
         
-        # XLM-RoBERTa returns sentiment labels (positive/negative/neutral)
-        # Map to emotion labels for consistency
+        # XLM-RoBERTa from Space - already returns emotion labels
         xlm_raw = {}
-        sentiment_to_emotion = {
-            'positive': 'joy',
-            'negative': 'sadness', 
-            'neutral': 'neutral'
-        }
-        for item in xlm_out:
-            emotion_label = sentiment_to_emotion.get(item['label'], item['label'])
-            xlm_raw[emotion_label] = xlm_raw.get(emotion_label, 0) + item['score']
+        if xlm_out:
+            for item in xlm_out:
+                if 'label' in item and 'score' in item:
+                    xlm_raw[item['label']] = float(item['score'])
         
         combined_scores = {}
         all_labels = set(rob_raw.keys()) | set(dis_raw.keys()) | set(xlm_raw.keys())
@@ -379,13 +401,13 @@ if final_lyrics:
         results_data = []
         sum_rob = sum(rob_raw.values())
         sum_dis = sum(dis_raw.values())
-        sum_xlm = sum(xlm_raw.values())
+        sum_xlm = sum(xlm_raw.values()) if xlm_raw else 1  # Avoid division by zero
 
         for label, raw_sum in combined_scores.items():
             s_hyb = raw_sum / total_remaining if total_remaining > 0 else 0
             s_rob = (rob_raw.get(label, 0) / sum_rob) if sum_rob > 0 else 0
             s_dis = (dis_raw.get(label, 0) / sum_dis) if sum_dis > 0 else 0
-            s_xlm = (xlm_raw.get(label, 0) / sum_xlm) if sum_xlm > 0 else 0
+            s_xlm = (xlm_raw.get(label, 0) / sum_xlm) if sum_xlm > 0 and xlm_raw else 0
             
             results_data.append({'label': label.capitalize(), 'score': s_rob, 'model': 'RoBERTa'})
             results_data.append({'label': label.capitalize(), 'score': s_dis, 'model': 'DistilBERT'})
