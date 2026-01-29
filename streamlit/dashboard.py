@@ -1,14 +1,15 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+from transformers import pipeline
+from deep_translator import GoogleTranslator
+from googletrans import Translator as GoogleTransDetector
 import requests
 from bs4 import BeautifulSoup
 import re
 import time
 import os
 from pathlib import Path
-from deep_translator import GoogleTranslator
-from googletrans import Translator as GoogleTransDetector
 
 try:
     from dotenv import load_dotenv
@@ -18,23 +19,13 @@ except ImportError:
     pass
 
 st.set_page_config(
-    page_title="Personalify Analysis",
+    page_title="Personalify Analyzer",
     page_icon=None,
     layout="centered"
 )
 
 # --- CONFIG & CONSTANTS ---
-MODEL_SAMLOWE = "SamLowe/roberta-base-go_emotions"
-MODEL_JOEDDAV = "joeddav/distilbert-base-uncased-go-emotions-student"
-SPACE_URL = "https://anggars-personalify.hf.space/predict"
-HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY") # Shared key for Inference API and Space
-
-if not HF_API_KEY:
-    try:
-        if "HUGGING_FACE_API_KEY" in st.secrets:
-             HF_API_KEY = st.secrets["HUGGING_FACE_API_KEY"]
-    except:
-        pass
+# Removed MODEL_SAMLOWE, MODEL_JOEDDAV, SPACE_URL, HF_API_KEY as they are for Inference API
 
 def get_headers(token):
     return {
@@ -59,12 +50,12 @@ def clean_lyrics(text):
         cleaned.append(s)
     return "\n".join(cleaned)
 
-def prepare_text_for_api(text):
+def prepare_text_for_ai(text):
     lines = text.split('\n')
     unique_lines = []
     seen = set()
     current_length = 0
-    SAFE_LIMIT = 2500 # Slightly aggressive limit for API payload
+    SAFE_LIMIT = 1200
     for line in lines:
         clean_line = line.strip()
         if not clean_line or clean_line in seen:
@@ -153,7 +144,7 @@ def get_page_html_via_proxy(url):
     }
     for attempt in range(3):
         try:
-            r = requests.get(translate_url, headers=headers, timeout=10)
+            r = requests.get(translate_url, headers=headers, timeout=20)
             if r.status_code == 200:
                 return r.text
             time.sleep(1) 
@@ -197,100 +188,47 @@ def search_genius_manual(query, token):
         return res.json()['response']['hits'] if res.status_code == 200 else None
     except: return None
 
-# --- INFERENCE FUNCTIONS ---
-
-def query_hf_inference_api(payload, model_id):
-    """Hits the standard HF Inference API"""
-    api_url = f"https://api-inference.huggingface.co/models/{model_id}"
-    headers = {"Authorization": f"Bearer {HF_API_KEY}"} if HF_API_KEY else {}
-    
-    try:
-        response = requests.post(api_url, headers=headers, json=payload, timeout=8) # Short timeout
-        return response.json()
-    except Exception as e:
-        return {"error": str(e)}
-
-def query_custom_space(text):
-    """Hits your custom HF Space"""
-    headers = {"Authorization": f"Bearer {HF_API_KEY}"} if HF_API_KEY else {}
-    try:
-        response = requests.post(SPACE_URL, headers=headers, json={"text": text}, timeout=12)
-        if response.status_code == 200:
-            return response.json() # Expecting list of dicts or {"emotions": ...}
-        else:
-            return {"error": f"Status {response.status_code}"}
-    except Exception as e:
-        return {"error": str(e)}
-
-def parse_inference_result(result):
-    """Standardizes HF Inference API output to Dict[Label, Score]"""
-    # Result is usually [[{'label': 'joy', 'score': 0.9}, ...]] (list of lists)
-    parsed = {}
-    if isinstance(result, list) and len(result) > 0 and isinstance(result[0], list):
-        for item in result[0]:
-            if 'label' in item and 'score' in item:
-                parsed[item['label']] = item['score']
-    elif isinstance(result, dict) and 'error' in result:
-        print(f"Model Error: {result['error']}")
-        return None
-    return parsed
-
-def parse_space_result(result):
-    """Standardizes Custom Space output to Dict[Label, Score]"""
-    # Space returns list of dicts directly OR inside 'emotions' key
-    parsed = {}
-    items = []
-    
-    if isinstance(result, list):
-        items = result
-    elif isinstance(result, dict):
-        if 'emotions' in result:
-            items = result['emotions']
-        elif 'error' in result:
-            print(f"Space Error: {result['error']}")
-            return None
-
-    for item in items:
-        if 'label' in item and 'score' in item:
-            parsed[item['label']] = float(item['score']) # Ensure float
-            
-    return parsed if parsed else None
-
+# --- MODEL LOADING ---
+@st.cache_resource
+def load_models():
+    roberta = pipeline("text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None)
+    distilbert = pipeline("text-classification", model="joeddav/distilbert-base-uncased-go-emotions-student", top_k=None)
+    xlm_roberta = pipeline("text-classification", model="cardiffnlp/twitter-xlm-roberta-base-sentiment-multilingual", top_k=None)
+    return roberta, distilbert, xlm_roberta
 
 # --- SIDEBAR ---
 st.sidebar.header("Configuration")
 
 genius_token = None
+
 if os.getenv("GENIUS_ACCESS_TOKEN"):
     genius_token = os.getenv("GENIUS_ACCESS_TOKEN")
-    st.sidebar.success("Genius Token loaded")
+    st.sidebar.success("Token loaded from .env")
 
 if not genius_token:
     try:
         if "GENIUS_ACCESS_TOKEN" in st.secrets:
             genius_token = st.secrets["GENIUS_ACCESS_TOKEN"]
-            st.sidebar.success("Genius Token from Secrets")
-    except: pass
+            st.sidebar.success("Token loaded from Secrets")
+    except Exception:
+        pass
 
 if not genius_token:
     genius_token = st.sidebar.text_input("Genius Access Token", type="password")
 
-if not HF_API_KEY:
-    st.sidebar.error("HF API Key Missing! Models may fail.")
-    hf_key_input = st.sidebar.text_input("Hugging Face API Key", type="password")
-    if hf_key_input:
-        HF_API_KEY = hf_key_input
-
 if not genius_token:
-    st.sidebar.warning("Please enter Genius token to continue.")
+    st.sidebar.warning("Please enter a token to continue.")
     st.stop()
 
 st.sidebar.divider()
 input_method = st.sidebar.radio("Input Method:", ("Search via Genius API", "Manual Input"))
 
+with st.spinner('Loading AI Engines...'):
+    roberta_model, distilbert_model, xlm_roberta_model = load_models()
+
 # --- MAIN UI ---
-st.title("Personalify: Hybrid Comparison")
-st.caption("Comparing **SamLowe (RoBERTa)**, **Joeddav (DistilBERT)**, and **Custom Space**.")
+st.title("Personalify: Sentiment Analysis")
+st.caption("Comparing **RoBERTa**, **DistilBERT**, **XLM-RoBERTa**, and **Hybrid Consensus**.")
 st.divider()
 
 final_lyrics = ""
@@ -333,9 +271,6 @@ if input_method == "Search via Genius API":
                 else: 
                     st.error("Failed to fetch lyrics via Proxy.")
 
-
-
-
 elif input_method == "Manual Input":
     manual_input = st.text_area("Paste lyrics here...", height=200)
     if st.button("Analyze", type="primary"):
@@ -348,22 +283,16 @@ elif input_method == "Manual Input":
              if normalized_input != manual_input:
                  st.info("Applied Slang/Regional Normalization.")
 
-
 if final_lyrics:
     st.divider()
     st.subheader(f"Analysis: {song_metadata['title']}")
     
-    with st.expander("View Lyrics Used for Analysis"):
-        st.text(final_lyrics)
-
-    # --- TRANSLATION LOGIC (RESTORED) ---
     text_display = final_lyrics
     translated_display = ""
     status_msg = "Processing..."
     
     with st.spinner('Detecting & Translating...'):
         try:
-            # 1. Detect Language
             detector = GoogleTransDetector()
             detect_res = detector.detect(final_lyrics[:500])
             lang_code = detect_res.lang
@@ -374,7 +303,6 @@ if final_lyrics:
             }
             lang_name = full_lang_names.get(lang_code, lang_code.title())
 
-            # 2. Translate if not English
             if lang_code == 'en':
                 translated_display = final_lyrics
                 status_msg = "English detected (Original)."
@@ -391,107 +319,118 @@ if final_lyrics:
         except Exception as e:
             translated_display = final_lyrics
             status_msg = f"Translation failed ({str(e)}), using original."
+
+    final_input_model = prepare_text_for_ai(translated_display)
+
+    with st.expander("View Lyrics", expanded=False):
+        if lang_code == 'en':
+            st.markdown("##### Lyrics (English)")
+            st.text(text_display)
+        else:
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("##### Original Lyrics")
+                st.text(text_display)
+            with c2:
+                st.markdown("##### English Translation")
+                st.text(translated_display)
             
-    st.info(f" Translation Status: {status_msg}")
-    
-    # Use translated text for API calling
-    input_text = prepare_text_for_api(translated_display)
-    payload = {"inputs": input_text} # For standard Inference API
+        st.divider()
+        st.caption("Raw Input for AI Model (Dot-Separated):")
+        st.code(final_input_model, language="text")
 
-    # --- PARALLEL / SEQUENTIAL EXECUTION ---
-    results_data = []
-    
-    # 1. Custom Space (Priority)
-    with st.status("Running AI Models...", expanded=True) as status:
-        st.write("Contacting XLM-RoBERTa Space...")
-        space_res_raw = query_custom_space(input_text)
-        space_scores = parse_space_result(space_res_raw)
-        
-        if space_scores:
-            st.write("XLM-RoBERTa: Knowledge Retrieved.")
-            for label, score in space_scores.items():
-                if label != 'neutral':
-                    results_data.append({'label': label.capitalize(), 'score': score, 'model': 'XLM-RoBERTa'})
-        else:
-            st.write("XLM-RoBERTa: Failed/Timeout.")
+    with st.spinner("Calculating Scores..."):
+        if not final_input_model.strip():
+            st.error("Input text is empty after processing.")
+            st.stop()
+            
+        rob_out = roberta_model(final_input_model[:1200])[0]
+        dis_out = distilbert_model(final_input_model[:1200])[0]
+        xlm_out = xlm_roberta_model(final_input_model[:1200])[0]
 
-        # 2. SamLowe (RoBERTa)
-        st.write("Querying SamLowe/roberta-base-go_emotions...")
-        sam_res_raw = query_hf_inference_api(payload, MODEL_SAMLOWE)
-        sam_scores = parse_inference_result(sam_res_raw)
+        rob_raw = {r['label']: r['score'] for r in rob_out}
+        dis_raw = {r['label']: r['score'] for r in dis_out}
         
-        if sam_scores:
-            st.write("SamLowe: Inference Complete.")
-            for label, score in sam_scores.items():
-                if label != 'neutral':
-                     results_data.append({'label': label.capitalize(), 'score': score, 'model': 'SamLowe (RoBERTa)'})
-        else:
-             st.write("SamLowe: API Busy/Error.")
+        # XLM-RoBERTa returns sentiment labels (positive/negative/neutral)
+        # Map to emotion labels for consistency
+        xlm_raw = {}
+        sentiment_to_emotion = {
+            'positive': 'joy',
+            'negative': 'sadness', 
+            'neutral': 'neutral'
+        }
+        for item in xlm_out:
+            emotion_label = sentiment_to_emotion.get(item['label'], item['label'])
+            xlm_raw[emotion_label] = xlm_raw.get(emotion_label, 0) + item['score']
+        
+        combined_scores = {}
+        all_labels = set(rob_raw.keys()) | set(dis_raw.keys()) | set(xlm_raw.keys())
+        
+        for l in all_labels:
+            combined_scores[l] = rob_raw.get(l, 0) + dis_raw.get(l, 0) + xlm_raw.get(l, 0)
+        
+        if 'neutral' in combined_scores: del combined_scores['neutral']
+        if 'neutral' in rob_raw: del rob_raw['neutral']
+        if 'neutral' in dis_raw: del dis_raw['neutral']
+        if 'neutral' in xlm_raw: del xlm_raw['neutral']
+        
+        total_remaining = sum(combined_scores.values())
+        
+        results_data = []
+        sum_rob = sum(rob_raw.values())
+        sum_dis = sum(dis_raw.values())
+        sum_xlm = sum(xlm_raw.values())
 
-        # 3. Joeddav (DistilBERT)
-        st.write("Querying joeddav/distilbert-go_emotions...")
-        joe_res_raw = query_hf_inference_api(payload, MODEL_JOEDDAV)
-        joe_scores = parse_inference_result(joe_res_raw)
-        
-        if joe_scores:
-             st.write("Joeddav: Inference Complete.")
-             for label, score in joe_scores.items():
-                 if label != 'neutral':
-                     results_data.append({'label': label.capitalize(), 'score': score, 'model': 'Joeddav (DistilBERT)'})
-        else:
-             st.write("Joeddav: API Busy/Error.")
-        
-        status.update(label="All Models Processed", state="complete", expanded=False)
+        for label, raw_sum in combined_scores.items():
+            s_hyb = raw_sum / total_remaining if total_remaining > 0 else 0
+            s_rob = (rob_raw.get(label, 0) / sum_rob) if sum_rob > 0 else 0
+            s_dis = (dis_raw.get(label, 0) / sum_dis) if sum_dis > 0 else 0
+            s_xlm = (xlm_raw.get(label, 0) / sum_xlm) if sum_xlm > 0 else 0
+            
+            results_data.append({'label': label.capitalize(), 'score': s_rob, 'model': 'RoBERTa'})
+            results_data.append({'label': label.capitalize(), 'score': s_dis, 'model': 'DistilBERT'})
+            results_data.append({'label': label.capitalize(), 'score': s_xlm, 'model': 'XLM-RoBERTa'})
+            results_data.append({'label': label.capitalize(), 'score': s_hyb, 'model': 'Hybrid'})
 
-    # --- VISUALIZATION ---
-    if not results_data:
-        st.error("All models failed to return valid data. Check API Keys or Internet Connection.")
-    else:
         df = pd.DataFrame(results_data)
         
-        # Filter top emotions based on Custom Space (if avail) or SamLowe
-        # We want to show labels that are relevant to AT LEAST one model
-        # Strategy: Get top 5 labels from Custom Space, adding top ones from others if missing
-        
-        relevant_labels = set()
-        
-        def get_top_labels(model_name, n=5):
-            subset = df[df['model'] == model_name]
-            return subset.nlargest(n, 'score')['label'].tolist()
+        top_emotions = df[df['model'] == 'Hybrid'].nlargest(6, 'score')['label'].tolist()
+        df_filtered = df[df['label'].isin(top_emotions)]
 
-        if space_scores:
-            relevant_labels.update(get_top_labels('XLM-RoBERTa', 5))
-        
-        relevant_labels.update(get_top_labels('SamLowe (RoBERTa)', 5))
-        relevant_labels.update(get_top_labels('Joeddav (DistilBERT)', 5))
-        
-        df_filtered = df[df['label'].isin(list(relevant_labels))]
+    domain = ['RoBERTa', 'DistilBERT', 'XLM-RoBERTa', 'Hybrid']
+    range_ = ['#3498db', '#e74c3c', '#f39c12', '#9b59b6']
 
-        # Colors
-        domain = ['XLM-RoBERTa', 'SamLowe (RoBERTa)', 'Joeddav (DistilBERT)']
-        range_ = ['#1f77b4', '#ff7f0e', '#2ca02c'] # Blue, Orange, Green
+    chart = alt.Chart(df_filtered).mark_bar().encode(
+        x=alt.X('score', axis=alt.Axis(format='%', title='Confidence Score')),
+        y=alt.Y('label', sort='-x', title=None),
+        color=alt.Color('model', scale=alt.Scale(domain=domain, range=range_), legend=alt.Legend(title="Model", orient="bottom")),
+        yOffset='model',
+        tooltip=['label', 'model', alt.Tooltip('score', format='.1%')]
+    ).properties(height=350)
 
-        chart = alt.Chart(df_filtered).mark_bar().encode(
-            x=alt.X('score', axis=alt.Axis(format='%', title='Confidence Score')),
-            y=alt.Y('label', sort='-x', title=None),
-            color=alt.Color('model', scale=alt.Scale(domain=domain, range=range_), legend=alt.Legend(title="Source Model", orient="bottom")),
-            yOffset='model', # Grouped bar chart effect
-            tooltip=['label', 'model', alt.Tooltip('score', format='.1%')]
-        ).properties(height=max(400, len(relevant_labels)*40))
+    st.altair_chart(chart, use_container_width=True)
+    
+    st.markdown("#### Final Results Breakdown")
+    try:
+        top_rob = df[df['model'] == 'RoBERTa'].nlargest(1, 'score').iloc[0]
+        top_dis = df[df['model'] == 'DistilBERT'].nlargest(1, 'score').iloc[0]
+        top_xlm = df[df['model'] == 'XLM-RoBERTa'].nlargest(1, 'score').iloc[0]
+        top_hyb = df[df['model'] == 'Hybrid'].nlargest(1, 'score').iloc[0]
 
-        st.altair_chart(chart, use_container_width=True)
-        
-        # --- METRICS ROW ---
-        st.markdown("#### Top Emotion by Model")
-        c1, c2, c3 = st.columns(3)
-        
-        def display_top_metric(col, model_name, label_prefix=""):
-            try:
-                row = df[df['model'] == model_name].nlargest(1, 'score').iloc[0]
-                col.metric(label=f"{label_prefix}{model_name}", value=row['label'], delta=f"{row['score']:.1%}")
-            except:
-                col.write(f"{model_name}: N/A")
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.info("**RoBERTa**")
+            st.metric(label=top_rob['label'], value=f"{top_rob['score']:.1%}")
+        with c2:
+            st.error("**DistilBERT**")
+            st.metric(label=top_dis['label'], value=f"{top_dis['score']:.1%}")
+        with c3:
+            st.warning("**XLM-RoBERTa**")
+            st.metric(label=top_xlm['label'], value=f"{top_xlm['score']:.1%}")
+        with c4:
+            st.success("**Hybrid**")
+            st.metric(label=top_hyb['label'], value=f"{top_hyb['score']:.1%}")
+    except:
+        st.error("Error calculating top metrics.")
 
-        display_top_metric(c1, "Custom Space", "")
-        display_top_metric(c2, "SamLowe (RoBERTa)")
-        display_top_metric(c3, "Joeddav (DistilBERT)")
+    st.caption(f"Status: {status_msg}")
