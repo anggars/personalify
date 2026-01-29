@@ -529,7 +529,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                      ),
                    ),
                    const SizedBox(width: 8),
-                   SizedBox(width: 36, child: Text("$percentage%", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 12, fontWeight: FontWeight.w500), textAlign: TextAlign.right)),
+                   Text("$percentage%", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 12, fontWeight: FontWeight.w500), textAlign: TextAlign.right),
                  ],
                ),
              );

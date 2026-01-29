@@ -19,7 +19,7 @@ except ImportError:
 
 st.set_page_config(
     page_title="Personalify Analysis",
-    page_icon="🎵",
+    page_icon=None,
     layout="centered"
 )
 
@@ -118,28 +118,32 @@ SLANG_MAP = {
 def normalize_slang(text):
     """
     Replaces recognized slang/regional words with formal Indonesian equivalents
-    to help the translator.
+    to help the translator, while PRESERVING LINE BREAKS.
     """
     if not text: return ""
     
-    # Basic tokenization handling punctuation
-    # This is a simple replace strategy
-    words = text.split()
-    normalized_words = []
+    lines = text.split('\n')
+    normalized_lines = []
     
-    for word in words:
-        # Strip simple punctuation for checking
-        clean_word = re.sub(r'[^\w\s]', '', word).lower()
-        if clean_word in SLANG_MAP:
-             replacement = SLANG_MAP[clean_word]
-             # Preserve original case if title
-             if word[0].isupper():
-                 replacement = replacement.capitalize()
-             normalized_words.append(replacement)
-        else:
-             normalized_words.append(word)
-             
-    return " ".join(normalized_words)
+    for line in lines:
+        words = line.split()
+        normalized_words = []
+        
+        for word in words:
+            # Strip simple punctuation for checking
+            clean_word = re.sub(r'[^\w\s]', '', word).lower()
+            if clean_word in SLANG_MAP:
+                 replacement = SLANG_MAP[clean_word]
+                 # Preserve original case if title
+                 if word and word[0].isupper():
+                     replacement = replacement.capitalize()
+                 normalized_words.append(replacement)
+            else:
+                 normalized_words.append(word)
+        
+        normalized_lines.append(" ".join(normalized_words))
+              
+    return "\n".join(normalized_lines)
 
 # --- SCRAPING HELPERS ---
 def get_page_html_via_proxy(url):
@@ -342,7 +346,7 @@ elif input_method == "Manual Input":
              final_lyrics = clean_lyrics(normalized_input)
              
              if normalized_input != manual_input:
-                 st.info("ℹ️ Applied Slang/Regional Normalization.")
+                 st.info("Applied Slang/Regional Normalization.")
 
 
 if final_lyrics:
@@ -399,43 +403,43 @@ if final_lyrics:
     
     # 1. Custom Space (Priority)
     with st.status("Running AI Models...", expanded=True) as status:
-        st.write("🚀 Contacting Custom HF Space...")
+        st.write("Contacting XLM-RoBERTa Space...")
         space_res_raw = query_custom_space(input_text)
         space_scores = parse_space_result(space_res_raw)
         
         if space_scores:
-            st.write("✅ Custom Space: Knowledge Retrieved.")
+            st.write("XLM-RoBERTa: Knowledge Retrieved.")
             for label, score in space_scores.items():
                 if label != 'neutral':
-                    results_data.append({'label': label.capitalize(), 'score': score, 'model': 'Custom Space'})
+                    results_data.append({'label': label.capitalize(), 'score': score, 'model': 'XLM-RoBERTa'})
         else:
-            st.write("⚠️ Custom Space: Failed/Timeout.")
+            st.write("XLM-RoBERTa: Failed/Timeout.")
 
         # 2. SamLowe (RoBERTa)
-        st.write("🧠 Querying SamLowe/roberta-base-go_emotions...")
+        st.write("Querying SamLowe/roberta-base-go_emotions...")
         sam_res_raw = query_hf_inference_api(payload, MODEL_SAMLOWE)
         sam_scores = parse_inference_result(sam_res_raw)
         
         if sam_scores:
-            st.write("✅ SamLowe: Inference Complete.")
+            st.write("SamLowe: Inference Complete.")
             for label, score in sam_scores.items():
                 if label != 'neutral':
                      results_data.append({'label': label.capitalize(), 'score': score, 'model': 'SamLowe (RoBERTa)'})
         else:
-             st.write("⚠️ SamLowe: API Busy/Error.")
+             st.write("SamLowe: API Busy/Error.")
 
         # 3. Joeddav (DistilBERT)
-        st.write("🎓 Querying joeddav/distilbert-go_emotions...")
+        st.write("Querying joeddav/distilbert-go_emotions...")
         joe_res_raw = query_hf_inference_api(payload, MODEL_JOEDDAV)
         joe_scores = parse_inference_result(joe_res_raw)
         
         if joe_scores:
-             st.write("✅ Joeddav: Inference Complete.")
+             st.write("Joeddav: Inference Complete.")
              for label, score in joe_scores.items():
                  if label != 'neutral':
                      results_data.append({'label': label.capitalize(), 'score': score, 'model': 'Joeddav (DistilBERT)'})
         else:
-             st.write("⚠️ Joeddav: API Busy/Error.")
+             st.write("Joeddav: API Busy/Error.")
         
         status.update(label="All Models Processed", state="complete", expanded=False)
 
@@ -456,7 +460,7 @@ if final_lyrics:
             return subset.nlargest(n, 'score')['label'].tolist()
 
         if space_scores:
-            relevant_labels.update(get_top_labels('Custom Space', 5))
+            relevant_labels.update(get_top_labels('XLM-RoBERTa', 5))
         
         relevant_labels.update(get_top_labels('SamLowe (RoBERTa)', 5))
         relevant_labels.update(get_top_labels('Joeddav (DistilBERT)', 5))
@@ -464,7 +468,7 @@ if final_lyrics:
         df_filtered = df[df['label'].isin(list(relevant_labels))]
 
         # Colors
-        domain = ['Custom Space', 'SamLowe (RoBERTa)', 'Joeddav (DistilBERT)']
+        domain = ['XLM-RoBERTa', 'SamLowe (RoBERTa)', 'Joeddav (DistilBERT)']
         range_ = ['#1f77b4', '#ff7f0e', '#2ca02c'] # Blue, Orange, Green
 
         chart = alt.Chart(df_filtered).mark_bar().encode(
@@ -488,6 +492,6 @@ if final_lyrics:
             except:
                 col.write(f"{model_name}: N/A")
 
-        display_top_metric(c1, "Custom Space", "⭐ ")
+        display_top_metric(c1, "Custom Space", "")
         display_top_metric(c2, "SamLowe (RoBERTa)")
         display_top_metric(c3, "Joeddav (DistilBERT)")

@@ -72,18 +72,23 @@ SLANG_MAP = {
 
 def normalize_slang(text):
     if not text: return ""
-    words = text.split()
-    normalized_words = []
+    lines = text.split('\n')
+    normalized_lines = []
     
-    for word in words:
-        clean_word = re.sub(r'[^\w\s]', '', word).lower()
-        if clean_word in SLANG_MAP:
-             replacement = SLANG_MAP[clean_word]
-             if word[0].isupper(): replacement = replacement.capitalize()
-             normalized_words.append(replacement)
-        else:
-             normalized_words.append(word)
-    return " ".join(normalized_words)
+    for line in lines:
+        words = line.split()
+        normalized_words = []
+        for word in words:
+            clean_word = re.sub(r'[^\w\s]', '', word).lower()
+            if clean_word in SLANG_MAP:
+                 replacement = SLANG_MAP[clean_word]
+                 if word and word[0].isupper(): replacement = replacement.capitalize()
+                 normalized_words.append(replacement)
+            else:
+                 normalized_words.append(word)
+        normalized_lines.append(" ".join(normalized_words))
+        
+    return "\n".join(normalized_lines)
 
 emotion_texts = {
     "admiration": "inspiring <b>admiration</b>",

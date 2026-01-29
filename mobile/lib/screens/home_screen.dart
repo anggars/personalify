@@ -380,6 +380,9 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'realization': return Symbols.lightbulb;
       case 'relief': return Symbols.sentiment_satisfied;
       case 'remorse': return Symbols.sentiment_sad;
+      case 'amusement': return Symbols.sentiment_very_satisfied;
+      case 'annoyance': return Symbols.sentiment_frustrated;
+      case 'curiosity': return Symbols.search;
       default: return Symbols.music_note;
     }
   }

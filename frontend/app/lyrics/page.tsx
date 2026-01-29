@@ -234,7 +234,7 @@ export default function LyricsPage() {
                                                                 style={{ width: `${widthPercent}%`, transformOrigin: 'left' }} 
                                                             />
                                                         </div>
-                                                        <span className="w-10 text-right text-neutral-500 dark:text-[#b3b3b3] text-sm font-medium">
+                                                        <span className="min-w-fit text-right text-neutral-500 dark:text-[#b3b3b3] text-sm font-medium whitespace-nowrap">
                                                             {percent}%
                                                         </span>
                                                     </motion.div>
