@@ -157,7 +157,7 @@ export default function LyricsPage() {
                     className="w-full glass-card rounded-2xl p-5 md:p-6"
                     whileHover={{ y: -4, transition: { type: "spring", stiffness: 400, damping: 17 } }}
                 >
-                    <form onSubmit={handleAnalyze} className="flex flex-col gap-6">
+                    <form onSubmit={handleAnalyze} className="flex flex-col gap-4 md:gap-5">
                         <textarea
                             value={lyrics}
                             onChange={(e) => setLyrics(e.target.value)}
@@ -197,11 +197,11 @@ export default function LyricsPage() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ type: "spring", stiffness: 300, damping: 24 }}
-                            className="mt-6"
+                            className="mt-5"
                         >
                             {result && result.emotions && (
                                 <motion.div 
-                                    className="flex flex-col gap-4"
+                                    className="flex flex-col gap-3"
                                     variants={staggerContainerFast}
                                     initial="hidden"
                                     animate="show"

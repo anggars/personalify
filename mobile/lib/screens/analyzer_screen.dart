@@ -280,7 +280,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
       ),
       const SizedBox(height: 16),
       SizedBox(height: 50, child: ElevatedButton(onPressed: _isAnalyzingLyrics ? null : _analyzeLyrics, style: ElevatedButton.styleFrom(backgroundColor: kSurfaceColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), side: const BorderSide(color: Colors.white12), elevation: 0), child: _isAnalyzingLyrics ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text('Analyze Emotions', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)))),
-      if (_lyricsResult != null) ...[const SizedBox(height: 16), _buildEmotionResults(_lyricsResult!['emotions'], isKeyboardOpen)]
+      if (_lyricsResult != null) ...[const SizedBox(height: 16), _buildEmotionResults(_lyricsResult!['emotions'], isKeyboardOpen, showTitle: false)]
       else if (!_isAnalyzingLyrics && _lyricsController.text.isEmpty) ...[Padding(padding: const EdgeInsets.only(top: 32), child: Column(children: [Icon(Symbols.lyrics, color: kTextSecondary, size: 32), const SizedBox(height: 8), Text("Uncover the emotions hidden in text", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 13))]))]
     ]);
   }
@@ -485,7 +485,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
      ]);
   }
 
-  Widget _buildEmotionResults(List<dynamic>? emotions, bool isKeyboardOpen) {
+  Widget _buildEmotionResults(List<dynamic>? emotions, bool isKeyboardOpen, {bool showTitle = true}) {
     if (emotions == null || emotions.isEmpty) return const SizedBox();
     final filtered = emotions.where((e) => (e['score'] as num) > 0.05).toList();
     if (filtered.isEmpty) return Text("No distinct emotions found.", style: GoogleFonts.plusJakartaSans(color: kTextSecondary), textAlign: TextAlign.center);
@@ -494,10 +494,11 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Symmetric Title Spacing (20px)
-        Text("Emotion Results:", style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.center),
-        const SizedBox(height: 12), // Top Spacing = 20px
-        
+        if (showTitle) ...[
+          // Symmetric Title Spacing (20px)
+          Text("Emotion Results:", style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.center),
+          const SizedBox(height: 12), // Top Spacing = 20px
+        ],
         ...List.generate(filtered.take(5).length, (index) {
              final e = filtered[index];
              final score = (e['score'] as num).toDouble();
@@ -538,36 +539,67 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
   }
 }
 
-// OPTIMIZED: Static gradient instead of animated shimmer (performance gain)
-class _ShimmerBar extends StatelessWidget {
+class _ShimmerBar extends StatefulWidget {
   final Color color;
   final bool isFrozen;
   const _ShimmerBar({required this.color, this.isFrozen = false});
 
   @override
+  State<_ShimmerBar> createState() => _ShimmerBarState();
+}
+
+class _ShimmerBarState extends State<_ShimmerBar> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // OPTIMIZED: Static gradient instead of continuous animation
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(3),
-        gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [
-            color,
-            color.withOpacity(0.5),
-            color,
-          ],
-          stops: const [0.0, 0.5, 1.0],
+    if (widget.isFrozen) {
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(3),
+          color: widget.color,
         ),
-        boxShadow: isFrozen ? null : [
-          BoxShadow(
-            color: color.withOpacity(0.15),
-            blurRadius: 4,
-            offset: Offset.zero,
-          )
-        ],
-      ),
+      );
+    }
+    
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(3),
+            gradient: LinearGradient(
+              begin: Alignment(-1.0 + (_controller.value * 2), -0.5),
+              end: Alignment(0.0 + (_controller.value * 2), 0.5),
+              colors: [
+                widget.color,
+                Colors.white.withOpacity(0.8), // Shiny effect
+                widget.color,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(0.4),
+                blurRadius: 6,
+                offset: Offset.zero,
+              )
+            ],
+          ),
+        );
+      },
     );
   }
 }

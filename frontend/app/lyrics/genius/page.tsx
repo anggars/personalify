@@ -267,7 +267,7 @@ export default function GeniusPage() {
                     className="w-full glass-card rounded-2xl p-5 md:p-6"
                     whileHover={{ y: -4, transition: { type: "spring", stiffness: 400, damping: 17 } }}
                 >
-                    <div className="relative mb-6">
+                    <div className="relative mb-4 md:mb-5">
                         <input
                             type="text"
                             value={query}
@@ -304,7 +304,7 @@ export default function GeniusPage() {
 
                     {/* Unified Results Grid (Suggestions or Search Results) */}
                     {(suggestions.length > 0 || artists.length > 0) && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 border-t border-neutral-200 dark:border-white/10 pt-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
                             {(artists.length > 0 ? artists : suggestions).map((artist) => (
                                 <div
                                     key={artist.id}
@@ -330,7 +330,7 @@ export default function GeniusPage() {
                     )}
 
                     {loadingState === "songs" && (
-                        <div className="flex flex-col items-center justify-center text-[#1DB954] py-6 gap-3 mt-4 border-t border-neutral-200 dark:border-white/10">
+                        <div className="flex flex-col items-center justify-center text-[#1DB954] py-5 gap-3 mt-5">
                             <svg className="spinner-svg w-8 h-8" viewBox="0 0 50 50">
                                 <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
                             </svg>
@@ -340,11 +340,11 @@ export default function GeniusPage() {
 
                     {/* Songs List */}
                     {selectedArtist && songs.length > 0 && loadingState !== "songs" && (
-                        <div className="mt-6">
-                            <div className="border-t border-neutral-300 dark:border-[#333] pt-4 mb-4 text-center">
-                                <h3 className="text-[#1DB954] text-lg font-bold">{selectedArtist.name}</h3>
+                        <div className="mt-5">
+                            <div className="mb-4 text-center">
+                                <h3 className="text-[#1DB954] text-lg font-bold">Songs by {selectedArtist.name}</h3>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[412px] overflow-y-auto custom-scrollbar pr-2 pb-1 snap-y snap-mandatory scroll-p-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[412px] overflow-y-auto custom-scrollbar -mr-2 pr-2 pb-1 snap-y snap-mandatory scroll-p-2">
                                 {songs.map((song) => (
                                     <div
                                         key={song.id}
@@ -379,7 +379,7 @@ export default function GeniusPage() {
 
                     {/* Loading Analysis */}
                     {loadingState === "analyze" && (
-                        <div className="flex flex-col items-center justify-center text-[#1DB954] py-6 gap-3 mt-6 border-t border-dashed border-neutral-300 dark:border-[#333]">
+                        <div className="flex flex-col items-center justify-center text-[#1DB954] py-5 gap-3 mt-5">
                             <svg className="spinner-svg w-8 h-8" viewBox="0 0 50 50">
                                 <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
                             </svg>
@@ -389,7 +389,7 @@ export default function GeniusPage() {
 
                     {/* Analysis Results */}
                     {analysis && !loadingState && (
-                        <div className="mt-8 border-t border-dashed border-neutral-300 dark:border-[#333] pt-6">
+                        <div className="mt-5">
                             <div className="text-center mb-6 overflow-hidden">
                                 <div className="w-full max-w-md mx-auto">
                                     <MarqueeText
@@ -402,16 +402,16 @@ export default function GeniusPage() {
                                     />
                                 </div>
                             </div>
-                            <div className="bg-white dark:bg-[#181818] p-5 rounded-xl border border-neutral-200 dark:border-[#282828] text-neutral-700 dark:text-[#cccccc] leading-[1.6rem] whitespace-pre-wrap max-h-[300px] overflow-y-auto custom-scrollbar mb-6 text-[0.95rem] font-light tracking-wide">
+                            <div className="bg-white dark:bg-[#181818] p-5 rounded-xl border border-neutral-200 dark:border-[#282828] text-neutral-700 dark:text-[#cccccc] leading-[1.6rem] whitespace-pre-wrap max-h-[300px] overflow-y-auto custom-scrollbar mb-5 text-[0.95rem] font-light tracking-wide">
                                 {analysis.lyrics}
                             </div>
                             {analysis.emotion_analysis?.emotions && (
                                 <div>
-                                    <h3 className="text-center text-[#1DB954] font-bold text-lg mb-4 border-t border-neutral-300 dark:border-[#333] pt-4">
+                                    <h3 className="text-center text-[#1DB954] font-bold text-lg mb-4 mt-5">
                                         Emotion Results:
                                     </h3>
                                     <motion.div 
-                                        className="flex flex-col gap-4"
+                                        className="flex flex-col gap-3"
                                         variants={staggerContainerFast}
                                         initial="hidden"
                                         animate="show"

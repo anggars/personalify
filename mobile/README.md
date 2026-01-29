@@ -2,7 +2,7 @@
 
 Flutter mobile app port of the Personalify Dashboard from Next.js web app.
 
-## 📱 Features
+## Features
 
 - **Spotify Authentication**: OAuth login using `flutter_web_auth_2`
 - **Dashboard View**: Display top tracks, artists, and genres
@@ -11,7 +11,7 @@ Flutter mobile app port of the Personalify Dashboard from Next.js web app.
 - **Dark Mode**: Matching web design with Spotify green accent
 - **Secure Storage**: Tokens stored with `flutter_secure_storage`
 
-## 🏗 Architecture
+## Architecture
 
 ```
 lib/
@@ -32,7 +32,7 @@ lib/
     └── track_list_item.dart     # Track list component
 ```
 
-## 🚀 Setup
+## Setup
 
 ### 1. Install Dependencies
 
@@ -73,7 +73,7 @@ flutter run
 
 Uses `http://10.0.2.2:8000` (Android Emulator localhost mapping).
 
-## 🧪 Testing
+## Testing
 
 1. Launch app → Login screen
 2. Tap "Connect with Spotify"
@@ -83,7 +83,7 @@ Uses `http://10.0.2.2:8000` (Android Emulator localhost mapping).
 6. Change time range
 7. Test logout
 
-## 🎨 Design
+## Design
 
 Dark Mode matching web (`frontend/app/globals.css`):
 
@@ -91,12 +91,12 @@ Dark Mode matching web (`frontend/app/globals.css`):
 - Primary: `#1DB954` (Spotify Green)
 - Text: `#FFFFFF` / `#B3B3B3`
 
-## 📦 Dependencies
+## Dependencies
 
 All in `pubspec.yaml`:
 
 - `dio`, `flutter_web_auth_2`, `flutter_secure_storage`, `cached_network_image`, `provider`, `google_fonts`
 
-## 🔗 Deep Links
+## Deep Links
 
 Configured in `AndroidManifest.xml` for `personalify://callback` scheme.
