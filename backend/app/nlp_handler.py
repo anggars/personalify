@@ -280,10 +280,9 @@ def analyze_lyrics_emotion(lyrics: str):
         # Filter out 'neutral' as requested
         filtered_emotions = [e for e in emotions if e.get('label', '').lower() != 'neutral']
         
-        # Log full breakdown for debugging
-        print(f"NLP HANDLER: ANALYSIS RESULT (Top 10):")
-        for i, e in enumerate(filtered_emotions[:10]):
-            print(f"  {i+1}. {e.get('label')}: {float(e.get('score', 0)):.4f}")
+        # Log all results in single print statement with newlines
+        results_lines = "\n".join([f"{e.get('label')}: {float(e.get('score', 0)):.4f}" for e in filtered_emotions])
+        print(f"NLP HANDLER: ANALYSIS RESULT (All):\n{results_lines}")
 
         # Return top 5 for frontend
         top5 = filtered_emotions[:5]
