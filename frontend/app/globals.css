@@ -107,6 +107,69 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* FORCE THIN OVERLAY SCROLLBAR FOR ALL ELEMENTS - NO ARROWS */
+  /* REMOVED scrollbar-width to allow WebKit styling to hide arrows */
+  /* * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 100, 100, 0.3) transparent;
+  } */
+  
+  /* Global webkit scrollbar - completely take over native scrollbar */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    background: transparent;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: rgba(100, 100, 100, 0.3);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 100, 100, 0.5);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  
+  /* ABSOLUTELY REMOVE ALL SCROLLBAR ARROWS - Global */
+  *::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  
+  /* Specific textarea and overflow elements */
+  textarea::-webkit-scrollbar,
+  [style*="overflow"]::-webkit-scrollbar {
+    width: 8px;
+    background: transparent;
+  }
+  
+  textarea::-webkit-scrollbar-thumb,
+  [style*="overflow"]::-webkit-scrollbar-thumb {
+    background: rgba(100, 100, 100, 0.3);
+    border-radius: 4px;
+  }
+  
+  textarea::-webkit-scrollbar-button,
+  [style*="overflow"]::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
   html {
     scroll-behavior: smooth;
   }
@@ -252,8 +315,10 @@
 }
 
 .dark .section-card {
-  box-shadow: inset 0 1px 2px 0 rgba(255, 255, 255, 0.1),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.05), 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.1),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.05),
+    0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 :root:not(.dark) .section-card {
@@ -263,8 +328,10 @@
 /* .section-card:hover transform is handled by Tailwind class hover:-translate-y-1 */
 
 .dark .section-card:hover {
-  box-shadow: inset 0 1px 2px 0 rgba(255, 255, 255, 0.1),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.05), 0 15px 30px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.1),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.05),
+    0 15px 30px rgba(0, 0, 0, 0.5);
 }
 
 :root:not(.dark) .section-card:hover {
@@ -373,26 +440,97 @@
 }
 
 /* ===== CUSTOM SCROLLBAR ===== */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+/* Force overlay scrollbar to completely override native Windows scrollbars */
+.custom-scrollbar,
+textarea.custom-scrollbar,
+div.custom-scrollbar {
+  /* scrollbar-width: thin; */
+  /* scrollbar-color: rgba(255, 255, 255, 0.15) transparent; */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-:root:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+
+
+/* WebKit scrollbar styling - completely override native */
+.custom-scrollbar::-webkit-scrollbar,
+textarea::-webkit-scrollbar,
+div.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
 }
-:root:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+
+.custom-scrollbar::-webkit-scrollbar-track,
+textarea::-webkit-scrollbar-track,
+div.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb,
+textarea::-webkit-scrollbar-thumb,
+div.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+textarea::-webkit-scrollbar-thumb:hover,
+div.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+:root:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb,
+:root:not(.dark) textarea::-webkit-scrollbar-thumb,
+:root:not(.dark) div.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+:root:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+:root:not(.dark) textarea::-webkit-scrollbar-thumb:hover,
+:root:not(.dark) div.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* FORCE REMOVE ALL SCROLLBAR ARROWS/BUTTONS - Most aggressive approach */
+.custom-scrollbar::-webkit-scrollbar-button,
+textarea::-webkit-scrollbar-button,
+div.custom-scrollbar::-webkit-scrollbar-button,
+.custom-scrollbar::-webkit-scrollbar-button:single-button,
+textarea::-webkit-scrollbar-button:single-button,
+div.custom-scrollbar::-webkit-scrollbar-button:single-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* Hide scrollbar corner */
+.custom-scrollbar::-webkit-scrollbar-corner,
+textarea::-webkit-scrollbar-corner,
+div.custom-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Hide scrollbar arrows globally for all elements */
+*::-webkit-scrollbar-button {
+  display: none !important;
+  height: 0 !important;
+  width: 0 !important;
+}
+
+*::-webkit-scrollbar-button:start:decrement,
+*::-webkit-scrollbar-button:end:increment {
+  display: none !important;
 }
 
 /* ===== GLASSMORPHISM UTILITIES ===== */
@@ -409,14 +547,25 @@
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: inset 0 1px 2px 0 rgba(255, 255, 255, 0.1),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.05), 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-shadow:
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.1),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.05),
+      0 4px 15px rgba(0, 0, 0, 0.2);
   }
 
   :root:not(.dark) .glass-card {
     background: rgba(255, 255, 255, 0.8);
     border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
   }
 
   .glow-card {
@@ -476,7 +625,10 @@
 /* Enable touch following for glow effect via JS updating --mouse-x/y */
 @media (hover: none) {
   .glow-card::before {
-    transition: opacity 0.2s ease, left 0.1s ease, top 0.1s ease;
+    transition:
+      opacity 0.2s ease,
+      left 0.1s ease,
+      top 0.1s ease;
   }
 }
 
@@ -498,8 +650,10 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
   cursor: pointer;
-  box-shadow: inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2), 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+    0 4px 15px rgba(0, 0, 0, 0.2);
 
   /* Disable tap highlight on mobile */
   -webkit-tap-highlight-color: transparent;
@@ -581,8 +735,10 @@
   border: 1px solid rgba(255, 59, 48, 0.2);
   color: #ff453a;
   cursor: pointer;
-  box-shadow: inset 0 1px 2px 0 rgba(255, 59, 48, 0.15),
-    inset 0 1px 1px 0 rgba(255, 59, 48, 0.1), 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 1px 2px 0 rgba(255, 59, 48, 0.15),
+    inset 0 1px 1px 0 rgba(255, 59, 48, 0.1),
+    0 4px 15px rgba(0, 0, 0, 0.2);
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
@@ -651,8 +807,10 @@
 }
 
 .dark .filter-btn {
-  box-shadow: inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2), 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+    0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 /* ===== LIQUID GLASS UTILITY ===== */
@@ -662,8 +820,10 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2), 0 4px 15px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+    0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 :root:not(.dark) .liquid-glass {
@@ -673,8 +833,10 @@
 }
 
 .navbar-floating-glass {
-  box-shadow: inset 0 1px 2px 0 rgba(255, 255, 255, 0.1),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.05), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+  box-shadow:
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.1),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.05),
+    0 4px 15px rgba(0, 0, 0, 0.2) !important;
 }
 
 .hide-on-scroll {
@@ -756,8 +918,10 @@
 
 .dark .modal-content {
   background: rgba(30, 30, 30, 0.65);
-  box-shadow: inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2), 0 20px 50px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+    0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
 /* ===== SPINNER ===== */
@@ -941,8 +1105,10 @@
 }
 
 .dark .download-btn {
-  box-shadow: inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2), 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+    0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .download-btn:hover {
@@ -1012,7 +1178,8 @@ html {
 /* ===== SOCIAL BRAND HOVERS ===== */
 .instagram-hover:hover {
   border: 1px solid transparent;
-  background: linear-gradient(#fff, #fff) padding-box,
+  background:
+    linear-gradient(#fff, #fff) padding-box,
     radial-gradient(
         circle at 30% 107%,
         #fdf497 0%,
@@ -1026,7 +1193,8 @@ html {
 }
 
 .dark .instagram-hover:hover {
-  background: linear-gradient(#1e1e1e, #1e1e1e) padding-box,
+  background:
+    linear-gradient(#1e1e1e, #1e1e1e) padding-box,
     radial-gradient(
         circle at 30% 107%,
         #fdf497 0%,
