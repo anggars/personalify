@@ -340,11 +340,11 @@ export default function GeniusPage() {
 
                     {/* Songs List */}
                     {selectedArtist && songs.length > 0 && loadingState !== "songs" && (
-                        <div className="mt-5">
-                            <div className="mb-4 text-center">
+                        <div className="mt-3.75">
+                            <div className="mb-3 text-center">
                                 <h3 className="text-[#1DB954] text-lg font-bold">Songs by {selectedArtist.name}</h3>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[412px] overflow-y-auto custom-scrollbar -mr-2 pr-2 pb-1 snap-y snap-mandatory scroll-p-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[412px] overflow-y-auto no-scrollbar pb-1 snap-y snap-mandatory scroll-p-2">
                                 {songs.map((song) => (
                                     <div
                                         key={song.id}
@@ -389,12 +389,12 @@ export default function GeniusPage() {
 
                     {/* Analysis Results */}
                     {analysis && !loadingState && (
-                        <div className="mt-5">
-                            <div className="text-center mb-6 overflow-hidden">
+                        <div className="mt-2">
+                            <div className="text-center mb-3 overflow-hidden">
                                 <div className="w-full max-w-md mx-auto">
                                     <MarqueeText
                                         text={analysis.track_info.title}
-                                        className="text-lg font-bold text-[#1DB954] mb-1"
+                                        className="text-lg font-bold text-[#1DB954] mb-0"
                                     />
                                     <MarqueeText
                                         text={analysis.track_info.artist}
@@ -402,16 +402,16 @@ export default function GeniusPage() {
                                     />
                                 </div>
                             </div>
-                            <div className="bg-white dark:bg-[#181818] p-5 rounded-xl border border-neutral-200 dark:border-[#282828] text-neutral-700 dark:text-[#cccccc] leading-[1.6rem] whitespace-pre-wrap max-h-[300px] overflow-y-auto custom-scrollbar mb-5 text-[0.95rem] font-light tracking-wide">
-                                {analysis.lyrics}
+                            <div className="bg-white dark:bg-[#181818] py-3 px-6 rounded-xl border border-neutral-200 dark:border-[#282828] text-neutral-700 dark:text-[#cccccc] leading-6 whitespace-pre-wrap max-h-[300px] overflow-y-auto custom-scrollbar mb-3 text-[0.95rem] font-light tracking-wide">
+                                {analysis.lyrics.trim()}
                             </div>
                             {analysis.emotion_analysis?.emotions && (
                                 <div>
-                                    <h3 className="text-center text-[#1DB954] font-bold text-lg mb-4 mt-5">
+                                    <h3 className="text-center text-[#1DB954] font-bold text-lg mb-2 mt-0">
                                         Emotion Results:
                                     </h3>
                                     <motion.div 
-                                        className="flex flex-col gap-3"
+                                        className="flex flex-col gap-2"
                                         variants={staggerContainerFast}
                                         initial="hidden"
                                         animate="show"
