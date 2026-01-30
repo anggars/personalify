@@ -6,6 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:personalify/widgets/analysis_card.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:personalify/widgets/ping_pong_text.dart'; // Import Marquee Widget
+import 'package:personalify/widgets/native_glass.dart'; // Ensure this exists
 import 'package:provider/provider.dart';
 
 class SongDetailScreen extends StatefulWidget {
@@ -176,19 +177,8 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
              child: AnimatedOpacity(
                duration: const Duration(milliseconds: 500),
                opacity: _isTransitionComplete ? 1.0 : 0.0,
-               child: RepaintBoundary( 
-                child: ImageFiltered(
-                  // OPTIMIZE: Reduced blur from 20 to 10 as requested ("biar enteng")
-                  imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: CachedNetworkImage(
-                    imageUrl: cover,
-                    fit: BoxFit.cover,
-                    memCacheWidth: 800,
-                    errorWidget: (_, __, ___) => Container(color: Colors.black),
-                  ),
-                ),
-              ),
-            ),
+               child: NativeGlass(imageUrl: cover), // NATIVE BLUR RESTORED
+             ),
           ),
         
         // 2. Dark Overlay
