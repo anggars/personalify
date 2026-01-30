@@ -43,6 +43,11 @@ flutter {
     source = "../.."
 }
 
+dependencies {
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("jp.wasabeef:glide-transformations:4.3.0")
+}
+
 // Suppress obsolete options warning
 tasks.withType<org.gradle.api.tasks.compile.JavaCompile>().configureEach {
     options.compilerArgs.add("-Xlint:-options")
