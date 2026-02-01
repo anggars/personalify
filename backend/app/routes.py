@@ -982,7 +982,7 @@ def get_recently_played(request: Request, limit: int = 50):
             
             # Simple Image (Smallest)
             images = track.get("album", {}).get("images", [])
-            image_url = images[-1]["url"] if images else "" # Smallest is usually last
+            image_url = images[0]["url"] if images else "" # Use largest image for better quality
             
             result.append({
                 "played_at": played_at,
