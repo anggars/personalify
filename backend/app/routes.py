@@ -2,6 +2,7 @@ import os
 import requests
 import json
 import datetime
+from datetime import timezone
 import asyncio
 
 from urllib.parse import urlencode
@@ -185,7 +186,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
             return error_redirect("no_access_token")
         
         # Calculate token expiry time (use UTC timezone-aware datetime)
-        token_expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=expires_in)
+        token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
 
         headers = {"Authorization": f"Bearer {access_token}"}
         user_res = requests.get("https://api.spotify.com/v1/me", headers=headers)
@@ -367,7 +368,7 @@ def refresh_access_token(
         
         # Update refresh token if Spotify provided a new one
         if new_refresh_token:
-            token_expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=expires_in)
+            token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
             save_refresh_token(spotify_id, new_refresh_token, token_expires_at)
         
         # Prepare JSON response

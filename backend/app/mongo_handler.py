@@ -1,6 +1,6 @@
 import os
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -28,7 +28,7 @@ def save_user_sync(spotify_id, time_range, data):
         {
             '$set': {
                 'data': data,
-                'last_synced': datetime.now(datetime.timezone.utc)
+                'last_synced': datetime.now(timezone.utc)
             }
         },
         upsert=True
