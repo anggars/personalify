@@ -65,20 +65,20 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> with Widg
         );
       }
       
+      // OPTIMIZE: Add 2 second pause at the end
+      await Future.delayed(const Duration(seconds: 2));
+      
       if (!mounted) {
         _isAnimating = false;
         return;
       }
       
-      if (mounted) { 
-        setState(() {
-          _scrollingRight = !_scrollingRight;
-        });
-        
-        _isAnimating = false; 
+      // OPTIMIZE: Flip direction WITHOUT setState to avoid rebuild
+      _scrollingRight = !_scrollingRight;
+      _isAnimating = false; 
+      
+      if (mounted) {
         _startScrolling();
-      } else {
-        _isAnimating = false;
       }
     } catch (_) {
       _isAnimating = false;

@@ -692,6 +692,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       image: CachedNetworkImageProvider(
                         track.image,
                         maxWidth: 120, // MemCache via Provider
+                        maxHeight: 120, // OPTIMIZE: Prevent memory bloat
                       ),
                       fit: BoxFit.cover,
                     ),
@@ -856,7 +857,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     imageUrl: artist.image, 
                     width: 56, 
                     height: 56, 
-                    memCacheWidth: 150, 
+                    memCacheWidth: 150,
+                    memCacheHeight: 150, // OPTIMIZE: Match aspect ratio
+                    maxWidthDiskCache: 150, // OPTIMIZE: Limit disk cache
+                    maxHeightDiskCache: 150, // OPTIMIZE: Limit disk cache
                     fit: BoxFit.cover,
                     placeholder: (_, __) => Container(color: const Color(0xFF282828)), // OPTIMIZE
                   ),

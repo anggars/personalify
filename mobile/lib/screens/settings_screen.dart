@@ -81,11 +81,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   width: MediaQuery.of(context).size.width * 0.85,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF191414).withOpacity(0.8), // Semi-transparent for glass
+                    color: const Color(0xFF1a1a1a).withOpacity(0.95), // Matching Request Access dialog
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)), // Matching Request Access
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 30, offset: const Offset(0, 10)),
+                      BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 40, offset: const Offset(0, 20)),
                     ],
                   ),
                   child: Column(
