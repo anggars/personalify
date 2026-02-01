@@ -106,7 +106,6 @@ export const Navbar = () => {
     if (errorParam === "logged_out" || errorParam === "session_expired") {
       localStorage.removeItem("spotify_id");
       setSpotifyId(null);
-      // Trigger notification for session expired
       if (errorParam === "session_expired") {
         const event = new CustomEvent("personalify-notification", {
           detail: {
