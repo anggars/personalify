@@ -24,7 +24,7 @@ frontend/
 
 ## Key Features
 
-- **Tech Stack Marquee**: Interactive Home Page element. Hovering the Spotify logo reveals a sliding marquee of the tech used (Next.js, FastAPI, Neon, etc.).
+- **Tech Stack Marquee**: Interactive Home Page element. Hovering the Spotify logo reveals a sliding marquee of the tech used (Next.js, FastAPI, Supabase, etc.).
 - **Dashboard**: High-fidelity visualization of top artists, tracks, and genres with adaptive light/dark mode.
 - **Lyrics Analyzer**: Integration with Genius API to search songs and analyze emotional sentiment using NLP.
 - **Glassmorphism UI**: Custom "Liquid Glass" effects on buttons and cards using `glass-surface.tsx`.

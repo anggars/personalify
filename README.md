@@ -63,7 +63,7 @@ The Personalify system consists of several components connected through service-
               |                                     |                           |
               v                                     v                           v
       +---------------+                     +---------------+           +------------------+
-      |     Neon      |                     |    Upstash    |           |  MongoDB Atlas   |
+      |   Supabase    |                     |    Upstash    |           |  MongoDB Atlas   |
       | (PostgreSQL)  |                     |    (Redis)    |           |  (Sync History)  |
       +-------+-------+                     +---------------+           +------------------+
               |
@@ -87,7 +87,7 @@ The Personalify system consists of several components connected through service-
 - **FastAPI (Backend API):**  
   Main server that handles Spotify authentication (OAuth2), data synchronization, database storage, caching, external API calls (Hugging Face for NLP analysis, Genius for lyrics), and API serving to frontend.
 - **PostgreSQL (Main DB):**  
-  Stores main metadata such as users, artists, and tracks. Can run **locally via Docker** or use **Neon (cloud-hosted PostgreSQL)** for production/development.
+  Stores main metadata such as users, artists, and tracks. Can run **locally via Docker** or use **Supabase (cloud-hosted PostgreSQL)** for production/development.
 - **Redis (Cache):**  
   In-memory cache to store top data (artist, track, genre) per user based on `spotify_id` and `time_range`, with TTL for efficiency. Can run **locally via Docker** or use **Upstash (cloud-hosted Redis)** for production.
 - **MongoDB (Sync DB):**  
@@ -103,23 +103,23 @@ The Personalify system consists of several components connected through service-
 
 ## 4. Technology Stack & Rationale
 
-| Component         | Technology          | Selection Rationale                                                                  |
-| ----------------- | ------------------- | ------------------------------------------------------------------------------------ |
-| **Mobile App**    | Flutter (Dart)      | Cross-platform mobile development (Android/iOS) with native performance.             |
-| **Frontend**      | Next.js (React)     | Server-side rendering (SSR), fast performance, modern ecosystem with Tailwind CSS.   |
-| **UI Library**    | shadcn/ui           | Reusable components built with Radix UI and Tailwind CSS.                            |
-| **Styling**       | Tailwind CSS        | Utility-first CSS for rapid and consistent UI development.                           |
-| **Animation**     | Framer Motion       | Powerful library for complex, fluid animations (marquee, transitions).               |
-| **Language**      | TypeScript / Python | TS for type-safe frontend, Python for robust backend logic.                          |
-| **Backend API**   | FastAPI             | Modern Python framework, supports async, fast for building REST APIs.                |
-| **Main Database** | PostgreSQL (Neon)   | Serverless Postgres designed for cloud, separates storage & compute.                 |
-| **Cache**         | Redis (Upstash)     | Serverless Redis for extremely fast, low-latency caching at the edge.                |
-| **Sync Storage**  | MongoDB (Atlas)     | Flexible document store for logging semi-structured sync history.                    |
-| **Auth**          | Spotify OAuth2      | Official standard protocol from Spotify, secure for login and user data access.      |
-| **Lyrics**        | Genius API          | Genius provides lyrics data; custom scraping logic handles retrieval.                |
-| **NLP Model**     | Hugging Face API    | Access to pre-trained AI models for emotion analysis without building from scratch.  |
-| **FDW**           | PostgreSQL FDW      | Used for simulating queries between PostgreSQL instances (distributed query).        |
-| **Deployment**    | Vercel              | Zero-config deployment for Next.js frontend and Python backend serverless functions. |
+| Component         | Technology            | Selection Rationale                                                                  |
+| ----------------- | --------------------- | ------------------------------------------------------------------------------------ |
+| **Mobile App**    | Flutter (Dart)        | Cross-platform mobile development (Android/iOS) with native performance.             |
+| **Frontend**      | Next.js (React)       | Server-side rendering (SSR), fast performance, modern ecosystem with Tailwind CSS.   |
+| **UI Library**    | shadcn/ui             | Reusable components built with Radix UI and Tailwind CSS.                            |
+| **Styling**       | Tailwind CSS          | Utility-first CSS for rapid and consistent UI development.                           |
+| **Animation**     | Framer Motion         | Powerful library for complex, fluid animations (marquee, transitions).               |
+| **Language**      | TypeScript / Python   | TS for type-safe frontend, Python for robust backend logic.                          |
+| **Backend API**   | FastAPI               | Modern Python framework, supports async, fast for building REST APIs.                |
+| **Main Database** | PostgreSQL (Supabase) | Open source Firebase alternative with real-time PostgreSQL database.                 |
+| **Cache**         | Redis (Upstash)       | Serverless Redis for extremely fast, low-latency caching at the edge.                |
+| **Sync Storage**  | MongoDB (Atlas)       | Flexible document store for logging semi-structured sync history.                    |
+| **Auth**          | Spotify OAuth2        | Official standard protocol from Spotify, secure for login and user data access.      |
+| **Lyrics**        | Genius API            | Genius provides lyrics data; custom scraping logic handles retrieval.                |
+| **NLP Model**     | Hugging Face API      | Access to pre-trained AI models for emotion analysis without building from scratch.  |
+| **FDW**           | PostgreSQL FDW        | Used for simulating queries between PostgreSQL instances (distributed query).        |
+| **Deployment**    | Vercel                | Zero-config deployment for Next.js frontend and Python backend serverless functions. |
 
 ---
 
@@ -246,7 +246,7 @@ This strategy was chosen to demonstrate how systems can use various storage and 
 
 ## 7. Local Development Setup
 
-Personalify can be run locally in **two ways**: using **Docker Compose** (containerized) or **standalone Python environment** (Miniconda/Anaconda/venv). Both methods support connecting to **cloud databases** (Neon, MongoDB Atlas, Upstash) or **local databases** (via Docker).
+Personalify can be run locally in **two ways**: using **Docker Compose** (containerized) or **standalone Python environment** (Miniconda/Anaconda/venv). Both methods support connecting to **cloud databases** (Supabase, MongoDB Atlas, Upstash) or **local databases** (via Docker).
 
 ### Option 1: Running with Docker (Containerized)
 
@@ -288,8 +288,8 @@ This method uses Docker Compose to run the entire stack, including local Postgre
    POSTGRES_USER=admin
    POSTGRES_PASSWORD=admin123
 
-   # For Neon (comment out above and use this):
-   # DATABASE_URL=postgresql://neondb_owner:password@cluster.neon.tech/neondb
+   # For Supabase (comment out above and use this):
+   # DATABASE_URL=postgresql://postgres:[password]@db.xxx.supabase.co:5432/postgres
 
    # MongoDB (Local Docker OR Atlas)
    # For Docker:
@@ -348,7 +348,7 @@ This method runs the full stack locally: **FastAPI** for the backend and **Next.
 
 - Python 3.12+ installed
 - Node.js 18+ and pnpm installed
-- Cloud database accounts (Neon, MongoDB Atlas, Upstash) configured in `.env`
+- Cloud database accounts (Supabase, MongoDB Atlas, Upstash) configured in `.env`
 
 #### Steps:
 
@@ -608,7 +608,7 @@ During Personalify development, several technical challenges emerged alongside e
 - Use depends_on in docker-compose.yml.
 - Utilize volumes for persistence and named networks so services recognize each other.
 - Migrate to Vercel for serverless deployment, eliminating container management overhead.
-- Use cloud-hosted databases (Neon, Atlas, Upstash) instead of local containers for production.
+- Use cloud-hosted databases (Supabase, Atlas, Upstash) instead of local containers for production.
 
 **Lessons Learned:**
 
@@ -646,7 +646,7 @@ During Personalify development, several technical challenges emerged alongside e
 **Solutions:**
 
 - Use `.env` file with conditional logic to support both local and cloud database connections.
-- Leverage Neon for PostgreSQL, MongoDB Atlas for document storage, and Upstash for Redis caching.
+- Leverage Supabase for PostgreSQL, MongoDB Atlas for document storage, and Upstash for Redis caching.
 
 **Lessons Learned:**
 
@@ -663,7 +663,7 @@ This data is then stored and processed through a combination of databases, each 
 
 Furthermore, this project implements PostgreSQL Foreign Data Wrapper (FDW) to access tables from external databases (remote DB) in real-time. This shows how cross-database queries can be performed as if they came from one source, enabling data federation flexibility and cross-node scenarios. In practice, FDW is used to read external tables and combine them with local data through join operations that run transparently.
 
-The project has evolved significantly from its initial Docker-only deployment to support **both containerized and standalone Python environments**. For local development, users can choose between running the entire stack via Docker Compose (including local databases) or running FastAPI standalone using Miniconda/Anaconda/venv with cloud-hosted databases (Neon, MongoDB Atlas, Upstash). This flexibility allows developers to work in their preferred environment without compromising functionality.
+The project has evolved significantly from its initial Docker-only deployment to support **both containerized and standalone Python environments**. For local development, users can choose between running the entire stack via Docker Compose (including local databases) or running FastAPI standalone using Miniconda/Anaconda/venv with cloud-hosted databases (Supabase, MongoDB Atlas, Upstash). This flexibility allows developers to work in their preferred environment without compromising functionality.
 
 In production, Personalify is deployed as a **serverless application on Vercel**, leveraging managed cloud databases for reliability and scalability. The implementation of a robust scraping mechanism enables seamless lyrics fetching from **Genius API**, overcoming restrictions inherent in serverless environments. The **Hugging Face API** powers NLP-based emotion analysis, providing users with actionable insights into the mood and vibe of their music.
 
@@ -686,7 +686,7 @@ Overall, Personalify has successfully become a proof of concept for distributed 
 - **[Framer Motion](https://www.framer.com/motion/)** for smooth animations and layout transitions.
 - **[Lucide React](https://lucide.dev/)** & **[Simple Icons](https://simpleicons.org/)** for clean iconography.
 - **[Vercel](https://vercel.com/)** for seamless serverless deployment and hosting.
-- **[Neon](https://neon.tech/)**, **[MongoDB Atlas](https://www.mongodb.com/atlas/)**, and **[Upstash](https://upstash.com/)** for managed cloud database services.
+- **[Supabase](https://supabase.com/)**, **[MongoDB Atlas](https://www.mongodb.com/atlas/)**, and **[Upstash](https://upstash.com/)** for managed cloud database services.
 - **[Docker](http://docker.com/)** for containerization and local development environment isolation.
 
 **Created by [アリツ](https://desty.page/anggars)** © 2025 - Present
