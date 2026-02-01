@@ -139,6 +139,9 @@ export default function DashboardPage() {
   const [showPlayerControls, setShowPlayerControls] = useState<
     Record<string, boolean>
   >({});
+  const [expandedGenres, setExpandedGenres] = useState<Record<string, boolean>>(
+    {}
+  );
   const [isBuffering, setIsBuffering] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -597,6 +600,13 @@ export default function DashboardPage() {
       }
       return newSet;
     });
+  };
+
+  const toggleExpandedGenres = (artistId: string) => {
+    setExpandedGenres((prev) => ({
+      ...prev,
+      [artistId]: !prev[artistId],
+    }));
   };
 
   // Calculate genres client-side to respect Top 10 / Top 20 toggle
@@ -1232,15 +1242,27 @@ export default function DashboardPage() {
                   initial={idx >= 10 ? { opacity: 0, y: 20 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx >= 10 ? (idx - 10) * 0.1 : 0 }}
-                  className="list-item cursor-pointer hover:bg-accent/50 rounded-lg transition-colors"
-                  onClick={() => openArtistProfile(artist.id)}
+                  className="list-item hover:bg-accent/50 rounded-lg transition-colors"
                 >
                   <span className="rank">{idx + 1}</span>
-                  <img src={artist.image} alt={artist.name} />
+                  <img
+                    src={artist.image}
+                    alt={artist.name}
+                    className="cursor-pointer"
+                    onClick={() => openArtistProfile(artist.id)}
+                  />
                   <div className="info">
-                    <p className="name">{artist.name}</p>
+                    <p
+                      className="name cursor-pointer"
+                      onClick={() => openArtistProfile(artist.id)}
+                    >
+                      {artist.name}
+                    </p>
                     <div className="genre-pills">
-                      {artist.genres.slice(0, 6).map((genre) => (
+                      {(expandedGenres[artist.id]
+                        ? artist.genres
+                        : artist.genres.slice(0, 6)
+                      ).map((genre) => (
                         <span
                           key={genre}
                           className="genre-pill"
@@ -1250,8 +1272,21 @@ export default function DashboardPage() {
                         </span>
                       ))}
                       {artist.genres.length > 6 && (
-                        <span className="text-primary text-xs cursor-pointer">
-                          +{artist.genres.length - 6}
+                        <span
+                          className="genre-pill cursor-pointer hover:bg-white/20 transition-colors"
+                          style={{ 
+                            borderStyle: "dashed", 
+                            borderColor: "rgba(255,255,255,0.3)",
+                            color: "rgba(255,255,255,0.7)" 
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpandedGenres(artist.id);
+                          }}
+                        >
+                          {expandedGenres[artist.id]
+                            ? "show less"
+                            : `+${artist.genres.length - 6}`}
                         </span>
                       )}
                     </div>
