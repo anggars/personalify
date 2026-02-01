@@ -28,7 +28,7 @@ def save_user_sync(spotify_id, time_range, data):
         {
             '$set': {
                 'data': data,
-                'last_synced': datetime.utcnow()
+                'last_synced': datetime.now(datetime.timezone.utc)
             }
         },
         upsert=True
