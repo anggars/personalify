@@ -9,7 +9,7 @@ const TECH_STACKS = [
     { phrase: "Backed by", name: "Python (FastAPI)", url: "https://fastapi.tiangolo.com/", color: "hover:text-[#009688] active:text-[#009688]" },
     { phrase: "Containerized by", name: "Docker", url: "https://www.docker.com/", color: "hover:text-[#2496ED] active:text-[#2496ED]" },
     { phrase: "Deployed on", name: "Vercel", url: "https://vercel.com/", color: "hover:text-white active:text-white" },
-    { phrase: "Main Database by", name: "Neon", url: "https://neon.tech/", color: "hover:text-[#00E599] active:text-[#00E599]" },
+    { phrase: "Main Database by", name: "Supabase", url: "https://supabase.com/", color: "hover:text-[#3ECF8E] active:text-[#3ECF8E]" },
     { phrase: "History stored in", name: "MongoDB", url: "https://www.mongodb.com/atlas", color: "hover:text-[#4DB33D] active:text-[#4DB33D]" },
     { phrase: "Cached by", name: "Upstash", url: "https://upstash.com/", color: "hover:text-[#DC382D] active:text-[#DC382D]" },
 ];

@@ -19,7 +19,7 @@ export const TECH_STACK = [
     { name: "Framer Motion", slug: "framer", color: "white" },
     { name: "Vercel", slug: "vercel", color: "white" },
     { name: "Hugging Face", slug: "huggingface", color: "FFD21E" },
-    { name: "Neon", slug: "neon", color: "00E9A3", isCustom: true },
+    { name: "Supabase", slug: "supabase", color: "3ECF8E", isCustom: false },
     { name: "PostgreSQL", slug: "postgresql", color: "4169E1" },
     { name: "MongoDB", slug: "mongodb", color: "47A248" },
     { name: "Upstash", slug: "upstash", color: "00E9A3" },
@@ -79,7 +79,7 @@ export const TechIcon = ({ tech }: { tech: typeof TECH_STACK[number] }) => {
     const displayColor = isLight && tech.color === "white" ? "000000" : tech.color;
 
     if (tech.isCustom) {
-        // Neon Logo Colors
+        // Supabase Logo Colors
         // Dark Mode: Cyan (#12FFF7) & Pale Green (#B9FFB3)
         // Light Mode: Dark Teal (#007570) & Dark Green (#008F64) - for contrast on white
         const primaryColor = isLight ? "#007570" : "#12FFF7";

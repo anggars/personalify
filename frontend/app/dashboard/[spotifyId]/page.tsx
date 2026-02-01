@@ -103,10 +103,23 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Toast Error Handling - MUST stand above any conditional returns
+  // Error Handling - dispatch custom notification event like navbar
   useEffect(() => {
     if (error) {
-      toast.error(error || "Failed to load dashboard data. Please try again.");
+      const event = new CustomEvent("personalify-notification", {
+        detail: {
+          type: "error",
+          message: "Session expired. Please login again!",
+        },
+      });
+      window.dispatchEvent(event);
+      setTimeout(
+        () =>
+          window.dispatchEvent(
+            new CustomEvent("personalify-notification", { detail: null }),
+          ),
+        4000,
+      );
     }
   }, [error]);
   const [activeEmbed, setActiveEmbed] = useState<string | null>(null);
@@ -588,7 +601,7 @@ export default function DashboardPage() {
 
   // Calculate genres client-side to respect Top 10 / Top 20 toggle
   const processedGenres = React.useMemo(() => {
-    if (!data) return { genres: [], map: {} as Record<string, string[]> };
+    if (!data || !data.artists) return { genres: [], map: {} as Record<string, string[]> };
     const artistsToUser = showTop20 ? data.artists : data.artists.slice(0, 10);
 
     const counts: Record<string, number> = {};
@@ -987,14 +1000,23 @@ export default function DashboardPage() {
 
   if (!data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-muted-foreground opacity-50">
-        <p className="font-medium">No data available to display.</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-sm transition-colors"
-        >
-          Retry
-        </button>
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-background">
+        <div className="text-center space-y-6">
+          <p className="text-lg font-medium text-muted-foreground">
+            Session expired or no data available!
+          </p>
+          <motion.button
+            onClick={() => router.push("/?error=session_expired")}
+            onMouseMove={handleMouseMoveOrTouch}
+            onTouchMove={handleMouseMoveOrTouch}
+            className="btn-glass rounded-2xl"
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            Back to Home
+          </motion.button>
+        </div>
       </div>
     );
   }

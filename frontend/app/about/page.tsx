@@ -38,6 +38,7 @@ import {
   SiDocker,
   SiVercel,
   SiPostgresql,
+  SiSupabase,
   SiMongodb,
   SiRedis,
   SiGenius,
@@ -392,11 +393,11 @@ export default function AboutPage() {
               />{" "}
               as a serverless app. For storage,{" "}
               <TechHover
-                text="Neon"
-                href="https://neon.tech/"
-                description="Serverless Postgres built for the cloud."
-                icon={SiPostgresql}
-                color="#00E599"
+                text="Supabase"
+                href="https://supabase.com/"
+                description="Open source Firebase alternative with PostgreSQL database."
+                icon={SiSupabase}
+                color="#3ECF8E"
               />{" "}
               handles main data,{" "}
               <TechHover

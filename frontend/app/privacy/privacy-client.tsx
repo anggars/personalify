@@ -100,7 +100,7 @@ const PRIVACY_DATA = [
               className="font-semibold hover:text-[#00E599] transition-colors"
               target="_blank"
             >
-              Neon
+              Supabase
             </a>
             : For hosting and data storage.
           </li>
