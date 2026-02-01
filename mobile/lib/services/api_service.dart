@@ -11,12 +11,6 @@ class ApiService {
   late final Dio _dio;
   final AuthService _authService;
 
-  // TRACKING FOR CONDITIONAL LOGOUT
-  bool _onAnalyzerScreen = false;
-  void setAnalyzerScreen(bool isActive) {
-    _onAnalyzerScreen = isActive;
-    print("API: Analyzer Screen Active: $isActive");
-  }
 
   ApiService(this._authService) {
     _dio = Dio(BaseOptions(
@@ -37,35 +31,75 @@ class ApiService {
         return handler.next(options);
       },
       onError: (error, handler) async {
-        // Handle 401 Unauthorized OR 403 Forbidden - token expired/invalid
         final status = error.response?.statusCode;
         if (status == 401 || status == 403) {
-          print('🚨 API ERROR: $status - Token expired.');
+          print('API: Token expired (status $status). Attempting refresh...');
           
-          // CONDITIONAL LOGOUT: Skip if on Analyzer Screen
-          if (_onAnalyzerScreen) {
-             print('⚠️ IGNORING LOGOUT because user is on Analyzer Screen');
-             // Optionally show a toast here via navigation context if complex
-             return handler.next(error); // Pass error so UI can handle it (e.g. show "Login required")
+          // Get spotify_id from AuthService
+          final spotifyId = await _authService.getSpotifyId();
+          if (spotifyId == null) {
+            print('API: No spotify_id found. Forcing logout.');
+            await _authService.logout();
+            
+            final nav = navigatorKey.currentState;
+            if (nav != null) {
+              nav.pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
+            }
+            
+            return handler.reject(error);
           }
-
-          print('Auto Logout initiated.');
           
-          // Force Logout & Redirect
-          await _authService.logout();
-          
-          final nav = navigatorKey.currentState;
-          if (nav != null) {
-            nav.pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
+          // Call /auth/refresh endpoint
+          try {
+            final refreshResponse = await Dio().post(
+              '${AppConstants.baseUrl}/auth/refresh',
+              data: {'spotify_id': spotifyId},
             );
+            
+            if (refreshResponse.statusCode == 200) {
+              final newToken = refreshResponse.data['access_token'];
+              
+              // Update token in SecureStorage
+              await _authService.saveAccessToken(newToken);
+              print('API: Token refreshed successfully. Retrying original request...');
+              
+              // Retry original request with new token
+              final opts = Options(
+                method: error.requestOptions.method,
+                headers: {
+                  ...error.requestOptions.headers,
+                  'Authorization': 'Bearer $newToken',
+                },
+              );
+              
+              final response = await _dio.request(
+                error.requestOptions.path,
+                options: opts,
+                data: error.requestOptions.data,
+                queryParameters: error.requestOptions.queryParameters,
+              );
+              
+              return handler.resolve(response);
+            }
+          } catch (e) {
+            print('API: Refresh failed: $e. Forcing logout.');
+            await _authService.logout();
+            
+            final nav = navigatorKey.currentState;
+            if (nav != null) {
+              nav.pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
+            }
           }
           
-          // Reject to stop downstream processing
           return handler.reject(error);
         } else {
-           print("⚠️ API ERROR: $status. ${error.message}");
+          print('API: Error $status. ${error.message}');
         }
         return handler.next(error);
       },

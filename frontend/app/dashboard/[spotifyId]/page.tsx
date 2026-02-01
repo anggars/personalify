@@ -10,6 +10,7 @@ import { Slider } from "@/components/ui/slider";
 
 import MarqueeText from "@/components/marquee-text";
 import { toast } from "sonner";
+import { fetchWithAuth } from "@/lib/api";
 
 interface Artist {
   id: string;
@@ -274,17 +275,9 @@ export default function DashboardPage() {
     async function fetchData() {
       setLoading(true);
       try {
-        const res = await fetch(
-          `/api/dashboard/${spotifyId}?time_range=${timeRange}`,
-          {
-            credentials: "include",
-          }
+        const res = await fetchWithAuth(
+          `/api/dashboard/${spotifyId}?time_range=${timeRange}`
         );
-
-        if (res.status === 401 || res.status === 404) {
-          router.push("/?error=session_expired");
-          return;
-        }
 
         if (!res.ok) throw new Error("Failed to fetch dashboard data");
 
@@ -314,7 +307,7 @@ export default function DashboardPage() {
          setEmotionText("Digging deeper into your music vibe...");
       }
 
-      const res = await fetch("/analyze-emotions-background", {
+      const res = await fetchWithAuth("/analyze-emotions-background", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

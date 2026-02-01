@@ -41,7 +41,9 @@ def init_db():
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
                     spotify_id TEXT UNIQUE,
-                    display_name TEXT
+                    display_name TEXT,
+                    refresh_token TEXT,
+                    token_expires_at TIMESTAMP
                 );
 
                 CREATE TABLE IF NOT EXISTS artists (
@@ -85,6 +87,27 @@ def save_user(spotify_id, display_name):
                 ON CONFLICT (spotify_id) DO UPDATE SET display_name = EXCLUDED.display_name
             """, (spotify_id, display_name))
             conn.commit()
+
+def save_refresh_token(spotify_id, refresh_token, expires_at):
+    """Save refresh token and expiry time for a user."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE users 
+                SET refresh_token = %s, token_expires_at = %s
+                WHERE spotify_id = %s
+            """, (refresh_token, expires_at, spotify_id))
+            conn.commit()
+
+def get_refresh_token(spotify_id):
+    """Retrieve refresh token for a user."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT refresh_token FROM users WHERE spotify_id = %s
+            """, (spotify_id,))
+            result = cur.fetchone()
+            return result[0] if result else None
 
 def save_artist(artist_id, name, popularity, image_url):
     with get_conn() as conn:

@@ -30,9 +30,6 @@ class _MainNavigationState extends State<MainNavigation> {
     setState(() {
       _currentIndex = index;
     });
-    // Update API Service that Analyzer (index 2) is active or inactive
-    // Use read (do not listen) to prevent rebuild loops
-    context.read<ApiService>().setAnalyzerScreen(index == 2);
   }
 
   void _onTimeRangeChanged(String timeRange) {

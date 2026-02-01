@@ -20,7 +20,9 @@ from app.db_handler import (
     save_artists_batch,
     save_tracks_batch,
     save_user_associations_batch,
-    log_system
+    log_system,
+    save_refresh_token,
+    get_refresh_token
 )
 from app.cache_handler import cache_top_data, get_cached_top_data, clear_top_data_cache
 from app.mongo_handler import save_user_sync, get_user_history
@@ -176,8 +178,14 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
             
         tokens = res.json()
         access_token = tokens.get("access_token")
+        refresh_token = tokens.get("refresh_token")
+        expires_in = tokens.get("expires_in", 3600)
+        
         if not access_token:
             return error_redirect("no_access_token")
+        
+        # Calculate token expiry time
+        token_expires_at = datetime.datetime.utcnow() + datetime.timedelta(seconds=expires_in)
 
         headers = {"Authorization": f"Bearer {access_token}"}
         user_res = requests.get("https://api.spotify.com/v1/me", headers=headers)
@@ -189,9 +197,13 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         user_profile = user_res.json()
         spotify_id = user_profile["id"]
         display_name = user_profile.get("display_name", "Unknown")
-        # FIX: Get User Image
         user_image = user_profile["images"][0]["url"] if user_profile.get("images") else None
+        
         save_user(spotify_id, display_name)
+        
+        # Save refresh token if available
+        if refresh_token:
+            save_refresh_token(spotify_id, refresh_token, token_expires_at)
 
         time_ranges = ["short_term", "medium_term", "long_term"]
         for time_range in time_ranges:
@@ -280,6 +292,93 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         # NEW: Set access_token cookie for realtime sync logic (Web only)
         response.set_cookie(key="access_token", value=access_token, httponly=True, path="/", samesite="lax", max_age=3600)
         return response
+
+@router.post("/auth/refresh", tags=["Auth"])
+def refresh_access_token(
+    request: Request,
+    spotify_id: str = Body(None, embed=True, description="Spotify ID (for mobile)")
+):
+    """
+    Refresh access token using stored refresh_token.
+    - Mobile: sends spotify_id in body, receives JSON response
+    - Web: uses spotify_id from cookie, receives JSON + new cookie
+    """
+    
+    # Determine if request is from mobile or web
+    if not spotify_id:
+        # Web client - get spotify_id from cookie
+        spotify_id = request.cookies.get("spotify_id")
+    
+    if not spotify_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Get refresh token from database
+    refresh_token = get_refresh_token(spotify_id)
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="No refresh token available")
+    
+    # Request new access token from Spotify
+    client_id = os.getenv("SPOTIFY_CLIENT_ID")
+    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+    
+    payload = {
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        "client_id": client_id,
+        "client_secret": client_secret
+    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    
+    try:
+        res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
+        
+        if res.status_code != 200:
+            print(f"REFRESH ERROR: {res.text}")
+            raise HTTPException(status_code=401, detail="Token refresh failed")
+        
+        tokens = res.json()
+        new_access_token = tokens.get("access_token")
+        new_refresh_token = tokens.get("refresh_token")
+        expires_in = tokens.get("expires_in", 3600)
+        
+        if not new_access_token:
+            raise HTTPException(status_code=401, detail="No access token in refresh response")
+        
+        # Update refresh token if Spotify provided a new one
+        if new_refresh_token:
+            token_expires_at = datetime.datetime.utcnow() + datetime.timedelta(seconds=expires_in)
+            save_refresh_token(spotify_id, new_refresh_token, token_expires_at)
+        
+        # Prepare JSON response
+        response_data = {
+            "access_token": new_access_token,
+            "expires_in": expires_in
+        }
+        
+        # Check if request is from mobile (has spotify_id in body)
+        is_mobile = spotify_id in str(request._body) if hasattr(request, '_body') else False
+        
+        if is_mobile:
+            # Mobile - return JSON only
+            return JSONResponse(content=response_data)
+        else:
+            # Web - return JSON and set cookie
+            response = JSONResponse(content=response_data)
+            response.set_cookie(
+                key="access_token",
+                value=new_access_token,
+                httponly=True,
+                path="/",
+                samesite="lax",
+                max_age=expires_in
+            )
+            return response
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"REFRESH EXCEPTION: {e}")
+        raise HTTPException(status_code=500, detail="Token refresh failed")
 
 @router.post("/analyze-emotions-background", tags=["Background"])
 async def analyze_emotions_background(

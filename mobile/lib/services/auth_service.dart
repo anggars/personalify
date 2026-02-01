@@ -115,6 +115,12 @@ class AuthService {
     return spotifyId != null && spotifyId.isNotEmpty;
   }
 
+  /// Save access token to secure storage
+  Future<void> saveAccessToken(String token) async {
+    await _storage.write(key: AppConstants.tokenKey, value: token);
+    print('FLUTTER AUTH: Access token updated in storage');
+  }
+
   /// Logout - clear all stored credentials
   Future<void> logout() async {
     await _storage.delete(key: AppConstants.spotifyIdKey);
