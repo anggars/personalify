@@ -286,11 +286,32 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         # For local development, redirect to Next.js frontend on port 3000
         log_system("AUTH", f"User Login Success: {display_name}", "SPOTIFY")
         response = RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
-        # CRITICAL FIX: Set cookie path to "/" so it is accessible on all routes
-        # Also set SameSite to Lax to prevent some browser blocking
-        response.set_cookie(key="spotify_id", value=spotify_id, httponly=True, path="/", samesite="lax")
+        
+        # Determine if running locally for cookie domain
+        is_local = "127.0.0.1" in original_host or "localhost" in original_host
+        cookie_domain = "localhost" if is_local else None
+        
+        # CRITICAL FIX: Set cookie with domain for localhost cross-port sharing
+        # For localhost: domain="localhost" allows cookies to work across ports (3000 ↔ 8000)
+        # For production: domain=None (browser auto-detects from request)
+        response.set_cookie(
+            key="spotify_id", 
+            value=spotify_id, 
+            httponly=True, 
+            path="/", 
+            samesite="lax",
+            domain=cookie_domain
+        )
         # NEW: Set access_token cookie for realtime sync logic (Web only)
-        response.set_cookie(key="access_token", value=access_token, httponly=True, path="/", samesite="lax", max_age=3600)
+        response.set_cookie(
+            key="access_token", 
+            value=access_token, 
+            httponly=True, 
+            path="/", 
+            samesite="lax", 
+            max_age=3600,
+            domain=cookie_domain
+        )
         return response
 
 @router.post("/auth/refresh", tags=["Auth"])
