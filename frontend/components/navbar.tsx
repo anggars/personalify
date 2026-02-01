@@ -223,12 +223,12 @@ export const Navbar = () => {
               "[box-shadow:inset_0_1px_2px_0_rgba(255,255,255,0.15),inset_0_1px_1px_0_rgba(255,255,255,0.2),0_4px_15px_rgba(0,0,0,0.3)]",
               "dark:[box-shadow:inset_0_1px_2px_0_rgba(255,255,255,0.15),inset_0_1px_1px_0_rgba(255,255,255,0.2),0_4px_15px_rgba(0,0,0,0.3)]",
               notification.type === "warning"
-                ? "bg-white/10 dark:bg-white/[0.015] text-yellow-600 dark:text-yellow-400"
+                ? "bg-white/10 dark:bg-white/1.5 text-yellow-600 dark:text-yellow-400"
                 : notification.type === "error"
-                  ? "bg-white/10 dark:bg-white/[0.015] text-red-600 dark:text-red-400"
+                  ? "bg-white/10 dark:bg-white/1.5 text-red-600 dark:text-red-400"
                   : notification.type === "success"
                     ? "bg-[#1DB954]/20 text-[#1DB954]"
-                    : "bg-white/10 dark:bg-white/[0.015] hover:scale-105 transition-transform duration-300",
+                    : "bg-white/10 dark:bg-white/1.5 hover:scale-105 transition-transform duration-300",
             )}
           >
             {(notification.type === "warning" ||
@@ -236,13 +236,13 @@ export const Navbar = () => {
               notification.type === "success") && (
               <div className="px-6 py-3 font-bold text-sm whitespace-nowrap flex items-center gap-2">
                 {notification.type === "success" && (
-                  <CheckCircle size={14} className="relative bottom-[1px]" />
+                  <CheckCircle size={14} className="relative bottom-px" />
                 )}
                 {notification.type === "error" && (
-                  <AlertTriangle size={14} className="relative bottom-[1px]" />
+                  <AlertTriangle size={14} className="relative bottom-px" />
                 )}
                 {notification.type === "warning" && (
-                  <AlertTriangle size={14} className="relative bottom-[1px]" />
+                  <AlertTriangle size={14} className="relative bottom-px" />
                 )}
                 {notification.message}
               </div>
@@ -418,7 +418,7 @@ export const Navbar = () => {
                         createPortal(
                           <div
                             id="navbar-dropdown-portal"
-                            className="fixed z-[10000] transition-all duration-200 ease-out"
+                            className="fixed z-10000 transition-all duration-200 ease-out"
                             style={{
                               top: dropdownPosition.top,
                               left: dropdownPosition.left,
@@ -559,7 +559,7 @@ export const Navbar = () => {
               className={cn(
                 "flex items-center justify-between shrink-0 transition-all duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1.0)]",
                 isScrolled
-                  ? "mt-4 w-[calc(100%-3rem)] md:w-[44rem] mx-auto rounded-2xl px-4 py-3 border border-black/10 dark:border-white/10"
+                  ? "mt-4 w-[calc(100%-3rem)] md:w-176 mx-auto rounded-2xl px-4 py-3 border border-black/10 dark:border-white/10"
                   : "w-full px-4 py-3 border-b border-black/5 dark:border-white/5",
               )}
             >

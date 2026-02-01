@@ -1438,7 +1438,7 @@ export default function DashboardPage() {
                                     // Play icon (rounded)
                                     <svg
                                       viewBox="0 0 24 24"
-                                      className="w-2.5 h-2.5 text-white dark:text-black fill-current ml-[1px]"
+                                      className="w-2.5 h-2.5 text-white dark:text-black fill-current ml-px"
                                     >
                                       <path d="M8 5.14v13.72a1 1 0 001.55.83l11-6.86a1 1 0 000-1.66l-11-6.86a1 1 0 00-1.55.83z" />
                                     </svg>
