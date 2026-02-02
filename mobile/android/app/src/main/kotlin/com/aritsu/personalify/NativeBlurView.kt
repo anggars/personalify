@@ -24,14 +24,14 @@ class NativeBlurView(private val context: Context, id: Int, creationParams: Map<
         
         val imageUrl = creationParams?.get("imageUrl") as? String
         
-        // USER REQUEST: "Blur tipis tapi high quality (jangan pixelated)"
-        // Radius: 15 (Thin/Mild)
-        // Sampling: 1 (No Downsampling -> High Quality)
+        // USER REQUEST: "Resolution Trap Fix: Downsample to save GPU bandwidth"
+        // Radius: 25 (Increased because of downsampling)
+        // Sampling: 3 (Downsample 3x -> 9x less pixels -> Much Faster on QHD screens)
         if (imageUrl != null) {
             Glide.with(context)
                 .asBitmap()
                 .load(imageUrl)
-                .apply(RequestOptions.bitmapTransform(BlurTransformation(15, 1))) 
+                .apply(RequestOptions.bitmapTransform(BlurTransformation(25, 3))) 
                 .transition(BitmapTransitionOptions.withCrossFade())
                 .into(imageView)
         }
