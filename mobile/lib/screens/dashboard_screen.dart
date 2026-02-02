@@ -260,7 +260,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 if (cleanEmotion.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   SizedBox(
-                    width: 380,
+                    width: 500,
                     child: Text(
                       cleanEmotion,
                       style: GoogleFonts.plusJakartaSans(
@@ -354,7 +354,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       // Gap between items (border) is 12+12=24.
       // So Top/Bottom should be 12 to match? 12 (container) + 12 (internal) = 24.
       // YES. vertical: 12.
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
+      padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16), 
       child: Column(
         children: tracks.asMap().entries.map((entry) {
           final isLast = entry.key == tracks.length - 1;
@@ -375,7 +375,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: kBorderColor),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
       child: Column(
         children: artists.asMap().entries.map((entry) {
           final isLast = entry.key == artists.length - 1;
@@ -396,7 +396,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: kBorderColor),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
       child: Column(
         children: genres.asMap().entries.map((entry) {
           final g = entry.value;
@@ -1137,7 +1137,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         child: InkWell(
                           onTap: () {
                             Navigator.pop(ctx);
-                            Share.shareXFiles([XFile(imagePath)], text: 'My Personalify Top 10 🎵 personalify.app');
+                            Share.shareXFiles([XFile(imagePath)], text: 'My Personalify Top 10');
                           },
                           splashColor: Colors.white24,
                           child: Row(

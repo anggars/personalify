@@ -549,12 +549,60 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         raise HTTPException(status_code=500, detail="Internal Dashboard Error")
 
 @router.get("/api/dashboard/{spotify_id}", tags=["Dashboard API"])
-def dashboard_api(spotify_id: str, request: Request, time_range: str = "medium_term"):
+def dashboard_api(spotify_id: str, request: Request, response: Response, time_range: str = "medium_term"):
     """JSON API endpoint for Next.js dashboard"""
     try:
-        # NEW: Check for access_token cookie to perform REALTIME SYNC (Matches Mobile Behavior)
+        # Check for access_token cookie to perform REALTIME SYNC
         access_token = request.cookies.get("access_token")
         
+        # 1. AUTO-REFRESH LOGIC (Server-Side)
+        # If no access_token cookie, try to refresh using DB refresh_token
+        if not access_token:
+            print(f"WEB DASHBOARD: No access_token cookie. Attempting server-side refresh for {spotify_id}...")
+            refresh_token = get_refresh_token(spotify_id)
+            
+            if refresh_token:
+                try:
+                     # Request new access token from Spotify
+                    client_id = os.getenv("SPOTIFY_CLIENT_ID")
+                    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+                    
+                    payload = {
+                        "grant_type": "refresh_token",
+                        "refresh_token": refresh_token,
+                        "client_id": client_id,
+                        "client_secret": client_secret
+                    }
+                    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+                    
+                    res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
+                    if res.status_code == 200:
+                        tokens = res.json()
+                        access_token = tokens.get("access_token")
+                        new_refresh_token = tokens.get("refresh_token")
+                        expires_in = tokens.get("expires_in", 3600)
+                        
+                        # Save new refresh token if rotated
+                        token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
+                        token_to_save = new_refresh_token if new_refresh_token else refresh_token
+                        save_refresh_token(spotify_id, token_to_save, token_expires_at)
+                        
+                        # Set cookie for future requests
+                        response.set_cookie(
+                            key="access_token",
+                            value=access_token,
+                            httponly=True,
+                            path="/",
+                            samesite="lax",
+                            max_age=expires_in
+                        )
+                        print("WEB DASHBOARD: Server-side refresh success! Cookie set.")
+                    else:
+                        print(f"WEB DASHBOARD: Server-side refresh failed ({res.text})")
+                except Exception as e:
+                    print(f"WEB DASHBOARD: Server-side refresh error: {e}")
+
+        # 2. SYNC LOGIC
         if access_token:
             print(f"WEB DASHBOARD: Found access_token. Syncing fresh data for {spotify_id}...")
             try:
@@ -565,7 +613,7 @@ def dashboard_api(spotify_id: str, request: Request, time_range: str = "medium_t
                 print(f"WEB DASHBOARD: Sync failed ({e}). Falling back to cache.")
                 data = get_cached_top_data("top_v2", spotify_id, time_range)
         else:
-            print(f"WEB DASHBOARD: No access_token. Reading from cache for {spotify_id}.")
+            print(f"WEB DASHBOARD: No access_token (and refresh failed). Reading from cache for {spotify_id}.")
             data = get_cached_top_data("top_v2", spotify_id, time_range)
 
         if not data:
