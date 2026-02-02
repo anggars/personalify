@@ -1043,7 +1043,11 @@ async def log_activity_task(request: Request):
     return {"status": "Activity Logged"}
 
 @router.get("/api/spotify/recently-played", tags=["Spotify Data"])
-def get_recently_played(request: Request, limit: int = 50):
+def get_recently_played(
+    request: Request, 
+    limit: int = 50,
+    spotify_id: Optional[str] = Query(None, description="Spotify ID for fallback refresh")
+):
     # Extract Access Token from Header
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -1056,6 +1060,33 @@ def get_recently_played(request: Request, limit: int = 50):
     
     try:
         response = requests.get(url, headers=headers)
+        if response.status_code == 401 and spotify_id:
+             print(f"HISTORY 401 for {spotify_id}. RETRYING WITH REFRESH.")
+             # REFRESH LOGIC
+             refresh_token = get_refresh_token(spotify_id)
+             if refresh_token:
+                 client_id = os.getenv("SPOTIFY_CLIENT_ID")
+                 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+                 payload = {
+                    "grant_type": "refresh_token",
+                    "refresh_token": refresh_token,
+                    "client_id": client_id,
+                    "client_secret": client_secret
+                 }
+                 res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers={"Content-Type": "application/x-www-form-urlencoded"})
+                 if res.status_code == 200:
+                     tokens = res.json()
+                     new_access = tokens.get("access_token")
+                     new_refresh = tokens.get("refresh_token")
+                     expires_in = tokens.get("expires_in", 3600)
+                     
+                     token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
+                     save_refresh_token(spotify_id, new_refresh if new_refresh else refresh_token, token_expires_at)
+                     
+                     # RETRY
+                     headers["Authorization"] = f"Bearer {new_access}"
+                     response = requests.get(url, headers=headers)
+
         if response.status_code != 200:
              raise HTTPException(status_code=response.status_code, detail=f"Spotify API Error: {response.text}")
         
@@ -1089,7 +1120,10 @@ def get_recently_played(request: Request, limit: int = 50):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/user-profile", tags=["Spotify Data"])
-def get_user_profile_detail(request: Request):
+def get_user_profile_detail(
+    request: Request,
+    spotify_id: Optional[str] = Query(None, description="Spotify ID for fallback refresh")
+):
     """
     Get detailed user profile directly from Spotify /v1/me
     Includes: Display Name, Followers, Product, Country, Image
@@ -1104,6 +1138,34 @@ def get_user_profile_detail(request: Request):
     
     try:
         response = requests.get("https://api.spotify.com/v1/me", headers=headers)
+        
+        # REFRESH LOGIC
+        if response.status_code == 401 and spotify_id:
+             print(f"PROFILE 401 for {spotify_id}. RETRYING WITH REFRESH.")
+             refresh_token = get_refresh_token(spotify_id)
+             if refresh_token:
+                 client_id = os.getenv("SPOTIFY_CLIENT_ID")
+                 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+                 payload = {
+                    "grant_type": "refresh_token",
+                    "refresh_token": refresh_token,
+                    "client_id": client_id,
+                    "client_secret": client_secret
+                 }
+                 res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers={"Content-Type": "application/x-www-form-urlencoded"})
+                 if res.status_code == 200:
+                     tokens = res.json()
+                     new_access = tokens.get("access_token")
+                     new_refresh = tokens.get("refresh_token")
+                     expires_in = tokens.get("expires_in", 3600)
+                     
+                     token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
+                     save_refresh_token(spotify_id, new_refresh if new_refresh else refresh_token, token_expires_at)
+                     
+                     # RETRY
+                     headers["Authorization"] = f"Bearer {new_access}"
+                     response = requests.get("https://api.spotify.com/v1/me", headers=headers)
+
         if response.status_code != 200:
              raise HTTPException(status_code=response.status_code, detail=f"Spotify API Error: {response.text}")
         
