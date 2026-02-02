@@ -448,12 +448,54 @@ from app.spotify_handler import sync_user_data
 @router.get("/sync/top-data", tags=["Sync"])
 def sync_top_data(
     access_token: str = Query(..., description="Spotify Access Token"),
-    time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"], description="Time range")
+    time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"], description="Time range"),
+    spotify_id: Optional[str] = Query(None, description="Spotify ID for server-side refresh fallback")
 ):
     try:
         return sync_user_data(access_token, time_range)
     except HTTPException as he:
+        if he.status_code == 401 and spotify_id:
+            print(f"SYNC TOKEN EXPIRED for {spotify_id}. Attempting server-side refresh...")
+            refresh_token = get_refresh_token(spotify_id)
+            if refresh_token:
+                try:
+                    # Request new access token
+                    client_id = os.getenv("SPOTIFY_CLIENT_ID")
+                    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+                    
+                    payload = {
+                        "grant_type": "refresh_token",
+                        "refresh_token": refresh_token,
+                        "client_id": client_id,
+                        "client_secret": client_secret
+                    }
+                    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+                    
+                    res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
+                    if res.status_code == 200:
+                        tokens = res.json()
+                        new_access_token = tokens.get("access_token")
+                        new_refresh_token = tokens.get("refresh_token")
+                        expires_in = tokens.get("expires_in", 3600)
+                        
+                        # Save new refresh token if rotated
+                        token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
+                        token_to_save = new_refresh_token if new_refresh_token else refresh_token
+                        save_refresh_token(spotify_id, token_to_save, token_expires_at)
+                        
+                        print("SYNC REFRESH SUCCESS. Retrying sync with new token...")
+                        # Retry sync with NEW token
+                        return sync_user_data(new_access_token, time_range)
+                    else:
+                        print(f"SYNC REFRESH ERROR: {res.text}")
+                except Exception as refresh_err:
+                    print(f"SYNC REFRESH EXCEPTION: {refresh_err}")
+            else:
+                 print("SYNC REFRESH FAILED: No refresh token in DB.")
+        
+        # If we couldn't refresh or it wasn't a 401, re-raise
         raise he
+        
     except Exception as e:
         print(f"SYNC WRAPPER ERROR: {e}")
         raise HTTPException(status_code=500, detail="Sync failed.")

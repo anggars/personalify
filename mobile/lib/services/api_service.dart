@@ -113,7 +113,7 @@ class ApiService {
     print('API: Fetching profile for $spotifyId via sync endpoint');
     
     // 1. Try SYNC (Refreshes Data + AI Analysis)
-    var profile = await syncTopData(timeRange);
+    var profile = await syncTopData(spotifyId, timeRange);
     
     // 2. Fallback: If Sync fails (e.g. HuggingFace Down -> Backend 500)
     // Try to fetch existing data without sync
@@ -130,12 +130,12 @@ class ApiService {
   }
 
   /// Trigger massive data sync (scrapes Spotify and updates DB/Cache)
-  Future<UserProfile?> syncTopData(String timeRange) async {
+  Future<UserProfile?> syncTopData(String spotifyId, String timeRange) async {
     try {
       final token = await _authService.getAccessToken();
       if (token == null) throw Exception("No token for sync");
 
-      final requestUrl = '/sync/top-data?access_token=${token.substring(0, 20)}...&time_range=$timeRange';
+      final requestUrl = '/sync/top-data?access_token=${token.substring(0, 20)}...&time_range=$timeRange&spotify_id=$spotifyId';
       print("========================================");
       print("API: Syncing data... (This may take 5-10 seconds)");
       print("REQUEST URL: $requestUrl");
@@ -149,6 +149,7 @@ class ApiService {
           'access_token': token, // Required by backend endpoint
           'time_range': timeRange,
           'limit': 20, // FIX: Use top 20 for emotion analysis (was default 10)
+          'spotify_id': spotifyId, // NEW: For server-side refresh
         },
         options: Options(
           receiveTimeout: const Duration(seconds: 30), // Sync can be slow (hybrid fallback takes ~6-8s)
