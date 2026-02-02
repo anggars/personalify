@@ -315,22 +315,22 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         )
         return response
 
+class RefreshRequest(BaseModel):
+    spotify_id: str
+
 @router.post("/auth/refresh", tags=["Auth"])
 def refresh_access_token(
     request: Request,
-    spotify_id: str = Body(None, embed=True, description="Spotify ID (for mobile)")
+    data: RefreshRequest = Body(...)
 ):
     """
     Refresh access token using stored refresh_token.
-    - Mobile: sends spotify_id in body, receives JSON response
-    - Web: uses spotify_id from cookie, receives JSON + new cookie
+    - Mobile: sends spotify_id in JSON body
+    - Web: sends spotify_id in JSON body (or uses cookie fallback if needed, but we encourage explicit ID)
     """
+    spotify_id = data.spotify_id
     
-    # Determine if request is from mobile or web
-    if not spotify_id:
-        # Web client - get spotify_id from cookie
-        spotify_id = request.cookies.get("spotify_id")
-    
+    # Validation
     if not spotify_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
@@ -360,16 +360,20 @@ def refresh_access_token(
         
         tokens = res.json()
         new_access_token = tokens.get("access_token")
-        new_refresh_token = tokens.get("refresh_token")
+        new_refresh_token = tokens.get("refresh_token") # Spotify might rotate it
         expires_in = tokens.get("expires_in", 3600)
         
         if not new_access_token:
             raise HTTPException(status_code=401, detail="No access token in refresh response")
         
-        # Update refresh token if Spotify provided a new one
-        if new_refresh_token:
-            token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
-            save_refresh_token(spotify_id, new_refresh_token, token_expires_at)
+        # Calculate new expiry
+        token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
+        
+        # Update Database:
+        # If new_refresh_token is provided, save it. Otherwise keep the old one.
+        # CRITICAL: We MUST update token_expires_at regardless.
+        token_to_save = new_refresh_token if new_refresh_token else refresh_token
+        save_refresh_token(spotify_id, token_to_save, token_expires_at)
         
         # Prepare JSON response
         response_data = {
@@ -377,24 +381,17 @@ def refresh_access_token(
             "expires_in": expires_in
         }
         
-        # Check if request is from mobile (has spotify_id in body)
-        is_mobile = spotify_id in str(request._body) if hasattr(request, '_body') else False
-        
-        if is_mobile:
-            # Mobile - return JSON only
-            return JSONResponse(content=response_data)
-        else:
-            # Web - return JSON and set cookie
-            response = JSONResponse(content=response_data)
-            response.set_cookie(
-                key="access_token",
-                value=new_access_token,
-                httponly=True,
-                path="/",
-                samesite="lax",
-                max_age=expires_in
-            )
-            return response
+        # Web also sets cookie for redundancy
+        response = JSONResponse(content=response_data)
+        response.set_cookie(
+            key="access_token",
+            value=new_access_token,
+            httponly=True,
+            path="/",
+            samesite="lax",
+            max_age=expires_in
+        )
+        return response
             
     except HTTPException:
         raise
