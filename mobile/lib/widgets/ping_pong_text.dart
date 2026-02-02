@@ -19,37 +19,45 @@ class PingPongScrollingText extends StatefulWidget {
   State<PingPongScrollingText> createState() => _PingPongScrollingTextState();
 }
 
-class _PingPongScrollingTextState extends State<PingPongScrollingText> with WidgetsBindingObserver {
+class _PingPongScrollingTextState extends State<PingPongScrollingText> {
   final ScrollController _scrollController = ScrollController();
   bool _scrollingRight = true;
   bool _isAnimating = false;
+  Timer? _startTimer; // Timer buat delay
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) _startScrolling();
+    // FITUR ANTI LAG: Smart Delay
+    // Jangan langsung gerak! Tunggu 800ms.
+    // Kalau user cuma scroll lewat (flinging), timer ini bakal ke-cancel di dispose()
+    // sebelum sempet jalanin animasi. CPU lu bakal berterima kasih.
+    _startTimer = Timer(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        _startScrolling();
+      }
     });
   }
 
   void _startScrolling() async {
     if (!mounted) return;
     
+    // Cek apakah widget kelihatan
     if (!TickerMode.of(context)) {
       await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) _startScrolling();
       return;
     }
     
+    // Cek apakah perlu scroll (konten > container)
     if (_scrollController.hasClients && _scrollController.position.maxScrollExtent <= 0) return;
     if (_isAnimating) return;
 
     try {
       _isAnimating = true;
       final maxScroll = _scrollController.position.maxScrollExtent;
-      final duration = Duration(milliseconds: (maxScroll * 40).toInt()); 
+      // Speed control: 50ms per pixel
+      final duration = Duration(milliseconds: (maxScroll * 50).toInt()); 
 
       if (_scrollingRight) {
         await _scrollController.animateTo(
@@ -65,47 +73,41 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> with Widg
         );
       }
       
-      // OPTIMIZE: Add 2 second pause at the end
-      await Future.delayed(const Duration(seconds: 2));
-      
       if (!mounted) {
         _isAnimating = false;
         return;
       }
-      
-      // OPTIMIZE: Flip direction WITHOUT setState to avoid rebuild
-      _scrollingRight = !_scrollingRight;
-      _isAnimating = false; 
-      
-      if (mounted) {
-        _startScrolling();
-      }
+
+      // Logic recursive: lanjut animasi terus
+      if (mounted) { 
+        setState(() {
+          _scrollingRight = !_scrollingRight;
+        });
+        
+        // Jeda dikit sebelum balik arah biar lebih natural
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        if (mounted) {
+          _isAnimating = false; 
+          _startScrolling();
+        }
+      } 
     } catch (_) {
       _isAnimating = false;
     }
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      _isAnimating = false;
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.offset); 
-      }
-    } else if (state == AppLifecycleState.resumed) {
-      if (mounted) _startScrolling();
-    }
-  }
-
-  @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    // PENTING: Cancel timer kalo widget di-kill (pas di-scroll lewat)
+    _startTimer?.cancel(); 
     _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // RepaintBoundary udah bener, pertahankan!
     return RepaintBoundary(
       child: SizedBox(
         width: widget.width,
