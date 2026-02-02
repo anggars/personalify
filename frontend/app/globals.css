@@ -113,56 +113,56 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(100, 100, 100, 0.3) transparent;
   } */
-  
+
   /* Global webkit scrollbar - completely take over native scrollbar */
   *::-webkit-scrollbar {
     width: 8px;
     height: 8px;
     background: transparent;
   }
-  
+
   *::-webkit-scrollbar-track {
     background: transparent;
     border-radius: 4px;
   }
-  
+
   *::-webkit-scrollbar-thumb {
     background: rgba(100, 100, 100, 0.3);
-    border-radius: 4px;
+    border-radius: 0;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
-  
+
   *::-webkit-scrollbar-thumb:hover {
     background: rgba(100, 100, 100, 0.5);
     border: 2px solid transparent;
     background-clip: padding-box;
   }
-  
+
   /* ABSOLUTELY REMOVE ALL SCROLLBAR ARROWS - Global */
   *::-webkit-scrollbar-button {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
   }
-  
+
   *::-webkit-scrollbar-corner {
     background: transparent;
   }
-  
+
   /* Specific textarea and overflow elements */
   textarea::-webkit-scrollbar,
   [style*="overflow"]::-webkit-scrollbar {
     width: 8px;
     background: transparent;
   }
-  
+
   textarea::-webkit-scrollbar-thumb,
   [style*="overflow"]::-webkit-scrollbar-thumb {
     background: rgba(100, 100, 100, 0.3);
     border-radius: 4px;
   }
-  
+
   textarea::-webkit-scrollbar-button,
   [style*="overflow"]::-webkit-scrollbar-button {
     display: none !important;
@@ -234,17 +234,23 @@
   /* Mobile list-item styling */
   .list-item {
     gap: 0.75rem;
-    padding: 0.75rem 0;
+    padding: 0.5rem 0;
   }
 
   .list-item img {
-    width: 50px;
-    height: 50px;
+    width: 48px;
+    height: 48px;
+    border-radius: 0.5rem !important;
   }
 
   /* Mobile textarea smaller */
   textarea {
     min-height: 175px !important;
+  }
+
+  /* Mobile section card compact */
+  .section-card {
+    padding: 1.5rem 1rem 0.5rem 1rem !important;
   }
 
   /* Mobile glass-card - just padding, width handled by container */
@@ -375,7 +381,7 @@
 .list-item img {
   width: 64px;
   height: 64px;
-  border-radius: 0.5rem;
+  border-radius: 0.5rem !important;
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -450,8 +456,6 @@ div.custom-scrollbar {
   overflow-y: auto;
   overflow-x: hidden;
 }
-
-
 
 /* WebKit scrollbar styling - completely override native */
 .custom-scrollbar::-webkit-scrollbar,

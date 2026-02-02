@@ -997,7 +997,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[102vh]">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background overflow-hidden">
         <svg className="w-8 h-8 mb-4 spinner-svg" viewBox="0 0 50 50">
           <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
         </svg>
@@ -1242,13 +1242,13 @@ export default function DashboardPage() {
                   initial={idx >= 10 ? { opacity: 0, y: 20 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx >= 10 ? (idx - 10) * 0.1 : 0 }}
-                  className="list-item hover:bg-accent/50 rounded-lg transition-colors"
+                  className="list-item hover:bg-accent/50 transition-colors"
                 >
                   <span className="rank">{idx + 1}</span>
                   <img
                     src={artist.image}
                     alt={artist.name}
-                    className="cursor-pointer"
+                    className="cursor-pointer rounded-lg"
                     onClick={() => openArtistProfile(artist.id)}
                   />
                   <div className="info">
@@ -1314,7 +1314,7 @@ export default function DashboardPage() {
                   initial={idx >= 10 ? { opacity: 0, y: 20 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx >= 10 ? (idx - 10) * 0.1 : 0 }}
-                  className={`list-item track-item cursor-pointer hover:bg-accent/50 rounded-lg transition-colors ${
+                  className={`list-item track-item cursor-pointer hover:bg-accent/50 transition-colors ${
                     activeEmbed === track.id ? "embed-shown" : ""
                   }`}
                   onClick={() => toggleEmbed(track.id)}
@@ -1353,7 +1353,7 @@ export default function DashboardPage() {
                   <img
                     src={track.image}
                     alt={track.name}
-                    className="w-16 h-16 rounded-lg object-cover shrink-0"
+                    className="w-12 h-12 md:w-16 md:h-16 rounded-lg object-cover shrink-0"
                   />
 
                   {/* Info Area */}
@@ -1361,7 +1361,7 @@ export default function DashboardPage() {
                     {/* Track Name - Always visible */}
                     <MarqueeText
                       text={track.name}
-                      className={`name font-semibold text-base mb-1 ${
+                      className={`name font-semibold text-sm md:text-base mb-1 ${
                         activeEmbed === track.id
                           ? "text-[#1DB954]"
                           : "text-foreground"
@@ -1370,7 +1370,7 @@ export default function DashboardPage() {
                     {/* Artist - Always visible */}
                     <MarqueeText
                       text={track.artists.join(", ")}
-                      className="meta text-muted-foreground text-sm"
+                      className="meta text-muted-foreground text-xs md:text-sm"
                     />
 
                     {/* Conditional: Metadata OR Player Controls */}
@@ -1382,12 +1382,12 @@ export default function DashboardPage() {
                             track.album.total_tracks,
                             track.album.name
                           )}
-                          className="meta text-muted-foreground"
+                          className="meta text-muted-foreground text-xs md:text-sm"
                         />
                         {/* Popularity */}
                         <MarqueeText
                           text={`Popularity: ${track.popularity}`}
-                          className="meta text-muted-foreground"
+                          className="meta text-muted-foreground text-xs md:text-sm"
                         />
                       </>
                     ) : (
@@ -1574,7 +1574,7 @@ export default function DashboardPage() {
             <h2>Top Genres</h2>
 
             {chartData.length > 0 && (
-              <div id="genre-chart-container" className="mb-2 mt-2">
+              <div id="genre-chart-container" className="mt-2 mb-0">
                 <GenreChart data={chartData} />
               </div>
             )}
@@ -1586,14 +1586,14 @@ export default function DashboardPage() {
                   initial={idx >= 10 ? { opacity: 0, y: 20 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx >= 10 ? (idx - 10) * 0.1 : 0 }}
-                  className={`py-3 border-b border-border last:border-b-0 cursor-pointer hover:bg-accent/50 rounded-lg transition-all ${
+                  className={`py-3 border-b border-border last:border-b-0 cursor-pointer hover:bg-accent/50 transition-all ${
                     disabledGenres.has(idx) ? "opacity-40 line-through" : ""
                   }`}
                   onMouseEnter={() => setHoveredGenre(idx)}
                   onMouseLeave={() => setHoveredGenre(null)}
                   onClick={() => toggleGenre(idx)}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-center gap-3">
                     <span className="text-lg font-bold text-muted-foreground/50 w-6 text-center shrink-0">
                       {idx + 1}
                     </span>
