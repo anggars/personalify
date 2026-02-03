@@ -40,6 +40,7 @@ export const Navbar = () => {
   } | null>(null);
   const dropdownTriggerRef = useRef<HTMLButtonElement>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [hoveredPath, setHoveredPath] = useState<string | null>(null);
 
   // Mount check for portal
   useEffect(() => {
@@ -234,19 +235,19 @@ export const Navbar = () => {
             {(notification.type === "warning" ||
               notification.type === "error" ||
               notification.type === "success") && (
-              <div className="px-6 py-3 font-bold text-sm whitespace-nowrap flex items-center gap-2">
-                {notification.type === "success" && (
-                  <CheckCircle size={14} className="relative bottom-px" />
-                )}
-                {notification.type === "error" && (
-                  <AlertTriangle size={14} className="relative bottom-px" />
-                )}
-                {notification.type === "warning" && (
-                  <AlertTriangle size={14} className="relative bottom-px" />
-                )}
-                {notification.message}
-              </div>
-            )}
+                <div className="px-6 py-3 font-bold text-sm whitespace-nowrap flex items-center gap-2">
+                  {notification.type === "success" && (
+                    <CheckCircle size={14} className="relative bottom-px" />
+                  )}
+                  {notification.type === "error" && (
+                    <AlertTriangle size={14} className="relative bottom-px" />
+                  )}
+                  {notification.type === "warning" && (
+                    <AlertTriangle size={14} className="relative bottom-px" />
+                  )}
+                  {notification.message}
+                </div>
+              )}
 
             {notification.type === "media" && notification.media && (
               <Link
@@ -326,7 +327,10 @@ export const Navbar = () => {
             )}
 
             {/* DESKTOP MENU */}
-            <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+            <div
+              className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2"
+              onMouseLeave={() => setHoveredPath(null)}
+            >
               {navLinks.map((link) => {
                 const isActive =
                   link.name === "Dashboard"
@@ -334,6 +338,11 @@ export const Navbar = () => {
                     : link.href === "/"
                       ? pathname === "/"
                       : pathname?.startsWith(link.href);
+
+                const isHovered = hoveredPath === link.href;
+
+                // The pill should show if this item is hovered OR (no item is hovered AND this item is active)
+                const showPill = hoveredPath ? isHovered : isActive;
 
                 const textClass = isActive
                   ? "text-black dark:text-white"
@@ -352,6 +361,7 @@ export const Navbar = () => {
                           )
                         }
                         onMouseEnter={() => {
+                          setHoveredPath(link.href);
                           if (dropdownTriggerRef.current) {
                             const rect =
                               dropdownTriggerRef.current.getBoundingClientRect();
@@ -398,10 +408,10 @@ export const Navbar = () => {
                               : "group-hover:rotate-180",
                           )}
                         />
-                        {isActive && (
+                        {showPill && (
                           <motion.div
                             layoutId="navbar-active"
-                            className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#1DB954] rounded-full mx-3"
+                            className="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-md -z-10"
                             transition={{
                               type: "spring",
                               stiffness: 380,
@@ -459,6 +469,7 @@ export const Navbar = () => {
                       key={link.name}
                       href={link.href}
                       onClick={link.onClick}
+                      onMouseEnter={() => setHoveredPath(link.href)}
                       className={cn(
                         "relative px-3 py-2 text-sm transition-colors rounded-md whitespace-nowrap inline-flex flex-col items-center justify-center",
                         textClass,
@@ -477,10 +488,10 @@ export const Navbar = () => {
                           {link.name}
                         </span>
                       </span>
-                      {isActive && (
+                      {showPill && (
                         <motion.div
                           layoutId="navbar-active"
-                          className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#1DB954] rounded-full mx-3"
+                          className="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-md -z-10"
                           transition={{
                             type: "spring",
                             stiffness: 380,
@@ -496,6 +507,7 @@ export const Navbar = () => {
                   <Link
                     key={link.name}
                     href={link.href}
+                    onMouseEnter={() => setHoveredPath(link.href)}
                     className={cn(
                       "relative px-3 py-2 text-sm transition-colors rounded-md whitespace-nowrap inline-flex flex-col items-center justify-center",
                       textClass,
@@ -512,10 +524,10 @@ export const Navbar = () => {
                         {link.name}
                       </span>
                     </span>
-                    {isActive && (
+                    {showPill && (
                       <motion.div
                         layoutId="navbar-active"
-                        className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#1DB954] rounded-full mx-3"
+                        className="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-md -z-10"
                         transition={{
                           type: "spring",
                           stiffness: 380,

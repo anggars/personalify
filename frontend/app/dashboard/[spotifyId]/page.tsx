@@ -12,6 +12,35 @@ import MarqueeText from "@/components/marquee-text";
 import { toast } from "sonner";
 import { fetchWithAuth } from "@/lib/api";
 
+// Spotify IFrame API type declarations
+interface SpotifyEmbedController {
+  loadUri: (uri: string) => void;
+  play: () => void;
+  pause: () => void;
+  resume: () => void;
+  togglePlay: () => void;
+  restart: () => void;
+  seek: (seconds: number) => void;
+  destroy: () => void;
+  addListener: (event: string, callback: (e: any) => void) => void;
+  removeListener: (event: string, callback?: (e: any) => void) => void;
+}
+
+interface SpotifyIFrameAPI {
+  createController: (
+    element: HTMLElement,
+    options: { uri: string; width?: number | string; height?: number | string },
+    callback: (controller: SpotifyEmbedController) => void
+  ) => void;
+}
+
+declare global {
+  interface Window {
+    onSpotifyIframeApiReady?: (api: SpotifyIFrameAPI) => void;
+    SpotifyIframeApi?: SpotifyIFrameAPI;
+  }
+}
+
 interface Artist {
   id: string;
   name: string;
@@ -143,6 +172,13 @@ export default function DashboardPage() {
     {}
   );
   const [isBuffering, setIsBuffering] = useState<Record<string, boolean>>({});
+
+  // Spotify IFrame API controller instances
+  const embedControllers = useRef<Record<string, SpotifyEmbedController>>({});
+  const [spotifyApiReady, setSpotifyApiReady] = useState(false);
+  const embedContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  // Track which embeds have been initialized (prevents re-creating controllers)
+  const [initializedEmbeds, setInitializedEmbeds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const footer = document.querySelector("footer");
@@ -316,11 +352,19 @@ export default function DashboardPage() {
     fetchData();
   }, [spotifyId, timeRange, router]);
 
+  // Animate dots effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimatedDots((prev) => (prev.length >= 3 ? "." : prev + "."));
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchEmotionAnalysis = async (extended: boolean) => {
     try {
       if (extended) {
-         setTypedHtml("");
-         setEmotionText("Digging deeper into your music vibe...");
+        setTypedHtml("");
+        setEmotionText("Digging deeper into your music vibe...");
       }
 
       const res = await fetchWithAuth("/analyze-emotions-background", {
@@ -365,7 +409,39 @@ export default function DashboardPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Listen to Spotify iframe events for playback info
+  // Load Spotify IFrame API script
+  useEffect(() => {
+    // Check if script already loaded
+    if (window.SpotifyIframeApi) {
+      setSpotifyApiReady(true);
+      return;
+    }
+
+    // Check if script is already being loaded
+    const existingScript = document.querySelector('script[src*="spotify.com/embed/iframe-api"]');
+    if (existingScript) {
+      // Wait for it to load
+      window.onSpotifyIframeApiReady = (api) => {
+        window.SpotifyIframeApi = api;
+        setSpotifyApiReady(true);
+      };
+      return;
+    }
+
+    // Define callback before loading script
+    window.onSpotifyIframeApiReady = (api) => {
+      window.SpotifyIframeApi = api;
+      setSpotifyApiReady(true);
+    };
+
+    // Load the script
+    const script = document.createElement('script');
+    script.src = 'https://open.spotify.com/embed/iframe-api/v1';
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
+  // Listen to Spotify iframe postMessage events for playback state
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       // Only process messages from Spotify
@@ -373,48 +449,54 @@ export default function DashboardPage() {
 
       try {
         const data = event.data;
-        const trackId = playingTrack;
+        const trackId = activeEmbed;
 
         if (!trackId) return;
 
+        // CRITICAL FIX: If we have a controller for this track, IGNORE postMessage events
+        // to prevent double updates and race conditions with the Controller API listener.
+        if (embedControllers.current[trackId]) return;
+
         // Handle playback state updates from Spotify embed
         if (data.type === "playback_update") {
-          if (data.position !== undefined) {
-            setTrackPosition((prev) => ({ ...prev, [trackId]: data.position }));
+          const { position, duration, isPaused, isBuffering: apiBuffering } = data;
+
+          if (position !== undefined) {
+            // Convert ms to seconds
+            const positionSec = Math.floor(position / 1000);
+            setTrackPosition((prev) => ({
+              ...prev,
+              [trackId]: positionSec
+            }));
           }
-          if (data.duration) {
-            setTrackDuration((prev) => ({ ...prev, [trackId]: data.duration }));
+          if (duration !== undefined) {
+            const durationSec = Math.floor(duration / 1000);
+            // Don't cap at 30s anymore, use logic similar to toggleEmbed
+            setTrackDuration((prev) => ({ ...prev, [trackId]: durationSec }));
           }
-          // If Spotify sends isPaused, use it to control buffering state
-          if (data.isPaused !== undefined) {
-            // If paused mid-playback, set buffering to stop progress bar
-            setIsBuffering((prev) => ({ ...prev, [trackId]: data.isPaused }));
+          // Use isBuffering from API if available
+          if (apiBuffering !== undefined) {
+            setIsBuffering((prev) => ({ ...prev, [trackId]: apiBuffering }));
+          }
+          // Update playing state
+          if (isPaused !== undefined) {
+            if (isPaused) {
+              setPlayingTrack((prev) => prev === trackId ? null : prev);
+            } else {
+              setPlayingTrack(trackId);
+            }
           }
         }
 
-        // Handle ready/loading/error events
+        // Handle ready event
         if (data.type === "ready") {
-          // Player is ready, clear buffering
           setIsBuffering((prev) => ({ ...prev, [trackId]: false }));
         }
 
-        if (data.type === "loading" || data.type === "buffering") {
-          // Player is loading/buffering, pause progress bar
-          setIsBuffering((prev) => ({ ...prev, [trackId]: true }));
-        }
-
-        if (data.type === "playing") {
-          // Player started playing, clear buffering
+        // Handle specific state events
+        if (data.type === "playback_started") {
+          setPlayingTrack(trackId);
           setIsBuffering((prev) => ({ ...prev, [trackId]: false }));
-        }
-
-        if (data.type === "paused" || data.type === "ended") {
-          // Player paused or ended, stop progress bar
-          setIsBuffering((prev) => ({ ...prev, [trackId]: true }));
-          if (data.type === "ended") {
-            setPlayingTrack(null);
-            setTrackPosition((prev) => ({ ...prev, [trackId]: 0 }));
-          }
         }
       } catch (err) {
         // Ignore parsing errors
@@ -423,25 +505,25 @@ export default function DashboardPage() {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [playingTrack]);
+  }, [activeEmbed, isMobile]);
 
-  // Poll for playback position updates when playing
+  // Fallback: simulate progress if no API messages received (legacy behavior)
   useEffect(() => {
     if (!playingTrack) return;
 
-    // Don't start the interval until buffering is complete
+    // CRITICAL: Disable fallback timer if Controller is active for this track
+    // The Controller API provides accurate updates, so manual simulation causes jumping/sync issues.
+    if (embedControllers.current[playingTrack]) return;
+
     if (isBuffering[playingTrack]) return;
 
     const interval = setInterval(() => {
-      // Simulate playback progression (Spotify embed doesn't expose real-time position)
       setTrackPosition((prev) => {
         const currentPos = prev[playingTrack] || 0;
         const duration = trackDuration[playingTrack] || 30;
 
-        // Stop at the end and reset position
         if (currentPos >= duration - 1) {
           setPlayingTrack(null);
-          // Reset position to 0 when track ends
           return { ...prev, [playingTrack]: 0 };
         }
 
@@ -486,53 +568,178 @@ export default function DashboardPage() {
 
   const toggleEmbed = (trackId: string) => {
     if (activeEmbed === trackId) {
-      // Closing - fade out then close
+      // Closing - fade out and pause, but DON'T destroy controller (prevents removeChild error)
       setShowPlayerControls((prev) => ({ ...prev, [trackId]: false }));
+
+      // Pause using controller if available
+      const controller = embedControllers.current[trackId];
+      if (controller) {
+        try {
+          controller.pause();
+        } catch (e) {
+          // Ignore pause errors
+        }
+      }
+
       setTimeout(() => {
         setActiveEmbed(null);
         setPlayingTrack(null);
         setEmbedReady((prev) => ({ ...prev, [trackId]: false }));
       }, 300); // Match animation duration
     } else {
+      // If there's already an active embed, close it first
+      if (activeEmbed) {
+        const prevController = embedControllers.current[activeEmbed];
+        if (prevController) {
+          try {
+            prevController.pause();
+          } catch (e) {
+            // Ignore pause errors
+          }
+        }
+        setShowPlayerControls((prev) => ({ ...prev, [activeEmbed]: false }));
+        setPlayingTrack(null);
+        setEmbedReady((prev) => ({ ...prev, [activeEmbed]: false }));
+      }
+
       // Opening - show embed but delay controls
       setActiveEmbed(trackId);
       setPlayingTrack(null);
       setEmbedReady((prev) => ({ ...prev, [trackId]: false }));
+      setIsBuffering((prev) => ({ ...prev, [trackId]: true }));
 
       // Initialize duration from track data (convert ms to seconds)
+      // Don't hardcode 30s - use full duration, API will update with actual preview duration
       const track = data?.tracks.find((t) => t.id === trackId);
       if (track && track.duration_ms) {
-        // On mobile, limit to 30s as embeds are typically previews
-        // On desktop, we assume users might have full playback (though often still previews, consistency with mobile complaint is key)
         const durationSeconds = Math.floor(track.duration_ms / 1000);
+        // For mobile, start with 0 (will show as Preview) until API gives actual preview duration
+        // For desktop, show full track duration immediately
         setTrackDuration((prev) => ({
           ...prev,
-          [trackId]: isMobile ? 30 : durationSeconds,
+          [trackId]: isMobile ? 0 : durationSeconds,
         }));
-      } else {
-        // Fallback to 30 seconds if duration not available
-        setTrackDuration((prev) => ({ ...prev, [trackId]: 30 }));
       }
       // Reset position
       setTrackPosition((prev) => ({ ...prev, [trackId]: 0 }));
 
-      // Wait for embed to load, then fade in controls
-      setTimeout(() => {
+      // Check if we already have a controller for this track
+      if (embedControllers.current[trackId]) {
+        // Reuse existing controller - just show controls
         setEmbedReady((prev) => ({ ...prev, [trackId]: true }));
-        setTimeout(() => {
-          setShowPlayerControls((prev) => ({ ...prev, [trackId]: true }));
-        }, 100);
-      }, 800); // Give embed time to load
+        setShowPlayerControls((prev) => ({ ...prev, [trackId]: true }));
+        setIsBuffering((prev) => ({ ...prev, [trackId]: false }));
+        return;
+      }
+
+      // Create controller using Spotify IFrame API
+      // Use setTimeout to ensure container is rendered
+      setTimeout(() => {
+        if (spotifyApiReady && window.SpotifyIframeApi) {
+          const container = embedContainerRefs.current[trackId];
+          if (container) {
+            window.SpotifyIframeApi.createController(
+              container,
+              {
+                uri: `spotify:track:${trackId}`,
+                width: 0,
+                height: 0,
+              },
+              (controller) => {
+                embedControllers.current[trackId] = controller;
+
+                // Show controls immediately when controller is created
+                setEmbedReady((prev) => ({ ...prev, [trackId]: true }));
+                setShowPlayerControls((prev) => ({ ...prev, [trackId]: true }));
+                setIsBuffering((prev) => ({ ...prev, [trackId]: false }));
+
+                // Listen for playback updates - this is the key for accurate sync!
+                controller.addListener('playback_update', (e) => {
+                  const { position, duration, isPaused, isBuffering: apiBuffering } = e.data;
+
+                  // Convert ms to seconds
+                  const positionSec = Math.floor(position / 1000);
+                  const durationSec = Math.floor(duration / 1000);
+
+                  // Update buffering state
+                  setIsBuffering((prev) => ({ ...prev, [trackId]: apiBuffering }));
+
+                  // Update duration from API (more accurate)
+                  setTrackDuration((prev) => ({ ...prev, [trackId]: durationSec }));
+
+                  // Update position ONLY if not buffering or position is 0 (reset/start)
+                  // This prevents timestamp jumping ahead while audio is still loading
+                  if (!apiBuffering || positionSec === 0) {
+                    setTrackPosition((prev) => ({
+                      ...prev,
+                      [trackId]: positionSec
+                    }));
+                  }
+
+                  // Update playing state based on isPaused
+                  if (isPaused) {
+                    setPlayingTrack((prev) => prev === trackId ? null : prev);
+                  } else {
+                    setPlayingTrack(trackId);
+                  }
+
+                  // Check for track end
+                  if (positionSec >= durationSec - 1 && !isPaused) {
+                    setPlayingTrack(null);
+                    setTrackPosition((prev) => ({ ...prev, [trackId]: 0 }));
+                  }
+                });
+
+                // Listen for playback started
+                controller.addListener('playback_started', () => {
+                  setPlayingTrack(trackId);
+                  setIsBuffering((prev) => ({ ...prev, [trackId]: false }));
+                });
+              }
+            );
+          } else {
+            // Container not available, use fallback
+            setTimeout(() => {
+              setEmbedReady((prev) => ({ ...prev, [trackId]: true }));
+              setShowPlayerControls((prev) => ({ ...prev, [trackId]: true }));
+              setIsBuffering((prev) => ({ ...prev, [trackId]: false }));
+            }, 800);
+          }
+        } else {
+          // API not ready, use fallback
+          setTimeout(() => {
+            setEmbedReady((prev) => ({ ...prev, [trackId]: true }));
+            setTimeout(() => {
+              setShowPlayerControls((prev) => ({ ...prev, [trackId]: true }));
+              setIsBuffering((prev) => ({ ...prev, [trackId]: false }));
+            }, 100);
+          }, 800);
+        }
+      }, 100);
     }
   };
 
   const closeEmbed = (e: React.MouseEvent, trackId: string) => {
     e.stopPropagation();
 
-    // Stop playback if playing
-    const iframe = embedRefs.current[trackId];
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({ command: "pause" }, "*");
+    // Pause using controller if available
+    const controller = embedControllers.current[trackId];
+    if (controller) {
+      try {
+        controller.pause();
+      } catch (err) {
+        // Ignore errors
+      }
+    } else {
+      // Fallback to postMessage
+      const iframe = embedRefs.current[trackId];
+      if (iframe && iframe.contentWindow) {
+        try {
+          iframe.contentWindow.postMessage({ command: "pause" }, "*");
+        } catch (err) {
+          // Ignore errors
+        }
+      }
     }
 
     // Fade out then close
@@ -549,14 +756,27 @@ export default function DashboardPage() {
   const togglePlayPause = (e: React.MouseEvent, trackId: string) => {
     e.stopPropagation();
 
-    const iframe = embedRefs.current[trackId];
-    if (!iframe || !iframe.contentWindow) return;
+    const controller = embedControllers.current[trackId];
 
     if (playingTrack === trackId) {
-      // Pause
-      iframe.contentWindow.postMessage({ command: "pause" }, "*");
+      // Pause using controller
+      if (controller) {
+        try {
+          controller.pause();
+        } catch (e) {
+          // Fallback to postMessage
+          const iframe = embedRefs.current[trackId];
+          if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({ command: "pause" }, "*");
+          }
+        }
+      } else {
+        const iframe = embedRefs.current[trackId];
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ command: "pause" }, "*");
+        }
+      }
       setPlayingTrack(null);
-      setIsBuffering((prev) => ({ ...prev, [trackId]: false }));
     } else {
       // Play - reset position if at the end
       const currentPos = trackPosition[trackId] || 0;
@@ -565,29 +785,55 @@ export default function DashboardPage() {
       if (currentPos >= duration - 1) {
         // Reset to start if track has ended
         setTrackPosition((prev) => ({ ...prev, [trackId]: 0 }));
+        if (controller) {
+          try {
+            controller.restart();
+          } catch (e) {
+            // Ignore errors
+          }
+        }
       }
 
-      // Set buffering state - progress bar won't move until buffering is done
+      // Set buffering state
       setIsBuffering((prev) => ({ ...prev, [trackId]: true }));
 
-      iframe.contentWindow.postMessage({ command: "toggle" }, "*");
+      // Play using controller
+      if (controller) {
+        try {
+          controller.togglePlay();
+        } catch (e) {
+          // Fallback to postMessage
+          const iframe = embedRefs.current[trackId];
+          if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({ command: "toggle" }, "*");
+          }
+        }
+      } else {
+        const iframe = embedRefs.current[trackId];
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ command: "toggle" }, "*");
+        }
+      }
       setPlayingTrack(trackId);
-
-      // Wait for Spotify embed to start playing before syncing progress bar
-      // This accounts for network latency and buffering time
-      setTimeout(() => {
-        setIsBuffering((prev) => ({ ...prev, [trackId]: false }));
-      }, 1500); // 1.5 second buffer delay to account for typical Spotify load time
     }
   };
 
   const handleSeek = (trackId: string, value: number[]) => {
-    // Note: Spotify embed iframe does NOT support seeking via postMessage
-    // This is a limitation of the Spotify embed player
-    // The slider is read-only and only shows current progress
+    const seekPosition = value[0];
 
-    // Update visual position only (won't affect actual playback)
-    setTrackPosition((prev) => ({ ...prev, [trackId]: value[0] }));
+    // Update visual position immediately for responsive UI
+    setTrackPosition((prev) => ({ ...prev, [trackId]: seekPosition }));
+
+    // Use IFrame API seek for both desktop and mobile
+    // Duration is already capped at 30s for mobile preview
+    const controller = embedControllers.current[trackId];
+    if (controller) {
+      try {
+        controller.seek(seekPosition);
+      } catch (e) {
+        // Ignore seek errors
+      }
+    }
   };
 
   const toggleGenre = (idx: number) => {
@@ -741,9 +987,8 @@ export default function DashboardPage() {
     });
 
     const sectionTitle = document.createElement("h2");
-    sectionTitle.textContent = `Top ${
-      category.charAt(0).toUpperCase() + category.slice(1)
-    }`;
+    sectionTitle.textContent = `Top ${category.charAt(0).toUpperCase() + category.slice(1)
+      }`;
     Object.assign(sectionTitle.style, {
       color: "#1DB954",
       fontSize: "1.25rem",
@@ -796,8 +1041,8 @@ export default function DashboardPage() {
       category === "artists"
         ? data.artists
         : category === "tracks"
-        ? data.tracks
-        : processedGenres.genres;
+          ? data.tracks
+          : processedGenres.genres;
     const itemsToRender = items.slice(0, 10);
 
     itemsToRender.forEach((item, idx) => {
@@ -850,60 +1095,51 @@ export default function DashboardPage() {
       if (category === "artists") {
         const artist = item as Artist;
         info.innerHTML = `
-                    <p style="font-weight: 600; font-size: 0.85rem; color: ${textColor}; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${
-          artist.name
-        }</p>
+                    <p style="font-weight: 600; font-size: 0.85rem; color: ${textColor}; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${artist.name
+          }</p>
                     <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px;">
                         ${artist.genres
-                          .slice(0, 4)
-                          .map((g) => {
-                            const color = getGenreColor(g);
-                            return `<span style="background: ${
-                              isLight
-                                ? "rgba(0,0,0,0.05)"
-                                : "rgba(255,255,255,0.1)"
-                            }; border: 1px solid ${color}; border-radius: 9999px; padding: 2px 8px; font-size: 0.6rem; color: ${textColor};">${g}</span>`;
-                          })
-                          .join("")}
+            .slice(0, 4)
+            .map((g) => {
+              const color = getGenreColor(g);
+              return `<span style="background: ${isLight
+                ? "rgba(0,0,0,0.05)"
+                : "rgba(255,255,255,0.1)"
+                }; border: 1px solid ${color}; border-radius: 9999px; padding: 2px 8px; font-size: 0.6rem; color: ${textColor};">${g}</span>`;
+            })
+            .join("")}
                     </div>
-                    <p style="font-size: 0.68rem; color: ${roleColor}; margin: 0;">Popularity: ${
-          artist.popularity
-        }</p>
+                    <p style="font-size: 0.68rem; color: ${roleColor}; margin: 0;">Popularity: ${artist.popularity
+          }</p>
                 `;
       } else if (category === "tracks") {
         const track = item as Track;
         info.innerHTML = `
-                    <p style="font-weight: 600; font-size: 0.85rem; color: ${textColor}; margin: 0 0 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${
-          track.name
-        }</p>
+                    <p style="font-weight: 600; font-size: 0.85rem; color: ${textColor}; margin: 0 0 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.name
+          }</p>
                     <p style="font-size: 0.68rem; color: ${roleColor}; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.artists.join(
-          ", "
-        )}</p>
+            ", "
+          )}</p>
                     <p style="font-size: 0.68rem; color: ${roleColor}; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${getAlbumType(
-          track.album.total_tracks,
-          track.album.name
-        )}</p>
-                    <p style="font-size: 0.68rem; color: ${roleColor}; margin: 2px 0;">Popularity: ${
-          track.popularity
-        }</p>
+            track.album.total_tracks,
+            track.album.name
+          )}</p>
+                    <p style="font-size: 0.68rem; color: ${roleColor}; margin: 2px 0;">Popularity: ${track.popularity
+          }</p>
                 `;
       } else {
         const genre = item as Genre;
         const artistsList = processedGenres.map[genre.name] || [];
         info.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${
-                          GENRE_COLORS[idx]
-                        };"></span>
-                        <span style="font-weight: 600; font-size: 0.85rem; color: ${textColor};">${
-          genre.name
-        }</span>
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${GENRE_COLORS[idx]
+          };"></span>
+                        <span style="font-weight: 600; font-size: 0.85rem; color: ${textColor};">${genre.name
+          }</span>
                     </div>
-                    <p style="font-size: 0.6rem; color: ${roleColor}; margin: 4px 0 0 0; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; line-height: 1.3;">Mentioned ${
-          genre.count
-        } times${
-          artistsList.length > 0 ? `: ${artistsList.join(", ")}` : ""
-        }</p>
+                    <p style="font-size: 0.6rem; color: ${roleColor}; margin: 4px 0 0 0; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; line-height: 1.3;">Mentioned ${genre.count
+          } times${artistsList.length > 0 ? `: ${artistsList.join(", ")}` : ""
+          }</p>
                 `;
       }
       li.appendChild(info);
@@ -997,12 +1233,14 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background overflow-hidden">
+      // Loading State - Inline with Layout (not covering navbar)
+      // Use page-container to respect navbar height
+      <div className="page-container flex-1 flex flex-col items-center justify-center min-h-[calc(100dvh-160px)] w-full">
         <svg className="w-8 h-8 mb-4 spinner-svg" viewBox="0 0 50 50">
           <circle className="spinner-path" cx="25" cy="25" r="20" fill="none" />
         </svg>
         <span className="font-semibold text-foreground">
-          Loading Dashboard...
+          Loading Dashboard{animatedDots}
         </span>
       </div>
     );
@@ -1010,7 +1248,8 @@ export default function DashboardPage() {
 
   if (!data) {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center bg-background">
+      // Error State - Inline with Layout
+      <div className="page-container flex-1 flex flex-col items-center justify-center min-h-[calc(100dvh-160px)] w-full">
         <div className="text-center space-y-6">
           <p className="text-lg font-medium text-muted-foreground">
             Session expired or no data available!
@@ -1030,6 +1269,19 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  // Helper functions for time formatting
+  const formatTimeHelper = (seconds: number) => {
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${min}:${sec < 10 ? "0" + sec : sec}`;
+  };
+
+  const formatDurationHelper = (seconds: number) => {
+    // If duration is 0, show Preview (useful for mobile initial state)
+    if (!seconds) return "Preview";
+    return formatTimeHelper(seconds);
+  };
 
   return (
     <div className="page-container w-full max-w-none">
@@ -1057,9 +1309,8 @@ export default function DashboardPage() {
               />
             </svg>
             <span
-              className={`font-semibold ${
-                resolvedTheme === "light" ? "text-black" : "text-white"
-              }`}
+              className={`font-semibold ${resolvedTheme === "light" ? "text-black" : "text-white"
+                }`}
             >
               Processing Image...
             </span>
@@ -1119,8 +1370,8 @@ export default function DashboardPage() {
               {currentCategory === "artists"
                 ? "Top Artists"
                 : currentCategory === "tracks"
-                ? "Top Tracks"
-                : "Top Genres"}
+                  ? "Top Tracks"
+                  : "Top Genres"}
             </span>
             <span className="text-muted-foreground text-sm ml-2">▼</span>
           </button>
@@ -1220,11 +1471,10 @@ export default function DashboardPage() {
 
       {/* Dashboard Container */}
       <div
-        className={`grid gap-6 ${
-          isMobile
-            ? "grid-cols-1"
-            : "grid-cols-[repeat(auto-fit,minmax(300px,1fr))]"
-        }`}
+        className={`grid gap-6 ${isMobile
+          ? "grid-cols-1"
+          : "grid-cols-[repeat(auto-fit,minmax(300px,1fr))]"
+          }`}
       >
         {/* Top Artists Section */}
         {(!isMobile || currentCategory === "artists") && (
@@ -1274,10 +1524,10 @@ export default function DashboardPage() {
                       {artist.genres.length > 6 && (
                         <span
                           className="genre-pill cursor-pointer hover:bg-white/20 transition-colors"
-                          style={{ 
-                            borderStyle: "dashed", 
+                          style={{
+                            borderStyle: "dashed",
                             borderColor: "rgba(255,255,255,0.3)",
-                            color: "rgba(255,255,255,0.7)" 
+                            color: "rgba(255,255,255,0.7)"
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1314,16 +1564,14 @@ export default function DashboardPage() {
                   initial={idx >= 10 ? { opacity: 0, y: 20 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx >= 10 ? (idx - 10) * 0.1 : 0 }}
-                  className={`list-item track-item cursor-pointer hover:bg-accent/50 transition-colors ${
-                    activeEmbed === track.id ? "embed-shown" : ""
-                  }`}
+                  className={`list-item track-item cursor-pointer hover:bg-accent/50 transition-colors border-b border-(--list-border) hover:border-white/30 ${activeEmbed === track.id ? "embed-shown" : ""
+                    }`}
                   onClick={() => toggleEmbed(track.id)}
                 >
                   {/* Rank / Close Button */}
                   <span
-                    className={`rank flex items-center justify-center ${
-                      activeEmbed === track.id ? "embed-active" : ""
-                    }`}
+                    className={`rank flex items-center justify-center ${activeEmbed === track.id ? "embed-active" : ""
+                      }`}
                     onClick={
                       activeEmbed === track.id
                         ? (e) => closeEmbed(e, track.id)
@@ -1361,11 +1609,10 @@ export default function DashboardPage() {
                     {/* Track Name - Always visible */}
                     <MarqueeText
                       text={track.name}
-                      className={`name font-semibold text-sm md:text-base mb-1 ${
-                        activeEmbed === track.id
-                          ? "text-[#1DB954]"
-                          : "text-foreground"
-                      }`}
+                      className={`name font-semibold text-sm md:text-base mb-1 ${activeEmbed === track.id
+                        ? "text-[#1DB954]"
+                        : "text-foreground"
+                        }`}
                     />
                     {/* Artist - Always visible */}
                     <MarqueeText
@@ -1433,113 +1680,77 @@ export default function DashboardPage() {
                             className="player-row flex items-center gap-2 mt-1"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {isMobile ? (
-                              /* Mobile: Show Preview label like Spotify embed */
-                              <>
-                                <span className="text-xs text-muted-foreground">
-                                  Preview
-                                </span>
+                            {/* Timestamp left */}
+                            <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                              {formatTimeHelper(trackPosition[track.id] || 0)}
+                            </span>
 
-                                {/* Play/Pause Button */}
-                                <button
-                                  className="w-5 h-5 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0 ml-auto shadow-md transition-opacity hover:opacity-90"
-                                  onClick={(e) => togglePlayPause(e, track.id)}
-                                  aria-label={
-                                    playingTrack === track.id ? "Pause" : "Play"
-                                  }
+                            {/* Progress bar with Slider - Seekable on both desktop and mobile */}
+                            <div className="flex-1 -my-2">
+                              <Slider
+                                value={[trackPosition[track.id] || 0]}
+                                max={trackDuration[track.id] || 30}
+                                step={1}
+                                onValueChange={(value) => handleSeek(track.id, value)}
+                                className="cursor-pointer hover:opacity-100 opacity-80 [&>span:first-child]:h-1 [&>span:first-child]:bg-black/10 dark:[&>span:first-child]:bg-white/20 **:[[role=slider]]:h-2.5 **:[[role=slider]]:w-2.5 **:[[role=slider]]:border-black dark:**:[[role=slider]]:border-white **:[[role=slider]]:bg-black dark:**:[[role=slider]]:bg-white [&>span>span]:bg-black dark:[&>span>span]:bg-white"
+                              />
+                            </div>
+
+                            {/* Timestamp right */}
+                            <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                              {formatDurationHelper(trackDuration[track.id] || 0)}
+                            </span>
+
+                            {/* Play/Pause Button */}
+                            <button
+                              className="w-6 h-6 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0 ml-1 shadow-md transition-opacity hover:opacity-90"
+                              onClick={(e) => togglePlayPause(e, track.id)}
+                              aria-label={
+                                playingTrack === track.id ? "Pause" : "Play"
+                              }
+                            >
+                              {playingTrack === track.id ? (
+                                // Pause icon
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  className="w-4 h-4 text-white dark:text-black fill-current"
                                 >
-                                  {playingTrack === track.id ? (
-                                    // Pause icon (rounded bars)
-                                    <svg
-                                      viewBox="0 0 24 24"
-                                      className="w-2.5 h-2.5 text-white dark:text-black fill-current"
-                                    >
-                                      <rect
-                                        x="6"
-                                        y="5"
-                                        width="4"
-                                        height="14"
-                                        rx="1"
-                                      />
-                                      <rect
-                                        x="14"
-                                        y="5"
-                                        width="4"
-                                        height="14"
-                                        rx="1"
-                                      />
-                                    </svg>
-                                  ) : (
-                                    // Play icon (rounded)
-                                    <svg
-                                      viewBox="0 0 24 24"
-                                      className="w-2.5 h-2.5 text-white dark:text-black fill-current ml-px"
-                                    >
-                                      <path d="M8 5.14v13.72a1 1 0 001.55.83l11-6.86a1 1 0 000-1.66l-11-6.86a1 1 0 00-1.55.83z" />
-                                    </svg>
-                                  )}
-                                </button>
-                              </>
-                            ) : (
-                              /* Desktop: Show full progress bar */
-                              <>
-                                {/* Timestamp left */}
-                                <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                                  {formatTime(trackPosition[track.id] || 0)}
-                                </span>
-
-                                {/* Progress bar with Slider (Read-only - Spotify embed doesn't support seek) */}
-                                <div className="flex-1 -my-2">
-                                  <Slider
-                                    value={[trackPosition[track.id] || 0]}
-                                    max={trackDuration[track.id] || 30}
-                                    step={0.1}
-                                    disabled={true}
-                                    className="pointer-events-none [&>span:first-child]:h-1 [&>span:first-child]:bg-black/10 dark:[&>span:first-child]:bg-white/20 **:[[role=slider]]:h-2.5 **:[[role=slider]]:w-2.5 **:[[role=slider]]:border-black dark:**:[[role=slider]]:border-white **:[[role=slider]]:bg-black dark:**:[[role=slider]]:bg-white [&>span>span]:bg-black dark:[&>span>span]:bg-white opacity-60"
-                                  />
-                                </div>
-
-                                {/* Timestamp right */}
-                                <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                                  {formatTime(trackDuration[track.id] || 0)}
-                                </span>
-
-                                {/* Play/Pause Button (circle with Spotify logo style) */}
-                                <button
-                                  className="w-6 h-6 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0 ml-1 shadow-md transition-opacity hover:opacity-90"
-                                  onClick={(e) => togglePlayPause(e, track.id)}
-                                  aria-label={
-                                    playingTrack === track.id ? "Pause" : "Play"
-                                  }
+                                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                </svg>
+                              ) : (
+                                // Play icon
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  className="w-4 h-4 text-white dark:text-black fill-current ml-0.5"
                                 >
-                                  {playingTrack === track.id ? (
-                                    // Pause icon
-                                    <svg
-                                      viewBox="0 0 24 24"
-                                      className="w-4 h-4 text-white dark:text-black fill-current"
-                                    >
-                                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                                    </svg>
-                                  ) : (
-                                    // Play icon
-                                    <svg
-                                      viewBox="0 0 24 24"
-                                      className="w-4 h-4 text-white dark:text-black fill-current ml-0.5"
-                                    >
-                                      <path d="M8 5v14l11-7z" />
-                                    </svg>
-                                  )}
-                                </button>
-                              </>
-                            )}
+                                  <path d="M8 5v14l11-7z" />
+                                </svg>
+                              )}
+                            </button>
                           </motion.div>
                         )}
                       </AnimatePresence>
                     )}
                   </div>
 
-                  {/* Hidden Spotify Embed for actual playback */}
-                  {activeEmbed === track.id && (
+                  {/* Persistent Container for Spotify IFrame API Controller - ALWAYS RENDERED */}
+                  {/* This container is NEVER unmounted to prevent removeChild error */}
+                  <div
+                    ref={(el) => {
+                      embedContainerRefs.current[track.id] = el;
+                    }}
+                    style={{
+                      position: "absolute",
+                      width: 0,
+                      height: 0,
+                      opacity: 0,
+                      pointerEvents: "none",
+                      overflow: "hidden",
+                    }}
+                  />
+
+                  {/* Fallback hidden iframe when Spotify IFrame API is not ready */}
+                  {activeEmbed === track.id && !spotifyApiReady && (
                     <iframe
                       ref={(el) => {
                         embedRefs.current[track.id] = el;
@@ -1586,9 +1797,8 @@ export default function DashboardPage() {
                   initial={idx >= 10 ? { opacity: 0, y: 20 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx >= 10 ? (idx - 10) * 0.1 : 0 }}
-                  className={`py-3 border-b border-border last:border-b-0 cursor-pointer hover:bg-accent/50 transition-all ${
-                    disabledGenres.has(idx) ? "opacity-40 line-through" : ""
-                  }`}
+                  className={`py-3 border-b border-border last:border-b-0 cursor-pointer hover:bg-accent/50 transition-all ${disabledGenres.has(idx) ? "opacity-40 line-through" : ""
+                    }`}
                   onMouseEnter={() => setHoveredGenre(idx)}
                   onMouseLeave={() => setHoveredGenre(null)}
                   onClick={() => toggleGenre(idx)}
@@ -1713,6 +1923,6 @@ export default function DashboardPage() {
           }
         `}
       </style>
-    </div>
+    </div >
   );
 }
