@@ -294,7 +294,7 @@ export default function DashboardPage() {
     if (!isAnalyzing) return;
     const dotsInterval = setInterval(() => {
       setAnimatedDots((prev) => (prev.length >= 3 ? "." : prev + "."));
-    }, 500);
+    }, 2000);
     return () => clearInterval(dotsInterval);
   }, [isAnalyzing]);
 
@@ -352,11 +352,11 @@ export default function DashboardPage() {
     fetchData();
   }, [spotifyId, timeRange, router]);
 
-  // Animate dots effect
+  // Animate dots effect (Slower speed: 800ms)
   useEffect(() => {
     const interval = setInterval(() => {
       setAnimatedDots((prev) => (prev.length >= 3 ? "." : prev + "."));
-    }, 500);
+    }, 800);
     return () => clearInterval(interval);
   }, []);
 
