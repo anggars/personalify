@@ -78,15 +78,13 @@ from psycopg2 import pool
 # Global Connection Pool
 pg_pool = None
 
-def init_pg_pool():
-    global pg_pool
-    if pg_pool: return
-
+def get_db_params():
+    """Extract database connection parameters from env"""
     DATABASE_URL = os.getenv("DATABASE_URL")
     if DATABASE_URL:
         result = urlparse(DATABASE_URL)
-        print(f"DB POOL CONNECTING TO (CLOUD): {result.hostname}:{result.port}")
-        db_params = {
+        # print(f"DB CONFIG: {result.hostname}:{result.port}")
+        return {
             'dbname': result.path[1:],
             'user': result.username,
             'password': result.password,
@@ -95,14 +93,22 @@ def init_pg_pool():
             'sslmode': 'require'
         }
     else:
-        db_params = {
+        # Local fallback
+        return {
             "host": os.getenv("POSTGRES_HOST", "postgresfy"),
             "port": os.getenv("POSTGRES_PORT", "5432"),
             "database": os.getenv("POSTGRES_DB", "streamdb"),
             "user": os.getenv("POSTGRES_USER", "admin"),
             "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
         }
-        print(f"DB POOL CONNECTING TO (LOCAL): {db_params['host']}:{db_params['port']}")
+
+def init_pg_pool():
+    global pg_pool
+    if pg_pool: return
+
+    db_params = get_db_params()
+    hostname = db_params.get('host', 'unknown')
+    print(f"DB POOL CONNECTING TO: {hostname}")
 
     try:
         # Create a ThreadedConnectionPool
@@ -119,19 +125,35 @@ def get_conn():
         init_pg_pool()
     
     conn = None
+    is_pooled = False
     try:
         if pg_pool:
             conn = pg_pool.getconn()
+            is_pooled = True
             yield conn
         else:
             # Fallback if pool failed (prevent crash)
-            print("DB POOL UNAVAILABLE, USING FALLBACK CONNECTION")
-            # Reconstruct params blindly for fallback? Or just fail?
-            # Better to try init again or fail explicitly
-            raise Exception("Database Connection Pool not initialized")
+            print("DB POOL UNAVAILABLE, USING FALLBACK CONNECTION (Direct Connect)")
+            params = get_db_params()
+            conn = psycopg2.connect(**params)
+            yield conn
+    except Exception as e:
+        # Propagate error (query failed or connection failed)
+        raise e
     finally:
-        if pg_pool and conn:
-            pg_pool.putconn(conn)
+        if conn:
+            if is_pooled and pg_pool:
+                try:
+                    pg_pool.putconn(conn)
+                except Exception:
+                    # If pool is closed or invalid for some reason
+                    pass
+            else:
+                # Close direct connection
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
 def init_db():
     with get_conn() as conn:

@@ -252,9 +252,19 @@ def get_emotion_from_text(text: str):
             elif isinstance(result, dict) and "emotions" in result: emotions = result["emotions"]
             else: raise ValueError("Unknown response format")
 
-            emotions.sort(key=lambda x: x.get('score', 0), reverse=True)
-            _analysis_cache[text] = emotions
-            return emotions
+            # --- STRICT FILTER: REMOVE NEUTRAL & RENORMALIZE ---
+            # User Request: "netral buang biar score ga kehalang"
+            filtered = [e for e in emotions if e.get('label', '').lower() != 'neutral']
+            
+            # Re-normalize scores
+            total_score = sum(e.get('score', 0) for e in filtered)
+            if total_score > 0:
+                for e in filtered:
+                    e['score'] = e.get('score', 0) / total_score
+            
+            filtered.sort(key=lambda x: x.get('score', 0), reverse=True)
+            _analysis_cache[text] = filtered
+            return filtered
         else:
             print(f"NLP HANDLER: SPACE ERROR {response.status_code}. SWITCHING TO BACKUP...")
             raise Exception(f"Space Error {response.status_code}")
@@ -313,61 +323,63 @@ def generate_emotion_paragraph(track_names, extended=False):
     num_tracks = len(track_names) if extended else min(10, len(track_names))
     tracks_to_analyze = track_names[:num_tracks]
 
-    print(f"NLP HANDLER: ANALYZING {num_tracks} TRACKS PARALLEL (Score Accumulation + Consistency Bonus)")
+    print(f"NLP HANDLER: ANALYZING {num_tracks} TRACKS PARALLEL (Voting System / Frequency Count)")
 
-    emotion_totals = {}
-    emotion_counts = {}
+    voting_tally = {}
+    total_valid_songs = 0
     
-    # Define helper for parallel execution
-    def process_track(track):
-        txt = prepare_text_for_analysis(track)
-        if not txt: return None
-        return get_emotion_from_text(txt)
+    print(f"NLP HANDLER: ANALYZING {num_tracks} TRACKS SEQUENTIALLY (Voting System - Reliable Mode)")
 
-    # Execute in parallel to avoid timeouts
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        future_to_track = {executor.submit(process_track, track): track for track in tracks_to_analyze}
-        
-        for future in concurrent.futures.as_completed(future_to_track):
-            track_name = future_to_track[future]
-            try:
-                emotions = future.result()
-                if emotions:
-                    # Track uniqueness per song to avoid double counting same emotion in one song (rare but possible)
-                    seen_emotions_in_track = set()
-                    
-                    for e in emotions:
-                        lbl = e.get("label")
-                        score = float(e.get("score", 0))
+    voting_tally = {}
+    total_valid_songs = 0
+    
+    # Process tracks one by one to ensure stability (slow but accurate)
+    for i, track in enumerate(tracks_to_analyze):
+        try:
+            # print(f"NLP HANDLER: Processing Track {i+1}: '{track}'...")
+            txt = prepare_text_for_analysis(track)
+            
+            if not txt: continue
+            
+            emotions = get_emotion_from_text(txt)
+            
+            if emotions and len(emotions) > 0:
+                # VOTING SYSTEM: Find the first NON-NEUTRAL emotion
+                selected_emotion = None
+                
+                for em in emotions:
+                    if em.get("label") != 'neutral':
+                        selected_emotion = em
+                        break
+                
+                if selected_emotion:
+                    lbl = selected_emotion.get("label")
+                    voting_tally[lbl] = voting_tally.get(lbl, 0) + 1
+                    total_valid_songs += 1
                         
-                        if not lbl or lbl == 'neutral': continue
-                        
-                        emotion_totals[lbl] = emotion_totals.get(lbl, 0) + score
-                        
-                        if lbl not in seen_emotions_in_track:
-                            emotion_counts[lbl] = emotion_counts.get(lbl, 0) + 1
-                            seen_emotions_in_track.add(lbl)
-                            
-            except Exception as exc:
-                print(f"NLP HANDLER: Track '{track_name}' analysis failed: {exc}")
+        except Exception as exc:
+            print(f"NLP HANDLER: Track '{track}' analysis failed (EXCEPTION): {exc}")
 
-    # Apply Consistency Multiplier (Score * Frequency)
-    # This solves the "Thank You" trap where 1 high confidence song beats 9 low confidence unhappy songs.
-    final_scores = []
-    for lbl, total_score in emotion_totals.items():
-        count = emotion_counts.get(lbl, 1)
-        # Formula: Total Score * Frequency Count
-        # Example: 
-        # Gratitude: 0.9 (score) * 1 (count) = 0.9
-        # Sadness: 0.45 (total score from 9 songs) * 9 (count) = 4.05 -> WINNER
-        final_score = total_score * count
-        final_scores.append((lbl, final_score))
+    # print(f"NLP HANDLER: Final Tally: {voting_tally}")
 
-    # Sort by FINAL weighted score
-    sorted_emotions = sorted(final_scores, key=lambda x: x[1], reverse=True)
+    if total_valid_songs == 0:
+        return "No clear vibe detected.", []
+
+    # Sort by VOTE COUNT (Most Frequent)
+    sorted_votes = sorted(voting_tally.items(), key=lambda x: x[1], reverse=True)
     
     # Get top 3
-    top3_tuples = sorted_emotions[:3]
+    top3_tuples = sorted_votes[:3]
+    
+    # Format: Score becomes percentage of songs (Votes / Total Songs)
+    top3 = [{"label": lbl, "score": count / total_valid_songs} for lbl, count in top3_tuples]
+
+    # NO MORE PADDING WITH FAKE HAPPY EMOTIONS
+    # If we only found 1 emotion, just show that 1. Don't lie.
+    
+    formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
+
+    return f"Shades of {formatted}.", top3
     
     # Format back to list of dicts for consistency
     top3 = [{"label": lbl, "score": sc} for lbl, sc in top3_tuples]
