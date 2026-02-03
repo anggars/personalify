@@ -4,16 +4,17 @@ from psycopg2.extras import execute_values
 from urllib.parse import urlparse
 import threading
 
-if not os.getenv("DATABASE_URL"):
-    from dotenv import load_dotenv
-    load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 # ========== SUPABASE SECONDARY DATABASE ==========
 
 def get_supabase_conn():
     """Connect to Supabase (secondary database)"""
-    supabase_url = os.getenv("SUPABASE_DATABASE_URL")
+    # Prioritize SUPABASE_URL, fallback to legacy SUPABASE_DATABASE_URL
+    supabase_url = os.getenv("SUPABASE_URL") or os.getenv("SUPABASE_DATABASE_URL")
     if not supabase_url:
+        print("[SUPABASE] Warning: SUPABASE_URL not set.")
         return None
     
     try:
@@ -71,23 +72,29 @@ def async_batch_write_to_supabase(query, batch_data):
 
 # ========== PRIMARY DATABASE (NEON) ==========
 
-def get_conn():
+from contextlib import contextmanager
+from psycopg2 import pool
+
+# Global Connection Pool
+pg_pool = None
+
+def init_pg_pool():
+    global pg_pool
+    if pg_pool: return
+
     DATABASE_URL = os.getenv("DATABASE_URL")
-
     if DATABASE_URL:
-
         result = urlparse(DATABASE_URL)
-        print(f"DB CONNECTING TO (CLOUD): {result.hostname}:{result.port}")
+        print(f"DB POOL CONNECTING TO (CLOUD): {result.hostname}:{result.port}")
         db_params = {
             'dbname': result.path[1:],
             'user': result.username,
             'password': result.password,
             'host': result.hostname,
-            'port': result.port
+            'port': result.port,
+            'sslmode': 'require'
         }
-        return psycopg2.connect(**db_params)
     else:
-
         db_params = {
             "host": os.getenv("POSTGRES_HOST", "postgresfy"),
             "port": os.getenv("POSTGRES_PORT", "5432"),
@@ -95,8 +102,36 @@ def get_conn():
             "user": os.getenv("POSTGRES_USER", "admin"),
             "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
         }
-        print(f"DB CONNECTING TO (LOCAL): {db_params['host']}:{db_params['port']}")
-        return psycopg2.connect(**db_params)
+        print(f"DB POOL CONNECTING TO (LOCAL): {db_params['host']}:{db_params['port']}")
+
+    try:
+        # Create a ThreadedConnectionPool
+        # Min: 1, Max: 20
+        pg_pool = pool.ThreadedConnectionPool(1, 20, **db_params)
+        print("DB POOL INITIALIZED SUCCESSFULLY")
+    except Exception as e:
+        print(f"DB POOL INIT FAILED: {e}")
+
+@contextmanager
+def get_conn():
+    global pg_pool
+    if not pg_pool:
+        init_pg_pool()
+    
+    conn = None
+    try:
+        if pg_pool:
+            conn = pg_pool.getconn()
+            yield conn
+        else:
+            # Fallback if pool failed (prevent crash)
+            print("DB POOL UNAVAILABLE, USING FALLBACK CONNECTION")
+            # Reconstruct params blindly for fallback? Or just fail?
+            # Better to try init again or fail explicitly
+            raise Exception("Database Connection Pool not initialized")
+    finally:
+        if pg_pool and conn:
+            pg_pool.putconn(conn)
 
 def init_db():
     with get_conn() as conn:

@@ -1,6 +1,7 @@
 
 import requests
-from fastapi import HTTPException
+
+from fastapi import HTTPException, BackgroundTasks
 from app.db_handler import (
     save_user,
     save_artists_batch,
@@ -11,11 +12,31 @@ from app.cache_handler import cache_top_data
 from app.mongo_handler import save_user_sync
 from app.nlp_handler import generate_emotion_paragraph
 
-def sync_user_data(access_token: str, time_range: str = "medium_term"):
+def process_emotion_background(spotify_id, time_range, result):
+    """
+    Helper function to run emotion analysis and caching in background/foreground.
+    """
+    try:
+        # 6. Analyze Emotions (Hybrid Model)
+        # This might take time (5-8 seconds)
+        track_names = [track['name'] for track in result.get("tracks", [])]
+        emotion_paragraph, top_emotions = generate_emotion_paragraph(track_names)
+        
+        result['emotion_paragraph'] = emotion_paragraph
+        result['top_emotions'] = top_emotions
+
+        # 7. Cache & Archive
+        cache_top_data("top_v2", spotify_id, time_range, result)
+        save_user_sync(spotify_id, time_range, result)
+        print(f"BACKGROUND PROCESSING SUCCESS: Emotion analysis completed for {spotify_id}")
+    except Exception as e:
+        print(f"BACKGROUND PROCESSING ERROR: {e}")
+
+def sync_user_data(access_token: str, time_range: str = "medium_term", background_tasks: BackgroundTasks = None):
     """
     Fetches latest top tracks/artists from Spotify using access_token.
     Updates Postgres (Artists/Tracks), MongoDB (History), and Redis (Cache).
-    Returns the formatted result dictionary.
+    Returns the formatted result dictionary (immediately if background_tasks is used).
     """
     headers = {"Authorization": f"Bearer {access_token}"}
     
@@ -121,7 +142,7 @@ def sync_user_data(access_token: str, time_range: str = "medium_term"):
         album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
         result["tracks"].append({
             "id": track["id"], 
-            "name": track["name"],
+            "name": track["name"], 
             "artists": [a["name"] for a in track.get("artists", [])],
             "album": {
                 "name": track["album"]["name"],
@@ -134,16 +155,22 @@ def sync_user_data(access_token: str, time_range: str = "medium_term"):
             "duration_ms": track["duration_ms"]
         })
 
-    # 6. Analyze Emotions (Hybrid Model)
-    # This might take time (5-8 seconds), but we have increased mobile timeout.
-    track_names = [track['name'] for track in result.get("tracks", [])]
-    emotion_paragraph, top_emotions = generate_emotion_paragraph(track_names)
-    
-    result['emotion_paragraph'] = emotion_paragraph
-    result['top_emotions'] = top_emotions
-
-    # 7. Cache & Archive
-    cache_top_data("top_v2", spotify_id, time_range, result)
-    save_user_sync(spotify_id, time_range, result)
+    # 6. Hybrid Processing Logic
+    if background_tasks:
+        # Return partial result immediately
+        result['emotion_paragraph'] = "Vibe analysis is getting ready..."
+        result['top_emotions'] = []
+        # Cache partial result first so UI has something? 
+        # Actually better NOT to cache partial, or cache it with "getting ready". 
+        # Frontend handles "getting ready" by polling. So we CAN cache it.
+        # But if we cache it, and background fails, it stays "getting ready".
+        # Let's simple pass result to background and let it overwrite cache.
+        
+        # We should probably cache the partial result anyway for "instant" load on refresh?
+        # But for now, let's just trigger background.
+        background_tasks.add_task(process_emotion_background, spotify_id, time_range, result)
+    else:
+        # Legacy/Mobile synchronous mode
+        process_emotion_background(spotify_id, time_range, result)
 
     return result

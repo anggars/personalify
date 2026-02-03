@@ -591,7 +591,7 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         raise HTTPException(status_code=500, detail="Internal Dashboard Error")
 
 @router.get("/api/dashboard/{spotify_id}", tags=["Dashboard API"])
-def dashboard_api(spotify_id: str, request: Request, response: Response, time_range: str = "medium_term"):
+def dashboard_api(spotify_id: str, request: Request, response: Response, background_tasks: BackgroundTasks, time_range: str = "medium_term"):
     """JSON API endpoint for Next.js dashboard"""
     try:
         # Check for access_token cookie to perform REALTIME SYNC
@@ -649,7 +649,7 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, time_ra
             print(f"WEB DASHBOARD: Found access_token. Syncing fresh data for {spotify_id}...")
             try:
                 # Sync fresh data directly
-                data = sync_user_data(access_token, time_range)
+                data = sync_user_data(access_token, time_range, background_tasks=background_tasks)
                 print("WEB DASHBOARD: Sync success!")
             except Exception as e:
                 print(f"WEB DASHBOARD: Sync failed ({e}). Falling back to cache.")

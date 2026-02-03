@@ -141,16 +141,24 @@ def prepare_text_for_analysis(text: str) -> str:
     
     # 3. Translate to English
     if HAS_TRANSLATOR:
-        try:
-            # Use deep-translator (GoogleTranslator)
-            translator = GoogleTranslator(source='auto', target='en')
-            translated = translator.translate(normalized)
-            
-            print(f"NLP HANDLER: TRANSLATION: '{normalized[:30]}...' -> '{translated[:30]}...'")
-            return translated
-        except Exception as e:
-            print(f"NLP HANDLER: TRANSLATION FAILED ({e}). USING ORIGINAL.")
-            return normalized
+        import time
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Use deep-translator (GoogleTranslator)
+                translator = GoogleTranslator(source='auto', target='en')
+                translated = translator.translate(normalized)
+                
+                print(f"NLP HANDLER: TRANSLATION: '{normalized[:30]}...' -> '{translated[:30]}...'")
+                return translated
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    sleep_time = 1 * (attempt + 1)
+                    print(f"NLP HANDLER: TRANSLATION RETRY {attempt+1}/{max_retries} ({e})... SLEEP {sleep_time}s")
+                    time.sleep(sleep_time)
+                else:
+                    print(f"NLP HANDLER: TRANSLATION FAILED AFTER RETRIES ({e}). USING ORIGINAL.")
+                    return normalized
     else:
         return normalized
 
@@ -300,50 +308,85 @@ def generate_emotion_paragraph(track_names, extended=False):
     if not track_names:
         return "Couldn't analyze music mood.", []
 
+    import concurrent.futures
+
     num_tracks = len(track_names) if extended else min(10, len(track_names))
     tracks_to_analyze = track_names[:num_tracks]
 
-    combined_text = "\n".join(tracks_to_analyze)
-    text = prepare_text_for_analysis(combined_text)
+    print(f"NLP HANDLER: ANALYZING {num_tracks} TRACKS PARALLEL (Score Accumulation + Consistency Bonus)")
 
-    emotions = get_emotion_from_text(text)
-
-    if not emotions:
-        return "Vibe analysis is currently unavailable.", []
-
-    try:
-        em_list = emotions 
-    except Exception:
-        return "Vibe analysis failed.", []
-
-    # Get unique top emotions
-    unique = []
-    seen = set()
-    for e in em_list:
-        lbl = e.get("label")
-        if not lbl or lbl == 'neutral':
-            continue
-        if lbl not in seen:
-            seen.add(lbl)
-            unique.append(e)
-            if len(unique) >= 3:
-                break
+    emotion_totals = {}
+    emotion_counts = {}
     
-    # Fill if needed
-    if len(unique) < 3:
-         pad_defaults = [
-            {"label": "optimism", "score": 0.5},
-            {"label": "joy", "score": 0.3},
-            {"label": "sadness", "score": 0.2} 
+    # Define helper for parallel execution
+    def process_track(track):
+        txt = prepare_text_for_analysis(track)
+        if not txt: return None
+        return get_emotion_from_text(txt)
+
+    # Execute in parallel to avoid timeouts
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_track = {executor.submit(process_track, track): track for track in tracks_to_analyze}
+        
+        for future in concurrent.futures.as_completed(future_to_track):
+            track_name = future_to_track[future]
+            try:
+                emotions = future.result()
+                if emotions:
+                    # Track uniqueness per song to avoid double counting same emotion in one song (rare but possible)
+                    seen_emotions_in_track = set()
+                    
+                    for e in emotions:
+                        lbl = e.get("label")
+                        score = float(e.get("score", 0))
+                        
+                        if not lbl or lbl == 'neutral': continue
+                        
+                        emotion_totals[lbl] = emotion_totals.get(lbl, 0) + score
+                        
+                        if lbl not in seen_emotions_in_track:
+                            emotion_counts[lbl] = emotion_counts.get(lbl, 0) + 1
+                            seen_emotions_in_track.add(lbl)
+                            
+            except Exception as exc:
+                print(f"NLP HANDLER: Track '{track_name}' analysis failed: {exc}")
+
+    # Apply Consistency Multiplier (Score * Frequency)
+    # This solves the "Thank You" trap where 1 high confidence song beats 9 low confidence unhappy songs.
+    final_scores = []
+    for lbl, total_score in emotion_totals.items():
+        count = emotion_counts.get(lbl, 1)
+        # Formula: Total Score * Frequency Count
+        # Example: 
+        # Gratitude: 0.9 (score) * 1 (count) = 0.9
+        # Sadness: 0.45 (total score from 9 songs) * 9 (count) = 4.05 -> WINNER
+        final_score = total_score * count
+        final_scores.append((lbl, final_score))
+
+    # Sort by FINAL weighted score
+    sorted_emotions = sorted(final_scores, key=lambda x: x[1], reverse=True)
+    
+    # Get top 3
+    top3_tuples = sorted_emotions[:3]
+    
+    # Format back to list of dicts for consistency
+    top3 = [{"label": lbl, "score": sc} for lbl, sc in top3_tuples]
+
+    # Fill if needed (less than 3 emotions found)
+    if len(top3) < 3:
+        existing_labels = set(e["label"] for e in top3)
+        pad_defaults = [
+            {"label": "optimism", "score": 0.1},
+            {"label": "joy", "score": 0.1},
+            {"label": "sadness", "score": 0.1} 
         ]
-         for p in pad_defaults:
-            if p["label"] not in seen:
-                unique.append(p)
-                seen.add(p["label"])
-                if len(unique) >= 3:
+        for p in pad_defaults:
+            if p["label"] not in existing_labels:
+                top3.append(p)
+                existing_labels.add(p["label"])
+                if len(top3) >= 3:
                     break
     
-    top3 = unique[:3]
     formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
 
     return f"Shades of {formatted}.", top3
