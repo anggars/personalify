@@ -466,14 +466,32 @@ def generate_emotion_paragraph(track_names, extended=False):
                 existing.add(p["label"])
                 if len(top3) >= 3: break
     
-    # 7. Format
+    # 7. Format Paragraph
     formatted_str = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
     
+    # 8. Map Labels to Friendly Names for JSON Response (Mobile Consistency)
+    # This ensures Mobile sees "Sudden Insight" instead of "Realization"
+    clean_top3 = []
+    for e in top3:
+        lbl = e["label"]
+        # Use existing emotion_texts to derive friendly name if possible, or a new map
+        # Parsing "sudden <b>insight</b>" -> "Sudden Insight"
+        
+        friendly = lbl.capitalize()
+        if lbl in emotion_texts:
+            raw_desc = emotion_texts[lbl] # e.g. "sudden <b>insight</b>"
+            # Remove HTML
+            clean_desc = raw_desc.replace("<b>", "").replace("</b>", "")
+            # Title Case (Sudden Insight)
+            friendly = clean_desc.title()
+            
+        clean_top3.append({"label": friendly, "score": e["score"]})
+
     # LOG RESULTS (CLEAN)
     clean_summary = formatted_str.replace("<b>", "").replace("</b>", "")
-    stats_str = ", ".join([f"{e['label'].title()} ({e['score']:.0%})" for e in top3])
+    stats_str = ", ".join([f"{e['label']} ({e['score']:.0%})" for e in clean_top3])
     
     print(f"\nNLP HANDLER: FINAL VIBE -> Shades of {clean_summary}")
     print(f"NLP HANDLER: STATS      -> {stats_str}\n")
     
-    return f"Shades of {formatted_str}.", top3
+    return f"Shades of {formatted_str}.", clean_top3
