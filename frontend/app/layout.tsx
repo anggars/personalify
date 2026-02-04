@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Toaster } from "@/components/ui/sonner";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -34,11 +35,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Navbar />
-          <main className="flex-grow w-full flex flex-col">
+          <main className="grow w-full flex flex-col">
             {children}
           </main>
           <Footer />
           <Toaster />
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
