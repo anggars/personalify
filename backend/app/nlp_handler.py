@@ -445,8 +445,8 @@ def generate_emotion_paragraph(track_names, extended=False):
     if total_valid_songs == 0:
         return "No clear vibe detected.", []
 
-    # 4. Sort Votes
-    sorted_votes = sorted(voting_tally.items(), key=lambda x: x[1], reverse=True)
+    # 4. Sort Votes (Primary: Count DESC, Secondary: Label ASC for stability)
+    sorted_votes = sorted(voting_tally.items(), key=lambda x: (x[1], x[0]), reverse=True)
     
     # 5. Top 3
     top3_tuples = sorted_votes[:3]

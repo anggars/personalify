@@ -418,6 +418,7 @@ async def analyze_emotions_background(
         if extended:
             track_names = [track['name'] for track in tracks_to_analyze]
         else:
+            # Standard View: Strictly Top 10
             track_names = [track['name'] for track in tracks_to_analyze[:10]]
         emotion_paragraph, top_emotions = generate_emotion_paragraph(track_names, extended=extended)
 
