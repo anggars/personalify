@@ -321,18 +321,22 @@ class RefreshRequest(BaseModel):
 @router.post("/auth/refresh", tags=["Auth"])
 def refresh_access_token(
     request: Request,
-    data: RefreshRequest = Body(...)
+    data: Optional[RefreshRequest] = Body(None)
 ):
     """
     Refresh access token using stored refresh_token.
     - Mobile: sends spotify_id in JSON body
-    - Web: sends spotify_id in JSON body (or uses cookie fallback if needed, but we encourage explicit ID)
+    - Web: sends cookie (fallback to cookie if body is empty)
     """
-    spotify_id = data.spotify_id
+    spotify_id = data.spotify_id if data else None
+
+    # Fallback to cookie
+    if not spotify_id:
+        spotify_id = request.cookies.get("spotify_id")
     
     # Validation
     if not spotify_id:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail="Not authenticated (Missing ID)")
     
     # Get refresh token from database
     refresh_token = get_refresh_token(spotify_id)

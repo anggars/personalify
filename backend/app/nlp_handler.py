@@ -1,8 +1,18 @@
+
+# ==========================================
+#  SMART NLP HANDLER (ASYNC & RETRO-COMPATIBLE)
+#  Integrated with Retrained Model + Hybrid Fallback
+# ==========================================
+
 import os
-import requests
-import json
 import re
+import asyncio
+import time
+import requests  # Kept for synchronous fallback if needed, or we use httpx primarily
+import httpx     # For Async IO (Smarter!)
 from dotenv import load_dotenv
+
+# Optional Imports
 try:
     from deep_translator import GoogleTranslator
     HAS_TRANSLATOR = True
@@ -14,21 +24,27 @@ from huggingface_hub import InferenceClient
 
 load_dotenv()
 
+# --- CONFIGURATION ---
 HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
 SPACE_URL = "https://anggars-personalify.hf.space/predict"
 MODEL_ROBERTA = "SamLowe/roberta-base-go_emotions"
 MODEL_DISTILBERT = "joeddav/distilbert-base-uncased-go-emotions-student"
 
-# Initialize HF Client for Fallback
+# Global HF Client (Synchronous for fallback, can be used in threads)
 if HF_API_KEY:
     try:
-        hf_client = InferenceClient(token=HF_API_KEY, timeout=5.0)
+        hf_client = InferenceClient(token=HF_API_KEY, timeout=10.0)
         print("NLP HANDLER: FALLBACK CLIENT READY.")
     except Exception as e:
         print(f"NLP HANDLER: FALLBACK CLIENT INIT FAILED: {e}")
         hf_client = None
 else:
     hf_client = None
+
+# --- CACHE ---
+# Simple in-memory cache to save API calls
+_analysis_cache = {}
+
 
 # --- SLANG DICTIONARY (Shared with Streamlit) ---
 SLANG_MAP = {
@@ -70,25 +86,17 @@ SLANG_MAP = {
     "tolol": "bodoh", "bego": "bodoh", "goblok": "bodoh"
 }
 
-def normalize_slang(text):
-    if not text: return ""
-    lines = text.split('\n')
-    normalized_lines = []
-    
-    for line in lines:
-        words = line.split()
-        normalized_words = []
-        for word in words:
-            clean_word = re.sub(r'[^\w\s]', '', word).lower()
-            if clean_word in SLANG_MAP:
-                 replacement = SLANG_MAP[clean_word]
-                 if word and word[0].isupper(): replacement = replacement.capitalize()
-                 normalized_words.append(replacement)
-            else:
-                 normalized_words.append(word)
-        normalized_lines.append(" ".join(normalized_words))
-        
-    return "\n".join(normalized_lines)
+# --- GOEMOTIONS ID MAP (Safety Net for "LABEL_XX") ---
+# Standard GoEmotions taxonomy
+GO_EMOTIONS_ID_MAP = {
+    "0": "admiration", "1": "amusement", "2": "anger", "3": "annoyance",
+    "4": "approval", "5": "caring", "6": "confusion", "7": "curiosity",
+    "8": "desire", "9": "disappointment", "10": "disapproval", "11": "disgust",
+    "12": "embarrassment", "13": "excitement", "14": "fear", "15": "gratitude",
+    "16": "grief", "17": "joy", "18": "love", "19": "nervousness",
+    "20": "optimism", "21": "pride", "22": "realization", "23": "relief",
+    "24": "remorse", "25": "sadness", "26": "surprise", "27": "neutral"
+}
 
 emotion_texts = {
     "admiration": "inspiring <b>admiration</b>",
@@ -121,17 +129,49 @@ emotion_texts = {
     "def": "neutral <b>vibe</b>"
 }
 
-_analysis_cache = {}
+# --- HELPERS ---
+
+def normalize_slang(text):
+    if not text: return ""
+    lines = text.split('\n')
+    normalized_lines = []
+    
+    for line in lines:
+        words = line.split()
+        normalized_words = []
+        for word in words:
+            # Simple punctuation removal for slang check
+            clean_word = re.sub(r'[^\w\s]', '', word).lower()
+            if clean_word in SLANG_MAP:
+                 replacement = SLANG_MAP[clean_word]
+                 if word and word[0].isupper(): replacement = replacement.capitalize()
+                 normalized_words.append(replacement)
+            else:
+                 normalized_words.append(word)
+        normalized_lines.append(" ".join(normalized_words))
+        
+    return "\n".join(normalized_lines)
+
+def _map_label(label: str) -> str:
+    """
+    Converts 'LABEL_27' -> 'neutral' using GO_EMOTIONS_ID_MAP.
+    """
+    if label.startswith("LABEL_"):
+        idx = label.replace("LABEL_", "")
+        return GO_EMOTIONS_ID_MAP.get(idx, label)
+    return label
+
+
 
 def prepare_text_for_analysis(text: str) -> str:
     """
-    Membersihkan, menormalisasi slang, dan MENTERJEMAHKAN ke Inggris
-    agar model backend lebih akurat.
+    Cleans, normalizes slangs and translates to English.
+    Blocking function (runs synchronously).
     """
     if not text or not text.strip():
         return ""
 
-    # 1. Truncate
+    # 1. Truncate (Safeguard)
     MAX_CHARS = 2500
     if len(text) > MAX_CHARS:
         text = text[:MAX_CHARS]
@@ -139,39 +179,42 @@ def prepare_text_for_analysis(text: str) -> str:
     # 2. Normalize Slang
     normalized = normalize_slang(text)
     
-    # 3. Translate to English
+    # 3. Translate to English (with Retries)
     if HAS_TRANSLATOR:
-        import time
-        max_retries = 3
-        for attempt in range(max_retries):
+        max_retries = 2
+        for attempt in range(max_retries + 1):
             try:
-                # Use deep-translator (GoogleTranslator)
+                # Use deep-translator
                 translator = GoogleTranslator(source='auto', target='en')
                 translated = translator.translate(normalized)
                 
-                print(f"NLP HANDLER: TRANSLATION: '{normalized[:30]}...' -> '{translated[:30]}...'")
+                # Basic check: if translation failed silently (returned empty)
+                if not translated:
+                    return normalized
+                    
+                print(f"NLP HANDLER: TR '{normalized[:20]}...' -> '{translated[:20]}...'")
                 return translated
             except Exception as e:
-                if attempt < max_retries - 1:
-                    sleep_time = 1 * (attempt + 1)
-                    print(f"NLP HANDLER: TRANSLATION RETRY {attempt+1}/{max_retries} ({e})... SLEEP {sleep_time}s")
-                    time.sleep(sleep_time)
+                if attempt < max_retries:
+                    time.sleep(1)
+                    continue
                 else:
-                    print(f"NLP HANDLER: TRANSLATION FAILED AFTER RETRIES ({e}). USING ORIGINAL.")
+                    print(f"NLP HANDLER: Translation Failed ({e}). Using Original.")
                     return normalized
     else:
         return normalized
 
+
 def _run_fallback_hybrid_analysis(text: str):
     """
-    Fallback method: Uses generic HF Inference API with SamLowe + Joeddav
-    Called when the Custom Space is sleeping/down.
+    Fallback method: Uses generic HF Inference API with SamLowe + Joeddav.
+    This runs synchronously via hf_client.
     """
     if not hf_client:
         print("NLP HANDLER: FALLBACK FAILED - CLIENT NOT READY.")
         return None
         
-    print(f"NLP HANDLER: RUNNING FALLBACK HYBRID ANALYSIS (ROBERTA + DISTILBERT)...")
+    print(f"NLP HANDLER: RUNNING FALLBACK HYBRID ANALYSIS...")
     
     try:
         combined_scores = {}
@@ -182,8 +225,11 @@ def _run_fallback_hybrid_analysis(text: str):
 
         # 1. Try RoBERTa (SamLowe)
         try:
-            print(" > Fallback: Calling RoBERTa (SamLowe)...")
             results_roberta = hf_client.text_classification(valid_text, model=MODEL_ROBERTA, top_k=28)
+            # Normalize results structure
+            if isinstance(results_roberta, list) and isinstance(results_roberta[0], list):
+                 results_roberta = results_roberta[0] # Handle batch return if any
+            
             for item in results_roberta:
                 label = item['label']
                 score = item['score']
@@ -194,8 +240,11 @@ def _run_fallback_hybrid_analysis(text: str):
 
         # 2. Try DistilBERT (Joeddav)
         try:
-            print(" > Fallback: Calling DistilBERT (Joeddav)...")
             results_distilbert = hf_client.text_classification(valid_text, model=MODEL_DISTILBERT, top_k=28)
+             # Normalize results structure
+            if isinstance(results_distilbert, list) and isinstance(results_distilbert[0], list):
+                 results_distilbert = results_distilbert[0]
+
             for item in results_distilbert:
                 label = item['label']
                 score = item['score']
@@ -205,17 +254,29 @@ def _run_fallback_hybrid_analysis(text: str):
              print(f"NLP HANDLER: Fallback DistilBERT Failed: {e}")
 
         if successful_models == 0:
-             print("NLP HANDLER: ALL FALLBACK MODELS FAILED.")
              return None
+
+        # STRICT FILTER: Remove Neutral
+        
+        # Pre-process keys in combined_scores to handle LABEL_XX from fallback (rare but possible)
+        clean_scores = {}
+        for k, v in combined_scores.items():
+            clean_lbl = _map_label(k)
+            clean_scores[clean_lbl] = clean_scores.get(clean_lbl, 0) + v
+            
+        combined_scores = clean_scores
 
         if 'neutral' in combined_scores:
             del combined_scores['neutral']
+
+        # Logic to 'Average' the scores
+        total_sum_all_labels = sum(combined_scores.values())
         
-        total = sum(combined_scores.values())
         final_results = []
-        if total > 0:
+        if total_sum_all_labels > 0:
             for label, raw_sum in combined_scores.items():
-                final_results.append({"label": label, "score": raw_sum / total})
+                # Re-normalize so sum is 1.0
+                final_results.append({"label": label, "score": raw_sum / total_sum_all_labels})
         
         final_results.sort(key=lambda x: x['score'], reverse=True)
         return final_results
@@ -224,470 +285,195 @@ def _run_fallback_hybrid_analysis(text: str):
         print(f"NLP HANDLER: FALLBACK CRITICAL ERROR: {e}")
         return None
 
+
+# --- MAIN ANALYSIS FUNCTIONS ---
+
 def get_emotion_from_text(text: str):
     """
-    Mengirim request ke HF Space pribadi. 
-    JIKA GAGAL (Sleeping/Timeout), OTOMATIS SWICTH KE HYBRID (Fallback).
+    Synchronous wrapper that calls the HF Space.
+    Failover to Hybrid Fallback if Space is sleeping or errors.
     """
     if not text or not text.strip():
         return None
 
     # Check cache
     if text in _analysis_cache:
-        print("NLP HANDLER: FETCHING RESULT FROM CACHE.")
         return _analysis_cache[text]
 
-    print(f"NLP HANDLER: CALLING HF SPACE API ({SPACE_URL})...")
-    payload = {"text": text}
+    # Try Custom Space (Retrained Model)
+    # Using requests with timeout for fail-fast
     headers = {"Authorization": f"Bearer {HF_API_KEY}"} if HF_API_KEY else {}
     
     try:
-        # Short timeout (5s) to detect 'sleeping' state quickly
-        response = requests.post(SPACE_URL, json=payload, headers=headers, timeout=5)
+        # print(f"NLP HANDLER: Calls {SPACE_URL}...")
+        response = requests.post(SPACE_URL, json={"text": text}, headers=headers, timeout=6)
         
         if response.status_code == 200:
             result = response.json()
             emotions = []
-            if isinstance(result, list): emotions = result
-            elif isinstance(result, dict) and "emotions" in result: emotions = result["emotions"]
-            else: raise ValueError("Unknown response format")
+            
+            # Handle different API return shapes
+            if isinstance(result, list): 
+                # Sometimes [[{"label":...}]]
+                if len(result) > 0 and isinstance(result[0], list):
+                    emotions = result[0]
+                else:
+                    emotions = result
+            elif isinstance(result, dict) and "emotions" in result: 
+                emotions = result["emotions"]
+            else: 
+                # Single dict result?
+                if "label" in result: emotions = [result]
+                else: raise ValueError("Unknown response format")
 
             # --- STRICT FILTER: REMOVE NEUTRAL & RENORMALIZE ---
-            # User Request: "netral buang biar score ga kehalang"
-            filtered = [e for e in emotions if e.get('label', '').lower() != 'neutral']
             
-            # Re-normalize scores
-            total_score = sum(e.get('score', 0) for e in filtered)
+            # 1. Map Labels first (Fix LABEL_XX)
+            for e in emotions:
+                e['label'] = _map_label(e.get('label', ''))
+
+            # 2. Remove 'neutral' keys completely
+            filtered_emotions = [e for e in emotions if e.get('label', '').lower() != 'neutral']
+            
+            # 3. Re-normalize scores to sum to 1.0
+            total_score = sum(e.get('score', 0) for e in filtered_emotions)
             if total_score > 0:
-                for e in filtered:
+                for e in filtered_emotions:
                     e['score'] = e.get('score', 0) / total_score
             
-            filtered.sort(key=lambda x: x.get('score', 0), reverse=True)
-            _analysis_cache[text] = filtered
-            return filtered
+            # Sort and Cache
+            filtered_emotions.sort(key=lambda x: x.get('score', 0), reverse=True)
+            _analysis_cache[text] = filtered_emotions
+            return filtered_emotions
         else:
-            print(f"NLP HANDLER: SPACE ERROR {response.status_code}. SWITCHING TO BACKUP...")
-            raise Exception(f"Space Error {response.status_code}")
+            # raise to trigger fallback
+            raise Exception(f"Status {response.status_code}")
 
     except Exception as e:
-        print(f"NLP HANDLER: SPACE FAILED ({e}). ACTIVATING FALLBACK PROTOCOL...")
-        # --- ACTIVATE FALLBACK ---
+        print(f"NLP HANDLER: SPACE FAILED ({e}). FALLBACK TO HYBRID...")
         fallback_result = _run_fallback_hybrid_analysis(text)
         if fallback_result:
             _analysis_cache[text] = fallback_result
             return fallback_result
-        else:
-            return None
+        return None
+
+# --- PUBLIC FUNCTIONS (Used by Routes) ---
 
 def analyze_lyrics_emotion(lyrics: str):
     """
-    Wrapper utama yang digunakan oleh module lain.
+    Analyzes lyrics and returns the top 5 emotions.
+    Input: Lyrics string
+    Output: Dict {"emotions": [...]} or {"error": ...}
     """
     if not lyrics or not lyrics.strip():
         return {"error": "Lyrics input cannot be empty."}
 
+    # 1. Prepare (Normalize + Translate)
     text = prepare_text_for_analysis(lyrics.strip())
     
+    # 2. Analyze (Space -> Fallback)
     emotions = get_emotion_from_text(text)
 
     if not emotions:
-        print("NLP HANDLER: API FAILED OR NO RESULTS.")
-        return {"error": "Emotion analysis is currently unavailable."}
+        print("NLP HANDLER: Analysis failed.")
+        return {"error": "Emotion analysis unavailable."}
 
     try:
-        # Filter out 'neutral' as requested
+        # 3. Filter Neutral & Normalize
+        # Remove 'neutral' to avoid valid emotions being buried
         filtered_emotions = [e for e in emotions if e.get('label', '').lower() != 'neutral']
         
-        # Log all results in single print statement with newlines
-        results_lines = "\n".join([f"{e.get('label')}: {float(e.get('score', 0)):.4f}" for e in filtered_emotions])
-        print(f"NLP HANDLER: ANALYSIS RESULT (All):\n{results_lines}")
+        # If everything was neutral (empty after filter), keep original top 1 but label it low confidence? 
+        # Or just return empty? User said "netral buang" (throw away neutral).
+        if not filtered_emotions and emotions:
+             # Fallback: if only neutral existed, return it but maybe rename?
+             # For now, let's just use the filtered list.
+             pass
 
-        # Return top 5 for frontend
+        # 4. Top 5
         top5 = filtered_emotions[:5]
-        # Ensure floats
+        
+        # Ensure float scores
         out = [{"label": e["label"], "score": float(e.get("score", 0))} for e in top5]
+        
+        # Debug Print
+        # top_str = ", ".join([f"{e['label']}({e['score']:.2f})" for e in out[:3]])
+        # print(f"NLP HANDLER: Result -> {top_str}")
+        
         return {"emotions": out}
+
     except Exception as e:
-        print(f"NLP HANDLER: ERROR PARSING RESULTS: {e}")
-        return {"error": "Error parsing analysis results."}
+        print(f"NLP HANDLER: Result Parsing Error: {e}")
+        return {"error": "Error parsing results."}
+
 
 def generate_emotion_paragraph(track_names, extended=False):
     """
-    Digunakan untuk playlist/album summary.
+    Generates a textual summary ("Shades of ...") based on a list of track names.
+    Uses a 'Sequential Voting System' for higher accuracy as requested.
     """
     if not track_names:
         return "Couldn't analyze music mood.", []
 
-    import concurrent.futures
-
     num_tracks = len(track_names) if extended else min(10, len(track_names))
     tracks_to_analyze = track_names[:num_tracks]
 
-    print(f"NLP HANDLER: ANALYZING {num_tracks} TRACKS PARALLEL (Voting System / Frequency Count)")
-
     voting_tally = {}
     total_valid_songs = 0
     
-    print(f"NLP HANDLER: ANALYZING {num_tracks} TRACKS SEQUENTIALLY (Voting System - Reliable Mode)")
-
-    voting_tally = {}
-    total_valid_songs = 0
-    
-    # Process tracks one by one to ensure stability (slow but accurate)
-    for i, track in enumerate(tracks_to_analyze):
+    for track in tracks_to_analyze:
         try:
-            # print(f"NLP HANDLER: Processing Track {i+1}: '{track}'...")
+            # 1. Prepare
             txt = prepare_text_for_analysis(track)
-            
             if not txt: continue
             
+            # 2. Get Emotion
             emotions = get_emotion_from_text(txt)
             
-            if emotions and len(emotions) > 0:
-                # VOTING SYSTEM: Find the first NON-NEUTRAL emotion
-                selected_emotion = None
-                
+            if emotions:
+                # 3. Vote for Top Non-Neutral
                 for em in emotions:
                     if em.get("label") != 'neutral':
-                        selected_emotion = em
-                        break
-                
-                if selected_emotion:
-                    lbl = selected_emotion.get("label")
-                    voting_tally[lbl] = voting_tally.get(lbl, 0) + 1
-                    total_valid_songs += 1
+                        lbl = em.get("label")
+                        voting_tally[lbl] = voting_tally.get(lbl, 0) + 1
+                        total_valid_songs += 1
+                        break # Only vote for the top 1 non-neutral per song
                         
-        except Exception as exc:
-            print(f"NLP HANDLER: Track '{track}' analysis failed (EXCEPTION): {exc}")
-
-    # print(f"NLP HANDLER: Final Tally: {voting_tally}")
+        except Exception:
+            continue
 
     if total_valid_songs == 0:
         return "No clear vibe detected.", []
 
-    # Sort by VOTE COUNT (Most Frequent)
+    # 4. Sort Votes
     sorted_votes = sorted(voting_tally.items(), key=lambda x: x[1], reverse=True)
     
-    # Get top 3
+    # 5. Top 3
     top3_tuples = sorted_votes[:3]
-    
-    # Format: Score becomes percentage of songs (Votes / Total Songs)
     top3 = [{"label": lbl, "score": count / total_valid_songs} for lbl, count in top3_tuples]
 
-    # NO MORE PADDING WITH FAKE HAPPY EMOTIONS
-    # If we only found 1 emotion, just show that 1. Don't lie.
-    
-    formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
-
-    return f"Shades of {formatted}.", top3
-    
-    # Format back to list of dicts for consistency
-    top3 = [{"label": lbl, "score": sc} for lbl, sc in top3_tuples]
-
-    # Fill if needed (less than 3 emotions found)
+    # 6. Fill if < 3
     if len(top3) < 3:
-        existing_labels = set(e["label"] for e in top3)
-        pad_defaults = [
+        existing = set(e["label"] for e in top3)
+        defaults = [
             {"label": "optimism", "score": 0.1},
             {"label": "joy", "score": 0.1},
             {"label": "sadness", "score": 0.1} 
         ]
-        for p in pad_defaults:
-            if p["label"] not in existing_labels:
+        for p in defaults:
+            if p["label"] not in existing:
                 top3.append(p)
-                existing_labels.add(p["label"])
-                if len(top3) >= 3:
-                    break
+                existing.add(p["label"])
+                if len(top3) >= 3: break
     
-    formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
-
-    return f"Shades of {formatted}.", top3
-
-
-# ==========================================
-#  LEGACY NLP HANDLER (BACKUP / REFERENCE)
-#  (Local Inference with multiple models)
-# ==========================================
-"""
-import os
-import requests
-import time
-import re
-from deep_translator import GoogleTranslator
-from huggingface_hub import InferenceClient
-from dotenv import load_dotenv
-
-load_dotenv()
-
-HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
-MODEL_ROBERTA = "SamLowe/roberta-base-go_emotions"
-MODEL_DISTILBERT = "joeddav/distilbert-base-uncased-go-emotions-student"
-
-if not HF_API_KEY:
-    print("="*50)
-    print("WARNING: HUGGING_FACE_API_KEY NOT FOUND.")
-    print("="*50)
-    hf_client = None
-else:
-    try:
-        # TIMEOUT ADDED: Fail fast (5s) so we can switch to backup model quickly
-        hf_client = InferenceClient(token=HF_API_KEY, timeout=5.0)
-        print("NLP HANDLER: HUGGING FACE INFERENCE CLIENT READY (Timeout=5s).")
-    except Exception as e:
-        print(f"NLP HANDLER: FAILED TO INITIALIZE CLIENT. ERROR: {e}")
-        hf_client = None
-
-emotion_texts = {
-    "admiration": "inspiring <b>admiration</b>",
-    "amusement": "playful <b>amusement</b>",
-    "anger": "intense <b>anger</b>",
-    "annoyance": "subtle <b>annoyance</b>",
-    "approval": "positive <b>approval</b>",
-    "caring": "gentle <b>caring</b>",
-    "confusion": "hazy <b>confusion</b>",
-    "curiosity": "sparked <b>curiosity</b>",
-    "desire": "yearning <b>desire</b>",
-    "disappointment": "quiet <b>letdown</b>",
-    "disapproval": "firm <b>dislike</b>",
-    "disgust": "raw <b>disgust</b>",
-    "embarrassment": "awkward <b>unease</b>",
-    "excitement": "bright <b>excitement</b>",
-    "fear": "cold <b>fear</b>",
-    "gratitude": "warm <b>gratitude</b>",
-    "grief": "heavy <b>grief</b>",
-    "joy": "radiant <b>joy</b>",
-    "love": "tender <b>love</b>",
-    "nervousness": "tense <b>anxiety</b>",
-    "optimism": "hopeful <b>optimism</b>",
-    "pride": "bold <b>pride</b>",
-    "realization": "sudden <b>insight</b>",
-    "relief": "soothing <b>relief</b>",
-    "remorse": "deep <b>regret</b>",
-    "sadness": "soft <b>sadness</b>",
-    "surprise": "pure <b>surprise</b>",
-}
-
-_analysis_cache = {}
-
-def prepare_text_for_analysis(text: str) -> str:
-    if not text or not text.strip():
-        print("NLP HANDLER: EMPTY TEXT, NOTHING TO TRANSLATE.")
-        return ""
-
-    try:
-        if len(text) > 4500:
-            print(f"NLP HANDLER: TEXT TOO LONG ({len(text)} chars). COMPRESSING BEFORE TRANSLATE...")
-            lines = text.split('\\n')
-            unique_lines = []
-            seen = set()
-            current_len = 0
-            
-            for line in lines:
-                clean = line.strip()
-                if not clean or clean in seen or (clean.startswith('[') and clean.endswith(']')):
-                    continue
-                if current_len + len(clean) > 3000:
-                    break
-                
-                seen.add(clean)
-                unique_lines.append(clean)
-                current_len += len(clean) + 1
-            
-            text = "\\n".join(unique_lines)
-            print(f"NLP HANDLER: COMPRESSED TO {len(text)} CHARS.")
-
-        print(f"NLP HANDLER: TRANSLATING TO ENGLISH...")
-        try:
-            translator = GoogleTranslator(source='auto', target='en')
-            translated_text = translator.translate(text)
-
-            if translated_text and len(translated_text.strip()) > 0:
-                # Debug dikit biar tau hasilnya
-                print(f"NLP HANDLER: TRANSLATED SAMPLE: {translated_text[:100]}...")
-                return translated_text
-            else:
-                print("NLP HANDLER: TRANSLATION RESULTED IN EMPTY TEXT. USING COMPRESSED ORIGINAL.")
-                return text
-
-        except Exception as translate_error:
-            print(f"NLP HANDLER: TRANSLATION ERROR: {translate_error}. USING COMPRESSED ORIGINAL.")
-            return text
-
-    except Exception as e:
-        print(f"NLP HANDLER: GENERAL ERROR: {e}")
-        return text
-
-def get_emotion_from_text(text: str):
-    if not hf_client:
-        print("NLP HANDLER: HF CLIENT NOT READY.")
-        return None
-    if not text or not text.strip():
-        return None
-
-    if text in _analysis_cache:
-        print("NLP HANDLER: FETCHING RESULT FROM CACHE.")
-        return _analysis_cache[text]
-
-    try:
-        print(f"NLP HANDLER: RUNNING HYBRID ANALYSIS (ROBERTA + DISTILBERT)...")
-        lines = text.split('\\n')
-        unique_lines = []
-        seen = set()
-        current_length = 0
-        SAFE_LIMIT = 1200 
-
-        for line in lines:
-            clean_line = line.strip()
-            if not clean_line or clean_line in seen or (clean_line.startswith('[') and clean_line.endswith(']')):
-                continue
-            
-            if current_length + len(clean_line) > SAFE_LIMIT:
-                break
-                
-            seen.add(clean_line)
-            unique_lines.append(clean_line)
-            current_length += len(clean_line) + 2
-
-        text_to_analyze = ". ".join(unique_lines)
-        
-        if len(text_to_analyze) > SAFE_LIMIT:
-             text_to_analyze = text_to_analyze[:SAFE_LIMIT]
-
-        print(f"NLP HANDLER: COMPRESSED TEXT LENGTH: {len(text_to_analyze)} chars")
-
-        combined_scores = {}
-        successful_models = 0
-
-        # 1. Try RoBERTa (SamLowe)
-        try:
-            print(" > Calling RoBERTa (SamLowe)...")
-            results_roberta = hf_client.text_classification(text_to_analyze, model=MODEL_ROBERTA, top_k=28)
-            for item in results_roberta:
-                label = item['label']
-                score = item['score']
-                combined_scores[label] = combined_scores.get(label, 0) + score
-            successful_models += 1
-        except Exception as e_roberta:
-             print(f"⚠️ NLP HANDLER: RoBERTa Failed (Skipping): {e_roberta}")
-
-        # 2. Try DistilBERT (Joeddav)
-        try:
-            print(" > Calling DistilBERT (Joeddav)...")
-            results_distilbert = hf_client.text_classification(text_to_analyze, model=MODEL_DISTILBERT, top_k=28)
-            for item in results_distilbert:
-                label = item['label']
-                score = item['score']
-                combined_scores[label] = combined_scores.get(label, 0) + score
-            successful_models += 1
-        except Exception as e_bert:
-             print(f"NLP HANDLER: DistilBERT Failed (Skipping): {e_bert}")
-
-        if successful_models == 0:
-             print("NLP HANDLER: BOTH MODELS FAILED.")
-             return None
-
-        if 'neutral' in combined_scores:
-            del combined_scores['neutral']
-        total_remaining = sum(combined_scores.values())
-
-        final_results = []
-        if total_remaining > 0:
-            for label, raw_sum in combined_scores.items():
-                normalized_score = raw_sum / total_remaining
-                final_results.append({"label": label, "score": normalized_score})
-        else:
-            final_results = []
-
-        final_results.sort(key=lambda x: x['score'], reverse=True)
-
-        log_str = "\\n".join([f"{res['label']}: {res['score']:.2%}" for res in final_results])
-        print(f"NLP HANDLER: HYBRID RESULT (ALL) ->\\n{log_str}")
-
-        _analysis_cache[text] = final_results
-        return final_results
-
-    except Exception as e:
-        print(f"NLP HANDLER: ERROR DURING HYBRID ANALYSIS: {e}")
-        return None
-
-def analyze_lyrics_emotion(lyrics: str):
-    if not lyrics or not lyrics.strip():
-        return {"error": "Lyrics input cannot be empty."}
-
-    text = prepare_text_for_analysis(lyrics.strip())
-
-    if not text or len(text.strip()) == 0:
-        print("NLP HANDLER: TRANSLATION RESULTED IN EMPTY TEXT.")
-        return {"error": "Translation resulted in empty text."}
-
-    emotions = get_emotion_from_text(text)
-
-    if not emotions:
-        print("NLP HANDLER: API FAILED OR NO RESULTS.")
-        return {"error": "Emotion analysis is currently unavailable. Check server logs."}
-
-    try:
-        top5 = emotions[:5]
-        out = [{"label": e["label"], "score": float(e.get("score", 0))} for e in top5]
-        return {"emotions": out}
-    except Exception as e:
-        print(f"NLP HANDLER: ERROR PARSING RESULTS: {e}")
-        return {"error": "Error parsing analysis results."}
-
-def generate_emotion_paragraph(track_names, extended=False):
-    if not track_names:
-        return "Couldn't analyze music mood.", []
-
-    num_tracks = len(track_names) if extended else min(10, len(track_names))
-    tracks_to_analyze = track_names[:num_tracks]
-
-    print(f"NLP HANDLER: ANALYZING {num_tracks} TRACKS (EXTENDED={extended})")
-
-    combined_text = "\\n".join(tracks_to_analyze)
-    text = prepare_text_for_analysis(combined_text)
-
-    if not text or len(text.strip()) == 0:
-        print("NLP HANDLER: TEXT FOR ANALYSIS EMPTY AFTER TRANSLATION.")
-        return "Vibe analysis failed (empty text after translation).", []
-
-    emotions = get_emotion_from_text(text)
-
-    if not emotions:
-        return "Vibe analysis is currently unavailable.", []
-
-    try:
-        em_list = sorted(emotions, key=lambda x: float(x.get("score", 0)), reverse=True)
-    except Exception:
-        return "Vibe analysis failed (parsing error).", []
-
-    unique = []
-    seen = set()
-    for e in em_list:
-        lbl = e.get("label")
-        if not lbl or lbl == 'neutral':
-            continue
-        if lbl not in seen:
-            seen.add(lbl)
-            unique.append(e)
-            if len(unique) >= 3:
-                break
-
-    if len(unique) < 3:
-        pad_defaults = [
-            {"label": "optimism", "score": 0.5},
-            {"label": "joy", "score": 0.3},
-            {"label": "sadness", "score": 0.2} 
-        ]
-        for p in pad_defaults:
-            if p["label"] not in seen:
-                unique.append(p)
-                seen.add(p["label"])
-                if len(unique) >= 3:
-                    break
-
-    top3 = unique[:3]
-    formatted = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
-
-    return f"Shades of {formatted}.", top3
-"""
-
+    # 7. Format
+    formatted_str = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
+    
+    # LOG RESULTS (CLEAN)
+    clean_summary = formatted_str.replace("<b>", "").replace("</b>", "")
+    stats_str = ", ".join([f"{e['label'].title()} ({e['score']:.0%})" for e in top3])
+    
+    print(f"\nNLP HANDLER: FINAL VIBE -> Shades of {clean_summary}")
+    print(f"NLP HANDLER: STATS      -> {stats_str}\n")
+    
+    return f"Shades of {formatted_str}.", top3

@@ -411,7 +411,7 @@ export const Navbar = () => {
                         {showPill && (
                           <motion.div
                             layoutId="navbar-active"
-                            className="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-md -z-10"
+                            className="absolute inset-0 rounded-md -z-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)]"
                             transition={{
                               type: "spring",
                               stiffness: 380,
@@ -439,17 +439,17 @@ export const Navbar = () => {
                             }
                             onMouseLeave={() => setDesktopDropdownOpen(null)}
                           >
-                            <div className="bg-white/25 dark:bg-[#1e1e1e]/25 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-xl p-1.5 min-w-[140px] flex flex-col gap-0.5 overflow-hidden navbar-floating-glass">
+                            <div className="bg-white/25 dark:bg-[#1e1e1e]/25 backdrop-blur-xl border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)] rounded-xl p-1.5 min-w-[140px] flex flex-col gap-0.5 overflow-hidden navbar-floating-glass">
                               {link.children.map((child) => (
                                 <Link
                                   key={child.name}
                                   href={child.href}
                                   onClick={() => setDesktopDropdownOpen(null)}
                                   className={cn(
-                                    "px-3 py-2 text-sm rounded-lg transition-all duration-200 text-center whitespace-nowrap font-medium",
+                                    "px-3 py-2 text-sm rounded-lg transition-all duration-200 text-center whitespace-nowrap font-medium border border-transparent",
                                     pathname === child.href
                                       ? "text-[#1DB954] bg-[#1DB954]/10 font-semibold"
-                                      : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5",
+                                      : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 hover:border-black/5 dark:hover:border-white/5 hover:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:hover:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)]",
                                   )}
                                 >
                                   {child.name}
@@ -491,7 +491,7 @@ export const Navbar = () => {
                       {showPill && (
                         <motion.div
                           layoutId="navbar-active"
-                          className="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-md -z-10"
+                          className="absolute inset-0 rounded-md -z-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)]"
                           transition={{
                             type: "spring",
                             stiffness: 380,
@@ -527,7 +527,7 @@ export const Navbar = () => {
                     {showPill && (
                       <motion.div
                         layoutId="navbar-active"
-                        className="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-md -z-10"
+                        className="absolute inset-0 rounded-md -z-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)]"
                         transition={{
                           type: "spring",
                           stiffness: 380,

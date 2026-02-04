@@ -1677,7 +1677,7 @@ export default function DashboardPage() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -5 }}
                             transition={{ duration: 0.3 }}
-                            className="player-row flex items-center gap-2 mt-1"
+                            className="player-row flex items-center gap-2 mt-1 pr-1"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {/* Timestamp left */}
@@ -1703,7 +1703,7 @@ export default function DashboardPage() {
 
                             {/* Play/Pause Button */}
                             <button
-                              className="w-6 h-6 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0 ml-1 shadow-md transition-opacity hover:opacity-90"
+                              className="w-5 h-5 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0 ml-1 shadow-sm transition-transform hover:scale-105 cursor-pointer active:scale-95"
                               onClick={(e) => togglePlayPause(e, track.id)}
                               aria-label={
                                 playingTrack === track.id ? "Pause" : "Play"
@@ -1713,7 +1713,7 @@ export default function DashboardPage() {
                                 // Pause icon
                                 <svg
                                   viewBox="0 0 24 24"
-                                  className="w-4 h-4 text-white dark:text-black fill-current"
+                                  className="w-3 h-3 text-white dark:text-black fill-current"
                                 >
                                   <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
                                 </svg>
@@ -1721,7 +1721,7 @@ export default function DashboardPage() {
                                 // Play icon
                                 <svg
                                   viewBox="0 0 24 24"
-                                  className="w-4 h-4 text-white dark:text-black fill-current ml-0.5"
+                                  className="w-3 h-3 text-white dark:text-black fill-current"
                                 >
                                   <path d="M8 5v14l11-7z" />
                                 </svg>
