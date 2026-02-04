@@ -194,13 +194,26 @@ export const Navbar = () => {
     isScrolled ? "top-4" : "top-4", // Consistent top position feels best for toasts
   );
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty(
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+
+    let clientX, clientY;
+    if ('touches' in e && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if ('clientX' in e) {
+      clientX = (e as React.MouseEvent).clientX;
+      clientY = (e as React.MouseEvent).clientY;
+    } else {
+      return;
+    }
+
+    target.style.setProperty(
       "--mouse-x",
-      `${e.clientX - rect.left}px`,
+      `${clientX - rect.left}px`,
     );
-    e.currentTarget.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+    target.style.setProperty("--mouse-y", `${clientY - rect.top}px`);
   };
 
   return (
@@ -254,6 +267,7 @@ export const Navbar = () => {
                 href={notification.media.href}
                 target="_blank"
                 onMouseMove={handleMouseMove}
+                onTouchMove={handleMouseMove}
                 className="flex items-center gap-3 p-3 pr-6 w-full h-full group"
               >
                 <div
@@ -372,6 +386,8 @@ export const Navbar = () => {
                           }
                           setDesktopDropdownOpen(link.name);
                         }}
+                        onMouseMove={handleMouseMove}
+                        onTouchMove={handleMouseMove}
                         onMouseLeave={() => {
                           setTimeout(() => {
                             const dropdown = document.getElementById(
@@ -411,13 +427,21 @@ export const Navbar = () => {
                         {showPill && (
                           <motion.div
                             layoutId="navbar-active"
-                            className="absolute inset-0 rounded-md -z-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)]"
+                            className="absolute inset-0 rounded-md -z-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)] overflow-hidden"
                             transition={{
                               type: "spring",
                               stiffness: 380,
                               damping: 30,
                             }}
-                          />
+                          >
+                            {/* Spotlight Glow - Only visible on hover */}
+                            <div
+                              className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
+                              style={{
+                                backgroundImage: `radial-gradient(circle 80px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.15), transparent 100%)`,
+                              }}
+                            />
+                          </motion.div>
                         )}
                       </button>
 
@@ -445,14 +469,23 @@ export const Navbar = () => {
                                   key={child.name}
                                   href={child.href}
                                   onClick={() => setDesktopDropdownOpen(null)}
+                                  onMouseMove={handleMouseMove}
+                                  onTouchMove={handleMouseMove}
                                   className={cn(
-                                    "px-3 py-2 text-sm rounded-lg transition-all duration-200 text-center whitespace-nowrap font-medium border border-transparent",
+                                    "px-3 py-2 text-sm rounded-lg transition-all duration-200 text-center whitespace-nowrap font-medium border border-transparent relative overflow-hidden group",
                                     pathname === child.href
                                       ? "text-[#1DB954] bg-[#1DB954]/10 font-semibold"
                                       : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 hover:border-black/5 dark:hover:border-white/5 hover:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:hover:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)]",
                                   )}
                                 >
-                                  {child.name}
+                                  {/* Hover Spotlight Glow */}
+                                  <div
+                                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                                    style={{
+                                      backgroundImage: `radial-gradient(circle 60px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.15), transparent 100%)`,
+                                    }}
+                                  />
+                                  <span className="relative z-10">{child.name}</span>
                                 </Link>
                               ))}
                             </div>
@@ -470,6 +503,8 @@ export const Navbar = () => {
                       href={link.href}
                       onClick={link.onClick}
                       onMouseEnter={() => setHoveredPath(link.href)}
+                      onMouseMove={handleMouseMove}
+                      onTouchMove={handleMouseMove}
                       className={cn(
                         "relative px-3 py-2 text-sm transition-colors rounded-md whitespace-nowrap inline-flex flex-col items-center justify-center",
                         textClass,
@@ -491,13 +526,21 @@ export const Navbar = () => {
                       {showPill && (
                         <motion.div
                           layoutId="navbar-active"
-                          className="absolute inset-0 rounded-md -z-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)]"
+                          className="absolute inset-0 rounded-md -z-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)] overflow-hidden"
                           transition={{
                             type: "spring",
                             stiffness: 380,
                             damping: 30,
                           }}
-                        />
+                        >
+                          {/* Spotlight Glow - Only visible on hover */}
+                          <div
+                            className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
+                            style={{
+                              backgroundImage: `radial-gradient(circle 80px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.15), transparent 100%)`,
+                            }}
+                          />
+                        </motion.div>
                       )}
                     </Link>
                   );
@@ -508,6 +551,8 @@ export const Navbar = () => {
                     key={link.name}
                     href={link.href}
                     onMouseEnter={() => setHoveredPath(link.href)}
+                    onMouseMove={handleMouseMove}
+                    onTouchMove={handleMouseMove}
                     className={cn(
                       "relative px-3 py-2 text-sm transition-colors rounded-md whitespace-nowrap inline-flex flex-col items-center justify-center",
                       textClass,
@@ -527,13 +572,21 @@ export const Navbar = () => {
                     {showPill && (
                       <motion.div
                         layoutId="navbar-active"
-                        className="absolute inset-0 rounded-md -z-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)]"
+                        className="absolute inset-0 rounded-md -z-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)] overflow-hidden"
                         transition={{
                           type: "spring",
                           stiffness: 380,
                           damping: 30,
                         }}
-                      />
+                      >
+                        {/* Spotlight Glow - Only visible on hover */}
+                        <div
+                          className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
+                          style={{
+                            backgroundImage: `radial-gradient(circle 80px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.15), transparent 100%)`,
+                          }}
+                        />
+                      </motion.div>
                     )}
                   </Link>
                 );
