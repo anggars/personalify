@@ -581,22 +581,23 @@ class _ShimmerBarState extends State<_ShimmerBar> with SingleTickerProviderState
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(3),
             gradient: LinearGradient(
-              begin: Alignment(-1.0 + (_controller.value * 2), -0.5),
-              end: Alignment(0.0 + (_controller.value * 2), 0.5),
+              begin: Alignment(-1.5 + (_controller.value * 2.5), -0.5), // Faster/Wider angle
+              end: Alignment(-0.5 + (_controller.value * 2.5), 0.5),
               colors: [
                 widget.color,
-                Colors.white.withOpacity(0.8), // Shiny effect
+                Colors.white.withOpacity(0.4), // Subtle Gloss (Reduced from 0.8)
                 widget.color,
               ],
               stops: const [0.0, 0.5, 1.0],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withOpacity(0.4),
-                blurRadius: 6,
-                offset: Offset.zero,
-              )
-            ],
+            // REMOVED SHADOW as requested ("ilangin shining nya")
+            // boxShadow: [
+            //   BoxShadow(
+            //     color: widget.color.withOpacity(0.4),
+            //     blurRadius: 6,
+            //     offset: Offset.zero,
+            //   )
+            // ],
           ),
         );
       },
