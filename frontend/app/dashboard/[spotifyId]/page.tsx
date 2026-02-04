@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import { GenreChart } from "@/components/genre-chart";
 import * as htmlToImage from "html-to-image";
 import { Slider } from "@/components/ui/slider";
+import { CirclePlay, CirclePause } from "lucide-react";
 
 import MarqueeText from "@/components/marquee-text";
 import { toast } from "sonner";
@@ -1564,7 +1565,7 @@ export default function DashboardPage() {
                   initial={idx >= 10 ? { opacity: 0, y: 20 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx >= 10 ? (idx - 10) * 0.1 : 0 }}
-                  className={`list-item track-item cursor-pointer hover:bg-accent/50 transition-colors border-b border-(--list-border) hover:border-white/30 ${activeEmbed === track.id ? "embed-shown" : ""
+                  className={`list-item track-item cursor-pointer hover:bg-accent/50 transition-colors border-b border-border ${activeEmbed === track.id ? "embed-shown" : ""
                     }`}
                   onClick={() => toggleEmbed(track.id)}
                 >
@@ -1703,28 +1704,24 @@ export default function DashboardPage() {
 
                             {/* Play/Pause Button */}
                             <button
-                              className="w-5 h-5 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0 ml-1 shadow-sm transition-transform hover:scale-105 cursor-pointer active:scale-95"
+                              className="ml-1 focus:outline-none focus:scale-95 hover:scale-105 active:scale-90 transition-transform cursor-pointer rounded-full"
                               onClick={(e) => togglePlayPause(e, track.id)}
                               aria-label={
                                 playingTrack === track.id ? "Pause" : "Play"
                               }
                             >
                               {playingTrack === track.id ? (
-                                // Pause icon
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  className="w-3 h-3 text-white dark:text-black fill-current"
-                                >
-                                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                                </svg>
+                                <CirclePause
+                                  size={20} // w-5 h-5 (match original container)
+                                  className="text-black dark:text-white fill-black/10 dark:fill-white/10 opacity-90 hover:opacity-100 transition-opacity"
+                                  strokeWidth={1.5}
+                                />
                               ) : (
-                                // Play icon
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  className="w-3 h-3 text-white dark:text-black fill-current"
-                                >
-                                  <path d="M8 5v14l11-7z" />
-                                </svg>
+                                <CirclePlay
+                                  size={20}
+                                  className="text-black dark:text-white fill-black/10 dark:fill-white/10 opacity-90 hover:opacity-100 transition-opacity"
+                                  strokeWidth={1.5}
+                                />
                               )}
                             </button>
                           </motion.div>

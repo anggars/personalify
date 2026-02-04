@@ -389,7 +389,7 @@ export const Navbar = () => {
                       >
                         <span className="relative flex flex-col items-center justify-center">
                           <span
-                            className={isActive ? "font-bold" : "font-medium"}
+                            className={isActive ? "font-semibold" : "font-medium"}
                           >
                             {link.name}
                           </span>
@@ -477,7 +477,7 @@ export const Navbar = () => {
                     >
                       <span className="relative flex flex-col items-center justify-center">
                         <span
-                          className={isActive ? "font-bold" : "font-medium"}
+                          className={isActive ? "font-semibold" : "font-medium"}
                         >
                           {link.name}
                         </span>
@@ -514,7 +514,7 @@ export const Navbar = () => {
                     )}
                   >
                     <span className="relative flex flex-col items-center justify-center">
-                      <span className={isActive ? "font-bold" : "font-medium"}>
+                      <span className={isActive ? "font-semibold" : "font-medium"}>
                         {link.name}
                       </span>
                       <span
@@ -689,8 +689,8 @@ export const Navbar = () => {
                           (link.name === "Dashboard" &&
                             pathname?.startsWith("/dashboard")) ||
                             pathname === link.href
-                            ? "text-[#1DB954] font-extrabold"
-                            : "text-black dark:text-white font-bold hover:text-neutral-500 dark:hover:text-neutral-300",
+                            ? "text-[#1DB954] font-semibold"
+                            : "text-black dark:text-white font-medium hover:text-neutral-500 dark:hover:text-neutral-300",
                         )}
                       >
                         {link.name}
