@@ -584,9 +584,9 @@ class _ShimmerBarState extends State<_ShimmerBar> with SingleTickerProviderState
               begin: Alignment(-1.5 + (_controller.value * 2.5), -0.5), // Faster/Wider angle
               end: Alignment(-0.5 + (_controller.value * 2.5), 0.5),
               colors: [
-                widget.color,
-                Colors.white.withOpacity(0.4), // Subtle Gloss (Reduced from 0.8)
-                widget.color,
+                widget.color.withOpacity(0.7), // Darker base
+                widget.color.withOpacity(1.0), // Bright colorful highlight (NOT white!)
+                widget.color.withOpacity(0.7), // Darker base
               ],
               stops: const [0.0, 0.5, 1.0],
             ),

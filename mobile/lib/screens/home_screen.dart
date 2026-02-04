@@ -352,8 +352,43 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Helper: Icon Mapper (Material Symbols for consistency)
+  // UPDATED: Maps both raw labels AND friendly labels from backend
   IconData _getIconForEmotion(String label) {
-    switch (label.toLowerCase()) {
+    final lowerLabel = label.toLowerCase();
+    
+    // Map friendly labels (what backend now returns) to icons
+    // Format: "Adjective Noun" -> icon
+    if (lowerLabel.contains('insight')) return Symbols.lightbulb;
+    if (lowerLabel.contains('annoyance')) return Symbols.sentiment_frustrated;
+    if (lowerLabel.contains('caring')) return Symbols.healing; // Changed from favorite
+    if (lowerLabel.contains('letdown') || lowerLabel.contains('disappointment')) return Symbols.sentiment_dissatisfied;
+    if (lowerLabel.contains('dislike') || lowerLabel.contains('disapproval')) return Symbols.thumb_down;
+    if (lowerLabel.contains('disgust')) return Symbols.mood_bad;
+    if (lowerLabel.contains('unease') || lowerLabel.contains('embarrassment')) return Symbols.face;
+    if (lowerLabel.contains('excitement')) return Symbols.bolt;
+    if (lowerLabel.contains('fear')) return Symbols.sentiment_worried;
+    if (lowerLabel.contains('gratitude')) return Symbols.volunteer_activism;
+    if (lowerLabel.contains('grief')) return Symbols.heart_broken;
+    if (lowerLabel.contains('joy')) return Symbols.sentiment_very_satisfied;
+    if (lowerLabel.contains('love')) return Symbols.favorite;
+    if (lowerLabel.contains('anxiety') || lowerLabel.contains('nervousness')) return Symbols.psychiatry; // Changed from sentiment_dissatisfied
+    if (lowerLabel.contains('optimism')) return Symbols.light_mode;
+    if (lowerLabel.contains('pride')) return Symbols.military_tech;
+    if (lowerLabel.contains('relief')) return Symbols.sentiment_satisfied;
+    if (lowerLabel.contains('regret') || lowerLabel.contains('remorse')) return Symbols.sentiment_sad;
+    if (lowerLabel.contains('sadness')) return Symbols.sentiment_very_dissatisfied;
+    if (lowerLabel.contains('surprise')) return Symbols.add_reaction;
+    if (lowerLabel.contains('admiration')) return Symbols.thumb_up;
+    if (lowerLabel.contains('amusement')) return Symbols.celebration; // Changed from sentiment_very_satisfied
+    if (lowerLabel.contains('anger')) return Symbols.sentiment_extremely_dissatisfied;
+    if (lowerLabel.contains('approval')) return Symbols.check_circle;
+    if (lowerLabel.contains('confusion')) return Symbols.help;
+    if (lowerLabel.contains('curiosity')) return Symbols.search;
+    if (lowerLabel.contains('desire')) return Symbols.local_fire_department;
+    if (lowerLabel.contains('neutral') || lowerLabel.contains('vibe')) return Symbols.sentiment_neutral;
+    
+    // Fallback: raw labels (backward compatibility)
+    switch (lowerLabel) {
       case 'joy': return Symbols.sentiment_very_satisfied;
       case 'sadness': return Symbols.sentiment_very_dissatisfied;
       case 'anger': return Symbols.sentiment_extremely_dissatisfied;
@@ -368,19 +403,19 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'admiration': return Symbols.thumb_up;
       case 'anticipation': return Symbols.hourglass_empty;
       case 'approval': return Symbols.check_circle;
-      case 'caring': return Symbols.favorite;
+      case 'caring': return Symbols.healing;
       case 'desire': return Symbols.local_fire_department;
       case 'disappointment': return Symbols.sentiment_dissatisfied;
       case 'disapproval': return Symbols.thumb_down;
       case 'embarrassment': return Symbols.face;
       case 'gratitude': return Symbols.volunteer_activism;
       case 'grief': return Symbols.heart_broken;
-      case 'nervousness': return Symbols.sentiment_dissatisfied;
+      case 'nervousness': return Symbols.psychiatry;
       case 'pride': return Symbols.military_tech;
       case 'realization': return Symbols.lightbulb;
       case 'relief': return Symbols.sentiment_satisfied;
       case 'remorse': return Symbols.sentiment_sad;
-      case 'amusement': return Symbols.sentiment_very_satisfied;
+      case 'amusement': return Symbols.celebration;
       case 'annoyance': return Symbols.sentiment_frustrated;
       case 'curiosity': return Symbols.search;
       default: return Symbols.music_note;
