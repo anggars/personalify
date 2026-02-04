@@ -385,6 +385,12 @@ def refresh_access_token(
             "expires_in": expires_in
         }
         
+        # CRITICAL: Detect if local development to set domain for cross-port sharing
+        # This matches the same pattern used in /callback endpoint (line 292-305)
+        original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+        is_local = "127.0.0.1" in original_host or "localhost" in original_host
+        cookie_domain = "localhost" if is_local else None
+        
         # Web also sets cookie for redundancy
         response = JSONResponse(content=response_data)
         response.set_cookie(
@@ -393,7 +399,8 @@ def refresh_access_token(
             httponly=True,
             path="/",
             samesite="lax",
-            max_age=expires_in
+            max_age=expires_in,
+            domain=cookie_domain  # CRITICAL FIX: Share cookie across ports (3000 ↔ 8000)
         )
         return response
             

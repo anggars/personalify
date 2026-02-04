@@ -20,18 +20,13 @@ export async function fetchWithAuth(
     });
 
     if (refreshRes.ok) {
-      const data = await refreshRes.json();
-      const newToken = data.access_token;
       console.log('[fetchWithAuth] Token refreshed successfully, retrying...');
 
-      // Retry with new token
+      // Backend already set new access_token cookie with domain="localhost"
+      // Retry original request - new cookie will be automatically included
       return fetch(fullUrl, {
         ...options,
-        headers: {
-          ...options.headers,
-          'Authorization': `Bearer ${newToken}`
-        },
-        credentials: 'include',
+        credentials: 'include',  // Automatically includes the new access_token cookie
       });
     } else {
       console.error('[fetchWithAuth] Refresh failed, redirecting to login');
