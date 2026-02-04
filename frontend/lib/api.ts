@@ -10,19 +10,27 @@ export async function fetchWithAuth(
     ...options,
     credentials: 'include',
   });
-  
+
   if (response.status === 401) {
     console.log('[fetchWithAuth] Token expired (401), attempting refresh...');
-    
+
     const refreshRes = await fetch(`${API_URL}/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
     });
-    
+
     if (refreshRes.ok) {
+      const data = await refreshRes.json();
+      const newToken = data.access_token;
       console.log('[fetchWithAuth] Token refreshed successfully, retrying...');
+
+      // Retry with new token
       return fetch(fullUrl, {
         ...options,
+        headers: {
+          ...options.headers,
+          'Authorization': `Bearer ${newToken}`
+        },
         credentials: 'include',
       });
     } else {
@@ -31,6 +39,6 @@ export async function fetchWithAuth(
       throw new Error('Session expired');
     }
   }
-  
+
   return response;
 }
