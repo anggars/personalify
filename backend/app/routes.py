@@ -64,6 +64,19 @@ def get_redirect_uri(request: Request):
 def root():
     return {"status": "ok", "message": "Personalify Backend API"}
 
+@router.get("/api/debug-cookies", tags=["Debug"])
+def debug_cookies(request: Request):
+    """Debug endpoint to check what cookies are received by backend"""
+    return {
+        "cookies": request.cookies,
+        "headers": {
+            "origin": request.headers.get("origin"),
+            "referer": request.headers.get("referer"),
+            "host": request.headers.get("host"),
+            "cookie_header_raw": request.headers.get("cookie")
+        }
+    }
+
 @router.post("/request-access", tags=["Admin"])
 def request_access(data: RequestAccessModel):
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -115,14 +128,17 @@ def login(request: Request, mobile: str = Query(None)):
     
     # Pass mobile param through state parameter
     # Ensure state is URL-safe and clearly indicates mobile
-    state = "mobile=true" if mobile and mobile.lower() == "true" else "web"
+    state_val = f"mobile={mobile}" if mobile else "web"
     
-    query_params = urlencode({
-        "response_type": "code", "client_id": client_id,
-        "redirect_uri": redirect_uri, "scope": scope,
-        "state": state
+    auth_url = "https://accounts.spotify.com/authorize?" + urlencode({
+        "response_type": "code",
+        "client_id": client_id,
+        "scope": scope,
+        "redirect_uri": redirect_uri,
+        "state": state_val
     })
-    return RedirectResponse(url=f"https://accounts.spotify.com/authorize?{query_params}")
+    
+    return RedirectResponse(auth_url)
 
 @router.get("/logout")
 async def logout(request: Request):
@@ -137,14 +153,23 @@ async def logout(request: Request):
 @router.get("/callback", tags=["Auth"])
 def callback(request: Request, code: str = Query(..., description="Spotify Authorization Code"), state: str = Query(None)):
     
-    # 1. Determine Client Type & Host immediately
+    # helper to check if running on mobile from state
+    is_mobile = False
+    if state and "mobile=true" in state:
+        is_mobile = True
+        
+    redirect_uri = get_redirect_uri(request)
+    print(f"DEBUG Callback - Redirect URI used: {redirect_uri}")
+
+    # Determine original host to decide frontend URL
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-    # State format: "mobile=true" (Wait, mobile sends state="mobile=true"?)
-    # If state is None, is_mobile is False.
-    is_mobile = state and "mobile=true" in state
     
-    # helper to get frontend url
-    if "127.0.0.1" in original_host or "localhost" in original_host:
+    # helper to get frontend url dynamically
+    # CRITICAL: Match the domain we are currently on to avoid Cross-Domain cookie loss
+    # If we are on 127.0.0.1, send to 127.0.0.1:3000. If localhost, send to localhost:3000.
+    if "127.0.0.1" in original_host:
+        frontend_url = "http://127.0.0.1:3000"
+    elif "localhost" in original_host:
         frontend_url = "http://localhost:3000"
     else:
         frontend_url = f"{request.url.scheme}://{original_host}"
@@ -289,19 +314,45 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         response = RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
         
         # Determine if running locally for cookie domain
+        # CRITICAL: For localhost, DO NOT set domain parameter!
+        # Setting domain="localhost" breaks cookies when accessing via 127.0.0.1
+        # Let browser handle same-origin policy for local development
         is_local = "127.0.0.1" in original_host or "localhost" in original_host
-        cookie_domain = "localhost" if is_local else None
+        cookie_domain = None if is_local else None  # Always None - browser auto-detects
         
-        # CRITICAL FIX: Set cookie with domain for localhost cross-port sharing
-        # For localhost: domain="localhost" allows cookies to work across ports (3000 ↔ 8000)
-        # For production: domain=None (browser auto-detects from request)
+        # CRITICAL FIX: Set cookie WITHOUT domain for localhost
+        # This allows cookies to work for both localhost:3000 and 127.0.0.1:3000
+        # Secure=True for production (HTTPS), False for local (HTTP)
+        is_secure = not is_local
+        
+        # USE HTML REDIRECT INSTEAD OF 307 TO FORCE COOKIE SET
+        # Browsers sometimes drop cookies on cross-site 3xx redirects
+        redirect_url = f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term"
+        
+        html_content = f"""
+        <html>
+            <head>
+                <title>Redirecting...</title>
+                <script>
+                    window.location.replace("{redirect_url}");
+                </script>
+            </head>
+            <body>
+                <p>Login successful! Redirecting to dashboard...</p>
+            </body>
+        </html>
+        """
+        
+        response = HTMLResponse(content=html_content, status_code=200)
+
         response.set_cookie(
             key="spotify_id", 
             value=spotify_id, 
             httponly=True, 
             path="/", 
             samesite="lax",
-            domain=cookie_domain
+            max_age=2592000,  # 30 days
+            secure=is_secure
         )
         # NEW: Set access_token cookie for realtime sync logic (Web only)
         response.set_cookie(
@@ -311,7 +362,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
             path="/", 
             samesite="lax", 
             max_age=3600,
-            domain=cookie_domain
+            secure=is_secure
         )
         return response
 
@@ -385,14 +436,16 @@ def refresh_access_token(
             "expires_in": expires_in
         }
         
-        # CRITICAL: Detect if local development to set domain for cross-port sharing
-        # This matches the same pattern used in /callback endpoint (line 292-305)
-        original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+        # Determine if running locally for cookie domain
+        # CRITICAL: DO NOT set domain for localhost (breaks 127.0.0.1 vs localhost)
         is_local = "127.0.0.1" in original_host or "localhost" in original_host
-        cookie_domain = "localhost" if is_local else None
         
         # Web also sets cookie for redundancy
         response = JSONResponse(content=response_data)
+        
+        # Secure=True for production (HTTPS), False for local (HTTP)
+        is_secure = not is_local
+        
         response.set_cookie(
             key="access_token",
             value=new_access_token,
@@ -400,7 +453,7 @@ def refresh_access_token(
             path="/",
             samesite="lax",
             max_age=expires_in,
-            domain=cookie_domain  # CRITICAL FIX: Share cookie across ports (3000 ↔ 8000)
+            secure=is_secure  # Auto-detect HTTPS
         )
         return response
             
@@ -649,13 +702,21 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
                             save_refresh_token(spotify_id, token_to_save, token_expires_at)
                             
                             # Set cookie for future requests
+                            # Determine if running locally (copied from other endpoints logic)
+                            # In FastAPI dependency injection, request.url.hostname could also work, 
+                            # but sticking to existing pattern for consistency
+                            original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+                            is_local = "127.0.0.1" in original_host or "localhost" in original_host
+                            is_secure = not is_local
+
                             response.set_cookie(
                                 key="access_token",
                                 value=access_token,
                                 httponly=True,
                                 path="/",
                                 samesite="lax",
-                                max_age=expires_in
+                                max_age=expires_in,
+                                secure=is_secure
                             )
                             print("WEB DASHBOARD: Server-side refresh success! Cookie set.")
                         else:
