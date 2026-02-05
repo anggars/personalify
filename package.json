@@ -2,17 +2,14 @@
   "name": "personalify-vercel",
   "version": "1.0.0",
   "description": "Personalify frontend for Vercel",
+  "private": true,
   "packageManager": "pnpm@9.15.4",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "cd frontend && pnpm install --production=false && pnpm run build",
-    "start": "echo 'Serverless'"
+    "dev": "pnpm --filter frontend run dev",
+    "build": "pnpm --filter frontend run build",
+    "start": "pnpm --filter frontend run start"
   },
-  "dependencies": {
-    "@radix-ui/react-hover-card": "^1.1.15",
-    "next": "16.1.1",
-    "recharts": "^3.6.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "vercel": "^33.0.0"
   }
