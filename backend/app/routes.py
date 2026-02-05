@@ -122,7 +122,7 @@ def login(request: Request, mobile: str = Query(None)):
     print(f"DEBUG Login - Request Host: {request.headers.get('host', 'N/A')}")
     print(f"DEBUG Login - Mobile param: {mobile}")
     
-    scope = "user-top-read user-read-recently-played user-read-private user-read-email"
+    scope = "user-top-read user-read-recently-played user-read-private user-read-email user-read-currently-playing user-read-playback-state"
     if not client_id or not redirect_uri:
         raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
     
@@ -464,6 +464,144 @@ def refresh_access_token(
         print(f"REFRESH EXCEPTION: {e}")
         raise HTTPException(status_code=500, detail="Token refresh failed")
 
+@router.get("/api/currently-playing/{spotify_id}", tags=["Player"])
+def get_currently_playing(spotify_id: str, request: Request):
+    """
+    Get currently playing track from Spotify.
+    Uses stored refresh token to get fresh access token.
+    """
+    try:
+        # Get refresh token from database
+        refresh_token = get_refresh_token(spotify_id)
+        if not refresh_token:
+            return {"is_playing": False, "error": "No refresh token"}
+        
+        # Get fresh access token
+        client_id = os.getenv("SPOTIFY_CLIENT_ID")
+        client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+        
+        payload = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+            "client_id": client_id,
+            "client_secret": client_secret
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        
+        token_res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
+        if token_res.status_code != 200:
+            return {"is_playing": False, "error": "Token refresh failed"}
+        
+        tokens = token_res.json()
+        access_token = tokens.get("access_token")
+        new_refresh = tokens.get("refresh_token")
+        expires_in = tokens.get("expires_in", 3600)
+        
+        # Save new refresh token if rotated
+        if new_refresh:
+            token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
+            save_refresh_token(spotify_id, new_refresh, token_expires_at)
+        
+        # Call Spotify currently playing endpoint
+        spotify_headers = {"Authorization": f"Bearer {access_token}"}
+        player_res = requests.get("https://api.spotify.com/v1/me/player/currently-playing", headers=spotify_headers)
+        
+        if player_res.status_code == 204:
+            # No content - nothing playing
+            return {"is_playing": False}
+        
+        if player_res.status_code != 200:
+            return {"is_playing": False, "error": f"Spotify API error: {player_res.status_code}"}
+        
+        data = player_res.json()
+        
+        if not data.get("item"):
+            return {"is_playing": False}
+        
+        track = data["item"]
+        return {
+            "is_playing": data.get("is_playing", False),
+            "track": {
+                "id": track.get("id"),
+                "name": track.get("name"),
+                "artists": [a["name"] for a in track.get("artists", [])],
+                "album": track.get("album", {}).get("name"),
+                "image": track.get("album", {}).get("images", [{}])[0].get("url") if track.get("album", {}).get("images") else None,
+                "duration_ms": track.get("duration_ms"),
+                "progress_ms": data.get("progress_ms", 0),
+                "external_url": track.get("external_urls", {}).get("spotify")
+            }
+        }
+        
+    except Exception as e:
+        print(f"CURRENTLY PLAYING ERROR: {e}")
+        return {"is_playing": False, "error": str(e)}
+
+@router.get("/api/profile/{spotify_id}", tags=["Profile"])
+def get_user_profile(spotify_id: str, request: Request):
+    """
+    Lightweight endpoint to get user profile info only.
+    Does NOT trigger emotion analysis - just returns cached user data.
+    """
+    try:
+        # Try to get from Redis cache first
+        cache_key = f"profile:{spotify_id}"
+        cached = redis_client.get(cache_key) if redis_client else None
+        
+        if cached:
+            return json.loads(cached)
+        
+        # Get refresh token to fetch from Spotify
+        refresh_token = get_refresh_token(spotify_id)
+        if not refresh_token:
+            return {"error": "No refresh token", "user": None, "image": None}
+        
+        # Get fresh access token
+        client_id = os.getenv("SPOTIFY_CLIENT_ID")
+        client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+        
+        payload = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+            "client_id": client_id,
+            "client_secret": client_secret
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        
+        token_res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
+        if token_res.status_code != 200:
+            return {"error": "Token refresh failed", "user": None, "image": None}
+        
+        tokens = token_res.json()
+        access_token = tokens.get("access_token")
+        
+        # Fetch user profile from Spotify
+        spotify_headers = {"Authorization": f"Bearer {access_token}"}
+        user_res = requests.get("https://api.spotify.com/v1/me", headers=spotify_headers)
+        
+        if user_res.status_code != 200:
+            return {"error": "Failed to fetch profile", "user": None, "image": None}
+        
+        user_data = user_res.json()
+        display_name = user_data.get("display_name", spotify_id)
+        user_image = user_data["images"][0]["url"] if user_data.get("images") else None
+        
+        result = {
+            "user": display_name,
+            "image": user_image,
+            "spotify_id": spotify_id
+        }
+        
+        # Cache for 5 minutes
+        if redis_client:
+            redis_client.setex(cache_key, 300, json.dumps(result))
+        
+        return result
+        
+    except Exception as e:
+        print(f"PROFILE ERROR: {e}")
+        return {"error": str(e), "user": None, "image": None}
+
 @router.post("/analyze-emotions-background", tags=["Background"])
 async def analyze_emotions_background(
     spotify_id: str = Body(..., embed=True, description="Spotify ID"),
@@ -763,6 +901,7 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
 
         return {
             "user": data["user"],
+            "image": data.get("image"),
             "time_range": time_range,
             "emotion_paragraph": emotion_paragraph,
             "top_emotions": data.get("top_emotions", []),

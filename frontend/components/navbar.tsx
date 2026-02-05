@@ -34,6 +34,7 @@ export const Navbar = () => {
     null,
   );
   const [spotifyId, setSpotifyId] = useState<string | null>(null);
+  const [userImage, setUserImage] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{
     top: number;
     left: number;
@@ -41,6 +42,9 @@ export const Navbar = () => {
   const dropdownTriggerRef = useRef<HTMLButtonElement>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
+  const [hoveredDropdownPath, setHoveredDropdownPath] = useState<string | null>(
+    null,
+  );
 
   // Mount check for portal
   useEffect(() => {
@@ -106,7 +110,9 @@ export const Navbar = () => {
 
     if (errorParam === "logged_out" || errorParam === "session_expired") {
       localStorage.removeItem("spotify_id");
+      localStorage.removeItem("spotify_user_image");
       setSpotifyId(null);
+      setUserImage(null);
       if (errorParam === "session_expired") {
         const event = new CustomEvent("personalify-notification", {
           detail: {
@@ -134,6 +140,58 @@ export const Navbar = () => {
       setSpotifyId(storedId);
     }
   }, [pathname, params]);
+
+  // Fetch user profile image
+  useEffect(() => {
+    if (!spotifyId) {
+      setUserImage(null);
+      return;
+    }
+
+    const cachedImage = localStorage.getItem("spotify_user_image");
+    if (cachedImage) {
+      setUserImage(cachedImage);
+      return;
+    }
+
+    // Fetch from lightweight profile API with fallback to dashboard
+    fetch(`/api/profile/${spotifyId}`, {
+      credentials: "include",
+    })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.image) {
+          setUserImage(data.image);
+          localStorage.setItem("spotify_user_image", data.image);
+        } else if (!data?.image) {
+          // Fallback to dashboard API
+          return fetch(`/api/dashboard/${spotifyId}?time_range=short_term`, {
+            credentials: "include",
+          })
+            .then((res) => res.ok ? res.json() : null)
+            .then((dashData) => {
+              if (dashData?.image) {
+                setUserImage(dashData.image);
+                localStorage.setItem("spotify_user_image", dashData.image);
+              }
+            });
+        }
+      })
+      .catch(() => {
+        // Fallback to dashboard API on error
+        fetch(`/api/dashboard/${spotifyId}?time_range=short_term`, {
+          credentials: "include",
+        })
+          .then((res) => res.ok ? res.json() : null)
+          .then((dashData) => {
+            if (dashData?.image) {
+              setUserImage(dashData.image);
+              localStorage.setItem("spotify_user_image", dashData.image);
+            }
+          })
+          .catch(() => { });
+      });
+  }, [spotifyId]);
 
   // Handle dashboard link click (Login Warning)
   const handleDashboardClick = (e: React.MouseEvent) => {
@@ -318,17 +376,27 @@ export const Navbar = () => {
             transition={{ duration: 0.3 }}
             className={navbarClass}
           >
-            {/* LOGO (Logout if logged in) */}
+            {/* LOGO (Profile if logged in) */}
             {spotifyId ? (
-              <a
-                href="/logout"
-                className="flex items-center justify-center shrink-0 p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-red-500/10 transition-colors group"
-                title="Logout"
+              <Link
+                href="/profile"
+                className="flex items-center justify-center shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800 hover:ring-2 hover:ring-[#1DB954]/50 transition-all group"
+                title="View Profile"
               >
-                <span className="font-bold text-lg text-[#1DB954] group-hover:text-red-500 w-5 h-5 flex items-center justify-center transition-colors">
-                  P
-                </span>
-              </a>
+                {userImage ? (
+                  <Image
+                    src={userImage}
+                    alt="Profile"
+                    width={36}
+                    height={36}
+                    className="object-cover border-2 border-neutral-100 dark:border-neutral-800 rounded-lg"
+                  />
+                ) : (
+                  <span className="font-bold text-lg text-[#1DB954] w-9 h-9 flex items-center justify-center">
+                    P
+                  </span>
+                )}
+              </Link>
             ) : (
               <Link
                 href="/"
@@ -461,33 +529,66 @@ export const Navbar = () => {
                             onMouseEnter={() =>
                               setDesktopDropdownOpen(link.name)
                             }
-                            onMouseLeave={() => setDesktopDropdownOpen(null)}
+                            onMouseLeave={() => {
+                              setDesktopDropdownOpen(null);
+                              setHoveredDropdownPath(null);
+                            }}
                           >
                             <div className="bg-white/25 dark:bg-[#1e1e1e]/25 backdrop-blur-xl border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)] rounded-xl p-1.5 min-w-[140px] flex flex-col gap-0.5 overflow-hidden navbar-floating-glass">
-                              {link.children.map((child) => (
-                                <Link
-                                  key={child.name}
-                                  href={child.href}
-                                  onClick={() => setDesktopDropdownOpen(null)}
-                                  onMouseMove={handleMouseMove}
-                                  onTouchMove={handleMouseMove}
-                                  className={cn(
-                                    "px-3 py-2 text-sm rounded-lg transition-all duration-200 text-center whitespace-nowrap font-medium border border-transparent relative overflow-hidden group",
-                                    pathname === child.href
-                                      ? "text-[#1DB954] bg-[#1DB954]/10 font-semibold"
-                                      : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 hover:border-black/5 dark:hover:border-white/5 hover:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:hover:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)]",
-                                  )}
-                                >
-                                  {/* Hover Spotlight Glow */}
-                                  <div
-                                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                                    style={{
-                                      backgroundImage: `radial-gradient(circle 60px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.15), transparent 100%)`,
-                                    }}
-                                  />
-                                  <span className="relative z-10">{child.name}</span>
-                                </Link>
-                              ))}
+                              {link.children.map((child) => {
+                                const isChildActive = pathname === child.href;
+                                const isChildHovered = hoveredDropdownPath === child.href;
+                                const showChildPill = hoveredDropdownPath
+                                  ? isChildHovered
+                                  : isChildActive;
+
+                                return (
+                                  <Link
+                                    key={child.name}
+                                    href={child.href}
+                                    onClick={() => setDesktopDropdownOpen(null)}
+                                    onMouseEnter={() =>
+                                      setHoveredDropdownPath(child.href)
+                                    }
+                                    onMouseMove={handleMouseMove}
+                                    onTouchMove={handleMouseMove}
+                                    className={cn(
+                                      "px-3 py-2 text-sm rounded-lg transition-colors duration-200 text-center whitespace-nowrap font-medium border border-transparent relative overflow-hidden group z-10",
+                                      isChildActive
+                                        ? "text-black dark:text-white font-semibold"
+                                        : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
+                                    )}
+                                  >
+                                    <span className="relative z-10">
+                                      {child.name}
+                                    </span>
+                                    {showChildPill && (
+                                      <motion.div
+                                        layoutId="dropdown-active"
+                                        className="absolute inset-0 rounded-lg -z-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_1px_1px_0_rgba(255,255,255,0.05)] dark:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.1)] overflow-hidden"
+                                        transition={{
+                                          type: "spring",
+                                          stiffness: 380,
+                                          damping: 30,
+                                        }}
+                                      >
+                                        {/* Hover Spotlight Glow */}
+                                        <div
+                                          className={cn(
+                                            "absolute inset-0 transition-opacity duration-300",
+                                            isChildHovered
+                                              ? "opacity-100"
+                                              : "opacity-0"
+                                          )}
+                                          style={{
+                                            backgroundImage: `radial-gradient(circle 60px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.15), transparent 100%)`,
+                                          }}
+                                        />
+                                      </motion.div>
+                                    )}
+                                  </Link>
+                                );
+                              })}
                             </div>
                           </div>,
                           document.body,
@@ -628,13 +729,27 @@ export const Navbar = () => {
                   : "w-full px-4 py-3 border-b border-black/5 dark:border-white/5",
               )}
             >
-              {/* Same Logo Logic */}
+              {/* Logo - Profile if logged in */}
               {spotifyId ? (
-                <div className="flex items-center justify-center shrink-0 p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800">
-                  <span className="font-bold text-lg text-[#1DB954] w-5 h-5 flex items-center justify-center">
-                    P
-                  </span>
-                </div>
+                <Link
+                  href="/profile"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-center shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800"
+                >
+                  {userImage ? (
+                    <Image
+                      src={userImage}
+                      alt="Profile"
+                      width={36}
+                      height={36}
+                      className="object-cover border-2 border-neutral-100 dark:border-neutral-800 rounded-lg"
+                    />
+                  ) : (
+                    <span className="font-bold text-lg text-[#1DB954] w-9 h-9 flex items-center justify-center">
+                      P
+                    </span>
+                  )}
+                </Link>
               ) : (
                 <div className="flex items-center justify-center shrink-0 p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800">
                   <span className="font-bold text-lg text-[#1DB954] w-5 h-5 flex items-center justify-center">
@@ -684,8 +799,8 @@ export const Navbar = () => {
                           className={cn(
                             "text-[1.75rem] transition-colors flex items-center justify-center gap-2",
                             mobileDropdownOpen === link.name
-                              ? "text-[#1DB954] font-extrabold"
-                              : "text-black dark:text-white font-bold hover:text-neutral-500 dark:hover:text-neutral-300",
+                              ? "text-[#1DB954] font-semibold"
+                              : "text-black dark:text-white font-medium hover:text-neutral-500 dark:hover:text-neutral-300",
                           )}
                         >
                           {link.name}
