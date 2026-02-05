@@ -45,7 +45,7 @@ export default function ProfilePage() {
 
     // Typewriter effect for subtitle
     useEffect(() => {
-        if (hasTyped.current || !paragraphRef.current) return;
+        if (isLoading || hasTyped.current || !paragraphRef.current) return;
         hasTyped.current = true;
 
         const text = "Manage account and see what you're playing.";
@@ -68,7 +68,7 @@ export default function ProfilePage() {
         }
 
         setTimeout(typeWriter, 400);
-    }, []);
+    }, [isLoading]);
 
     // Smart Polling Logic
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -250,9 +250,11 @@ export default function ProfilePage() {
             initial="hidden"
             animate="show"
         >
-            {/* Header - Same as Lyrics page */}
+            {/* Header - Same as About page */}
             <motion.header
-                variants={fadeUp}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
                 className="text-center mt-1 mb-4 flex-none px-4"
             >
                 <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
@@ -261,9 +263,7 @@ export default function ProfilePage() {
                 <p
                     ref={paragraphRef}
                     className="text-lg mb-3 text-neutral-500 dark:text-[#B3B3B3] font-medium min-h-[1.5em]"
-                >
-                    Manage account and see what you're playing.
-                </p>
+                />
             </motion.header>
 
             {/* Content - centered */}
@@ -285,7 +285,7 @@ export default function ProfilePage() {
                                     src={userImage}
                                     alt="Profile"
                                     fill
-                                    className="object-cover"
+                                    className="object-cover border-4 border-neutral-100 dark:border-neutral-800 rounded-2xl"
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
@@ -314,7 +314,9 @@ export default function ProfilePage() {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="flex items-center gap-3 p-3 mb-4 rounded-xl bg-[#1DB954]/10 border border-[#1DB954]/20 hover:bg-[#1DB954]/15 transition-colors"
+                                onMouseMove={handleMouseMove}
+                                onTouchMove={handleMouseMove}
+                                className="flex items-center gap-3 p-3 mb-[10px] rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-md border border-black/10 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors glass-interactive glass-interactive-shadow group"
                             >
                                 {/* Album Art */}
                                 <div className="relative w-12 h-12 rounded-md overflow-hidden bg-neutral-800 shrink-0">
@@ -357,7 +359,7 @@ export default function ProfilePage() {
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="flex items-center justify-center gap-2 p-3 mb-4 rounded-xl bg-neutral-100 dark:bg-neutral-800/50 text-neutral-500 text-sm"
+                                className="flex items-center justify-center gap-2 p-3 mb-[10px] rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-md border border-black/10 dark:border-white/5 text-neutral-500 text-sm glass-interactive-shadow"
                             >
                                 <Music2 size={14} />
                                 <span>Not playing anything</span>
