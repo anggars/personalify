@@ -289,16 +289,19 @@ def _run_fallback_hybrid_analysis(text: str):
 def _log_emotions(text: str, emotions: list):
     """
     Helper to print verbose emotion analysis logs.
+    Consolidated into a single print to avoid interleaved output.
     """
     if not emotions:
         return
 
-    print(f"\n[NLP] Full Emotion Analysis for: '{text[:50]}...'")
+    log_lines = [f"\n[NLP] Full Emotion Analysis for: '{text[:50]}...'"]
     for idx, emotion in enumerate(emotions, 1):
         label = emotion.get('label', 'unknown')
         score = emotion.get('score', 0.0)
-        print(f" {idx:02d}. {label:<16} : {score:.5f}")
-    print("-" * 40)
+        log_lines.append(f" {idx:02d}. {label:<16} : {score:.5f}")
+    log_lines.append("-" * 40)
+    
+    print("\n".join(log_lines))
 
 
 
@@ -361,9 +364,6 @@ def get_emotion_from_text(text: str):
             filtered_emotions.sort(key=lambda x: x.get('score', 0), reverse=True)
             _analysis_cache[text] = filtered_emotions
             
-            # LOGGING
-            _log_emotions(text, filtered_emotions)
-            
             return filtered_emotions
         else:
             # raise to trigger fallback
@@ -374,10 +374,6 @@ def get_emotion_from_text(text: str):
         fallback_result = _run_fallback_hybrid_analysis(text)
         if fallback_result:
             _analysis_cache[text] = fallback_result
-            
-            # LOGGING (Fallback)
-            _log_emotions(text, fallback_result)
-            
             return fallback_result
         return None
 
@@ -442,10 +438,11 @@ def generate_emotion_paragraph(track_names, extended=False):
     num_tracks = len(track_names) if extended else min(10, len(track_names))
     tracks_to_analyze = track_names[:num_tracks]
 
+    analysis_logs = [f"\n[NLP] Batch Analysis for {num_tracks} tracks:"]
     voting_tally = {}
     total_valid_songs = 0
     
-    for track in tracks_to_analyze:
+    for i, track in enumerate(tracks_to_analyze, 1):
         try:
             # 1. Prepare
             txt = prepare_text_for_analysis(track)
@@ -455,6 +452,11 @@ def generate_emotion_paragraph(track_names, extended=False):
             emotions = get_emotion_from_text(txt)
             
             if emotions:
+                # Log for this specific track in the batch
+                top_lbl = emotions[0].get('label', 'unknown')
+                top_score = emotions[0].get('score', 0.0)
+                analysis_logs.append(f" {i:02d}. {track[:30]:<30} -> {top_lbl:<12} ({top_score:.2%})")
+
                 # 3. Vote for Top Non-Neutral
                 for em in emotions:
                     if em.get("label") != 'neutral':
@@ -465,6 +467,9 @@ def generate_emotion_paragraph(track_names, extended=False):
                         
         except Exception:
             continue
+
+    print("\n".join(analysis_logs))
+    print("-" * 60)
 
     if total_valid_songs == 0:
         return "No clear vibe detected.", []
