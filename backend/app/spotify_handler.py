@@ -157,17 +157,15 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
 
     # 6. Hybrid Processing Logic
     if background_tasks:
-        # Return partial result immediately
+        # 6.1 Return partial result immediately
         result['emotion_paragraph'] = "Vibe analysis is getting ready..."
         result['top_emotions'] = []
-        # Cache partial result first so UI has something? 
-        # Actually better NOT to cache partial, or cache it with "getting ready". 
-        # Frontend handles "getting ready" by polling. So we CAN cache it.
-        # But if we cache it, and background fails, it stays "getting ready".
-        # Let's simple pass result to background and let it overwrite cache.
         
-        # We should probably cache the partial result anyway for "instant" load on refresh?
-        # But for now, let's just trigger background.
+        # 6.2 CRITICAL: Cache partial result immediately!
+        # This prevents subsequent polls from triggering redundant syncs.
+        cache_top_data("top_v2", spotify_id, time_range, result, ttl=300) # Short TTL for partial
+        
+        # 6.3 Trigger real analysis in background
         background_tasks.add_task(process_emotion_background, spotify_id, time_range, result)
     else:
         # Legacy/Mobile synchronous mode

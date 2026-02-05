@@ -928,18 +928,30 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
                     except Exception as e:
                         print(f"WEB DASHBOARD: Server-side refresh error: {e}")
 
-            # 2. SYNC LOGIC - ONLY FOR OWN PROFILE
+            # 2. CACHE-FIRST LOGIC - ONLY FOR OWN PROFILE
             if access_token:
-                print(f"WEB DASHBOARD: Found access_token. Syncing fresh data for {spotify_id}...")
-                try:
-                    # Sync fresh data directly
-                    data = sync_user_data(access_token, time_range, background_tasks=background_tasks)
-                    print("WEB DASHBOARD: Sync success!")
-                except Exception as e:
-                    print(f"WEB DASHBOARD: Sync failed ({e}). Falling back to cache.")
-                    data = get_cached_top_data("top_v2", spotify_id, time_range)
+                # 2.1 Check cache first
+                data = get_cached_top_data("top_v2", spotify_id, time_range)
+                
+                # 2.2 Freshness Check (Optional: Only sync if no cache or cache is old)
+                # For now, if cache exists, we return it. 
+                # frontend-side will handle manual refresh if needed.
+                if data:
+                    # Check if analysis is indeed done, or if it's still "getting ready"
+                    # If it's "getting ready", we return it and let frontend poll.
+                    # If it's real data, we return it immediately.
+                    print(f"WEB DASHBOARD: Returning cached data for {spotify_id}.")
+                else:
+                    # 2.3 No cache -> Sync fresh data
+                    print(f"WEB DASHBOARD: No cache found. Syncing fresh data for {spotify_id}...")
+                    try:
+                        data = sync_user_data(access_token, time_range, background_tasks=background_tasks)
+                        print("WEB DASHBOARD: Sync success!")
+                    except Exception as e:
+                        print(f"WEB DASHBOARD: Sync failed ({e}). Falling back to empty.")
+                        data = None
             else:
-                print(f"WEB DASHBOARD: No access_token (and refresh failed). Reading from cache for {spotify_id}.")
+                print(f"WEB DASHBOARD: No access_token. Reading from cache for {spotify_id}.")
                 data = get_cached_top_data("top_v2", spotify_id, time_range)
         else:
             # PUBLIC VIEW / OTHER PROFILE
