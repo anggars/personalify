@@ -2,10 +2,10 @@
   "name": "personalify-vercel",
   "version": "1.0.0",
   "description": "Personalify frontend for Vercel",
-  "main": "api/proxy.js",
+  "packageManager": "pnpm@10.27.0",
   "scripts": {
     "dev": "vercel dev",
-    "build": "cd frontend && npm install --production=false && npm run build",
+    "build": "cd frontend && pnpm install --production=false && pnpm run build",
     "start": "echo 'Serverless'"
   },
   "dependencies": {
