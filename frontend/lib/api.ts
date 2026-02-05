@@ -104,7 +104,7 @@ export async function fetchWithAuth(
           newOptions.headers = newHeaders;
         }
 
-        return fetch(url, {
+        return fetch(fullUrl, {
           ...newOptions,
           credentials: 'include'
         });
