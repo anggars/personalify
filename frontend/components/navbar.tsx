@@ -380,17 +380,19 @@ export const Navbar = () => {
             {spotifyId ? (
               <Link
                 href="/profile"
-                className="flex items-center justify-center shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800 hover:ring-2 hover:ring-[#1DB954]/50 transition-all group"
+                className="flex items-center justify-center shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800 hover:ring-2 hover:ring-[#1DB954]/50 transition-all group relative"
                 title="View Profile"
               >
                 {userImage ? (
-                  <Image
-                    src={userImage}
-                    alt="Profile"
-                    width={36}
-                    height={36}
-                    className="object-cover border-2 border-neutral-100 dark:border-neutral-800 rounded-lg"
-                  />
+                  <>
+                    <Image
+                      src={userImage}
+                      alt="Profile"
+                      width={36}
+                      height={36}
+                      className="object-cover border-2 border-neutral-100 dark:border-neutral-800 rounded-lg filter grayscale opacity-80 hover:opacity-100 transition-opacity"
+                    />
+                  </>
                 ) : (
                   <span className="font-bold text-lg text-[#1DB954] w-9 h-9 flex items-center justify-center">
                     P

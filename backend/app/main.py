@@ -67,3 +67,12 @@ async def scalar_html():
 @app.on_event("startup")
 def on_startup():
     init_db()
+
+    # Suppress access logs for /api/currently-playing
+    import logging
+    class EndpointFilter(logging.Filter):
+        def filter(self, record: logging.LogRecord) -> bool:
+            return record.getMessage().find("/api/currently-playing") == -1
+
+    # Filter uvicorn.access logger
+    logging.getLogger("uvicorn.access").addFilter(EndpointFilter())

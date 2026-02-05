@@ -240,7 +240,7 @@ export default function GeniusPage() {
     const isEmpty = !selectedArtist && artists.length === 0 && !loadingState;
 
     return (
-        <motion.div 
+        <motion.div
             className="page-container flex flex-col w-full max-w-3xl mx-auto flex-1"
             variants={staggerContainer}
             initial="hidden"
@@ -290,8 +290,8 @@ export default function GeniusPage() {
                             {selectedArtist ? "Clear Search" : "Search Artist"}
                         </span>
                         {loadingState === "search" && (
-                            <svg 
-                                className="absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 spinner-svg" 
+                            <svg
+                                className="absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 spinner-svg"
                                 style={{ position: 'absolute' }}
                                 viewBox="0 0 50 50"
                             >
@@ -402,7 +402,7 @@ export default function GeniusPage() {
                                     />
                                 </div>
                             </div>
-                            <div className="bg-white dark:bg-[#181818] py-3 px-6 rounded-xl border border-neutral-200 dark:border-[#282828] text-neutral-700 dark:text-[#cccccc] leading-6 whitespace-pre-wrap max-h-[300px] overflow-y-auto custom-scrollbar mb-3 text-[0.95rem] font-light tracking-wide">
+                            <div className="bg-white dark:bg-[#181818] py-3 px-6 rounded-xl border border-neutral-200 dark:border-[#282828] text-neutral-700 dark:text-[#cccccc] leading-6 whitespace-pre-wrap max-h-[307.5px] overflow-y-auto custom-scrollbar mb-3 text-[0.95rem] font-light tracking-wide">
                                 {analysis.lyrics.trim()}
                             </div>
                             {analysis.emotion_analysis?.emotions && (
@@ -410,7 +410,7 @@ export default function GeniusPage() {
                                     <h3 className="text-center text-[#1DB954] font-bold text-lg mb-2 mt-0">
                                         Emotion Results:
                                     </h3>
-                                    <motion.div 
+                                    <motion.div
                                         className="flex flex-col gap-2"
                                         variants={staggerContainerFast}
                                         initial="hidden"
@@ -421,8 +421,8 @@ export default function GeniusPage() {
                                             const percent = (e.score * 100).toFixed(1);
                                             const widthPercent = ((e.score / maxScore) * 100).toFixed(1);
                                             return (
-                                                <motion.div 
-                                                    key={idx} 
+                                                <motion.div
+                                                    key={idx}
                                                     className="flex items-center gap-2 w-full"
                                                     variants={listItem}
                                                 >
@@ -430,12 +430,12 @@ export default function GeniusPage() {
                                                         {e.label}
                                                     </span>
                                                     <div className="emotion-bar-bg flex-1">
-                                                        <motion.div 
-                                                            className="emotion-bar" 
+                                                        <motion.div
+                                                            className="emotion-bar"
                                                             initial={{ scaleX: 0 }}
                                                             animate={{ scaleX: 1 }}
                                                             transition={{ type: "spring", stiffness: 100, damping: 15, delay: idx * 0.05 }}
-                                                            style={{ width: `${widthPercent}%`, transformOrigin: 'left' }} 
+                                                            style={{ width: `${widthPercent}%`, transformOrigin: 'left' }}
                                                         />
                                                     </div>
                                                     <span className="min-w-fit text-right text-neutral-500 dark:text-[#b3b3b3] text-sm font-medium whitespace-nowrap">

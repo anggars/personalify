@@ -40,6 +40,9 @@ router = APIRouter()
 # Templates removed
 # templates = Jinja2Templates(directory=templates_dir)
 
+# Global cache for log deduplication
+_last_logged_track = {}
+
 def get_redirect_uri(request: Request):
     host = str(request.headers.get("x-forwarded-host", request.headers.get("host", "")))
     
@@ -519,6 +522,18 @@ def get_currently_playing(spotify_id: str, request: Request):
             return {"is_playing": False}
         
         track = data["item"]
+        
+        # Log currently playing track for debugging (Deduplicated)
+        # Only log if the track has CHANGED for this user to avoid spam
+        track_name = track.get("name", "Unknown")
+        artist_names = ", ".join([a["name"] for a in track.get("artists", [])])
+        current_log_string = f"{track_name} - {artist_names}"
+        
+        # Check against last logged track for this user
+        if _last_logged_track.get(spotify_id) != current_log_string:
+            print(f"[Playing] {current_log_string}")
+            _last_logged_track[spotify_id] = current_log_string
+
         return {
             "is_playing": data.get("is_playing", False),
             "track": {

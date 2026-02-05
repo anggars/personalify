@@ -70,18 +70,51 @@ export default function ProfilePage() {
         setTimeout(typeWriter, 400);
     }, []);
 
-    // Fetch currently playing
+    // Smart Polling Logic
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     const fetchNowPlaying = async (id: string) => {
         try {
             const res = await fetch(`/api/currently-playing/${id}`, {
                 credentials: "include",
             });
+
+            let nextPollDelay = 10000; // Default: 10 seconds
+
             if (res.ok) {
                 const data = await res.json();
                 setNowPlaying(data);
+
+                // Adaptive Polling
+                if (data && data.is_playing && data.track) {
+                    const progress = data.track.progress_ms || 0;
+                    const duration = data.track.duration_ms || 0;
+                    const timeLeft = duration - progress;
+
+                    if (timeLeft < 10000) {
+                        // Song ending soon -> Poll faster to catch transition
+                        nextPollDelay = 2000;
+                    } else {
+                        // Song playing -> Poll slower (save resources)
+                        nextPollDelay = 15000;
+                    }
+                } else {
+                    // Not playing / Paused -> Poll moderate speed
+                    nextPollDelay = 5000;
+                }
+            } else {
+                // Error -> Retry slower
+                nextPollDelay = 10000;
             }
+
+            // Schedule next poll
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            timeoutRef.current = setTimeout(() => fetchNowPlaying(id), nextPollDelay);
+
         } catch (e) {
-            // Ignore errors
+            // Network error -> Retry slower
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            timeoutRef.current = setTimeout(() => fetchNowPlaying(id), 10000);
         }
     };
 
@@ -159,15 +192,13 @@ export default function ProfilePage() {
                     .catch(() => setIsLoading(false));
             });
 
-        // Fetch currently playing
+        // Initial fetch
         fetchNowPlaying(storedId);
 
-        // Poll every 10 seconds
-        const interval = setInterval(() => {
-            fetchNowPlaying(storedId);
-        }, 10000);
-
-        return () => clearInterval(interval);
+        // Cleanup on unmount
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
     }, [router]);
 
     const handleLogout = () => {
@@ -239,7 +270,7 @@ export default function ProfilePage() {
             <div className="flex flex-col flex-1 justify-center w-full max-w-[420px]">
                 <motion.div
                     variants={cardReveal}
-                    className="w-full glass-card rounded-2xl p-5 md:p-6"
+                    className="w-full glass-card rounded-2xl p-5"
                     whileHover={{
                         y: -4,
                         transition: { type: "spring", stiffness: 400, damping: 17 },

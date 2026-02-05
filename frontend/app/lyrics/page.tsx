@@ -130,7 +130,7 @@ export default function LyricsPage() {
     const isEmpty = !result && !isLoading;
 
     return (
-        <motion.div 
+        <motion.div
             className="page-container flex flex-col w-full max-w-3xl mx-auto flex-1"
             variants={staggerContainer}
             initial="hidden"
@@ -168,7 +168,7 @@ export default function LyricsPage() {
                                 }
                             }}
                             placeholder="Write or paste your lyrics here..."
-                            className="w-full min-h-[250px] max-md:min-h-[180px] py-3 px-6 max-md:py-2 max-md:px-4 rounded-xl border border-neutral-200 dark:border-[#282828] bg-white dark:bg-[#181818] text-neutral-900 dark:text-[#cccccc] placeholder:text-neutral-500 focus:outline-none focus:border-[#1DB954] focus:ring-1 focus:ring-[#1DB954]/20 transition-all custom-scrollbar resize-none leading-6 font-light tracking-wide text-[0.95rem]"
+                            className="w-full min-h-[259.5px] max-md:min-h-[189.5px] py-3 px-6 max-md:py-2 max-md:px-4 rounded-xl border border-neutral-200 dark:border-[#282828] bg-white dark:bg-[#181818] text-neutral-900 dark:text-[#cccccc] placeholder:text-neutral-500 focus:outline-none focus:border-[#1DB954] focus:ring-1 focus:ring-[#1DB954]/20 transition-all custom-scrollbar resize-none leading-6 font-light tracking-wide text-[0.95rem]"
                         />
 
                         <button
@@ -200,7 +200,7 @@ export default function LyricsPage() {
                             className="mt-5"
                         >
                             {result && result.emotions && (
-                                <motion.div 
+                                <motion.div
                                     className="flex flex-col gap-2"
                                     variants={staggerContainerFast}
                                     initial="hidden"
@@ -217,8 +217,8 @@ export default function LyricsPage() {
                                                 const widthPercent = ((e.score / maxScore) * 100).toFixed(1);
 
                                                 return (
-                                                    <motion.div 
-                                                        key={idx} 
+                                                    <motion.div
+                                                        key={idx}
                                                         className="flex items-center gap-2 w-full"
                                                         variants={listItem}
                                                     >
@@ -226,12 +226,12 @@ export default function LyricsPage() {
                                                             {e.label}
                                                         </span>
                                                         <div className="emotion-bar-bg flex-1">
-                                                            <motion.div 
-                                                                className="emotion-bar" 
+                                                            <motion.div
+                                                                className="emotion-bar"
                                                                 initial={{ scaleX: 0 }}
                                                                 animate={{ scaleX: 1 }}
                                                                 transition={{ type: "spring", stiffness: 100, damping: 15, delay: idx * 0.05 }}
-                                                                style={{ width: `${widthPercent}%`, transformOrigin: 'left' }} 
+                                                                style={{ width: `${widthPercent}%`, transformOrigin: 'left' }}
                                                             />
                                                         </div>
                                                         <span className="min-w-fit text-right text-neutral-500 dark:text-[#b3b3b3] text-sm font-medium whitespace-nowrap">

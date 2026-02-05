@@ -286,6 +286,22 @@ def _run_fallback_hybrid_analysis(text: str):
         return None
 
 
+def _log_emotions(text: str, emotions: list):
+    """
+    Helper to print verbose emotion analysis logs.
+    """
+    if not emotions:
+        return
+
+    print(f"\n[NLP] Full Emotion Analysis for: '{text[:50]}...'")
+    for idx, emotion in enumerate(emotions, 1):
+        label = emotion.get('label', 'unknown')
+        score = emotion.get('score', 0.0)
+        print(f" {idx:02d}. {label:<16} : {score:.5f}")
+    print("-" * 40)
+
+
+
 # --- MAIN ANALYSIS FUNCTIONS ---
 
 def get_emotion_from_text(text: str):
@@ -344,6 +360,10 @@ def get_emotion_from_text(text: str):
             # Sort and Cache
             filtered_emotions.sort(key=lambda x: x.get('score', 0), reverse=True)
             _analysis_cache[text] = filtered_emotions
+            
+            # LOGGING
+            _log_emotions(text, filtered_emotions)
+            
             return filtered_emotions
         else:
             # raise to trigger fallback
@@ -354,6 +374,10 @@ def get_emotion_from_text(text: str):
         fallback_result = _run_fallback_hybrid_analysis(text)
         if fallback_result:
             _analysis_cache[text] = fallback_result
+            
+            # LOGGING (Fallback)
+            _log_emotions(text, fallback_result)
+            
             return fallback_result
         return None
 
