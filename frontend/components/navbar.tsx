@@ -744,7 +744,7 @@ export const Navbar = () => {
                       alt="Profile"
                       width={36}
                       height={36}
-                      className="object-cover border-2 border-neutral-100 dark:border-neutral-800 rounded-lg"
+                      className="object-cover border-2 border-neutral-100 dark:border-neutral-800 rounded-lg filter grayscale opacity-80"
                     />
                   ) : (
                     <span className="font-bold text-lg text-[#1DB954] w-9 h-9 flex items-center justify-center">
