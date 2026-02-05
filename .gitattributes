@@ -4,5 +4,4 @@
 *.js linguist-vendored
 *.mjs linguist-vendored
 *.cjs linguist-vendored
-*.ipynb linguist-language=Python
 backend/**/*.py linguist-language=Python
