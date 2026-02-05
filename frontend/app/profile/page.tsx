@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { staggerContainer, fadeUp, cardReveal } from "@/lib/animations";
-import { ExternalLink, LogOut, Music2 } from "lucide-react";
+import { ExternalLink, LogOut, Music2, User } from "lucide-react";
 import MarqueeText from "@/components/marquee-text";
 
 interface CurrentlyPlaying {
@@ -148,9 +148,14 @@ export default function ProfilePage() {
                 if (data && !data.error && data.user) {
                     setUserName(data.user);
                     localStorage.setItem("spotify_user_name", data.user);
+
                     if (data.image) {
                         setUserImage(data.image);
                         localStorage.setItem("spotify_user_image", data.image);
+                    } else {
+                        // FIX: Explicitly clear image if user has none (prevents stale image from previous login)
+                        setUserImage(null);
+                        localStorage.removeItem("spotify_user_image");
                     }
                     setIsLoading(false);
                 } else {
@@ -163,9 +168,14 @@ export default function ProfilePage() {
                             if (dashData) {
                                 setUserName(dashData.user);
                                 localStorage.setItem("spotify_user_name", dashData.user);
+
                                 if (dashData.image) {
                                     setUserImage(dashData.image);
                                     localStorage.setItem("spotify_user_image", dashData.image);
+                                } else {
+                                    // FIX: Explicitly clear image in fallback too
+                                    setUserImage(null);
+                                    localStorage.removeItem("spotify_user_image");
                                 }
                             }
                             setIsLoading(false);
@@ -288,8 +298,8 @@ export default function ProfilePage() {
                                     className="object-cover border-4 border-neutral-100 dark:border-neutral-800 rounded-2xl"
                                 />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                    <span className="text-3xl font-bold text-[#1DB954]">P</span>
+                                <div className="w-full h-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
+                                    <User size={40} />
                                 </div>
                             )}
                         </div>
