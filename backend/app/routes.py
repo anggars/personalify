@@ -438,6 +438,7 @@ def refresh_access_token(
         
         # Determine if running locally for cookie domain
         # CRITICAL: DO NOT set domain for localhost (breaks 127.0.0.1 vs localhost)
+        original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
         is_local = "127.0.0.1" in original_host or "localhost" in original_host
         
         # Web also sets cookie for redundancy
