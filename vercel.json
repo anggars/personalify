@@ -19,6 +19,10 @@
       "destination": "/api/index.py"
     },
     {
+      "source": "/auth/refresh",
+      "destination": "/api/index.py"
+    },
+    {
       "source": "/analyze-lyrics",
       "destination": "/api/index.py"
     },
