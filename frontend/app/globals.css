@@ -128,14 +128,6 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* FORCE THIN OVERLAY SCROLLBAR FOR ALL ELEMENTS - NO ARROWS */
-  /* REMOVED scrollbar-width to allow WebKit styling to hide arrows */
-  /* * {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(100, 100, 100, 0.3) transparent;
-  } */
-
-  /* Global webkit scrollbar - completely take over native scrollbar */
   *::-webkit-scrollbar {
     width: 8px;
     height: 8px;
