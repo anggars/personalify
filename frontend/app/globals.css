@@ -3,7 +3,28 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ===== PERSONALIFY THEME ===== */
+/* Light Mode Selection (High Contrast) */
+::selection {
+  background-color: rgba(29, 185, 84, 0.4);
+  color: #000000;
+  text-shadow: none;
+}
+::-moz-selection {
+  background-color: rgba(29, 185, 84, 0.4);
+  color: #000000;
+  text-shadow: none;
+}
+
+/* Dark Mode Override (White Text) */
+.dark ::selection {
+  background-color: rgba(29, 185, 84, 0.45);
+  color: white;
+}
+.dark ::-moz-selection {
+  background-color: rgba(29, 185, 84, 0.45);
+  color: white;
+}
+
 @theme inline {
   /* Fonts */
   --font-sans: var(--font-jakarta);
