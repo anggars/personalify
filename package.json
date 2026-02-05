@@ -2,7 +2,7 @@
   "name": "personalify-vercel",
   "version": "1.0.0",
   "description": "Personalify frontend for Vercel",
-  "packageManager": "pnpm@10.27.0",
+  "packageManager": "pnpm@9.15.4",
   "scripts": {
     "dev": "vercel dev",
     "build": "cd frontend && pnpm install --production=false && pnpm run build",
