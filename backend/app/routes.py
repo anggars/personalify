@@ -25,7 +25,7 @@ from app.db_handler import (
     save_refresh_token,
     get_refresh_token
 )
-from app.cache_handler import cache_top_data, get_cached_top_data, clear_top_data_cache
+from app.cache_handler import cache_top_data, get_cached_top_data, clear_top_data_cache, r as redis_client
 from app.mongo_handler import save_user_sync, get_user_history
 from app.qstash_handler import get_qstash_client, get_qstash_receiver
 from app.genius_lyrics import get_suggestions, search_artist_id, get_songs_by_artist, get_lyrics_by_id
