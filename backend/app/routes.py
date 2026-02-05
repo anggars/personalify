@@ -459,6 +459,18 @@ def refresh_access_token(
             max_age=expires_in,
             secure=is_secure  # Auto-detect HTTPS
         )
+        
+        # FIX: Restore spotify_id cookie if missing to prevent "Logged in as: None" loop
+        response.set_cookie(
+            key="spotify_id", 
+            value=spotify_id, 
+            httponly=True, 
+            path="/", 
+            samesite="lax", 
+            max_age=2592000,  # 30 days
+            secure=is_secure
+        )
+
         return response
             
     except HTTPException:
@@ -819,8 +831,46 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
         logged_in_id = request.cookies.get("spotify_id")
         
         # Determine if we are viewing our own profile or someone else's
+        # Determine if we are viewing our own profile or someone else's
         # If logged_in_id is missing, we assume we are just viewing (public view)
         is_own_profile = (logged_in_id == spotify_id)
+
+        if is_own_profile:
+            # 1. AUTO-REFRESH LOGIC ...
+            pass # Logic continues below
+            
+        # ROBUST AUTH: If cookie is missing, check Authorization header?
+        # This handles cases where browser drops cookies (e.g. SameSite localhost issues)
+        if not is_own_profile:
+            auth_header = request.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                token_from_header = auth_header.split(" ")[1]
+                print(f"WEB DASHBOARD: Cookie missing but found Bearer token. Verifying identity...")
+                
+                # Check identity via Spotify
+                try:
+                    user_res = requests.get("https://api.spotify.com/v1/me", headers={"Authorization": f"Bearer {token_from_header}"})
+                    if user_res.status_code == 200:
+                        user_data = user_res.json()
+                        verified_id = user_data.get("id")
+                        
+                        if verified_id == spotify_id:
+                            print(f"WEB DASHBOARD: Identity Verified via Token! Restoring session for {verified_id}")
+                            is_own_profile = True
+                            access_token = token_from_header # Use this token for sync
+                            logged_in_id = verified_id
+                            
+                            # CRITICAL: Restore cookies in response to fix browser state
+                            original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+                            is_local = "127.0.0.1" in original_host or "localhost" in original_host
+                            is_secure = not is_local
+
+                            response.set_cookie(key="spotify_id", value=verified_id, httponly=True, path="/", samesite="lax", max_age=2592000, secure=is_secure)
+                            response.set_cookie(key="access_token", value=access_token, httponly=True, path="/", samesite="lax", max_age=3600, secure=is_secure)
+                        else:
+                            print(f"WEB DASHBOARD: Token belongs to {verified_id}, not {spotify_id}. Public View.")
+                except Exception as e:
+                    print(f"WEB DASHBOARD: Token verification failed: {e}")
 
         if is_own_profile:
             # 1. AUTO-REFRESH LOGIC (Server-Side) - ONLY FOR OWN PROFILE
