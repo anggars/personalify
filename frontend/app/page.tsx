@@ -270,16 +270,14 @@ function HomeContent() {
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
           <span
-            className={`transition-opacity duration-200 ${
-              isLoading ? "opacity-0" : "opacity-100"
-            }`}
+            className={`transition-opacity duration-200 ${isLoading ? "opacity-0" : "opacity-100"
+              }`}
           >
             Login with Spotify
           </span>
           <svg
-            className={`absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 transition-opacity duration-200 spinner-svg ${
-              isLoading ? "opacity-100" : "opacity-0"
-            }`}
+            className={`absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 transition-opacity duration-200 spinner-svg ${isLoading ? "opacity-100" : "opacity-0"
+              }`}
             style={{ position: "absolute" }}
             viewBox="0 0 50 50"
           >
@@ -322,7 +320,7 @@ function HomeContent() {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative bg-white/5 border border-white/20 rounded-3xl p-8 w-full max-w-sm shadow-2xl backdrop-blur-xl transition-all"
+              className="relative glass-card rounded-3xl p-8 w-full max-w-sm shadow-2xl transition-all"
             >
               <h2 className="text-2xl font-bold text-white mb-2 text-center tracking-tight">
                 Request Access
