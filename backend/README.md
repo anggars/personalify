@@ -28,6 +28,7 @@ The backend follows a modular architecture where each handler manages a specific
 | :--- | :--- | :--- |
 | `GET` | `/login` | Starts Spotify OAuth2 flow. Optional `mobile=true` for app-linking. |
 | `GET` | `/callback` | Exchange code for token and initializes user profiling. |
+| `GET` | `/api/me` | Get current user's Spotify ID from cookies. |
 | `POST` | `/auth/refresh` | Refresh access tokens (Supports JSON body for Mobile). |
 | `POST` | `/request-access` | Captures access requests for the private beta. |
 | `GET` | `/logout` | Invalidates session and clears cookies. |
@@ -67,19 +68,31 @@ The backend follows a modular architecture where each handler manages a specific
 
 ## Development Setup
 
-### Installation
+### Installation & Run
+
+Choose your preferred environment:
+
+#### Option 1: Virtual Environment (venv)
 ```bash
-cd backend
 python -m venv venv
 source venv/bin/activate  # or venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-### Run (Development)
-```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
+#### Option 2: Conda / Miniconda
+```bash
+conda create -n personalify python=3.12
+conda activate personalify
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+#### Option 3: Docker
+```bash
+# Run from the project root
+docker-compose up -d backend
+```
+
 ### Documentation
-- **Swagger UI**: `http://localhost:8000/docs`
-- **Scalar UI**: `http://localhost:8000/api/docs`
+- **Scalar UI**: `http://localhost:8000/docs`
