@@ -33,6 +33,7 @@ export default function ProfilePage() {
     const [userImage, setUserImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [nowPlaying, setNowPlaying] = useState<CurrentlyPlaying | null>(null);
+    const [localProgressMs, setLocalProgressMs] = useState<number>(0);
     const [animatedDots, setAnimatedDots] = useState(".");
 
     // Animate loading dots
@@ -117,6 +118,34 @@ export default function ProfilePage() {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             timeoutRef.current = setTimeout(() => fetchNowPlaying(id), 10000);
         }
+    };
+
+    // Smooth Progress Ticker
+    useEffect(() => {
+        if (!nowPlaying?.is_playing || !nowPlaying.track || nowPlaying.is_ad) return;
+
+        const interval = setInterval(() => {
+            setLocalProgressMs((prev) => {
+                const max = nowPlaying.track?.duration_ms || 0;
+                if (prev + 1000 < max) return prev + 1000;
+                return max;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [nowPlaying?.is_playing, nowPlaying?.track?.id, nowPlaying?.is_ad]);
+
+    // Sync local progress when backend updates
+    useEffect(() => {
+        if (nowPlaying?.track?.progress_ms !== undefined) {
+            setLocalProgressMs(nowPlaying.track.progress_ms);
+        }
+    }, [nowPlaying?.track?.id, nowPlaying?.track?.progress_ms]);
+
+    const formatTime = (ms: number) => {
+        const minutes = Math.floor(ms / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
+        return `${minutes}:${seconds.toString().padStart(2, "0")}`;
     };
 
     useEffect(() => {
@@ -290,7 +319,7 @@ export default function ProfilePage() {
                     {/* Profile Header */}
                     <div className="flex flex-col items-center mb-5">
                         {/* Profile Image */}
-                        <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-neutral-200 dark:bg-neutral-800 mb-3 shadow-lg">
+                        <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-neutral-200 dark:bg-neutral-800 mb-3 shadow-lg ring-2 ring-black/5 dark:ring-white/5">
                             {userImage ? (
                                 <Image
                                     src={userImage}
@@ -327,40 +356,54 @@ export default function ProfilePage() {
                                 exit={{ opacity: 0, y: -10 }}
                                 onMouseMove={handleMouseMove}
                                 onTouchMove={handleMouseMove}
-                                className="flex items-center gap-3 p-3 mb-[10px] rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-md border border-black/10 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors glass-interactive glass-interactive-shadow group"
+                                className="flex items-center gap-3 p-3 mb-2.5 rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-md border border-black/10 dark:border-white/5 glass-interactive glass-interactive-shadow group relative overflow-hidden"
                             >
-                                {/* Album Art */}
-                                <div className="relative w-12 h-12 rounded-md overflow-hidden bg-neutral-800 shrink-0">
+                                {/* Album Art - 60px to match metadata height */}
+                                <div className="relative w-[60px] h-[60px] rounded-lg overflow-hidden bg-neutral-800 shrink-0 shadow-sm">
                                     {nowPlaying.track.image ? (
                                         <Image
                                             src={nowPlaying.track.image}
-                                            alt={nowPlaying.track.album}
+                                            alt={nowPlaying.track.name}
                                             fill
                                             className="object-cover"
+                                            unoptimized
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center">
-                                            <Music2 size={20} className="text-neutral-500" />
+                                            <Music2 size={24} className="text-neutral-500" />
                                         </div>
                                     )}
-                                    {/* Playing indicator removed */}
                                 </div>
 
-                                {/* Track Info */}
-                                <div className="flex-1 min-w-0">
+                                {/* Track Info Column - Perfectly Symmetrical Vertical Alignment */}
+                                <div className="flex-1 min-w-0 flex flex-col h-[60px] justify-between py-0.5">
+                                    {/* Row 1: Title */}
                                     <MarqueeText
                                         text={nowPlaying.track.name}
-                                        className="text-sm font-bold text-black dark:text-white whitespace-nowrap"
+                                        className="text-sm font-bold text-black dark:text-white whitespace-nowrap leading-snug"
                                     />
+
+                                    {/* Row 2: Artist */}
                                     <MarqueeText
                                         text={nowPlaying.track.artists.join(", ")}
-                                        className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap"
+                                        className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap leading-snug"
                                     />
-                                </div>
 
-                                {/* Now Playing Label */}
-                                <div className="flex items-center gap-1 text-[#1DB954] text-xs font-medium shrink-0">
-                                    <Music2 size={12} className="animate-bounce" />
+                                    {/* Row 3: Progress Bar */}
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] text-neutral-500 font-medium tabular-nums min-w-[24px]">
+                                            {formatTime(localProgressMs)}
+                                        </span>
+                                        <div className="flex-1 h-1 bg-black/10 dark:bg-white/20 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-black/60 dark:bg-white rounded-full transition-all duration-1000 ease-linear"
+                                                style={{ width: `${(localProgressMs / (nowPlaying.track?.duration_ms || 1)) * 100}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-[10px] text-neutral-500 font-medium tabular-nums min-w-[24px] text-right">
+                                            {formatTime(nowPlaying.track?.duration_ms || 0)}
+                                        </span>
+                                    </div>
                                 </div>
                             </motion.a>
                         )}
@@ -373,20 +416,25 @@ export default function ProfilePage() {
                                 exit={{ opacity: 0, y: -10 }}
                                 onMouseMove={handleMouseMove}
                                 onTouchMove={handleMouseMove}
-                                className="flex items-center gap-3 p-3 mb-[10px] rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-md border border-black/10 dark:border-white/5 glass-interactive glass-interactive-shadow"
+                                className="flex items-center gap-3 p-3 mb-2.5 rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-md border border-black/10 dark:border-white/5 glass-interactive glass-interactive-shadow relative overflow-hidden"
                             >
-                                <div className="relative w-12 h-12 rounded-md overflow-hidden bg-neutral-800 shrink-0 flex items-center justify-center">
-                                    <Music2 size={24} className="text-[#1DB954]" />
+                                <div className="relative w-[60px] h-[60px] rounded-lg overflow-hidden bg-neutral-800 shrink-0 flex items-center justify-center">
+                                    <Music2 size={28} className="text-[#1DB954]" />
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold text-black dark:text-white">Advertisement</p>
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Spotify keeps things free</p>
-                                </div>
-                                <div className="flex items-center gap-1 text-[#1DB954] text-xs font-medium shrink-0">
-                                    <div className="flex gap-[2px] items-end h-3">
-                                        <div className="w-[3px] bg-[#1DB954] animate-[bounce_1s_infinite_0ms]" style={{ height: '60%' }}></div>
-                                        <div className="w-[3px] bg-[#1DB954] animate-[bounce_1s_infinite_200ms]" style={{ height: '100%' }}></div>
-                                        <div className="w-[3px] bg-[#1DB954] animate-[bounce_1s_infinite_400ms]" style={{ height: '80%' }}></div>
+                                <div className="flex-1 min-w-0 flex flex-col h-[60px] justify-between py-0.5">
+                                    {/* Row 1: Ad Label */}
+                                    <p className="text-sm font-bold text-black dark:text-white leading-snug">Advertisement</p>
+
+                                    {/* Row 2: Subtitle */}
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-snug">Spotify keeps things free</p>
+
+                                    {/* Row 3: Dummy progress */}
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] text-neutral-500 font-medium tabular-nums min-w-[24px]">0:00</span>
+                                        <div className="flex-1 h-1 bg-black/10 dark:bg-white/20 rounded-full overflow-hidden">
+                                            <div className="h-full bg-[#1DB954] w-[40%]" />
+                                        </div>
+                                        <span className="text-[10px] text-neutral-500 font-medium tabular-nums min-w-[24px] text-right">0:30</span>
                                     </div>
                                 </div>
                             </motion.div>
