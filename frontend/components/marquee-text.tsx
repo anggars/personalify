@@ -19,9 +19,10 @@ const MarqueeText: React.FC<MarqueeTextProps> = ({ text, className = "" }) => {
             const scrollWidth = Math.ceil(el.scrollWidth);
             const clientWidth = Math.ceil(el.clientWidth);
 
-            if (scrollWidth > clientWidth) {
-                const distance = scrollWidth - clientWidth + 20; // 20px padding/buffer
-                const duration = Math.max(distance / 25, 6); // Adjust speed calculation as needed
+            // Added a 2px tolerance to prevent false-positives
+            if (scrollWidth > clientWidth + 2) {
+                const distance = scrollWidth - clientWidth + 24; // 24px buffer for the loop
+                const duration = Math.max(distance / 25, 6);
                 el.style.setProperty('--scroll-distance', `-${distance}px`);
                 el.style.setProperty('--scroll-duration', `${duration}s`);
                 setIsOverflowing(true);
