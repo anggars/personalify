@@ -11,6 +11,7 @@ import MarqueeText from "@/components/marquee-text";
 
 interface CurrentlyPlaying {
     is_playing: boolean;
+    is_ad?: boolean;
     track?: {
         id: string;
         name: string;
@@ -364,8 +365,35 @@ export default function ProfilePage() {
                             </motion.a>
                         )}
 
+                        {nowPlaying?.is_ad && (
+                            <motion.div
+                                key="spotify-ad"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                onMouseMove={handleMouseMove}
+                                onTouchMove={handleMouseMove}
+                                className="flex items-center gap-3 p-3 mb-[10px] rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-md border border-black/10 dark:border-white/5 glass-interactive glass-interactive-shadow"
+                            >
+                                <div className="relative w-12 h-12 rounded-md overflow-hidden bg-neutral-800 shrink-0 flex items-center justify-center">
+                                    <Music2 size={24} className="text-[#1DB954]" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold text-black dark:text-white">Advertisement</p>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Spotify keeps things free</p>
+                                </div>
+                                <div className="flex items-center gap-1 text-[#1DB954] text-xs font-medium shrink-0">
+                                    <div className="flex gap-[2px] items-end h-3">
+                                        <div className="w-[3px] bg-[#1DB954] animate-[bounce_1s_infinite_0ms]" style={{ height: '60%' }}></div>
+                                        <div className="w-[3px] bg-[#1DB954] animate-[bounce_1s_infinite_200ms]" style={{ height: '100%' }}></div>
+                                        <div className="w-[3px] bg-[#1DB954] animate-[bounce_1s_infinite_400ms]" style={{ height: '80%' }}></div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
                         {/* Not Playing State */}
-                        {nowPlaying && !nowPlaying.is_playing && (
+                        {nowPlaying && !nowPlaying.is_playing && !nowPlaying.is_ad && (
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}

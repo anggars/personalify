@@ -87,6 +87,15 @@ function HomeContent() {
     }
   }, [authError]);
 
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    const storedId = localStorage.getItem("spotify_id");
+    if (storedId && !authError) {
+      showToast("Already logged in! Redirecting to profile...", "success");
+      router.push("/profile");
+    }
+  }, [router, authError]);
+
   // Detect mobile device
   useEffect(() => {
     const checkMobile = () => {
