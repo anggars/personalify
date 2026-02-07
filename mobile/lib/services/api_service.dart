@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:personalify/models/user_profile.dart';
+import 'package:personalify/models/now_playing.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/utils/constants.dart';
 import 'package:flutter/material.dart';
@@ -214,6 +215,26 @@ class ApiService {
       return null;
     } catch (e) {
       print('API Error (Profile): $e');
+      return null;
+    }
+  }
+
+  /// NEW: Get currently playing track from Spotify
+  Future<NowPlaying?> getCurrentlyPlaying() async {
+    try {
+      final spotifyId = await _authService.getSpotifyId();
+      if (spotifyId == null) return null;
+
+      final response = await _dio.get(
+        '/api/currently-playing/$spotifyId',
+      );
+
+      if (response.statusCode == 200) {
+        return NowPlaying.fromJson(response.data as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      print('API Error (NowPlaying): $e');
       return null;
     }
   }

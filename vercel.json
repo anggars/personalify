@@ -1,6 +1,7 @@
 {
   "framework": "nextjs",
   "outputDirectory": "frontend/.next",
+  "ignoredBuildStep": "git diff --quiet $VERCEL_GIT_PREVIOUS_SHA HEAD . :^mobile :^streamlit :^docs",
   "rewrites": [
     {
       "source": "/api/(.*)",

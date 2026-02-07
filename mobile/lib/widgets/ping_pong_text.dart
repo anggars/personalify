@@ -29,10 +29,8 @@ class _PingPongScrollingTextState extends State<PingPongScrollingText> {
   void initState() {
     super.initState();
     // FITUR ANTI LAG: Smart Delay
-    // Jangan langsung gerak! Tunggu 800ms.
-    // Kalau user cuma scroll lewat (flinging), timer ini bakal ke-cancel di dispose()
-    // sebelum sempet jalanin animasi. CPU lu bakal berterima kasih.
-    _startTimer = Timer(const Duration(milliseconds: 800), () {
+    // Tunggu 300ms biar kerasa cepet tapi tetep hemat CPU pas flinging.
+    _startTimer = Timer(const Duration(milliseconds: 300), () {
       if (mounted) {
         _startScrolling();
       }

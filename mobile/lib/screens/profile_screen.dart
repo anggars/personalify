@@ -7,8 +7,11 @@ import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
 import 'package:personalify/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:personalify/models/now_playing.dart';
 import 'package:personalify/widgets/error_view.dart';
+import 'package:personalify/widgets/ping_pong_text.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:async';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -19,13 +22,47 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _profileData;
+  NowPlaying? _nowPlaying;
+  int _currentProgressMs = 0;
   bool _isLoading = true;
   String? _errorMessage;
+  Timer? _pollingTimer;
+  Timer? _tickerTimer;
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _startPolling();
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    _tickerTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted && !_isLoading) {
+        _loadNowPlaying();
+      }
+    });
+
+    // Start 1s ticker for real-time progress
+    _tickerTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted && _nowPlaying != null && _nowPlaying!.isPlaying && !_nowPlaying!.isAd && _nowPlaying!.track != null) {
+        setState(() {
+          final maxDur = _nowPlaying!.track!.durationMs;
+          if (_currentProgressMs + 1000 < maxDur) {
+            _currentProgressMs += 1000;
+          } else {
+            _currentProgressMs = maxDur;
+          }
+        });
+      }
+    });
   }
 
   Future<void> _loadProfile() async {
@@ -58,6 +95,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _isLoading = false;
         });
       }
+    }
+    
+    // Initial load of playback status
+    _loadNowPlaying();
+  }
+
+  Future<void> _loadNowPlaying() async {
+    try {
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      final data = await apiService.getCurrentlyPlaying();
+      if (mounted) {
+        setState(() {
+          _nowPlaying = data;
+          if (data?.track != null) {
+             _currentProgressMs = data!.track!.progressMs;
+          }
+        });
+      }
+    } catch (_) {
+      // Silently fail for polling
     }
   }
 
@@ -190,7 +247,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
 
-            const SizedBox(height: 24), // Reduced from 32
+            const SizedBox(height: 20),
+
+            // 3.5. Now Playing / Ad - MOVED TO TOP
+            if (_nowPlaying != null && (_nowPlaying!.isPlaying || _nowPlaying!.isAd)) ...[
+              _buildNowPlaying(),
+              const SizedBox(height: 20),
+            ],
 
             // 3. Real Info (Stats)
             _buildInfoGroup([
@@ -199,7 +262,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildInfoRow(Icons.flag_outlined, "Country", country),
             ]),
 
-            const SizedBox(height: 16), // Reduced from 24
+            const SizedBox(height: 20),
 
             // 4. Actions
             _buildInfoGroup([
@@ -217,6 +280,148 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
+      ),
+    );
+  }
+
+  // Helper: Now Playing Widget
+  Widget _buildNowPlaying() {
+    if (_nowPlaying == null) return const SizedBox.shrink();
+
+    final isAd = _nowPlaying!.isAd;
+    final track = _nowPlaying!.track;
+
+    String formatDuration(int ms) {
+      final minutes = (ms / 1000) ~/ 60;
+      final seconds = ((ms / 1000) % 60).toInt();
+      return "$minutes:${seconds.toString().padLeft(2, '0')}";
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: kSurfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kBorderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 1. Artwork - 60x60 to match web
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.grey[800],
+              image: (track?.image != null)
+                  ? DecorationImage(
+                      image: CachedNetworkImageProvider(track!.image!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: (track?.image == null)
+                ? const Icon(Icons.music_note_rounded, color: kAccentColor)
+                : null,
+          ),
+          const SizedBox(width: 12),
+          
+          // 2. Metadata Column - 60px height for perfect symmetry
+          Expanded(
+            child: SizedBox(
+              height: 60,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Row 1: Title
+                      isAd 
+                        ? Text(
+                            "Advertisement",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: kTextPrimary,
+                            ),
+                          )
+                        : PingPongScrollingText(
+                            text: track?.name ?? "Unknown Track",
+                            width: constraints.maxWidth,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: kTextPrimary,
+                            ),
+                          ),
+                      
+                      // Row 2: Artist
+                      Text(
+                        isAd ? "Spotify keeps things free" : (track?.artistsString ?? "Unknown Artist"),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: kTextSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      // Row 3: Progress Section (Web-style: Compact)
+                      if (!isAd && track != null)
+                        Row(
+                          children: [
+                            Text(
+                              formatDuration(_currentProgressMs),
+                              style: GoogleFonts.plusJakartaSans(fontSize: 10, color: kTextSecondary, fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(2),
+                                child: LinearProgressIndicator(
+                                  value: track.durationMs > 0 ? _currentProgressMs / track.durationMs : 0,
+                                  backgroundColor: Colors.white10,
+                                  color: kAccentColor,
+                                  minHeight: 4,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              formatDuration(track.durationMs),
+                              style: GoogleFonts.plusJakartaSans(fontSize: 10, color: kTextSecondary, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        )
+                      else if (isAd)
+                        Row(
+                          children: [
+                            Text("0:00", style: GoogleFonts.plusJakartaSans(fontSize: 10, color: kTextSecondary, fontWeight: FontWeight.w500)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(2),
+                                child: const LinearProgressIndicator(
+                                  value: 0.4,
+                                  backgroundColor: Colors.white10,
+                                  color: Color(0xFF1DB954),
+                                  minHeight: 4,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text("0:30", style: GoogleFonts.plusJakartaSans(fontSize: 10, color: kTextSecondary, fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                    ],
+                  );
+                }
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
