@@ -12,7 +12,9 @@ Endpoints to handle Spotify login, callback, and session management.
 
 * **Login**: Initiates the Spotify authorization process by redirecting the user to the Spotify login page.
 * **Callback**: Handles the response from Spotify after authorization, exchanges the code for access tokens, and manages user session data.
-* **Logout**: Ends the current user session and clears session data from the server.
+* **Logout**: Ends the current user session and clears session data.
+* **Get Self**: Retrieves the current user's Spotify ID from session cookies for seamless redirection.
+* **Refresh Token**: Manually triggers a token refresh for both Web and Mobile clients.
 
 ## Genius Search & Lyrics
 Integration with the Genius API for artist search and lyrics retrieval.
@@ -34,6 +36,8 @@ Endpoints to retrieve user profile data and music statistics from Spotify.
 * **Top Tracks & Artists**: Fetches the user's most-listened-to tracks and artists over specific time ranges (short, medium, long term).
 * **Top Genres**: Analyzes and aggregates top music genres based on the user's top artists.
 * **Recent History**: Retrieves the list of recently played tracks by the user.
+* **User Profile**: Lightweight endpoint to fetch essential user metadata (ID, Image, Name).
+* **Currently Playing**: Detailed real-time tracking of the current track, including progress and album art.
 
 ## Admin
 System administration endpoints to monitor server statistics and cache status.

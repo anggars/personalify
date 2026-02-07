@@ -15,14 +15,16 @@
       "pages": [
         "introduction",
         "api-reference"
-    ]
+      ]
     },
     {
       "group": "Authentication",
       "pages": [
         "endpoints/auth/login",
         "endpoints/auth/logout",
-        "endpoints/auth/callback"
+        "endpoints/auth/callback",
+        "endpoints/auth/me",
+        "endpoints/auth/refresh"
       ]
     },
     {
@@ -30,7 +32,9 @@
       "pages": [
         "endpoints/features/analyze-lyrics",
         "endpoints/features/analyze-background",
-        "endpoints/features/dashboard"
+        "endpoints/features/dashboard",
+        "endpoints/features/profile",
+        "endpoints/features/currently-playing"
       ]
     },
     {
