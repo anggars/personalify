@@ -122,11 +122,11 @@ export default function ProfilePage() {
 
     // Smooth Progress Ticker
     useEffect(() => {
-        if (!nowPlaying?.is_playing || !nowPlaying.track || nowPlaying.is_ad) return;
+        if (!nowPlaying?.is_playing || (!nowPlaying.track && !nowPlaying.is_ad)) return;
 
         const interval = setInterval(() => {
             setLocalProgressMs((prev) => {
-                const max = nowPlaying.track?.duration_ms || 0;
+                const max = nowPlaying.track?.duration_ms || 30000;
                 if (prev + 1000 < max) return prev + 1000;
                 return max;
             });
@@ -325,7 +325,7 @@ export default function ProfilePage() {
                                     src={userImage}
                                     alt="Profile"
                                     fill
-                                    className="object-cover border-4 border-neutral-100 dark:border-neutral-800 rounded-2xl"
+                                    className="object-cover border-2 border-neutral-100 dark:border-neutral-800 rounded-2xl"
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
@@ -345,7 +345,7 @@ export default function ProfilePage() {
 
                     {/* Currently Playing */}
                     <AnimatePresence mode="wait">
-                        {nowPlaying?.is_playing && nowPlaying.track && (
+                        {nowPlaying?.is_playing && nowPlaying.track && !nowPlaying.is_ad && (
                             <motion.a
                                 key={nowPlaying.track.id}
                                 href={nowPlaying.track.external_url}
@@ -428,13 +428,20 @@ export default function ProfilePage() {
                                     {/* Row 2: Subtitle */}
                                     <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-snug">Spotify keeps things free</p>
 
-                                    {/* Row 3: Dummy progress */}
+                                    {/* Row 3: Real progress */}
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-[10px] text-neutral-500 font-medium tabular-nums min-w-[24px]">0:00</span>
+                                        <span className="text-[10px] text-neutral-500 font-medium tabular-nums min-w-[24px]">
+                                            {formatTime(localProgressMs)}
+                                        </span>
                                         <div className="flex-1 h-1 bg-black/10 dark:bg-white/20 rounded-full overflow-hidden">
-                                            <div className="h-full bg-[#1DB954] w-[40%]" />
+                                            <div
+                                                className="h-full bg-black/60 dark:bg-white rounded-full transition-all duration-1000 ease-linear"
+                                                style={{ width: `${(localProgressMs / (nowPlaying.track?.duration_ms || 30000)) * 100}%` }}
+                                            />
                                         </div>
-                                        <span className="text-[10px] text-neutral-500 font-medium tabular-nums min-w-[24px] text-right">0:30</span>
+                                        <span className="text-[10px] text-neutral-500 font-medium tabular-nums min-w-[24px] text-right">
+                                            {formatTime(nowPlaying.track?.duration_ms || 30000)}
+                                        </span>
                                     </div>
                                 </div>
                             </motion.div>

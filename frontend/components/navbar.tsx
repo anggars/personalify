@@ -295,11 +295,11 @@ export const Navbar = () => {
               "[box-shadow:inset_0_1px_2px_0_rgba(255,255,255,0.15),inset_0_1px_1px_0_rgba(255,255,255,0.2),0_4px_15px_rgba(0,0,0,0.3)]",
               "dark:[box-shadow:inset_0_1px_2px_0_rgba(255,255,255,0.15),inset_0_1px_1px_0_rgba(255,255,255,0.2),0_4px_15px_rgba(0,0,0,0.3)]",
               notification.type === "warning"
-                ? "bg-white/10 dark:bg-white/1.5 text-yellow-600 dark:text-yellow-400"
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                 : notification.type === "error"
-                  ? "bg-white/10 dark:bg-white/1.5 text-red-600 dark:text-red-400"
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
                   : notification.type === "success"
-                    ? "bg-[#1DB954]/20 text-[#1DB954]"
+                    ? "bg-[#1DB954]/10 text-[#1DB954] border-[#1DB954]/20"
                     : "bg-white/10 dark:bg-white/1.5 hover:scale-105 transition-transform duration-300",
             )}
           >
@@ -508,7 +508,7 @@ export const Navbar = () => {
                             <div
                               className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
                               style={{
-                                backgroundImage: `radial-gradient(circle 80px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.15), transparent 100%)`,
+                                backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
                               }}
                             />
                           </motion.div>
@@ -548,7 +548,11 @@ export const Navbar = () => {
                                   <Link
                                     key={child.name}
                                     href={child.href}
-                                    onClick={() => setDesktopDropdownOpen(null)}
+                                    onClick={() => {
+                                      setDesktopDropdownOpen(null);
+                                      setHoveredDropdownPath(null);
+                                      setHoveredPath(null);
+                                    }}
                                     onMouseEnter={() =>
                                       setHoveredDropdownPath(child.href)
                                     }
@@ -583,7 +587,7 @@ export const Navbar = () => {
                                               : "opacity-0"
                                           )}
                                           style={{
-                                            backgroundImage: `radial-gradient(circle 60px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.15), transparent 100%)`,
+                                            backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
                                           }}
                                         />
                                       </motion.div>
@@ -640,7 +644,7 @@ export const Navbar = () => {
                           <div
                             className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
                             style={{
-                              backgroundImage: `radial-gradient(circle 80px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.15), transparent 100%)`,
+                              backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
                             }}
                           />
                         </motion.div>
@@ -655,7 +659,10 @@ export const Navbar = () => {
                     href={link.href}
                     onMouseEnter={() => setHoveredPath(link.href)}
                     onMouseMove={handleMouseMove}
-                    onTouchMove={handleMouseMove}
+                    onClick={(e) => {
+                      setHoveredPath(null);
+                      if (link.onClick) link.onClick(e);
+                    }}
                     className={cn(
                       "relative px-3 py-2 text-sm transition-colors rounded-md whitespace-nowrap inline-flex flex-col items-center justify-center",
                       textClass,
@@ -686,7 +693,7 @@ export const Navbar = () => {
                         <div
                           className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
                           style={{
-                            backgroundImage: `radial-gradient(circle 80px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.15), transparent 100%)`,
+                            backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
                           }}
                         />
                       </motion.div>

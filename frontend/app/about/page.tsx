@@ -40,7 +40,7 @@ import {
   SiPostgresql,
   SiSupabase,
   SiMongodb,
-  SiRedis,
+  SiUpstash,
   SiGenius,
   SiHuggingface,
   SiTypescript,
@@ -291,9 +291,8 @@ export default function AboutPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className={`text-center mb-4 transition-all duration-300 ${
-          hasNotification ? "mt-8 md:mt-2" : "mt-1"
-        }`}
+        className={`text-center mb-4 transition-all duration-300 ${hasNotification ? "mt-8 md:mt-2" : "mt-1"
+          }`}
       >
         <h1 className="text-[2.5rem] font-extrabold text-[#1DB954] mb-2">
           About Personalify
@@ -409,11 +408,11 @@ export default function AboutPage() {
               />{" "}
               stores sync history, and{" "}
               <TechHover
-                text="Redis"
+                text="Upstash"
                 href="https://upstash.com/"
-                description="Serverless Data for Redis and Kafka."
-                icon={SiRedis}
-                color="#DC382D"
+                description="Serverless Data for Redis and Kafka. Used for efficient database caching."
+                icon={SiUpstash}
+                color="#00E9A3"
               />{" "}
               manages the cache. Lyrics come from{" "}
               <TechHover

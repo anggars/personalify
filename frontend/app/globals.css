@@ -613,12 +613,14 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
     left: calc(var(--mouse-x, 50%) - 50%);
     top: calc(var(--mouse-y, 50%) - 50%);
     background: radial-gradient(
-      circle at center,
-      rgba(29, 185, 84, 0.65),
-      rgba(29, 185, 84, 0.1) 50%,
+      circle 50px at center,
+      rgba(29, 185, 84, 0.7) 0%,
+      rgba(29, 185, 84, 0.35) 25%,
+      rgba(29, 185, 84, 0.12) 50%,
+      rgba(29, 185, 84, 0.04) 75%,
       transparent 100%
     );
-    filter: blur(10px);
+    filter: blur(8px);
     opacity: 0;
     z-index: 1;
     transition: opacity 0.4s ease;
@@ -642,12 +644,14 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
     left: calc(var(--mouse-x, 50%) - 50%);
     top: calc(var(--mouse-y, 50%) - 50%);
     background: radial-gradient(
-      circle at center,
-      rgba(29, 185, 84, 0.4),
-      rgba(29, 185, 84, 0.05) 50%,
+      circle 50px at center,
+      rgba(29, 185, 84, 0.6) 0%,
+      rgba(29, 185, 84, 0.3) 25%,
+      rgba(29, 185, 84, 0.1) 50%,
+      rgba(29, 185, 84, 0.03) 75%,
       transparent 100%
     );
-    filter: blur(10px);
+    filter: blur(8px);
     opacity: 0;
     z-index: -1;
     transition: opacity 0.4s ease;
@@ -659,9 +663,8 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
     mix-blend-mode: normal;
     background: radial-gradient(
       circle at center,
-      rgba(29, 185, 84, 0.25),
-      rgba(29, 185, 84, 0.05) 50%,
-      transparent 100%
+      rgba(29, 185, 84, 0.2) 0%,
+      transparent 80%
     );
   }
 
@@ -750,12 +753,14 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
   left: calc(var(--mouse-x, 50%) - 50%);
   top: calc(var(--mouse-y, 50%) - 50%);
   background: radial-gradient(
-    circle at center,
-    rgba(29, 185, 84, 0.65),
-    rgba(29, 185, 84, 0.1) 50%,
+    circle 50px at center,
+    rgba(29, 185, 84, 0.75) 0%,
+    rgba(29, 185, 84, 0.35) 25%,
+    rgba(29, 185, 84, 0.12) 50%,
+    rgba(29, 185, 84, 0.04) 75%,
     transparent 100%
   );
-  filter: blur(10px);
+  filter: blur(8px);
   opacity: 0;
   z-index: -1;
   transition: opacity 0.4s ease;
@@ -767,9 +772,8 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
   mix-blend-mode: normal;
   background: radial-gradient(
     circle at center,
-    rgba(29, 185, 84, 0.3),
-    rgba(29, 185, 84, 0.1) 50%,
-    transparent 100%
+    rgba(29, 185, 84, 0.2) 0%,
+    transparent 80%
   );
 }
 
@@ -822,12 +826,14 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
   left: calc(var(--mouse-x, 50%) - 50%);
   top: calc(var(--mouse-y, 50%) - 50%);
   background: radial-gradient(
-    circle at center,
-    rgba(255, 59, 48, 0.5),
+    circle 50px at center,
+    rgba(255, 59, 48, 0.7) 0%,
+    rgba(255, 59, 48, 0.3) 25%,
     rgba(255, 59, 48, 0.1) 50%,
+    rgba(255, 59, 48, 0.03) 75%,
     transparent 100%
   );
-  filter: blur(10px);
+  filter: blur(8px);
   opacity: 0;
   z-index: -1;
   transition: opacity 0.4s ease;

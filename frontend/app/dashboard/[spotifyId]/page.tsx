@@ -1387,7 +1387,6 @@ export default function DashboardPage() {
             animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
             exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
             className="modal-overlay"
-            onClick={() => setShowTimeModal(false)}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -1413,7 +1412,7 @@ export default function DashboardPage() {
                   onClick={() => setShowTimeModal(false)}
                   onMouseMove={handleMouseMoveOrTouch}
                   onTouchMove={handleMouseMoveOrTouch}
-                  className="mt-2 px-6 py-2 rounded-xl font-bold text-destructive bg-destructive/10 border border-destructive/20 hover:bg-destructive/15 transition-all"
+                  className="btn-glass-red rounded-xl py-2.5 flex items-center justify-center gap-2 text-red-500 font-bold text-sm cursor-pointer mt-2"
                 >
                   Cancel
                 </button>
@@ -1431,7 +1430,6 @@ export default function DashboardPage() {
             animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
             exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
             className="modal-overlay"
-            onClick={() => setShowCategoryModal(false)}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -1460,7 +1458,7 @@ export default function DashboardPage() {
                   onClick={() => setShowCategoryModal(false)}
                   onMouseMove={handleMouseMoveOrTouch}
                   onTouchMove={handleMouseMoveOrTouch}
-                  className="mt-2 px-6 py-2 rounded-xl font-bold text-destructive bg-destructive/10 border border-destructive/20 hover:bg-destructive/15 transition-all"
+                  className="btn-glass-red rounded-xl py-2.5 flex items-center justify-center gap-2 text-red-500 font-bold text-sm cursor-pointer mt-2"
                 >
                   Cancel
                 </button>
@@ -1856,7 +1854,6 @@ export default function DashboardPage() {
             animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
             exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
             className="modal-overlay"
-            onClick={() => setShowSaveModal(false)}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -1884,7 +1881,7 @@ export default function DashboardPage() {
                   onClick={() => setShowSaveModal(false)}
                   onMouseMove={handleMouseMoveOrTouch}
                   onTouchMove={handleMouseMoveOrTouch}
-                  className="mt-2 px-6 py-2 rounded-xl font-bold text-destructive bg-destructive/10 border border-destructive/20 hover:bg-destructive/15 transition-all"
+                  className="btn-glass-red rounded-xl py-2.5 flex items-center justify-center gap-2 text-red-500 font-bold text-sm cursor-pointer mt-2"
                 >
                   Cancel
                 </button>

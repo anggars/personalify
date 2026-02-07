@@ -89,15 +89,15 @@ export default function TechHover({
             // Determine horizontal alignment based on screen position
             // This logic works for both Mobile and Desktop to ensure it stays on screen
             let align: "left" | "right" | "center" = "center";
-            
+
             // Boundary thresholds (px from edge)
-            const margin = 20; 
+            const margin = 20;
             const tooltipWidthEstimate = 220; // Approx max width of tooltip
-            
+
             // Check if too close to Left Edge
             if (rect.left < (tooltipWidthEstimate / 2) + margin) {
                 align = "left";
-            } 
+            }
             // Check if too close to Right Edge
             else if (rect.right > screenWidth - ((tooltipWidthEstimate / 2) + margin)) {
                 align = "right";
@@ -105,7 +105,7 @@ export default function TechHover({
 
             // Calculate anchor point
             let anchorLeft = rect.left + rect.width / 2; // Default center
-            
+
             if (align === "left") {
                 // If aligned left, anchor is the left edge of text
                 // But on mobile if text is VERY left, we might strictly align to screen padding? 
@@ -137,6 +137,12 @@ export default function TechHover({
                 setIsHovered(false);
             }, 100);
         }
+    };
+
+    const handleMouseMoveCard = (e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        e.currentTarget.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
+        e.currentTarget.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
     };
 
     const TriggerComponent = ((isMobile && (href || onClick)) ? "button" : (onClick ? "button" : "a")) as React.ElementType;
@@ -232,14 +238,15 @@ export default function TechHover({
                 >
                     <div className="transform -translate-y-full pb-2">
                         <div
-                            className="relative bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-xl p-4 shadow-xl overflow-hidden hover:scale-[1.02] transition-transform duration-200"
+                            onMouseMove={handleMouseMoveCard}
+                            className="group relative bg-white/20 dark:bg-neutral-900/25 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-xl p-4 overflow-hidden hover:scale-[1.02] transition-transform duration-200 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.15),inset_0_1px_1px_0_rgba(255,255,255,0.2),0_4px_15px_rgba(0,0,0,0.3)]"
                         >
                             <TooltipWrapper>
-                                {/* Gradient Background Glow */}
+                                {/* Dynamic Spotlight Glow */}
                                 <div
-                                    className="absolute inset-0 opacity-20 pointer-events-none"
+                                    className="absolute inset-0 opacity-0 group-hover:opacity-40 pointer-events-none transition-opacity duration-300"
                                     style={{
-                                        background: `radial-gradient(circle at center, ${gradientColor}, transparent 70%)`
+                                        backgroundImage: `radial-gradient(circle 50px at var(--mouse-x, 50%) var(--mouse-y, 50%), ${gradientColor} 0%, ${gradientColor}33 30%, ${gradientColor}14 60%, transparent 100%)`,
                                     }}
                                 />
 
