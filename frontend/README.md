@@ -8,15 +8,20 @@ The frontend is a modern **Next.js 14+** application using the **App Router**, s
 frontend/
 ├── app/                  # App Router Pages
 │   ├── dashboard/        # Main User Dashboard ([id]/page.tsx)
+│   ├── profile/          # User Profile & Real-time Playback
 │   ├── lyrics/           # Lyrics Analysis Pages (genius/page.tsx)
+│   ├── about/            # Project information & core mission
+│   ├── privacy/          # Privacy Policy
+│   ├── terms/            # Terms of Service
 │   ├── layout.tsx        # Root Layout (Fonts, Metadata)
 │   └── page.tsx          # Home Page (Login & Tech Marquee)
 ├── components/           # Reusable UI Components
+│   ├── marquee-text.tsx  # Ping-pong scrolling text for long titles
+│   ├── tech-hover.tsx    # Interactive tech stack exploration
 │   ├── tech-stack-marquee.tsx # Infinite scrolling stack icons
-│   ├── glass-surface.tsx      # Liquid glass effect container
-│   ├── navbar.tsx             # Responsive Navigation
-│   ├── footer.tsx             # Application footer
-│   └── ui/                    # shadcn/ui primitives
+│   ├── navbar.tsx        # High-fidelity Responsive Navigation
+│   ├── footer.tsx        # Multi-section application footer
+│   └── ui/               # shadcn/ui primitives
 ├── public/               # Static Assets
 │   └── assets/           # Images, logos
 └── tailwind.config.ts    # Design token configuration
@@ -24,11 +29,12 @@ frontend/
 
 ## Key Features
 
-- **Tech Stack Marquee**: Interactive Home Page element. Hovering the Spotify logo reveals a sliding marquee of the tech used (Next.js, FastAPI, Supabase, etc.).
-- **Dashboard**: High-fidelity visualization of top artists, tracks, and genres with adaptive light/dark mode.
-- **Lyrics Analyzer**: Integration with Genius API to search songs and analyze emotional sentiment using NLP.
-- **Glassmorphism UI**: Custom "Liquid Glass" effects on buttons and cards using `glass-surface.tsx`.
-- **Responsive Design**: Fully mobile-optimized layout with hamburger menus and touch-friendly controls.
+- **Real-Time Playback Card**: Located on the **Profile page**, it tracks your Spotify session with pixel-perfect symmetry, high-fidelity metadata rendering (ping-pong marquee), and 1s local ticker progress accuracy.
+- **Tech Stack Marquee & Hover**: Advanced interactive elements on the home page. Use the `TechHover` component to explore the stack details with smooth animations.
+- **High-Fidelity Dashboard**: Comprehensive visualization of top spotify data using adaptive dark mode and liquid glass effects.
+- **Lyrics Sentiment Analyzer**: Connects to the Genius API to analyze the emotional landscape of your favorite tracks using NLP models.
+- **Universal Design Language**: Consistent premium aesthetics across Web and Mobile, achieved through standardized spacing and typography.
+- **Legal & About Sections**: Dedicated pages for Privacy Policy, Terms of Service, and the project's About section.
 
 ## Stack
 
