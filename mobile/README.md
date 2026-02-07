@@ -4,12 +4,14 @@ Flutter mobile app port of the Personalify Dashboard from Next.js web app.
 
 ## Features
 
-- **Spotify Authentication**: OAuth login using `flutter_web_auth_2`
-- **Dashboard View**: Display top tracks, artists, and genres
-- **Emotion Analysis**: AI-generated music vibe summary
-- **Time Ranges**: Switch between short term, mid term, and long term listening data
-- **Dark Mode**: Matching web design with Spotify green accent
-- **Secure Storage**: Tokens stored with `flutter_secure_storage`
+- **Spotify Authentication**: OAuth login using `flutter_web_auth_2`.
+- **Dashboard View**: Display top tracks, artists, and genres with premium "Liquid Glass" styling.
+- **Smooth Marquee (Ping-Pong)**: Auto-scrolling text for long titles and names in lists and headers.
+- **Native Glass Flow**: Interactive spotlights and backdrop blurs mapping to the tech stack's aesthetic.
+- **Emotion Analysis**: AI-generated music vibe summaries with shimmering, high-contrast charts.
+- **Token Auto-Refresh**: Seamless server-side token rotation for background data fetching and session persistence.
+- **Time Ranges**: Switch between short term, mid term, and long term listening data.
+- **Secure Storage**: Tokens stored with `flutter_secure_storage`.
 
 ## Architecture
 
@@ -29,7 +31,12 @@ lib/
 │   ├── login_screen.dart        # Spotify login
 │   └── dashboard_screen.dart    # Main dashboard
 └── widgets/
-    └── track_list_item.dart     # Track list component
+    ├── track_list_item.dart     # Track list component
+    ├── ping_pong_text.dart      # Smooth marquee widget
+    ├── native_glass.dart        # Spotlight & glass effect logic
+    ├── analysis_card.dart       # High-contrast emotion chart
+    ├── fade_indexed_stack.dart  # Smooth tab transitions
+    └── top_toast.dart           # Custom premium notifications
 ```
 
 ## Setup
@@ -85,11 +92,14 @@ Uses `http://10.0.2.2:8000` (Android Emulator localhost mapping).
 
 ## Design
 
-Dark Mode matching web (`frontend/app/globals.css`):
+Dark Mode matching web (`frontend/app/globals.css`) and following the **Liquid Glass** system:
 
-- Background: `#121212`
-- Primary: `#1DB954` (Spotify Green)
-- Text: `#FFFFFF` / `#B3B3B3`
+- **Background**: `#121212` (OLED compatible)
+- **Primary**: `#1DB954` (Spotify Green)
+- **Glass Components**: Transparent overlays with `backdrop-filter` and `inset shadow`
+- **Interactive Spotlights**: Radius-focused touch/mouse tracking spotlights for premium feedback
+- **Typography**: `Jakarta Sans` for a modern, clean look
+- **Text**: `#FFFFFF` / `#B3B3B3`
 
 ## Dependencies
 
