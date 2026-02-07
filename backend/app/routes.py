@@ -80,7 +80,13 @@ def debug_cookies(request: Request):
         }
     }
 
-@router.post("/request-access", tags=["Admin"])
+@router.get("/api/me", tags=["Auth"])
+def get_me(request: Request):
+    """Get current user's Spotify ID from cookies"""
+    spotify_id = request.cookies.get("spotify_id")
+    if not spotify_id:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    return {"spotify_id": spotify_id}
 def request_access(data: RequestAccessModel):
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
@@ -533,7 +539,15 @@ def get_currently_playing(spotify_id: str, request: Request):
         if not data.get("item"):
             # CHECK FOR ADVERTISEMENT
             if data.get("currently_playing_type") == "ad":
-                return {"is_playing": True, "is_ad": True}
+                # Spotify sometimes provides progress_ms for ads in the root object
+                return {
+                    "is_playing": True, 
+                    "is_ad": True,
+                    "track": {
+                        "progress_ms": data.get("progress_ms", 0),
+                        "duration_ms": 30000 # Default 30s for ads if not provided
+                    }
+                }
             return {"is_playing": False}
         
         track = data["item"]
