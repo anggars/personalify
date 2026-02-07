@@ -15,9 +15,13 @@ Personalify is a personal Spotify analytics dashboard built to display user musi
 
 Personalify is now available as a mobile application built with **Flutter**! You can access your Spotify analytics and analyze lyrics on the go.
 
-<a href="https://github.com/anggars/personalify/releases" target="_blank">
-  <img src="https://img.shields.io/badge/Download_APK-GitHub_Releases-green?style=for-the-badge&logo=android" alt="Download APK" />
-</a>
+<p align="left">
+  <a href="https://github.com/anggars/personalify/releases" target="_blank">
+    <img src="https://img.shields.io/badge/Download_APK-1F1F1F?style=flat&logo=android&logoColor=3DDC84" alt="Download APK" />
+  </a>
+</p>
+
+The mobile app includes premium features like **Ping-Pong Marquee** for long titles, **Native Glass** effects with interactive spotlights, and **Token Auto-Refresh** for seamless session management.
 
 ## 2. Use Case Overview
 
@@ -36,42 +40,70 @@ Personalify is now available as a mobile application built with **Flutter**! You
 
 The Personalify system consists of several components connected through service-based architecture, with FastAPI backend as the data orchestration center from various sources (Spotify API, Genius API, Hugging Face API, PostgreSQL, Redis, MongoDB, and FDW).
 
-```text
-                                 +------------------+
-                                 |      Vercel      |
-                                 |   (Serverless)   |
-                                 +--------+---------+
-                                          |
-                        +-----------------+-----------------+
-                        |                                   |
-              +---------v---------+               +---------v----------+
-              |     Next.js       |               |     FastAPI        |
-              |    (Frontend)     |<------------->|    (Backend)       |
-              +---------+---------+               +---------+----------+
-                        |                                   |
-                        |                          +--------+---------+      +----------------------+
-                        |                          |                  +----->|  Hugging Face API    |
-                        |                          |                  |      | (NLP Emotion Model)  |
-                        |                  +-------v----------+       |      +----------------------+
-                        |                  |   Spotify API    |<------+
-                        |                  |   (User Data)    |       |      +----------------------+
-                        |                  +------------------+       +----->|      Genius API      |
-                        |                                             |      |     (Lyrics Data)    |
-                        |                                             |      +----------------------+
-                        |                                             |
-              +---------v---------------------------+-----------------v---------+
-              |                                     |                           |
-              v                                     v                           v
-      +---------------+                     +---------------+           +------------------+
-      |   Supabase    |                     |    Upstash    |           |  MongoDB Atlas   |
-      | (PostgreSQL)  |                     |    (Redis)    |           |  (Sync History)  |
-      +-------+-------+                     +---------------+           +------------------+
-              |
-              v
- +------------------------+
- |   PostgreSQL + FDW     |
- | (foreign remote table) |
- +------------------------+
+```mermaid
+flowchart TD
+    %% Compute Layer (Diamond Pillars)
+    Vercel("Vercel (Platform)")
+    NextJS("Next.js (Web)")
+    Flutter("Flutter (Mobile)")
+    FastAPI("FastAPI (Backend)")
+
+    %% Symmetrical Flow
+    Vercel --> NextJS
+    Vercel --> Flutter
+    NextJS <--> FastAPI
+    Flutter <--> FastAPI
+    
+    %% APIs (Spotify Green Stroke)
+    Spotify("Spotify API")
+    HF("Hugging Face (NLP)")
+    Genius("Genius API")
+    
+    %% Storage (Deep Blue Stroke)
+    Supabase("Supabase (PostgreSQL)")
+    Upstash("Upstash (Redis)")
+    MongoDB("MongoDB Atlas")
+    FDW("PostgreSQL FDW")
+
+    FastAPI --> Spotify
+    FastAPI --> HF
+    FastAPI --> Genius
+    
+    FastAPI --> Supabase
+    FastAPI --> Upstash
+    FastAPI --> MongoDB
+    
+    Supabase --> FDW
+
+    %% Styling - Minimalist Desaturated Palette
+    classDef vrc fill:#121212,stroke:#888,stroke-width:1px,color:#fff
+    classDef nxt fill:#121212,stroke:#888,stroke-width:1px,color:#fff
+    classDef flt fill:#121212,stroke:#4B6A88,stroke-width:1px,color:#fff
+    classDef fas fill:#121212,stroke:#4B8880,stroke-width:1px,color:#fff
+    
+    classDef spt fill:#121212,stroke:#4B885C,stroke-width:1px,color:#fff
+    classDef hf  fill:#121212,stroke:#887D4B,stroke-width:1px,color:#fff
+    classDef gen fill:#121212,stroke:#88884B,stroke-width:1px,color:#fff
+    
+    classDef sub fill:#121212,stroke:#5C8875,stroke-width:1px,color:#fff
+    classDef ups fill:#121212,stroke:#884B4B,stroke-width:1px,color:#fff
+    classDef mng fill:#121212,stroke:#5C885C,stroke-width:1px,color:#fff
+
+    class Vercel vrc
+    class NextJS nxt
+    class Flutter flt
+    class FastAPI fas
+    
+    class Spotify spt
+    class HF hf
+    class Genius gen
+    
+    class Supabase,FDW sub
+    class Upstash ups
+    class MongoDB mng
+    
+    %% Global Graph Style - High Visibility Links
+    linkStyle default stroke:#fff,stroke-width:1.5px,opacity:0.8
 ```
 
 **Component Explanation:**
@@ -84,8 +116,12 @@ The Personalify system consists of several components connected through service-
 
 - **Frontend (Next.js):**  
   Modern React-based framework providing a fast, interactive UI with Tailwind CSS for styling and Framer Motion for animations. It communicates with the backend via REST API.
+
+- **Mobile App (Flutter):**
+  Cross-platform mobile application providing a native experience for Spotify analytics and lyrics. It shares the same FastAPI backend and features premium UI elements like interactive spotlights and marquee text.
+
 - **FastAPI (Backend API):**  
-  Main server that handles Spotify authentication (OAuth2), data synchronization, database storage, caching, external API calls (Hugging Face for NLP analysis, Genius for lyrics), and API serving to frontend.
+  Main server that handles Spotify authentication (OAuth2), data synchronization, database storage, caching, external API calls (Hugging Face for NLP analysis, Genius for lyrics), and API serving to multiple frontends (Web & Mobile).
 - **PostgreSQL (Main DB):**  
   Stores main metadata such as users, artists, and tracks. Can run **locally via Docker** or use **Supabase (cloud-hosted PostgreSQL)** for production/development.
 - **Redis (Cache):**  
@@ -385,24 +421,22 @@ This method runs the full stack locally: **FastAPI** for the backend and **Next.
    uvicorn app.main:app --reload --port 8000
    ```
 
-   Backend will run on `http://localhost:8000` (API Docs at `/docs`).
+   Backend will run on `http://localhost:8000` (Scalar API Docs at `/docs`).
 
-3. **Frontend Setup (Terminal 2):**
+#### Option 1: Local Development (pnpm)
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
 
-   Open a new terminal and navigate to the frontend directory:
+#### Option 2: Docker
+```bash
+# Run from the project root
+docker-compose up -d
+```
 
-   ```bash
-   cd frontend
-   ```
-
-   Install dependencies and run the development server:
-
-   ```bash
-   pnpm install
-   pnpm dev
-   ```
-
-   Frontend will run on `http://localhost:3000`.
+Frontend will run on `http://localhost:3000`.
 
 4. **Access the Application:**
    Open your browser and navigate to:
