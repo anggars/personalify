@@ -1,90 +1,85 @@
 # Personalify Backend API
 
-The backend for Personalify is built with **FastAPI** (Python). It serves as the orchestrator for:
+The backend for Personalify is a high-performance **FastAPI** (Python) application that orchestrates the core data pipeline, authentication, and AI-driven analysis.
 
-- **Spotify OAuth2 Authentication**
-- **Data Synchronization** (Artists, Tracks, Genres)
-- **Database Management** (PostgreSQL, MongoDB, Redis)
-- **External Integrations** (Genius API, Hugging Face NLP)
+## Core Responsibilities
 
-## Code Structure
+- **Spotify OAuth2**: Securely manages login flows and token rotation for both Web and Mobile.
+- **Data Pipeline**: Synchronizes top artists, tracks, and genres into a multi-layer storage system (PostgreSQL + MongoDB).
+- **AI Intelligence**: Performs deep emotion analysis on lyrics and track titles using a hybrid NLP approach.
+- **Real-Time Tracking**: Provides low-latency endpoints for "Currently Playing" status and progress.
 
-Key modules handling business logic:
+## System Architecture & Handlers
 
-- **`spotify_handler.py`**: **(New)** Centralized handler for all Spotify API interactions. Manages token refreshment, fetching top data, and parsing raw responses before saving to DB/Cache.
-- **`genius_lyrics.py`**: Handles scraping and parsing lyrics from Genius.com, including caching mechanisms.
-- **`nlp_handler.py`**: Integrates with Hugging Face API to perform sentiment and emotion analysis on lyrics and track titles.
-- **`db_handler.py`**: Manages PostgreSQL connections and CRUD operations for Users, Artists, and Tracks.
-- **`mongo_handler.py`**: Handles logging of synchronization history into MongoDB.
-- **`cache_handler.py`**: interface for Redis/Upstash caching operations.
+The backend follows a modular architecture where each handler manages a specific domain:
+
+- **`spotify_handler.py`**: The heart of Spotify integration. Handles recursive syncing, token refreshment, and raw data parsing.
+- **`nlp_handler.py`**: A sophisticated analysis engine. Includes **Google Translation** integration and a **Custom Slang Dictionary** (Indonesian/Sundanese) to ensure high-accuracy sentiment detection across languages.
+- **`genius_lyrics.py`**: Scrapes and parses lyrics from the Genius API with built-in caching.
+- **`db_handler.py`**: Manages the relational schema in **PostgreSQL** (Users, Tracks, Artists).
+- **`mongo_handler.py`**: Logs detailed synchronization history for auditing and analysis.
+- **`cache_handler.py`**: High-speed caching layer using **Redis/Upstash** to minimize API latency.
 
 ## API Endpoints
 
-### Authentication (`Auth`)
+### Authentication & Access
 
-| Method | Endpoint    | Description                                                                         |
-| :----- | :---------- | :---------------------------------------------------------------------------------- |
-| `GET`  | `/login`    | Initiates Spotify OAuth2 flow. Redirects to Spotify login.                          |
-| `GET`  | `/callback` | Handles Spotify callback, exchanges code for token, and syncs basic user profiling. |
-| `GET`  | `/logout`   | Clears user session and cookies.                                                    |
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/login` | Starts Spotify OAuth2 flow. Optional `mobile=true` for app-linking. |
+| `GET` | `/callback` | Exchange code for token and initializes user profiling. |
+| `POST` | `/auth/refresh` | Refresh access tokens (Supports JSON body for Mobile). |
+| `POST` | `/request-access` | Captures access requests for the private beta. |
+| `GET` | `/logout` | Invalidates session and clears cookies. |
 
-### Data Synchronization (`Sync`)
+### Synchronization & Analysis
 
-| Method | Endpoint                       | Description                                                                                                                |
-| :----- | :----------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
-| `GET`  | `/sync/top-data`               | **Core Sync**. Fetches Top Artists & Tracks from Spotify, saves to DB/Mongo, caches in Redis, and returns structured JSON. |
-| `POST` | `/analyze-emotions-background` | Triggers background processing for NLP emotion analysis of top tracks.                                                     |
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/sync/top-data` | Synchronizes Top Spotify data into the persistent database. |
+| `POST` | `/analyze-emotions-background` | Queues background emotion analysis for all top tracks. |
+| `POST` | `/analyze-lyrics` | Immediate NLP analysis for raw text/lyrics input. |
 
-### Queries & Dashboard (`Query` / `Dashboard`)
+### Dashboard & Player (Next.js / Mobile)
 
-| Method | Endpoint                      | Description                                                                                                           |
-| :----- | :---------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
-| `GET`  | `/top-data`                   | Retrieves cached top artists/tracks for a specific user and time range.                                               |
-| `GET`  | `/top-genres`                 | aggregated top genres based on user's top artists.                                                                    |
-| `GET`  | `/history`                    | Returns synchronization history logs from MongoDB.                                                                    |
-| `GET`  | `/api/dashboard/{spotify_id}` | **Main Dashboard API**. Returns aggregated data (User, Artists, Tracks, Genres, Emotions) for the frontend dashboard. |
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/dashboard/{id}` | **Main API**. Returns all aggregated stats for the dashboard. |
+| `GET` | `/api/currently-playing/{id}` | **Live Tracking**. Returns real-time track info & progress. |
+| `GET` | `/api/profile/{id}` | **Metadata**. Fetches lightweight user profile info. |
+| `GET` | `/top-genres` | Returns aggregated genre data for visualization. |
 
-### NLP & Genius (`NLP` / `Genius`)
+### Genius & Lyrics
 
-| Method | Endpoint                        | Description                                         |
-| :----- | :------------------------------ | :-------------------------------------------------- |
-| `POST` | `/analyze-lyrics`               | Analyzes emotion of raw text input (lyrics).        |
-| `GET`  | `/api/genius/search-artist`     | Searches for artist ID on Genius.                   |
-| `GET`  | `/api/genius/autocomplete`      | Autocomplete suggestions for artist/song search.    |
-| `GET`  | `/api/genius/artist-songs/{id}` | Fetches songs by a specific artist ID.              |
-| `GET`  | `/api/genius/lyrics/{song_id}`  | Fetches and analyzes lyrics for a specific song ID. |
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/genius/search-artist` | Find Artist IDs on Genius. |
+| `GET` | `/api/genius/autocomplete` | Real-time search suggestions. |
+| `GET` | `/api/genius/lyrics/{id}` | Scrapes lyrics and performs immediate NLP analysis. |
 
-### Background Tasks (QStash)
+### Admin & System
 
-| Method | Endpoint                      | Description                                                               |
-| :----- | :---------------------------- | :------------------------------------------------------------------------ |
-| `POST` | `/start-background-analysis`  | Queues comprehensive analysis task (can offload to QStash in production). |
-| `POST` | `/api/tasks/process-analysis` | Webhook handler for QStash to execute analysis logic securely.            |
-| `POST` | `/fire-qstash-event`          | Manually fires an event log to QStash.                                    |
-| `POST` | `/api/tasks/log-activity`     | Webhook handler for logging QStash activities.                            |
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/admin/system-stats` | System health and data metrics (Text Receipt). |
+| `GET` | `/admin/clear-cache` | Flushes Redis/Upstash cache. |
+| `GET` | `/admin/export-users` | Export user data as CSV. |
 
-### Admin Utils (`Admin`)
+## Development Setup
 
-| Method | Endpoint                  | Description                                                                        |
-| :----- | :------------------------ | :--------------------------------------------------------------------------------- |
-| `GET`  | `/admin/system-stats`     | Returns a text-based "receipt" of system stats (User count, DB stats, Redis keys). |
-| `GET`  | `/admin/clear-cache`      | Flushes Redis cache for top data.                                                  |
-| `GET`  | `/admin/user-report/{id}` | detailed text report for a specific user.                                          |
-| `GET`  | `/admin/export-users`     | Downloads user list as CSV.                                                        |
-
-## Setup & Run
-
-### Prerequisites
-
-- Python 3.12+
-- Dependencies installed via `pip install -r requirements.txt`
-- `.env` file configured in root directory.
-
-### Running Local Server
-
+### Installation
 ```bash
-# Navigate to root and run:
+cd backend
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### Run (Development)
+```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-API Documentation (Scalar UI) available at: `http://localhost:8000/docs`
+### Documentation
+- **Swagger UI**: `http://localhost:8000/docs`
+- **Scalar UI**: `http://localhost:8000/api/docs`
