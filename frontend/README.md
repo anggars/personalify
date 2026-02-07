@@ -6,25 +6,25 @@ The frontend is a modern **Next.js 14+** application using the **App Router**, s
 
 ```bash
 frontend/
-├── app/                  # App Router Pages
-│   ├── dashboard/        # Main User Dashboard ([id]/page.tsx)
-│   ├── profile/          # User Profile & Real-time Playback
-│   ├── lyrics/           # Lyrics Analysis Pages (genius/page.tsx)
-│   ├── about/            # Project information & core mission
-│   ├── privacy/          # Privacy Policy
-│   ├── terms/            # Terms of Service
-│   ├── layout.tsx        # Root Layout (Fonts, Metadata)
-│   └── page.tsx          # Home Page (Login & Tech Marquee)
-├── components/           # Reusable UI Components
-│   ├── marquee-text.tsx  # Ping-pong scrolling text for long titles
-│   ├── tech-hover.tsx    # Interactive tech stack exploration
-│   ├── tech-stack-marquee.tsx # Infinite scrolling stack icons
-│   ├── navbar.tsx        # High-fidelity Responsive Navigation
-│   ├── footer.tsx        # Multi-section application footer
-│   └── ui/               # shadcn/ui primitives
-├── public/               # Static Assets
-│   └── assets/           # Images, logos
-└── tailwind.config.ts    # Design token configuration
+├── app/                        # App Router Pages
+│   ├── dashboard/              # Main User Dashboard ([id]/page.tsx)
+│   ├── profile/                # User Profile & Real-time Playback
+│   ├── lyrics/                 # Lyrics Analysis Pages (genius/page.tsx)
+│   ├── about/                  # Project information & core mission
+│   ├── privacy/                # Privacy Policy
+│   ├── terms/                  # Terms of Service
+│   ├── layout.tsx              # Root Layout (Fonts, Metadata)
+│   └── page.tsx                # Home Page (Login & Tech Marquee)
+├── components/                 # Reusable UI Components
+│   ├── marquee-text.tsx        # Ping-pong scrolling text for long titles
+│   ├── tech-hover.tsx          # Interactive tech stack exploration
+│   ├── tech-stack-marquee.tsx  # Infinite scrolling stack icons
+│   ├── navbar.tsx              # Responsive Navigation
+│   ├── footer.tsx              # Multi-section application footer
+│   └── ui/                     # shadcn/ui primitives
+├── public/                     # Static Assets
+│   └── assets/                 # Images, logos
+└── tailwind.config.ts          # Design token configuration
 ```
 
 ## Key Features
@@ -51,18 +51,21 @@ frontend/
 - Node.js 18+
 - pnpm (recommended) or npm
 
-### Installation
+### Setup & Run
 
+Choose your preferred environment:
+
+#### Option 1: Local Development (pnpm)
 ```bash
-cd frontend
+# Prerequisites: Node.js 18+, pnpm (recommended)
 pnpm install
+pnpm dev
 ```
 
-### Development Server
-
+#### Option 2: Docker
 ```bash
-pnpm dev
-# Runs on http://localhost:3000
+# Run via docker-compose from the project root
+docker-compose up -d
 ```
 
 Make sure the Backend is running on port `8000` for data fetching to work correctly.
