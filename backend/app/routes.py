@@ -531,6 +531,9 @@ def get_currently_playing(spotify_id: str, request: Request):
         data = player_res.json()
         
         if not data.get("item"):
+            # CHECK FOR ADVERTISEMENT
+            if data.get("currently_playing_type") == "ad":
+                return {"is_playing": True, "is_ad": True}
             return {"is_playing": False}
         
         track = data["item"]
