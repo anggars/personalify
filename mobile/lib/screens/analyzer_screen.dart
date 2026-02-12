@@ -279,9 +279,9 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
         ),
       ),
       const SizedBox(height: 16),
-      SizedBox(height: 50, child: ElevatedButton(onPressed: _isAnalyzingLyrics ? null : _analyzeLyrics, style: ElevatedButton.styleFrom(backgroundColor: kSurfaceColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), side: const BorderSide(color: Colors.white12), elevation: 0), child: _isAnalyzingLyrics ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text('Analyze Emotions', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)))),
-      if (_lyricsResult != null) ...[const SizedBox(height: 16), _buildEmotionResults(_lyricsResult!['emotions'], isKeyboardOpen, showTitle: false)]
-      else if (!_isAnalyzingLyrics && _lyricsController.text.isEmpty) ...[Padding(padding: const EdgeInsets.only(top: 32), child: Column(children: [Icon(Symbols.lyrics, color: kTextSecondary, size: 32), const SizedBox(height: 8), Text("Uncover the emotions hidden in text", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 13))]))]
+      SizedBox(height: 50, child: ElevatedButton(onPressed: _isAnalyzingLyrics ? null : _analyzeLyrics, style: ElevatedButton.styleFrom(backgroundColor: kSurfaceColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), side: const BorderSide(color: Colors.white12), elevation: 0), child: _isAnalyzingLyrics ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text('Analyze Essence', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)))),
+      if (_lyricsResult != null) ...[const SizedBox(height: 16), _buildEmotionResults(_lyricsResult!['emotions'], isKeyboardOpen, showTitle: false, mbti: _lyricsResult!['mbti'], mbtiPrefix: "These lyrics hold")]
+      else if (!_isAnalyzingLyrics && _lyricsController.text.isEmpty) ...[Padding(padding: const EdgeInsets.only(top: 32), child: Column(children: [Icon(Symbols.lyrics, color: kTextSecondary, size: 32), const SizedBox(height: 8), Text("Uncover the essence hidden in text", style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 13))]))]
     ]);
   }
 
@@ -480,12 +480,12 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                 ),
               ),
               const SizedBox(height: 16), // Reduced from 24
-              if (_geniusAnalysis!['emotion_analysis'] != null) _buildEmotionResults(_geniusAnalysis!['emotion_analysis']['emotions'], isKeyboardOpen),
+              if (_geniusAnalysis!['emotion_analysis'] != null) _buildEmotionResults(_geniusAnalysis!['emotion_analysis']['emotions'], isKeyboardOpen, mbti: _geniusAnalysis!['emotion_analysis']['mbti']),
            ],
      ]);
   }
 
-  Widget _buildEmotionResults(List<dynamic>? emotions, bool isKeyboardOpen, {bool showTitle = true}) {
+  Widget _buildEmotionResults(List<dynamic>? emotions, bool isKeyboardOpen, {bool showTitle = true, List<dynamic>? mbti, String mbtiPrefix = "This track holds"}) {
     if (emotions == null || emotions.isEmpty) return const SizedBox();
     final filtered = emotions;
     if (filtered.isEmpty) return Text("No distinct emotions found.", style: GoogleFonts.plusJakartaSans(color: kTextSecondary), textAlign: TextAlign.center);
@@ -496,7 +496,7 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
       children: [
         if (showTitle) ...[
           // Symmetric Title Spacing (20px)
-          Text("Emotion Results:", style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.center),
+          Text("Analysis Results:", style: GoogleFonts.plusJakartaSans(color: kAccentColor, fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.center),
           const SizedBox(height: 12), // Top Spacing = 20px
         ],
         ...List.generate(filtered.take(5).length, (index) {
@@ -534,6 +534,46 @@ class _AnalyzerScreenState extends State<AnalyzerScreen> with SingleTickerProvid
                ),
              );
            }),
+
+        // MBTI Section
+        if (mbti != null && mbti.isNotEmpty) ...[
+          Builder(
+            builder: (context) {
+              const mbtiConnectors = {
+                "INTJ": "the precision of an", "INTP": "the curiosity of an",
+                "ENTJ": "the drive of an", "ENTP": "the chaos of an",
+                "INFJ": "the depth of an", "INFP": "the longing of an",
+                "ENFJ": "the warmth of an", "ENFP": "the wonder of an",
+                "ISTJ": "the steadiness of an", "ISFJ": "the care of an",
+                "ESTJ": "the structure of an", "ESFJ": "the heart of an",
+                "ISTP": "the craft of an", "ISFP": "the art of an",
+                "ESTP": "the fire of an", "ESFP": "the pulse of an",
+              };
+              final label = mbti[0]['label'];
+              final score = (mbti[0]['score'] as num).toDouble();
+              final connector = mbtiConnectors[label] ?? "the soul of an";
+              
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(0, 12, 0, 4), // Adjusted: More space top, less space bottom
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: "$mbtiPrefix $connector "),
+                      TextSpan(text: label, style: const TextStyle(fontWeight: FontWeight.bold, color: kAccentColor)),
+                      TextSpan(text: " (${(score * 100).toStringAsFixed(1)}%)"),
+                    ]
+                  ),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: kTextSecondary, 
+                    fontSize: 13, // text-sm
+                    fontWeight: FontWeight.w500, // font-medium
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+          )
+        ]
       ],
     );
   }
