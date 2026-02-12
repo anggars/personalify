@@ -12,15 +12,23 @@ from app.cache_handler import cache_top_data
 from app.mongo_handler import save_user_sync
 from app.nlp_handler import generate_emotion_paragraph
 
-def process_emotion_background(spotify_id, time_range, result):
+def process_emotion_background(spotify_id, time_range, result, extended=False):
     """
     Helper function to run emotion analysis and caching in background/foreground.
     """
     try:
         # 6. Analyze Emotions (Hybrid Model)
-        # This might take time (5-8 seconds)
-        track_names = [track['name'] for track in result.get("tracks", [])]
-        emotion_paragraph, top_emotions = generate_emotion_paragraph(track_names)
+        # STANDARD: Use Top 10 tracks for analysis (vibe/MBTI) for concentrated results by default.
+        # EXTENDED: Use Top 20 tracks if requested (e.g. for Web Easter Eggs).
+        tracks = result.get("tracks", [])
+        num_to_analyze = 20 if extended else 10
+        tracks_to_analyze = tracks[:num_to_analyze]
+        
+        # Include artist name for better AI context
+        track_names = [f"{t['name']} by {', '.join(t.get('artists', []))}" if t.get('artists') else t['name'] for t in tracks_to_analyze]
+        
+        # Pass extended flag to paragraph generator
+        emotion_paragraph, top_emotions = generate_emotion_paragraph(track_names, extended=extended)
         
         result['emotion_paragraph'] = emotion_paragraph
         result['top_emotions'] = top_emotions
@@ -28,11 +36,11 @@ def process_emotion_background(spotify_id, time_range, result):
         # 7. Cache & Archive
         cache_top_data("top_v2", spotify_id, time_range, result)
         save_user_sync(spotify_id, time_range, result)
-        print(f"BACKGROUND PROCESSING SUCCESS: Emotion analysis completed for {spotify_id}")
+        print(f"BACKGROUND PROCESSING SUCCESS: {'EXTENDED' if extended else 'STANDARD'} Emotion analysis completed for {spotify_id}")
     except Exception as e:
         print(f"BACKGROUND PROCESSING ERROR: {e}")
 
-def sync_user_data(access_token: str, time_range: str = "medium_term", background_tasks: BackgroundTasks = None):
+def sync_user_data(access_token: str, time_range: str = "medium_term", background_tasks: BackgroundTasks = None, extended: bool = False):
     """
     Fetches latest top tracks/artists from Spotify using access_token.
     Updates Postgres (Artists/Tracks), MongoDB (History), and Redis (Cache).
@@ -64,7 +72,8 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
     save_user(spotify_id, display_name)
 
     # 2. Fetch Top Data
-    # Note: Mobile used limit=20 in the sync endpoint. We'll stick to 20 for better data.
+    # Note: Fetching 20 to allow flexibility (Web Top 20). 
+    # Analysis will conditionalize between Top 10 or Top 20.
     artist_url = f"https://api.spotify.com/v1/me/top/artists?time_range={time_range}&limit=20"
     track_url = f"https://api.spotify.com/v1/me/top/tracks?time_range={time_range}&limit=20"
 
@@ -166,9 +175,9 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
         cache_top_data("top_v2", spotify_id, time_range, result, ttl=300) # Short TTL for partial
         
         # 6.3 Trigger real analysis in background
-        background_tasks.add_task(process_emotion_background, spotify_id, time_range, result)
+        background_tasks.add_task(process_emotion_background, spotify_id, time_range, result, extended)
     else:
         # Legacy/Mobile synchronous mode
-        process_emotion_background(spotify_id, time_range, result)
+        process_emotion_background(spotify_id, time_range, result, extended)
 
     return result
