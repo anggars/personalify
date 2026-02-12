@@ -10,9 +10,9 @@ from app.db_handler import (
 )
 from app.cache_handler import cache_top_data
 from app.mongo_handler import save_user_sync
-from app.nlp_handler import generate_emotion_paragraph
+from app.nlp_handler import generate_sentiment_analysis
 
-def process_emotion_background(spotify_id, time_range, result, extended=False):
+def process_sentiment_background(spotify_id, time_range, result, extended=False):
     """
     Helper function to run emotion analysis and caching in background/foreground.
     """
@@ -28,15 +28,15 @@ def process_emotion_background(spotify_id, time_range, result, extended=False):
         track_names = [f"{t['name']} by {', '.join(t.get('artists', []))}" if t.get('artists') else t['name'] for t in tracks_to_analyze]
         
         # Pass extended flag to paragraph generator
-        emotion_paragraph, top_emotions = generate_emotion_paragraph(track_names, extended=extended)
+        sentiment_report, sentiment_scores = generate_sentiment_analysis(track_names, extended=extended)
         
-        result['emotion_paragraph'] = emotion_paragraph
-        result['top_emotions'] = top_emotions
+        result['sentiment_report'] = sentiment_report
+        result['sentiment_scores'] = sentiment_scores
 
         # 7. Cache & Archive
         cache_top_data("top_v2", spotify_id, time_range, result)
         save_user_sync(spotify_id, time_range, result)
-        print(f"BACKGROUND PROCESSING SUCCESS: {'EXTENDED' if extended else 'STANDARD'} Emotion analysis completed for {spotify_id}")
+        print(f"BACKGROUND PROCESSING SUCCESS: {'EXTENDED' if extended else 'STANDARD'} Sentiment analysis completed for {spotify_id}")
     except Exception as e:
         print(f"BACKGROUND PROCESSING ERROR: {e}")
 
@@ -167,17 +167,17 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
     # 6. Hybrid Processing Logic
     if background_tasks:
         # 6.1 Return partial result immediately
-        result['emotion_paragraph'] = "Vibe analysis is getting ready..."
-        result['top_emotions'] = []
+        result['sentiment_report'] = "Sentiment analysis is getting ready..."
+        result['sentiment_scores'] = []
         
         # 6.2 CRITICAL: Cache partial result immediately!
         # This prevents subsequent polls from triggering redundant syncs.
         cache_top_data("top_v2", spotify_id, time_range, result, ttl=300) # Short TTL for partial
         
         # 6.3 Trigger real analysis in background
-        background_tasks.add_task(process_emotion_background, spotify_id, time_range, result, extended)
+        background_tasks.add_task(process_sentiment_background, spotify_id, time_range, result, extended)
     else:
         # Legacy/Mobile synchronous mode
-        process_emotion_background(spotify_id, time_range, result, extended)
+        process_sentiment_background(spotify_id, time_range, result, extended)
 
     return result

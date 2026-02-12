@@ -487,7 +487,7 @@ def analyze_lyrics_emotion(lyrics: str):
         return {"error": "Error parsing results."}
 
 
-def generate_emotion_paragraph(track_names, extended=False):
+def generate_sentiment_analysis(track_names, extended=False):
     """
     Generates a textual summary ("Shades of ...") based on a list of track names.
     Concatenates all track titles into one text and sends as a single API call.

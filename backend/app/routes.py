@@ -14,7 +14,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pydantic import BaseModel
-from app.nlp_handler import generate_emotion_paragraph, analyze_lyrics_emotion
+from app.nlp_handler import generate_sentiment_analysis, analyze_lyrics_emotion
 from app.admin import get_system_wide_stats, get_user_report, export_users_to_csv
 from app.db_handler import (
     save_user,
@@ -646,8 +646,8 @@ def get_user_profile(spotify_id: str, request: Request):
         print(f"PROFILE ERROR: {e}")
         return {"error": str(e), "user": None, "image": None}
 
-@router.post("/analyze-emotions-background", tags=["Background"])
-async def analyze_emotions_background(
+@router.post("/analyze-sentiment-background", tags=["Background"])
+async def analyze_sentiment_background(
     spotify_id: str = Body(..., embed=True, description="Spotify ID"),
     time_range: str = Body("short_term", embed=True, description="Time range"),
     extended: bool = Body(False, embed=True, description="Use extended track list (20 tracks)")
@@ -663,7 +663,7 @@ async def analyze_emotions_background(
         else:
             # Standard View: Strictly Top 10
             track_names = [f"{t['name']} by {', '.join(t.get('artists', []))}" if t.get('artists') else t['name'] for t in tracks_to_analyze[:10]]
-        emotion_paragraph, top_emotions = generate_emotion_paragraph(track_names, extended=extended)
+        sentiment_report, sentiment_scores = generate_sentiment_analysis(track_names, extended=extended)
 
         if extended:
 
@@ -671,16 +671,16 @@ async def analyze_emotions_background(
         else:
 
             print("STANDARD ANALYSIS. UPDATING CACHE AND DATABASE.")
-            cached_data['emotion_paragraph'] = emotion_paragraph
-            cached_data['top_emotions'] = top_emotions
+            cached_data['sentiment_report'] = sentiment_report
+            cached_data['sentiment_scores'] = sentiment_scores
             cache_top_data("top_v2", spotify_id, time_range, cached_data)
             save_user_sync(spotify_id, time_range, cached_data)
 
-        return {"emotion_paragraph": emotion_paragraph, "top_emotions": top_emotions}
+        return {"sentiment_report": sentiment_report, "sentiment_scores": sentiment_scores}
 
     except Exception as e:
-        print(f"BACKGROUND EMOTION ANALYSIS FAILED: {e}")
-        return {"emotion_paragraph": "Vibe analysis is currently unavailable."}
+        print(f"BACKGROUND SENIMENT ANALYSIS FAILED: {e}")
+        return {"sentiment_report": "Sentiment analysis is currently unavailable."}
 
 @router.post("/analyze-lyrics", tags=["NLP"])
 async def analyze_lyrics(
@@ -979,7 +979,7 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
         if not data:
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
 
-        emotion_paragraph = data.get("emotion_paragraph", "Vibe analysis is getting ready...")
+        sentiment_report = data.get("sentiment_report", "Sentiment analysis is getting ready...")
 
         # Calculate genres from ALL artists (legacy behavior used all for extended list)
         genre_count = {}
