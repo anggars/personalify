@@ -449,8 +449,8 @@ if final_lyrics:
 
         df = pd.DataFrame(results_data)
         
-        top_emotions = df[df['model'] == 'Hybrid'].nlargest(6, 'score')['label'].tolist()
-        df_filtered = df[df['label'].isin(top_emotions)]
+        top_sentiment_labels = df[df['model'] == 'Hybrid'].nlargest(6, 'score')['label'].tolist()
+        df_filtered = df[df['label'].isin(top_sentiment_labels)]
 
     domain = ['RoBERTa', 'DistilBERT', 'XLM-RoBERTa', 'Hybrid']
     range_ = ['#3498db', '#e74c3c', '#f39c12', '#9b59b6']
