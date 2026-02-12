@@ -258,7 +258,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // 3. Real Info (Stats)
             _buildInfoGroup([
               _buildInfoRow(Icons.people_outline_rounded, "Followers", followers),
+              _buildDivider(),
               _buildInfoRow(Icons.star_outline_rounded, "Subscription", product),
+              _buildDivider(),
               _buildInfoRow(Icons.flag_outlined, "Country", country),
             ]),
 
@@ -267,8 +269,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // 4. Actions
             _buildInfoGroup([
               _buildActionRow(Icons.open_in_new_rounded, "Open Spotify", kAccentColor, _openSpotify),
-
-              const SizedBox(height: 4), // Reduced from 8
+              _buildDivider(),
               _buildActionRow(Icons.logout_rounded, "Logout", Colors.redAccent, _logout),
             ]),
             
@@ -437,6 +438,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         children: children,
       ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      color: kBorderColor,
+      // Margin removed to make it full width (to the border)
     );
   }
 
