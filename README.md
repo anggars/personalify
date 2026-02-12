@@ -11,7 +11,7 @@ link: **[https://personalify.vercel.app](https://personalify.vercel.app)**
 
 Personalify is a personal Spotify analytics dashboard built to display user
 music preferences based on data from the Spotify API. This project not only
-displays data but also analyzes the **mood, vibe, and MBTI personality** of
+displays data but also analyzes the **emotions and MBTI personality** of
 songs using Natural Language Processing (NLP) from Hugging Face. Additionally,
 users can **search for lyrics from any artist or song** via the Genius API and
 analyze the emotional tone and personality traits of those lyrics. The project
@@ -40,7 +40,7 @@ Auto-Refresh** for seamless session management.
 | -------------------------- | ------------------------------------------------------------------------------------------- |
 | Spotify Login/Auth         | Users log in using Spotify OAuth2 to authorize access to their music data.                  |
 | Sync Top Data              | Data such as top artists, top tracks, and genres are synchronized and stored in database.   |
-| Mood & MBTI Analysis (NLP) | Analyzes song titles and lyrics to determine dominant emotions and MBTI personality traits. |
+| Emotion & MBTI Analysis (NLP) | Analyzes song titles and lyrics to determine dominant emotion and MBTI personality traits. |
 | Genius Lyrics Search       | Search for any song lyrics from Genius and analyze the emotional content.                   |
 | Caching & History          | Redis is used for fast caching, MongoDB for storing user synchronization history.           |
 | Dashboard                  | Responsive frontend displays visualizations based on user device (desktop/mobile).          |
@@ -164,9 +164,9 @@ flowchart TD
   Provides song lyrics data from the Genius platform. The backend implements a
   custom scraping strategy (using translation proxies) to fetch lyrics content
   and bypass direct access limitations.
-- **Hugging Face API:**\
-  Provides pre-trained NLP models (GoEmotions) for sentiment and emotion
-  analysis of song titles and lyrics.
+- **Hugging Face:**\
+  Hosts a custom-retrained **XLM-RoBERTa** model (multilingual) for both **Emotion** and **MBTI Personality** analysis, trained on a curated custom dataset to
+  handle diverse song lyrics and Indonesian slang.
 
 ---
 
@@ -186,7 +186,7 @@ flowchart TD
 | **Sync Storage**  | MongoDB (Atlas)       | Flexible document store for logging semi-structured sync history.                    |
 | **Auth**          | Spotify OAuth2        | Official standard protocol from Spotify, secure for login and user data access.      |
 | **Lyrics**        | Genius API            | Genius provides lyrics data; custom scraping logic handles retrieval.                |
-| **NLP Model**     | Hugging Face API      | Access to pre-trained AI models for emotion analysis without building from scratch.  |
+| **NLP Model**     | Hugging Face          | Custom XLM-RoBERTa model retrained on a specialized dataset for Emotion and MBTI Personality.   |
 | **FDW**           | PostgreSQL FDW        | Used for simulating queries between PostgreSQL instances (distributed query).        |
 | **Deployment**    | Vercel                | Zero-config deployment for Next.js frontend and Python backend serverless functions. |
 
