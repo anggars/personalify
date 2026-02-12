@@ -1020,12 +1020,12 @@ def about_page(request: Request):
         "spotify_id": spotify_id
     })
 
-@router.get("/admin/system-stats", tags=["Admin"])
+@router.get("/admin/stats", tags=["Admin"])
 def get_stats():
     report = get_system_wide_stats()
     return PlainTextResponse(content=report)
 
-@router.get("/admin/clear-cache", tags=["Admin"])
+@router.get("/admin/clear", tags=["Admin"])
 def clear_cache():
     try:
         deleted_count = clear_top_data_cache()
@@ -1063,7 +1063,7 @@ def clear_cache():
             status_code=500
         )
 
-@router.get("/admin/user-report/{spotify_id}", tags=["Admin"])
+@router.get("/admin/report/{spotify_id}", tags=["Admin"])
 def get_user_stats(spotify_id: str):
     try:
         details = get_user_report(spotify_id)
@@ -1120,7 +1120,7 @@ def get_user_stats(spotify_id: str):
             status_code=500
         )
 
-@router.get("/admin/sync-db", tags=["Admin"])
+@router.get("/admin/sync", tags=["Admin"])
 def trigger_db_sync():
     try:
         from app.db_handler import sync_neon_supabase
@@ -1159,7 +1159,7 @@ def trigger_db_sync():
             status_code=500
         )
 
-@router.get("/admin/export-users", tags=["Admin"])
+@router.get("/admin/export", tags=["Admin"])
 def download_user_export():
     csv_content = export_users_to_csv()
     return Response(
