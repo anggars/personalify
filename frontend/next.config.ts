@@ -45,10 +45,26 @@ const nextConfig: NextConfig = {
         source: "/logout",
         destination: `${BACKEND_URL}/logout`,
       },
-      // Admin endpoints
+      // Admin endpoints (Direct /admin/ paths)
       {
-        source: "/admin/:path*",
-        destination: `${BACKEND_URL}/admin/:path*`,
+        source: "/admin/stats",
+        destination: `${BACKEND_URL}/admin/stats`,
+      },
+      {
+        source: "/admin/clear",
+        destination: `${BACKEND_URL}/admin/clear`,
+      },
+      {
+        source: "/admin/sync",
+        destination: `${BACKEND_URL}/admin/sync`,
+      },
+      {
+        source: "/admin/export",
+        destination: `${BACKEND_URL}/admin/export`,
+      },
+      {
+        source: "/admin/report/:path*",
+        destination: `${BACKEND_URL}/admin/report/:path*`,
       },
       // Request Access
       {
