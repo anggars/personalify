@@ -173,7 +173,6 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
         if existing_cached and existing_cached.get('sentiment_report'):
             result['sentiment_report'] = existing_cached.get('sentiment_report')
             result['sentiment_scores'] = existing_cached.get('sentiment_scores', [])
-            # Optional: Add a flag that it's stale/updating
             print(f"SYNC: Preserving existing sentiment for {spotify_id}")
         else:
             result['sentiment_report'] = "Sentiment analysis is getting ready..."
