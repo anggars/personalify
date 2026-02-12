@@ -166,13 +166,21 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
 
     # 6. Hybrid Processing Logic
     if background_tasks:
-        # 6.1 Return partial result immediately
-        result['sentiment_report'] = "Sentiment analysis is getting ready..."
-        result['sentiment_scores'] = []
+        # 6.1 Check for existing sentiment to avoid "getting ready" if we already had a vibe
+        from app.cache_handler import get_cached_top_data
+        existing_cached = get_cached_top_data("top_v2", spotify_id, time_range)
         
-        # 6.2 CRITICAL: Cache partial result immediately!
-        # This prevents subsequent polls from triggering redundant syncs.
-        cache_top_data("top_v2", spotify_id, time_range, result, ttl=300) # Short TTL for partial
+        if existing_cached and existing_cached.get('sentiment_report'):
+            result['sentiment_report'] = existing_cached.get('sentiment_report')
+            result['sentiment_scores'] = existing_cached.get('sentiment_scores', [])
+            # Optional: Add a flag that it's stale/updating
+            print(f"SYNC: Preserving existing sentiment for {spotify_id}")
+        else:
+            result['sentiment_report'] = "Sentiment analysis is getting ready..."
+            result['sentiment_scores'] = []
+        
+        # 6.2 Cache partial result with short TTL
+        cache_top_data("top_v2", spotify_id, time_range, result, ttl=300) 
         
         # 6.3 Trigger real analysis in background
         background_tasks.add_task(process_sentiment_background, spotify_id, time_range, result, extended)
