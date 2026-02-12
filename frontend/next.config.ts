@@ -27,10 +27,10 @@ const nextConfig: NextConfig = {
         source: "/analyze-lyrics",
         destination: `${BACKEND_URL}/analyze-lyrics`,
       },
-      // Emotion analysis background
+      // Sentiment analysis background
       {
-        source: "/analyze-emotions-background",
-        destination: `${BACKEND_URL}/analyze-emotions-background`,
+        source: "/analyze-sentiment-background",
+        destination: `${BACKEND_URL}/analyze-sentiment-background`,
       },
       // Auth endpoints
       {

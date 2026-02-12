@@ -71,7 +71,7 @@ interface Genre {
 interface DashboardData {
   user: string;
   time_range: string;
-  emotion_paragraph: string;
+  sentiment_report: string;
   artists: Artist[];
   tracks: Track[];
   genres: Genre[];
@@ -336,11 +336,11 @@ export default function DashboardPage() {
 
         const json = await res.json();
         setData(json);
-        setEmotionText(json.emotion_paragraph || "");
+        setEmotionText(json.sentiment_report || "");
 
         if (
-          json.emotion_paragraph?.includes("being analyzed") ||
-          json.emotion_paragraph?.includes("getting ready")
+          json.sentiment_report?.includes("being analyzed") ||
+          json.sentiment_report?.includes("getting ready")
         ) {
           fetchEmotionAnalysis(false);
         }
@@ -368,7 +368,7 @@ export default function DashboardPage() {
         setEmotionText("Digging deeper into your music vibe...");
       }
 
-      const res = await fetchWithAuth("/analyze-emotions-background", {
+      const res = await fetchWithAuth("/analyze-sentiment-background", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -380,9 +380,9 @@ export default function DashboardPage() {
 
       if (res.ok) {
         const result = await res.json();
-        if (result.emotion_paragraph) {
+        if (result.sentiment_report) {
           setTypedHtml("");
-          setEmotionText(result.emotion_paragraph);
+          setEmotionText(result.sentiment_report);
         }
       }
     } catch (err) {
