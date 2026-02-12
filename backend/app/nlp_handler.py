@@ -1,9 +1,3 @@
-
-# ==========================================
-#  SMART NLP HANDLER (ASYNC & RETRO-COMPATIBLE)
-#  Integrated with Retrained Model + Hybrid Fallback
-# ==========================================
-
 import os
 import re
 import asyncio
@@ -464,6 +458,28 @@ def analyze_lyrics_emotion(lyrics: str):
         if mbti_out:
             result["mbti"] = mbti_out
         
+        # --- CONSOLIDATED LOGGING (Single Song) ---
+        report_lines = []
+        report_lines.append("\n" + "="*60)
+        report_lines.append("  PERSONALIFY SINGLE-TRACK ANALYSIS REPORT")
+        report_lines.append("="*60)
+        report_lines.append(f"  TEXT: \"{text[:100]}{'...' if len(text) > 100 else ''}\"")
+        report_lines.append("-" * 60)
+        
+        report_lines.append("  EMOTION SCORES (Top 5):")
+        for i, e in enumerate(out, 1):
+            report_lines.append(f"    {i:2d}. {e['label'].title():<15} : {e['score']:6.1%}")
+        report_lines.append("-" * 60)
+        
+        if mbti_out:
+            report_lines.append("  MBTI BREAKDOWN (Top 3):")
+            for i, m in enumerate(mbti_out, 1):
+                report_lines.append(f"    {i:2d}. {m['label']:<15} : {m['score']:6.1%}")
+            report_lines.append("-" * 60)
+        
+        report_lines.append("="*60 + "\n")
+        print("\n".join(report_lines))
+        
         return result
 
     except Exception as e:
@@ -482,12 +498,8 @@ def generate_emotion_paragraph(track_names, extended=False):
 
     num_tracks = len(track_names) if extended else min(10, len(track_names))
     tracks_to_analyze = track_names[:num_tracks]
-
-    # Concatenate all track names into a single text
     combined_text = ", ".join(tracks_to_analyze)
-    print(f"\n[NLP] Combined Text for {num_tracks} tracks: '{combined_text[:80]}...'")
 
-    # Prepare (Normalize + Translate)
     txt = prepare_text_for_analysis(combined_text)
     if not txt:
         return "No clear vibe detected.", []
@@ -543,12 +555,46 @@ def generate_emotion_paragraph(track_names, extended=False):
             friendly = clean_desc.title()
         clean_top.append({"label": friendly, "score": e["score"]})
 
-    # LOG RESULTS
-    clean_summary = formatted_str.replace("<b>", "").replace("</b>", "")
-    stats_str = ", ".join([f"{e['label']} ({e['score']:.0%})" for e in clean_top])
-    mode_str = f"MBTI: {mbti[0]['label']}" if has_mbti else "NO MBTI (fallback)"
+    # --- CONSOLIDATED LOGGING (Vercel-Friendly) ---
+    report_lines = []
+    report_lines.append("\n" + "="*60)
+    report_lines.append(f"  PERSONALIFY ANALYSIS REPORT ({'EXTENDED' if extended else 'STANDARD'})")
+    report_lines.append("="*60)
     
-    print(f"\nNLP HANDLER: FINAL VIBE -> Shades of {clean_summary}")
-    print(f"NLP HANDLER: STATS      -> {stats_str} | {mode_str}\n")
+    # 1. Tracks Analyzed
+    report_lines.append(f"  TRACKS ({num_tracks}):")
+    for i, t in enumerate(tracks_to_analyze, 1):
+        report_lines.append(f"    {i:2d}. {t}")
+    report_lines.append("-" * 60)
+    
+    # 2. All Emotions
+    report_lines.append("  EMOTION SCORES:")
+    if emotions:
+        for i, e in enumerate(emotions, 1):
+            lbl = e['label'].title()
+            score = e['score']
+            report_lines.append(f"    {i:2d}. {lbl:<15} : {score:6.1%}")
+    else:
+        report_lines.append("    (No emotions detected)")
+    report_lines.append("-" * 60)
+    
+    # 3. MBTI Results
+    report_lines.append("  MBTI BREAKDOWN:")
+    if has_mbti:
+        for i, m in enumerate(mbti, 1):
+            lbl = m['label']
+            score = m['score']
+            report_lines.append(f"    {i:2d}. {lbl:<15} : {score:6.1%}")
+    else:
+        report_lines.append("    (No MBTI data available)")
+    report_lines.append("-" * 60)
+    
+    # 4. Final Paragraph
+    report_lines.append("  FINAL VIBE Paragraph:")
+    report_lines.append(f"    \"{formatted_str}\"")
+    report_lines.append("="*60 + "\n")
+    
+    # Single print call to prevent interleaving
+    print("\n".join(report_lines))
     
     return f"Shades of {formatted_str}.", clean_top

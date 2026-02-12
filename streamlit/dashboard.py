@@ -189,7 +189,8 @@ def search_genius_manual(query, token):
     except: return None
 
 # --- MODEL LOADING ---
-SPACE_URL = "https://anggars-personalify.hf.space/predict"
+# --- New XLM-RoBERTa Config ---
+SPACE_URL_BASE = "https://anggars-mbti-emotion.hf.space/gradio_api"
 HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
 
 if not HF_API_KEY:
@@ -199,20 +200,52 @@ if not HF_API_KEY:
     except:
         pass
 
-def query_custom_space(text):
-    """Query XLM-RoBERTa via custom HF Space"""
-    headers = {"Authorization": f"Bearer {HF_API_KEY}"} if HF_API_KEY else {}
+def query_xlm_roberta(text):
+    """Query the new XLM-RoBERTa model via Gradio SSE API"""
+    if not text: return None
+    
+    headers = {"Content-Type": "application/json"}
+    if HF_API_KEY:
+        headers["Authorization"] = f"Bearer {HF_API_KEY}"
+        
     try:
-        response = requests.post(SPACE_URL, headers=headers, json={"text": text}, timeout=10)
-        if response.status_code == 200:
-            result = response.json()
-            if isinstance(result, list):
-                return result
-            elif isinstance(result, dict) and "emotions" in result:
-                return result["emotions"]
+        # 1. Submit Job
+        submit_url = f"{SPACE_URL_BASE}/call/predict"
+        res = requests.post(submit_url, json={"data": [text]}, headers=headers, timeout=10)
+        if res.status_code != 200: return None
+        
+        event_id = res.json().get("event_id")
+        if not event_id: return None
+        
+        # 2. Poll for Result (SSE)
+        result_url = f"{SPACE_URL_BASE}/call/predict/{event_id}"
+        # We'll use a simple timeout for polling in Streamlit
+        for _ in range(20): # Max 20 attempts
+            poll_res = requests.get(result_url, headers=headers, timeout=10)
+            if poll_res.status_code == 200:
+                # Gradio returns multiple lines, find the one starting with 'data:'
+                for line in poll_res.text.split('\n'):
+                    if line.startswith("data:"):
+                        import json
+                        raw_data = line[len("data:"):].strip()
+                        try:
+                            parsed = json.loads(raw_data)
+                            if isinstance(parsed, list) and len(parsed) >= 2:
+                                # emotions is parsed[0], mbti is parsed[1]
+                                # Format for dashboard-compatible list:
+                                emotions = []
+                                for item in parsed[0].get("confidences", []):
+                                    emotions.append({
+                                        "label": item.get("label", "").lower(),
+                                        "score": float(item.get("confidence", 0))
+                                    })
+                                return emotions
+                        except:
+                            continue
+            time.sleep(0.5)
         return None
     except Exception as e:
-        print(f"XLM-RoBERTa Space Error: {e}")
+        print(f"XLM-RoBERTa Error: {e}")
         return None
 
 @st.cache_resource
@@ -373,12 +406,12 @@ if final_lyrics:
         # Run all 3 models
         rob_out = roberta_model(final_input_model[:1200])[0]
         dis_out = distilbert_model(final_input_model[:1200])[0]
-        xlm_out = query_custom_space(final_input_model[:1200])  # Use Space API
+        xlm_out = query_xlm_roberta(final_input_model[:1200])  # Use XLM-RoBERTa API
 
         rob_raw = {r['label']: r['score'] for r in rob_out}
         dis_raw = {r['label']: r['score'] for r in dis_out}
         
-        # XLM-RoBERTa from Space - already returns emotion labels
+        # XLM-RoBERTa - already returns emotion labels
         xlm_raw = {}
         if xlm_out:
             for item in xlm_out:
