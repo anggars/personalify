@@ -42,7 +42,7 @@ export default function LyricsPage() {
         if (hasTyped.current || !subtitleRef.current) return;
         hasTyped.current = true;
 
-        const text = 'Uncover the emotions or <a href="/lyrics/genius" class="text-[#888] hover:text-[#1DB954] transition-colors">search use Genius</a>';
+        const text = 'Uncover the essence or <a href="/lyrics/genius" class="text-[#888] hover:text-[#1DB954] transition-colors">search use Genius</a>';
         let index = 0;
         let currentHtml = "";
 
@@ -179,7 +179,7 @@ export default function LyricsPage() {
                             className={`btn-glass w-full group ${isLoading ? "pointer-events-none" : ""}`}
                         >
                             <span className={`relative -top-px transition-opacity duration-200 ${isLoading ? "opacity-0" : "opacity-100"}`}>
-                                Analyze Emotions
+                                Analyze Essence
                             </span>
                             <svg
                                 className={`absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 transition-opacity duration-200 spinner-svg ${isLoading ? "opacity-100" : "opacity-0"}`}

@@ -131,7 +131,7 @@ function HomeContent() {
     if (hasTyped.current || !paragraphRef.current) return;
     hasTyped.current = true;
 
-    const text = `Discover your most played artists, tracks, and genres through <br class="md:hidden"/>Spotify insights. Go beyond the sound and <a href="/lyrics" class="text-[#888] hover:text-[#1DB954] transition-colors">analyze the emotion <br class="md:hidden"/>hidden in the lyrics</a>. Let's explore your unique taste in music.`;
+    const text = `Discover your most played artists, tracks, and genres through <br class="md:hidden"/>Spotify insights. Go beyond the sound and <a href="/lyrics" class="text-[#888] hover:text-[#1DB954] transition-colors">analyze the essence <br class="md:hidden"/>hidden in the lyrics</a>. Let's explore your unique taste in music.`;
 
     let index = 0;
     let currentHtml = "";

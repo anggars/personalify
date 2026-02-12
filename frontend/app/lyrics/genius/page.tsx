@@ -409,7 +409,7 @@ export default function GeniusPage() {
                             {analysis.emotion_analysis?.emotions && (
                                 <div>
                                     <h3 className="text-center text-[#1DB954] font-bold text-lg mb-2 mt-0">
-                                        Emotion Results:
+                                        Analysis Results:
                                     </h3>
                                     <motion.div
                                         className="flex flex-col gap-2"
