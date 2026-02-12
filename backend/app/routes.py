@@ -659,10 +659,10 @@ async def analyze_emotions_background(
             return {"error": "No data found for analysis"}
         tracks_to_analyze = cached_data.get("tracks", [])
         if extended:
-            track_names = [track['name'] for track in tracks_to_analyze]
+            track_names = [f"{t['name']} by {', '.join(t.get('artists', []))}" if t.get('artists') else t['name'] for t in tracks_to_analyze]
         else:
             # Standard View: Strictly Top 10
-            track_names = [track['name'] for track in tracks_to_analyze[:10]]
+            track_names = [f"{t['name']} by {', '.join(t.get('artists', []))}" if t.get('artists') else t['name'] for t in tracks_to_analyze[:10]]
         emotion_paragraph, top_emotions = generate_emotion_paragraph(track_names, extended=extended)
 
         if extended:
