@@ -958,8 +958,13 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
                 # frontend-side will handle manual refresh if needed.
                 if data:
                     # Check if analysis is indeed done, or if it's still "getting ready"
-                    # If it's "getting ready", we return it and let frontend poll.
-                    # If it's real data, we return it immediately.
+                    sentiment_report = data.get("sentiment_report", "")
+                    if "getting ready" in sentiment_report or "being analyzed" in sentiment_report:
+                        print(f"WEB DASHBOARD: Vibe still loading for {spotify_id}. Triggering background refresh.")
+                        # Import here to avoid circular dependencies
+                        from app.spotify_handler import process_sentiment_background
+                        background_tasks.add_task(process_sentiment_background, spotify_id, time_range, data, False)
+                    
                     print(f"WEB DASHBOARD: Returning cached data for {spotify_id}.")
                 else:
                     # 2.3 No cache -> Sync fresh data

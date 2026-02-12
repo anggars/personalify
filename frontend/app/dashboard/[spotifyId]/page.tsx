@@ -323,10 +323,12 @@ export default function DashboardPage() {
       );
   }, [showTop20]);
 
-  // Fetch data
+  // Fetch data with polling for analysis
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
+    let pollInterval: NodeJS.Timeout | null = null;
+    
+    async function fetchData(isPolling = false) {
+      if (!isPolling) setLoading(true);
       try {
         const res = await fetchWithAuth(
           `/api/dashboard/${spotifyId}?time_range=${timeRange}`
@@ -336,21 +338,39 @@ export default function DashboardPage() {
 
         const json = await res.json();
         setData(json);
-        setEmotionText(json.sentiment_report || "");
+        
+        const report = json.sentiment_report || "";
+        setEmotionText(report);
 
-        if (
-          json.sentiment_report?.includes("being analyzed") ||
-          json.sentiment_report?.includes("getting ready")
-        ) {
+        const isStillLoading = 
+          report.includes("being analyzed") || 
+          report.includes("getting ready");
+
+        // Start/Stop polling based on state
+        if (isStillLoading && !pollInterval) {
+          console.log("DASHBOARD: Vibe is loading, starting poll...");
+          pollInterval = setInterval(() => fetchData(true), 10000);
+          // Also trigger re-analysis in case it died
           fetchEmotionAnalysis(false);
+        } else if (!isStillLoading && pollInterval) {
+          console.log("DASHBOARD: Vibe ready, stopping poll.");
+          clearInterval(pollInterval);
+          pollInterval = null;
         }
+
       } catch (err) {
+        console.error("Dashboard fetch error:", err);
         setError("Failed to load dashboard. Please try again.");
       } finally {
-        setLoading(false);
+        if (!isPolling) setLoading(false);
       }
     }
+    
     fetchData();
+    
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, [spotifyId, timeRange, router]);
 
   // Animate dots effect (Slower speed: 800ms)
