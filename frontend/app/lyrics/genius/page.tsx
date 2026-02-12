@@ -341,25 +341,25 @@ export default function GeniusPage() {
 
                     {/* Songs List */}
                     {selectedArtist && songs.length > 0 && loadingState !== "songs" && (
-                        <div className="mt-3.75">
-                            <div className="mb-3 text-center">
+                        <div className="mt-3.5">
+                            <div className="mb-2 text-center">
                                 <h3 className="text-[#1DB954] text-lg font-bold">Songs by {selectedArtist.name}</h3>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[412px] overflow-y-auto no-scrollbar pb-1 snap-y snap-mandatory scroll-p-2">
+                            <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4 max-h-[450px] overflow-y-auto no-scrollbar p-1.5 snap-y snap-mandatory scroll-pt-1.5">
                                 {songs.map((song) => (
                                     <div
                                         key={song.id}
                                         onClick={() => handleAnalyzeSong(song.id)}
                                         onMouseMove={handleMouseMoveOrTouch}
                                         onTouchMove={handleMouseMoveOrTouch}
-                                        className={`glass-card glow-card flex items-center gap-3 p-3 rounded-xl cursor-pointer text-left h-[71px] border-neutral-200 dark:border-white/10 snap-start transition-all active:scale-[0.98] ${selectedSongId === song.id
+                                        className={`glass-card glow-card flex items-center gap-3 p-3 rounded-xl cursor-pointer text-left h-[75px] border-neutral-200 dark:border-white/10 snap-start transition-all active:scale-[0.98] ${selectedSongId === song.id
                                             ? "ring-2 ring-[#1DB954] bg-[#1DB954]/10 dark:bg-[#1DB954]/15"
                                             : "bg-white/5 dark:bg-white/5 hover:bg-white/10"
                                             }`}
                                     >
                                         <img
                                             src={song.image || "https://via.placeholder.com/50"}
-                                            className="w-[45px] h-[45px] rounded-md object-cover shrink-0"
+                                            className="w-[48px] h-[48px] rounded-md object-cover shrink-0"
                                             alt={song.title}
                                         />
                                         <div className="overflow-hidden flex-1 min-w-0">
@@ -392,7 +392,7 @@ export default function GeniusPage() {
                     {analysis && !loadingState && (
                         <div className="mt-2">
                             <div className="text-center mb-3 overflow-hidden">
-                                <div className="w-full max-w-md mx-auto">
+                                <div className="w-full">
                                     <MarqueeText
                                         text={analysis.track_info.title}
                                         className="text-lg font-bold text-[#1DB954] mb-0"
