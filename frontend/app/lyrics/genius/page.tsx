@@ -30,6 +30,7 @@ interface AnalysisResult {
     };
     emotion_analysis?: {
         emotions: { label: string; score: number }[];
+        mbti?: { label: string; score: number }[];
     };
 }
 
@@ -445,6 +446,36 @@ export default function GeniusPage() {
                                             );
                                         })}
                                     </motion.div>
+
+                                    {/* MBTI Personality Sentence */}
+                                    {(() => {
+                                        const MBTI_CONNECTORS: Record<string, string> = {
+                                            INTJ: "the precision of an", INTP: "the curiosity of an",
+                                            ENTJ: "the drive of an", ENTP: "the chaos of an",
+                                            INFJ: "the depth of an", INFP: "the longing of an",
+                                            ENFJ: "the warmth of an", ENFP: "the wonder of an",
+                                            ISTJ: "the steadiness of an", ISFJ: "the care of an",
+                                            ESTJ: "the structure of an", ESFJ: "the heart of an",
+                                            ISTP: "the craft of an", ISFP: "the art of an",
+                                            ESTP: "the fire of an", ESFP: "the pulse of an",
+                                        };
+                                        const mbti = analysis.emotion_analysis?.mbti;
+                                        if (!mbti || mbti.length === 0) return null;
+                                        const label = mbti[0].label;
+                                        const connector = MBTI_CONNECTORS[label] || "the soul of an";
+                                        return (
+                                            <motion.p
+                                                initial={{ opacity: 0, y: 8 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.3 }}
+                                                className="text-center text-sm text-neutral-500 dark:text-[#888] mt-2 -mb-2 font-medium"
+                                            >
+                                                This track holds {connector}{" "}
+                                                <span className="text-[#1DB954] font-bold">{label}</span>
+                                                {" "}({(mbti[0].score * 100).toFixed(1)}%)
+                                            </motion.p>
+                                        );
+                                    })()}
                                 </div>
                             )}
                         </div>
