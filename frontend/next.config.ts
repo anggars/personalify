@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
       },
       // Admin endpoints
       {
-        source: "/admin-api/:path*",
+        source: "/admin/:path*",
         destination: `${BACKEND_URL}/admin/:path*`,
       },
       // Request Access

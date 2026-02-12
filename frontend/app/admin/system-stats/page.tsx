@@ -32,7 +32,7 @@ export default function AdminStatsPage() {
     if (!confirm("TRIGGER DATA CONSOLIDATION: Align Primary & Backup databases?")) return;
     setLoading(true);
     try {
-      const res = await fetch("/admin-api/sync-db");
+      const res = await fetch("/admin/sync-db");
       if (!res.ok) throw new Error(`Sync failed: ${res.status}`);
       const text = await res.text();
       setStats(text);
@@ -51,7 +51,7 @@ export default function AdminStatsPage() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/admin-api/system-stats");
+      const res = await fetch("/admin/system-stats");
       if (!res.ok) throw new Error(`Status ${res.status}: ${res.statusText}`);
       const text = await res.text();
       setStats(text);
@@ -69,7 +69,7 @@ export default function AdminStatsPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`/admin-api/user-report/${spotifyId.trim()}`);
+      const res = await fetch(`/admin/user-report/${spotifyId.trim()}`);
       if (!res.ok) throw new Error(`User not found or Server error (${res.status})`);
       const text = await res.text();
       setStats(text);
@@ -86,7 +86,7 @@ export default function AdminStatsPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/admin-api/clear-cache");
+      const res = await fetch("/admin/clear-cache");
       if (!res.ok) throw new Error(`Failed to clear cache: ${res.status}`);
       const text = await res.text();
       setStats(text);
@@ -212,7 +212,7 @@ export default function AdminStatsPage() {
                 </button>
 
                 <Link
-                    href="/admin-api/export-users"
+                    href="/admin/export-users"
                     className="p-3 rounded-lg border border-emerald-900/20 hover:border-emerald-500 transition-colors flex items-center gap-2 bg-[#080808] group"
                 >
                     <HardDriveDownload className="w-3.5 h-3.5 text-emerald-900/50 group-hover:text-emerald-500 transition-colors" />
