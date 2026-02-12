@@ -137,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    "Discover your most played artists, tracks, and genres through Spotify insights. Go beyond the sound and analyze the emotion hidden in the lyrics. Let's explore your unique taste in music.",
+                    "Discover your most played artists, tracks, and genres through Spotify insights. Go beyond the sound and analyze the essence hidden in the lyrics. Let's explore your unique taste in music.",
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12.5, // Revert to 12.5
                       color: const Color(0xFFB3B3B3),
