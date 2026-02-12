@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
 
   // API Rewrites to backend
   async rewrites() {
+    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    console.log(`[NextConfig] Using BACKEND_URL for rewrites: ${BACKEND_URL}`);
+
     return [
       // Resume hidden link
       {
@@ -17,40 +20,40 @@ const nextConfig: NextConfig = {
       // Genius API endpoints
       {
         source: "/api/:path*",
-        destination: "http://127.0.0.1:8000/api/:path*",
+        destination: `${BACKEND_URL}/api/:path*`,
       },
       // NLP endpoint
       {
         source: "/analyze-lyrics",
-        destination: "http://127.0.0.1:8000/analyze-lyrics",
+        destination: `${BACKEND_URL}/analyze-lyrics`,
       },
       // Emotion analysis background
       {
         source: "/analyze-emotions-background",
-        destination: "http://127.0.0.1:8000/analyze-emotions-background",
+        destination: `${BACKEND_URL}/analyze-emotions-background`,
       },
       // Auth endpoints
       {
         source: "/login",
-        destination: "http://127.0.0.1:8000/login",
+        destination: `${BACKEND_URL}/login`,
       },
       {
         source: "/callback",
-        destination: "http://127.0.0.1:8000/callback",
+        destination: `${BACKEND_URL}/callback`,
       },
       {
         source: "/logout",
-        destination: "http://127.0.0.1:8000/logout",
+        destination: `${BACKEND_URL}/logout`,
       },
       // Admin endpoints
       {
         source: "/admin-api/:path*",
-        destination: "http://127.0.0.1:8000/admin/:path*",
+        destination: `${BACKEND_URL}/admin/:path*`,
       },
       // Request Access
       {
         source: "/request-access",
-        destination: "http://127.0.0.1:8000/request-access",
+        destination: `${BACKEND_URL}/request-access`,
       },
     ];
   },
