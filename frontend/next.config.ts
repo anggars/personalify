@@ -42,6 +42,11 @@ const nextConfig: NextConfig = {
         source: "/logout",
         destination: "http://127.0.0.1:8000/logout",
       },
+      // Admin endpoints
+      {
+        source: "/admin-api/:path*",
+        destination: "http://127.0.0.1:8000/admin/:path*",
+      },
       // Request Access
       {
         source: "/request-access",
