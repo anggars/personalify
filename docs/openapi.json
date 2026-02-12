@@ -115,18 +115,18 @@
         }
       }
     },
-    "/analyze-emotions-background": {
+    "/analyze-sentiment-background": {
       "post": {
         "tags": [
           "Background"
         ],
         "summary": "Analyze Emotions Background",
-        "operationId": "analyze_emotions_background_analyze_emotions_background_post",
+        "operationId": "analyze_sentiment_background_analyze_sentiment_background_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_analyze_emotions_background_analyze_emotions_background_post"
+                "$ref": "#/components/schemas/Body_analyze_sentiment_background_analyze_sentiment_background_post"
               }
             }
           },
@@ -584,7 +584,7 @@
           "NLP"
         ],
         "summary": "Analyze Lyrics Emotion Endpoint",
-        "operationId": "analyze_lyrics_emotion_endpoint_analyze_lyrics_post",
+        "operationId": "analyze_lyrics_sentiment_endpoint_analyze_lyrics_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -781,7 +781,7 @@
   },
   "components": {
     "schemas": {
-      "Body_analyze_emotions_background_analyze_emotions_background_post": {
+      "Body_analyze_sentiment_background_analyze_sentiment_background_post": {
         "properties": {
           "spotify_id": {
             "type": "string",
@@ -805,7 +805,7 @@
         "required": [
           "spotify_id"
         ],
-        "title": "Body_analyze_emotions_background_analyze_emotions_background_post"
+        "title": "Body_analyze_sentiment_background_analyze_sentiment_background_post"
       },
       "Body_analyze_lyrics_emotion_endpoint_analyze_lyrics_post": {
         "properties": {
