@@ -12,3 +12,4 @@ beautifulsoup4
 qstash
 scalar-fastapi
 httpx
+gradio_client

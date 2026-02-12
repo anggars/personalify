@@ -26,7 +26,7 @@ load_dotenv()
 
 # --- CONFIGURATION ---
 HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
-SPACE_URL = "https://anggars-personalify.hf.space/predict"
+SPACE_URL = "https://anggars-mbti-emotion.hf.space/api/predict"
 MODEL_ROBERTA = "SamLowe/roberta-base-go_emotions"
 MODEL_DISTILBERT = "joeddav/distilbert-base-uncased-go-emotions-student"
 
@@ -127,6 +127,19 @@ emotion_texts = {
     "sadness": "soft <b>sadness</b>",
     "surprise": "pure <b>surprise</b>",
     "def": "neutral <b>vibe</b>"
+}
+
+# --- MBTI CONNECTORS ("Soul" Words) ---
+MBTI_CONNECTORS = {
+    "INTJ": "calculated by", "INTP": "deconstructed by",
+    "ENTJ": "driven by", "ENTP": "chaos of",
+    "INFJ": "unseen by", "INFP": "lingering in",
+    "ENFJ": "embraced by", "ENFP": "wandering with",
+    "ISTJ": "grounded in", "ISFJ": "guarded by",
+    "ESTJ": "defined by", "ESFJ": "shared by",
+    "ISTP": "crafted by", "ISFP": "painted by",
+    "ESTP": "ignited by", "ESFP": "vibrating in",
+    "default": "reflected in",
 }
 
 # --- HELPERS ---
@@ -309,106 +322,132 @@ def _log_emotions(text: str, emotions: list):
 
 def get_emotion_from_text(text: str):
     """
-    Synchronous wrapper that calls the HF Space.
-    Failover to Hybrid Fallback if Space is sleeping or errors.
+    Calls the new MBTI-Emotion Gradio Space via gradio_client.
+    Returns a tuple: (emotions_list, mbti_list)
+    Failover to Hybrid Fallback (emotion-only) if Space is sleeping or errors.
     """
     if not text or not text.strip():
-        return None
+        return None, None
 
     # Check cache
     if text in _analysis_cache:
         return _analysis_cache[text]
 
-    # Try Custom Space (Retrained Model)
-    # Using requests with timeout for fail-fast
-    headers = {"Authorization": f"Bearer {HF_API_KEY}"} if HF_API_KEY else {}
-    
     try:
-        # print(f"NLP HANDLER: Calls {SPACE_URL}...")
-        response = requests.post(SPACE_URL, json={"text": text}, headers=headers, timeout=6)
+        import json as _json
         
-        if response.status_code == 200:
-            result = response.json()
-            emotions = []
-            
-            # Handle different API return shapes
-            if isinstance(result, list): 
-                # Sometimes [[{"label":...}]]
-                if len(result) > 0 and isinstance(result[0], list):
-                    emotions = result[0]
-                else:
-                    emotions = result
-            elif isinstance(result, dict) and "emotions" in result: 
-                emotions = result["emotions"]
-            else: 
-                # Single dict result?
-                if "label" in result: emotions = [result]
-                else: raise ValueError("Unknown response format")
-
-            # --- STRICT FILTER: REMOVE NEUTRAL & RENORMALIZE ---
-            
-            # 1. Map Labels first (Fix LABEL_XX)
+        # --- Step 1: Submit job ---
+        # Gradio 6.x uses /gradio_api prefix (from space config)
+        base = "https://anggars-mbti-emotion.hf.space/gradio_api"
+        submit_url = f"{base}/call/predict"
+        headers = {"Content-Type": "application/json"}
+        if HF_API_KEY:
+            headers["Authorization"] = f"Bearer {HF_API_KEY}"
+        
+        submit_resp = requests.post(
+            submit_url,
+            json={"data": [text]},
+            headers=headers,
+            timeout=30
+        )
+        
+        if submit_resp.status_code != 200:
+            raise Exception(f"Submit failed: {submit_resp.status_code} {submit_resp.text[:200]}")
+        
+        event_id = submit_resp.json().get("event_id")
+        if not event_id:
+            raise Exception(f"No event_id in response: {submit_resp.text[:200]}")
+        
+        # --- Step 2: Poll result (SSE stream) ---
+        result_url = f"{base}/call/predict/{event_id}"
+        result_resp = requests.get(result_url, headers=headers, timeout=120, stream=True)
+        
+        # Parse SSE: Gradio 6.x LabelData format
+        # Response output is: [LabelData_emo, LabelData_mbti]
+        # LabelData = {"label": "top_label", "confidences": [{"label": "...", "confidence": 0.9}, ...]}
+        emo_data = None
+        mbti_data = None
+        
+        for line in result_resp.iter_lines(decode_unicode=True):
+            if line and line.startswith("data:"):
+                raw_data = line[len("data:"):].strip()
+                try:
+                    parsed = _json.loads(raw_data)
+                    if isinstance(parsed, list) and len(parsed) >= 2:
+                        emo_data = parsed[0]
+                        mbti_data = parsed[1]
+                        break
+                except Exception:
+                    continue
+        
+        if not emo_data or not mbti_data:
+            raise Exception("Could not parse Gradio SSE response")
+        
+        # --- PARSE EMOTIONS (LabelData format) ---
+        emotions = []
+        confidences = emo_data.get("confidences", [])
+        for item in confidences:
+            clean_label = str(item.get("label", "")).lower()
+            score = float(item.get("confidence", 0))
+            if clean_label == "neutral":
+                continue
+            emotions.append({"label": clean_label, "score": score})
+        
+        # Re-normalize after removing neutral
+        total_score = sum(e["score"] for e in emotions)
+        if total_score > 0:
             for e in emotions:
-                e['label'] = _map_label(e.get('label', ''))
-
-            # 2. Remove 'neutral' keys completely
-            filtered_emotions = [e for e in emotions if e.get('label', '').lower() != 'neutral']
-            
-            # 3. Re-normalize scores to sum to 1.0
-            total_score = sum(e.get('score', 0) for e in filtered_emotions)
-            if total_score > 0:
-                for e in filtered_emotions:
-                    e['score'] = e.get('score', 0) / total_score
-            
-            # Sort and Cache
-            filtered_emotions.sort(key=lambda x: x.get('score', 0), reverse=True)
-            _analysis_cache[text] = filtered_emotions
-            
-            return filtered_emotions
-        else:
-            # raise to trigger fallback
-            raise Exception(f"Status {response.status_code}")
+                e["score"] = e["score"] / total_score
+        
+        emotions.sort(key=lambda x: x["score"], reverse=True)
+        
+        # --- PARSE MBTI (LabelData format) ---
+        mbti = []
+        mbti_confidences = mbti_data.get("confidences", [])
+        for item in mbti_confidences:
+            mbti.append({"label": str(item.get("label", "")).upper(), "score": float(item.get("confidence", 0))})
+        mbti.sort(key=lambda x: x["score"], reverse=True)
+        
+        # Cache as tuple
+        _analysis_cache[text] = (emotions, mbti)
+        print(f"NLP HANDLER: SPACE OK -> Top Emo: {emotions[0]['label'] if emotions else '?'}, Top MBTI: {mbti[0]['label'] if mbti else '?'}")
+        return emotions, mbti
 
     except Exception as e:
         print(f"NLP HANDLER: SPACE FAILED ({e}). FALLBACK TO HYBRID...")
         fallback_result = _run_fallback_hybrid_analysis(text)
         if fallback_result:
-            _analysis_cache[text] = fallback_result
-            return fallback_result
-        return None
+            _analysis_cache[text] = (fallback_result, None)
+            return fallback_result, None
+        return None, None
 
 # --- PUBLIC FUNCTIONS (Used by Routes) ---
 
 def analyze_lyrics_emotion(lyrics: str):
     """
-    Analyzes lyrics and returns the top 5 emotions.
+    Analyzes lyrics and returns the top 5 emotions + top 3 MBTI.
     Input: Lyrics string
-    Output: Dict {"emotions": [...]} or {"error": ...}
+    Output: Dict {"emotions": [...], "mbti": [...]} or {"error": ...}
     """
     if not lyrics or not lyrics.strip():
         return {"error": "Lyrics input cannot be empty."}
 
-    # 1. Prepare (Normalize + Translate)
-    text = prepare_text_for_analysis(lyrics.strip())
+    # Send raw text to API — no translation needed
+    # XLM-RoBERTa model handles multilingual input natively
+    text = lyrics.strip()
+    if len(text) > 2500:
+        text = text[:2500]
     
     # 2. Analyze (Space -> Fallback)
-    emotions = get_emotion_from_text(text)
+    emotions, mbti = get_emotion_from_text(text)
 
     if not emotions:
         print("NLP HANDLER: Analysis failed.")
         return {"error": "Emotion analysis unavailable."}
 
     try:
-        # 3. Filter Neutral & Normalize
-        # Remove 'neutral' to avoid valid emotions being buried
+        # 3. Filter Neutral (already done in get_emotion_from_text, but double-check)
         filtered_emotions = [e for e in emotions if e.get('label', '').lower() != 'neutral']
-        
-        # If everything was neutral (empty after filter), keep original top 1 but label it low confidence? 
-        # Or just return empty? User said "netral buang" (throw away neutral).
-        if not filtered_emotions and emotions:
-             # Fallback: if only neutral existed, return it but maybe rename?
-             # For now, let's just use the filtered list.
-             pass
 
         # 4. Top 5
         top5 = filtered_emotions[:5]
@@ -416,11 +455,16 @@ def analyze_lyrics_emotion(lyrics: str):
         # Ensure float scores
         out = [{"label": e["label"], "score": float(e.get("score", 0))} for e in top5]
         
-        # Debug Print
-        # top_str = ", ".join([f"{e['label']}({e['score']:.2f})" for e in out[:3]])
-        # print(f"NLP HANDLER: Result -> {top_str}")
+        # MBTI output (top 3)
+        mbti_out = []
+        if mbti:
+            mbti_out = [{"label": m["label"], "score": float(m.get("score", 0))} for m in mbti[:3]]
         
-        return {"emotions": out}
+        result = {"emotions": out}
+        if mbti_out:
+            result["mbti"] = mbti_out
+        
+        return result
 
     except Exception as e:
         print(f"NLP HANDLER: Result Parsing Error: {e}")
@@ -430,7 +474,8 @@ def analyze_lyrics_emotion(lyrics: str):
 def generate_emotion_paragraph(track_names, extended=False):
     """
     Generates a textual summary ("Shades of ...") based on a list of track names.
-    Uses a 'Sequential Voting System' for higher accuracy as requested.
+    Concatenates all track titles into one text and sends as a single API call.
+    Now includes MBTI: "Shades of [emo1] and [emo2] [connector] [MBTI]."
     """
     if not track_names:
         return "Couldn't analyze music mood.", []
@@ -438,89 +483,72 @@ def generate_emotion_paragraph(track_names, extended=False):
     num_tracks = len(track_names) if extended else min(10, len(track_names))
     tracks_to_analyze = track_names[:num_tracks]
 
-    analysis_logs = [f"\n[NLP] Batch Analysis for {num_tracks} tracks:"]
-    voting_tally = {}
-    total_valid_songs = 0
-    
-    for i, track in enumerate(tracks_to_analyze, 1):
-        try:
-            # 1. Prepare
-            txt = prepare_text_for_analysis(track)
-            if not txt: continue
-            
-            # 2. Get Emotion
-            emotions = get_emotion_from_text(txt)
-            
-            if emotions:
-                # Log for this specific track in the batch
-                top_lbl = emotions[0].get('label', 'unknown')
-                top_score = emotions[0].get('score', 0.0)
-                analysis_logs.append(f" {i:02d}. {track[:30]:<30} -> {top_lbl:<12} ({top_score:.2%})")
+    # Concatenate all track names into a single text
+    combined_text = ", ".join(tracks_to_analyze)
+    print(f"\n[NLP] Combined Text for {num_tracks} tracks: '{combined_text[:80]}...'")
 
-                # 3. Vote for Top Non-Neutral
-                for em in emotions:
-                    if em.get("label") != 'neutral':
-                        lbl = em.get("label")
-                        voting_tally[lbl] = voting_tally.get(lbl, 0) + 1
-                        total_valid_songs += 1
-                        break # Only vote for the top 1 non-neutral per song
-                        
-        except Exception:
-            continue
-
-    print("\n".join(analysis_logs))
-    print("-" * 60)
-
-    if total_valid_songs == 0:
+    # Prepare (Normalize + Translate)
+    txt = prepare_text_for_analysis(combined_text)
+    if not txt:
         return "No clear vibe detected.", []
 
-    # 4. Sort Votes (Primary: Count DESC, Secondary: Label ASC for stability)
-    sorted_votes = sorted(voting_tally.items(), key=lambda x: (x[1], x[0]), reverse=True)
-    
-    # 5. Top 3
-    top3_tuples = sorted_votes[:3]
-    top3 = [{"label": lbl, "score": count / total_valid_songs} for lbl, count in top3_tuples]
+    # Single API call for all tracks
+    emotions, mbti = get_emotion_from_text(txt)
 
-    # 6. Fill if < 3
-    if len(top3) < 3:
-        existing = set(e["label"] for e in top3)
-        defaults = [
-            {"label": "optimism", "score": 0.1},
-            {"label": "joy", "score": 0.1},
-            {"label": "sadness", "score": 0.1} 
-        ]
-        for p in defaults:
-            if p["label"] not in existing:
-                top3.append(p)
-                existing.add(p["label"])
-                if len(top3) >= 3: break
-    
-    # 7. Format Paragraph
-    formatted_str = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
-    
-    # 8. Map Labels to Friendly Names for JSON Response (Mobile Consistency)
-    # This ensures Mobile sees "Sudden Insight" instead of "Realization"
-    clean_top3 = []
-    for e in top3:
+    if not emotions:
+        return "No clear vibe detected.", []
+
+    has_mbti = mbti and len(mbti) > 0
+
+    if has_mbti:
+        # --- MBTI MODE: Top 2 Emotions + MBTI ---
+        top_emo = emotions[:2]
+        if len(top_emo) < 2:
+            existing = set(e["label"] for e in top_emo)
+            for p in [{"label": "optimism", "score": 0.1}, {"label": "joy", "score": 0.1}]:
+                if p["label"] not in existing:
+                    top_emo.append(p)
+                    existing.add(p["label"])
+                    if len(top_emo) >= 2: break
+
+        top_mbti = mbti[0]["label"]
+        connector = MBTI_CONNECTORS.get(top_mbti, MBTI_CONNECTORS["default"])
+
+        text1 = emotion_texts.get(top_emo[0]["label"], top_emo[0]["label"])
+        text2 = emotion_texts.get(top_emo[1]["label"], top_emo[1]["label"])
+        formatted_str = f"{text1} and {text2} {connector} <b>{top_mbti}</b>"
+        source_emotions = top_emo
+    else:
+        # --- FALLBACK MODE: Top 3 Emotions (no MBTI) ---
+        top3 = emotions[:3]
+        if len(top3) < 3:
+            existing = set(e["label"] for e in top3)
+            for p in [{"label": "optimism", "score": 0.1}, {"label": "joy", "score": 0.1}, {"label": "sadness", "score": 0.1}]:
+                if p["label"] not in existing:
+                    top3.append(p)
+                    existing.add(p["label"])
+                    if len(top3) >= 3: break
+
+        formatted_str = ", ".join(emotion_texts.get(e["label"], e["label"]) for e in top3)
+        source_emotions = top3
+
+    # --- Build clean labels for JSON (Mobile Consistency) ---
+    clean_top = []
+    for e in source_emotions:
         lbl = e["label"]
-        # Use existing emotion_texts to derive friendly name if possible, or a new map
-        # Parsing "sudden <b>insight</b>" -> "Sudden Insight"
-        
         friendly = lbl.capitalize()
         if lbl in emotion_texts:
-            raw_desc = emotion_texts[lbl] # e.g. "sudden <b>insight</b>"
-            # Remove HTML
+            raw_desc = emotion_texts[lbl]
             clean_desc = raw_desc.replace("<b>", "").replace("</b>", "")
-            # Title Case (Sudden Insight)
             friendly = clean_desc.title()
-            
-        clean_top3.append({"label": friendly, "score": e["score"]})
+        clean_top.append({"label": friendly, "score": e["score"]})
 
-    # LOG RESULTS (CLEAN)
+    # LOG RESULTS
     clean_summary = formatted_str.replace("<b>", "").replace("</b>", "")
-    stats_str = ", ".join([f"{e['label']} ({e['score']:.0%})" for e in clean_top3])
+    stats_str = ", ".join([f"{e['label']} ({e['score']:.0%})" for e in clean_top])
+    mode_str = f"MBTI: {mbti[0]['label']}" if has_mbti else "NO MBTI (fallback)"
     
     print(f"\nNLP HANDLER: FINAL VIBE -> Shades of {clean_summary}")
-    print(f"NLP HANDLER: STATS      -> {stats_str}\n")
+    print(f"NLP HANDLER: STATS      -> {stats_str} | {mode_str}\n")
     
-    return f"Shades of {formatted_str}.", clean_top3
+    return f"Shades of {formatted_str}.", clean_top
