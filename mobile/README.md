@@ -5,12 +5,18 @@ Flutter mobile app port of the Personalify Dashboard from Next.js web app.
 ## Features
 
 - **Spotify Authentication**: OAuth login using `flutter_web_auth_2`.
-- **Dashboard View**: Display top tracks, artists, and genres with premium "Liquid Glass" styling.
-- **Smooth Marquee (Ping-Pong)**: Auto-scrolling text for long titles and names in lists and headers.
-- **Native Glass Flow**: Interactive spotlights and backdrop blurs mapping to the tech stack's aesthetic.
-- **Emotion Analysis**: AI-generated music vibe summaries with shimmering, high-contrast charts.
-- **Token Auto-Refresh**: Seamless server-side token rotation for background data fetching and session persistence.
-- **Time Ranges**: Switch between short term, mid term, and long term listening data.
+- **Dashboard View**: Display top tracks, artists, and genres with premium
+  "Liquid Glass" styling.
+- **Smooth Marquee (Ping-Pong)**: Auto-scrolling text for long titles and names
+  in lists and headers.
+- **Native Glass Flow**: Interactive spotlights and backdrop blurs mapping to
+  the tech stack's aesthetic.
+- **Emotion & MBTI Analysis**: AI-generated music vibe summaries and **MBTI
+  personality insights** with shimmering, high-contrast charts.
+- **Token Auto-Refresh**: Seamless server-side token rotation for background
+  data fetching and session persistence.
+- **Time Ranges**: Switch between short term, mid term, and long term listening
+  data.
 - **Secure Storage**: Tokens stored with `flutter_secure_storage`.
 
 ## Architecture
@@ -53,7 +59,8 @@ flutter pub get
 
 See artifact `backend_mobile_oauth.md` for detailed modification guide.
 
-**Quick Summary** - Modify `backend/app/routes.py` callback endpoint to detect mobile User-Agent:
+**Quick Summary** - Modify `backend/app/routes.py` callback endpoint to detect
+mobile User-Agent:
 
 ```python
 user_agent = request.headers.get("user-agent", "").lower()
@@ -92,12 +99,15 @@ Uses `http://10.0.2.2:8000` (Android Emulator localhost mapping).
 
 ## Design
 
-Dark Mode matching web (`frontend/app/globals.css`) and following the **Liquid Glass** system:
+Dark Mode matching web (`frontend/app/globals.css`) and following the **Liquid
+Glass** system:
 
 - **Background**: `#121212` (OLED compatible)
 - **Primary**: `#1DB954` (Spotify Green)
-- **Glass Components**: Transparent overlays with `backdrop-filter` and `inset shadow`
-- **Interactive Spotlights**: Radius-focused touch/mouse tracking spotlights for premium feedback
+- **Glass Components**: Transparent overlays with `backdrop-filter` and
+  `inset shadow`
+- **Interactive Spotlights**: Radius-focused touch/mouse tracking spotlights for
+  premium feedback
 - **Typography**: `Jakarta Sans` for a modern, clean look
 - **Text**: `#FFFFFF` / `#B3B3B3`
 
@@ -105,7 +115,8 @@ Dark Mode matching web (`frontend/app/globals.css`) and following the **Liquid G
 
 All in `pubspec.yaml`:
 
-- `dio`, `flutter_web_auth_2`, `flutter_secure_storage`, `cached_network_image`, `provider`, `google_fonts`
+- `dio`, `flutter_web_auth_2`, `flutter_secure_storage`, `cached_network_image`,
+  `provider`, `google_fonts`
 
 ## Deep Links
 

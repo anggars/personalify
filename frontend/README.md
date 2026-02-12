@@ -1,6 +1,9 @@
 # Personalify Frontend
 
-The frontend is a modern **Next.js 14+** application using the **App Router**, styled with **Tailwind CSS** and **shadcn/ui**, and animated with **Framer Motion**. It fetches data from the FastAPI backend and renders a responsive dashboard.
+The frontend is a modern **Next.js 14+** application using the **App Router**,
+styled with **Tailwind CSS** and **shadcn/ui**, and animated with **Framer
+Motion**. It fetches data from the FastAPI backend and renders a responsive
+dashboard.
 
 ## Project Structure
 
@@ -29,12 +32,21 @@ frontend/
 
 ## Key Features
 
-- **Real-Time Playback Card**: Located on the **Profile page**, it tracks your Spotify session with pixel-perfect symmetry, high-fidelity metadata rendering (ping-pong marquee), and 1s local ticker progress accuracy.
-- **Tech Stack Marquee & Hover**: Advanced interactive elements on the home page. Use the `TechHover` component to explore the stack details with smooth animations.
-- **High-Fidelity Dashboard**: Comprehensive visualization of top spotify data using adaptive dark mode and liquid glass effects.
-- **Lyrics Sentiment Analyzer**: Connects to the Genius API to analyze the emotional landscape of your favorite tracks using NLP models.
-- **Universal Design Language**: Consistent premium aesthetics across Web and Mobile, achieved through standardized spacing and typography.
-- **Legal & About Sections**: Dedicated pages for Privacy Policy, Terms of Service, and the project's About section.
+- **Real-Time Playback Card**: Located on the **Profile page**, it tracks your
+  Spotify session with pixel-perfect symmetry, high-fidelity metadata rendering
+  (ping-pong marquee), and 1s local ticker progress accuracy.
+- **Tech Stack Marquee & Hover**: Advanced interactive elements on the home
+  page. Use the `TechHover` component to explore the stack details with smooth
+  animations.
+- **High-Fidelity Dashboard**: Comprehensive visualization of top spotify data
+  using adaptive dark mode and liquid glass effects.
+- **Lyrics Sentiment & MBTI Analyzer**: Connects to the Genius API to analyze
+  the emotional landscape and **MBTI personality traits** of your favorite
+  tracks using NLP models.
+- **Universal Design Language**: Consistent premium aesthetics across Web and
+  Mobile, achieved through standardized spacing and typography.
+- **Legal & About Sections**: Dedicated pages for Privacy Policy, Terms of
+  Service, and the project's About section.
 
 ## Stack
 
@@ -56,6 +68,7 @@ frontend/
 Choose your preferred environment:
 
 #### Option 1: Local Development (pnpm)
+
 ```bash
 # Prerequisites: Node.js 18+, pnpm (recommended)
 pnpm install
@@ -63,9 +76,11 @@ pnpm dev
 ```
 
 #### Option 2: Docker
+
 ```bash
 # Run via docker-compose from the project root
 docker-compose up -d
 ```
 
-Make sure the Backend is running on port `8000` for data fetching to work correctly.
+Make sure the Backend is running on port `8000` for data fetching to work
+correctly.
