@@ -8,9 +8,18 @@ const nextConfig: NextConfig = {
 
   // API Rewrites to backend
   async rewrites() {
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-    console.log(`[NextConfig] Using BACKEND_URL for rewrites: ${BACKEND_URL}`);
+    const isProduction = process.env.NODE_ENV === "production";
+    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL ||
+      (isProduction ? "" : "http://127.0.0.1:8000");
 
+    console.log(
+      `[NextConfig] Using BACKEND_URL for rewrites: ${BACKEND_URL || "SAME_DOMAIN"}`,
+    );
+
+    // If in production and no API_URL provided, we rely on vercel.json or same-domain routing
+    // BUT we still need to return the list of rewrites. 
+    // If BACKEND_URL is "", the destination becomes "/api/:path*" which is an internal rewrite.
+    
     return [
       // Resume hidden link
       {
