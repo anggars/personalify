@@ -211,7 +211,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     // Sub: Discover... (Web Footer Text)
     
     // remove HTML tags from emotion paragraph just in case
-    final rawEmotion = _userProfile?.emotionParagraph ?? "";
+    final rawEmotion = _userProfile?.sentimentReport ?? "";
     final cleanEmotion = rawEmotion.replaceAll(RegExp(r'<[^>]*>'), '');
 
     return Container(

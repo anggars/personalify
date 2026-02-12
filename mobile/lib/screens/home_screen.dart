@@ -230,8 +230,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             LayoutBuilder(
                               builder: (context, constraints) {
                                   return PingPongScrollingText(
-                                    text: (_userProfile!.emotionParagraph.isNotEmpty 
-                                        ? _userProfile!.emotionParagraph 
+                                    text: (_userProfile!.sentimentReport.isNotEmpty 
+                                        ? _userProfile!.sentimentReport 
                                         : "Analyze your music to see your vibe.")
                                         .replaceAll("<b>", "").replaceAll("</b>", ""),
                                     width: constraints.maxWidth,
