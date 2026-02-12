@@ -298,7 +298,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                     "duration_ms": track["duration_ms"]
                 })
 
-            result['emotion_paragraph'] = "Your music vibe is being analyzed..."
+            result['sentiment_report'] = "Your music vibe is being analyzed..."
             cache_top_data("top_v2", spotify_id, time_range, result)
             save_user_sync(spotify_id, time_range, result)
             
@@ -795,7 +795,8 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
         if not data:
             return RedirectResponse(url="/?error=session_expired")
 
-        emotion_paragraph = data.get("emotion_paragraph", "Vibe analysis is getting ready...")
+        sentiment_report = data.get("sentiment_report", "Vibe analysis is getting ready...")
+        sentiment_scores = data.get("sentiment_scores", [])
         analytics = data.get("analytics") 
 
         genre_count_top10 = {}
@@ -831,7 +832,8 @@ def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request
             "time_range": time_range,
             "genre_artists_map": genre_artists_map_top10,
             "genre_artists_map_extended": genre_artists_map_top20,
-            "emotion_paragraph": emotion_paragraph,
+            "sentiment_report": sentiment_report,
+            "sentiment_scores": sentiment_scores,
             "analytics": analytics
         })
 
@@ -980,7 +982,7 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
 
         sentiment_report = data.get("sentiment_report", "Sentiment analysis is getting ready...")
-        top_emotions = data.get("top_emotions", data.get("sentiment_scores", []))
+        sentiment_scores = data.get("sentiment_scores", [])
 
         # Calculate genres from ALL artists (legacy behavior used all for extended list)
         genre_count = {}
@@ -1000,7 +1002,7 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
             "image": data.get("image"),
             "time_range": time_range,
             "sentiment_report": sentiment_report,
-            "sentiment_scores": top_emotions,
+            "sentiment_scores": sentiment_scores,
             "artists": data.get("artists", []),
             "tracks": data.get("tracks", []),
             "genres": genre_list,
