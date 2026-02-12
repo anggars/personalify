@@ -5,48 +5,107 @@ from app.db_handler import get_aggregate_stats, get_user_db_details, get_conn
 from app.mongo_handler import get_all_synced_user_ids 
 from app.cache_handler import r as redis_client 
 
+import datetime
+
 def get_system_wide_stats():
     print("ADMIN_STATS: COLLECTING SYSTEM-WIDE STATISTICS...")
-
+    
     try:
+        from app.db_handler import sync_neon_supabase
+        sync_meta = sync_neon_supabase()
+        
         db_stats = get_aggregate_stats()
-        print(f"ADMIN_STATS: SUCCESSFULLY RETRIEVED DATA FROM POSTGRESQL.")
+        # Ensure sync_meta is a dict and has default values
+        if not isinstance(sync_meta, dict): sync_meta = {}
+        
+        pushed = sync_meta.get('pushed_to_backup', sync_meta.get('pushed_to_s', 0))
+        pulled = sync_meta.get('pulled_from_backup', sync_meta.get('pulled_from_s', 0))
+        
+        db_stats["sync_summary"] = f"PUSHED: {pushed} | PULLED: {pulled}"
+        if sync_meta.get("errors"):
+             db_stats["sync_summary"] += f" | ERRORS: {len(sync_meta['errors'])}"
+             
+        print(f"ADMIN_STATS: SUCCESSFULLY RETRIEVED DATA AND SYNCED.")
     except Exception as e:
-        print(f"ADMIN_STATS: FAILED TO RETRIEVE DATA FROM POSTGRESQL: {e}")
+        print(f"ADMIN_STATS: FAILED TO RETRIEVE DATA/SYNC: {e}")
         db_stats = {
-            "error_postgres": str(e),
             "total_users": -1,
             "total_unique_artists": -1,
             "total_unique_tracks": -1,
             "most_popular_artists": [],
-            "most_popular_tracks": []
+            "most_popular_tracks": [],
+            "recent_users": [f"Error: {e}"],
+            "sync_summary": "SYNC_FAILED"
         }
 
     try:
         mongo_users = get_all_synced_user_ids()
         db_stats["mongo_synced_users_count"] = len(mongo_users)
         db_stats["mongo_synced_user_list"] = mongo_users
-        print(f"ADMIN_STATS: SUCCESSFULLY RETRIEVED DATA FROM MONGODB.")
     except Exception as e:
-        print(f"ADMIN_STATS: FAILED TO RETRIEVE DATA FROM MONGODB: {e}")
         db_stats["mongo_synced_users_count"] = -1
-        db_stats["mongo_synced_user_list"] = [f"Error: {e}"]
+        db_stats["mongo_synced_user_list"] = []
 
     try:
-
         redis_keys = redis_client.keys("top:*:*")
         db_stats["redis_cached_keys_count"] = len(redis_keys)
-
-        db_stats["redis_sample_keys"] = redis_keys[:5]
-
-        print(f"ADMIN_STATS: SUCCESSFULLY RETRIEVED DATA FROM REDIS.")
     except Exception as e:
-        print(f"ADMIN_STATS: FAILED TO RETRIEVE DATA FROM REDIS: {e}")
         db_stats["redis_cached_keys_count"] = -1
-        db_stats["redis_sample_keys"] = [f"Error: {e}"]
+
+    # Format into receipt string
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    RECEIPT_WIDTH = 40
+
+    def format_line(key, value):
+        key_str = str(key)
+        value_str = str(value)
+        padding = RECEIPT_WIDTH - len(key_str) - len(value_str) - 2 - 2
+        if padding < 1: padding = 1
+        return f" {key_str}{'.' * padding}{value_str} "
+
+    receipt_lines = []
+    receipt_lines.append("*" * RECEIPT_WIDTH)
+    receipt_lines.append("      PERSONALIFY SYSTEM AUDIT      ")
+    receipt_lines.append("*" * RECEIPT_WIDTH)
+    receipt_lines.append(f" DATE: {now}")
+    receipt_lines.append("=" * RECEIPT_WIDTH)
+
+    receipt_lines.append("\n--- POSTGRESQL (MAIN DB) ---")
+    receipt_lines.append(format_line("Total Users", db_stats.get('total_users', 'N/A')))
+    receipt_lines.append(format_line("Total Artists", db_stats.get('total_unique_artists', 'N/A')))
+    receipt_lines.append(format_line("Total Tracks", db_stats.get('total_unique_tracks', 'N/A')))
+    receipt_lines.append(format_line("SYNC_ALIGNMENT", db_stats.get('sync_summary', 'N/A')))
+
+    receipt_lines.append("\n  Registered Users (Postgres):")
+    for user in db_stats.get('recent_users', []):
+        receipt_lines.append(f"    - {user}")
+
+    receipt_lines.append("\n  Top Artists (All Users):")
+    for item in db_stats.get('most_popular_artists', [])[:3]:
+        receipt_lines.append(f"    - {item}")
+
+    receipt_lines.append("\n  Top Tracks (All Users):")
+    for item in db_stats.get('most_popular_tracks', [])[:3]:
+        receipt_lines.append(f"    - {item}")
+
+    receipt_lines.append("\n" + "=" * RECEIPT_WIDTH)
+    receipt_lines.append("--- MONGODB (SYNC HISTORY) ---")
+    receipt_lines.append(format_line("Synced_User_Count", db_stats.get('mongo_synced_users_count', '0')))
+    
+    receipt_lines.append("\n  Recently Synced Users:")
+    for user_id in db_stats.get('mongo_synced_user_list', [])[:5]:
+        receipt_lines.append(f"    - {user_id}")
+
+    receipt_lines.append("\n" + "=" * RECEIPT_WIDTH)
+    receipt_lines.append("--- REDIS (CACHE) ---")
+    receipt_lines.append(format_line("Active_Cache_Keys", db_stats.get('redis_cached_keys_count', '0')))
+
+    receipt_lines.append("\n" + "*" * RECEIPT_WIDTH)
+    receipt_lines.append("         THANK YOU - ADMIN        ")
+    receipt_lines.append("*" * RECEIPT_WIDTH)
 
     print("ADMIN_STATS: DONE COLLECTING SYSTEM-WIDE STATISTICS.")
-    return db_stats
+    return "\n".join(receipt_lines)
 
 def get_user_report(spotify_id: str):
     print(f"ADMIN_STATS: FETCHING REPORT FOR USER: {spotify_id}")

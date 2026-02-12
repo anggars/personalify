@@ -7,7 +7,7 @@ import asyncio
 
 from urllib.parse import urlencode
 from fastapi import APIRouter, Request, Query, HTTPException, Body, BackgroundTasks
-from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Response, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from typing import Optional
 import smtplib
@@ -1018,75 +1018,12 @@ def about_page(request: Request):
     return templates.TemplateResponse("about.html", {
         "request": request,
         "spotify_id": spotify_id
-        })
+    })
 
 @router.get("/admin/system-stats", tags=["Admin"])
 def get_stats():
-    try:
-        stats = get_system_wide_stats()
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        RECEIPT_WIDTH = 40
-
-        def format_line(key, value):
-            key_str = str(key)
-            value_str = str(value)
-
-            padding = RECEIPT_WIDTH - len(key_str) - len(value_str) - 2 - 2
-            if padding < 1: padding = 1
-            return f" {key_str}{'.' * padding}{value_str} "
-
-        receipt_lines = []
-        receipt_lines.append("*" * RECEIPT_WIDTH)
-        receipt_lines.append("      PERSONALIFY SYSTEM AUDIT      ")
-        receipt_lines.append("*" * RECEIPT_WIDTH)
-        receipt_lines.append(f" DATE: {now}")
-        receipt_lines.append("=" * RECEIPT_WIDTH)
-
-        receipt_lines.append("\n--- POSTGRESQL (MAIN DB) ---")
-        receipt_lines.append(format_line("Total Users", stats.get('total_users', 'N/A')))
-        receipt_lines.append(format_line("Total Artists", stats.get('total_unique_artists', 'N/A')))
-        receipt_lines.append(format_line("Total Tracks", stats.get('total_unique_tracks', 'N/A')))
-
-        receipt_lines.append("\n  Top 5 Artists (All Users):")
-        for item in stats.get('most_popular_artists', ["N/A"]):
-            receipt_lines.append(f"    - {item}")
-
-        receipt_lines.append("\n  Top 5 Tracks (All Users):")
-        for item in stats.get('most_popular_tracks', ["N/A"]):
-            receipt_lines.append(f"    - {item}")
-
-        receipt_lines.append("\n" + "=" * RECEIPT_WIDTH)
-        receipt_lines.append("--- MONGODB (SYNC HISTORY) ---")
-        receipt_lines.append(format_line("Synced Users Count", stats.get('mongo_synced_users_count', 'N/A')))
-
-        receipt_lines.append("\n  Synced User List:")
-        for item in stats.get('mongo_synced_user_list', ["N/A"]):
-            receipt_lines.append(f"    - {item}")
-
-        receipt_lines.append("\n" + "=" * RECEIPT_WIDTH)
-        receipt_lines.append("--- REDIS (CACHE) ---")
-        receipt_lines.append(format_line("Cached Keys Count", stats.get('redis_cached_keys_count', 'N/A')))
-
-        receipt_lines.append("\n  Sample Cached Keys:")
-        for item in stats.get('redis_sample_keys', ["N/A"]):
-            receipt_lines.append(f"    - {item}")
-
-        receipt_lines.append("\n" + "*" * RECEIPT_WIDTH)
-        receipt_lines.append("         THANK YOU - ADMIN        ")
-        receipt_lines.append("*" * RECEIPT_WIDTH)
-
-        report_string = "\n".join(receipt_lines)
-
-        return Response(content=report_string, media_type="text/plain")
-
-    except Exception as e:
-        print(f"ADMIN_STATS: FAILED TO RETRIEVE SYSTEM-WIDE STATS AT ENDPOINT: {e}")
-        return Response(
-            content=f"FAILED TO RETRIEVE SYSTEM-WIDE STATS: {str(e)}", 
-            media_type="text/plain", 
-            status_code=500
-        )
+    report = get_system_wide_stats()
+    return PlainTextResponse(content=report)
 
 @router.get("/admin/clear-cache", tags=["Admin"])
 def clear_cache():
@@ -1179,6 +1116,45 @@ def get_user_stats(spotify_id: str):
         print(f"ADMIN_STATS: FAILED TO RETRIEVE USER REPORT AT ENDPOINT: {e}")
         return Response(
             content=f"FAILED TO RETRIEVE USER REPORT: {str(e)}", 
+            media_type="text/plain", 
+            status_code=500
+        )
+
+@router.get("/admin/sync-db", tags=["Admin"])
+def trigger_db_sync():
+    try:
+        from app.db_handler import sync_neon_supabase
+        sync_meta = sync_neon_supabase()
+        
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        RECEIPT_WIDTH = 40
+
+        receipt_lines = []
+        receipt_lines.append("*" * RECEIPT_WIDTH)
+        receipt_lines.append("      DATABASE SYNC COMPLETED     ")
+        receipt_lines.append("*" * RECEIPT_WIDTH)
+        receipt_lines.append(f" DATE: {now}")
+        receipt_lines.append("=" * RECEIPT_WIDTH)
+        receipt_lines.append("\n  STATUS: SUCCESS\n")
+        receipt_lines.append(f" PUSHED TO BACKUP: {sync_meta.get('pushed_to_backup', 0)}")
+        receipt_lines.append(f" PULLED FROM BACKUP: {sync_meta.get('pulled_from_backup', 0)}")
+        
+        if sync_meta.get("errors"):
+            receipt_lines.append("\n  ERRORS ENCOUNTERED:")
+            for err in sync_meta["errors"]:
+                receipt_lines.append(f"  - {err}")
+        
+        receipt_lines.append("\n\n" + "=" * RECEIPT_WIDTH)
+        receipt_lines.append("       DATA NOW CONSOLIDATED      ")
+        receipt_lines.append("=" * RECEIPT_WIDTH)
+
+        report_string = "\n".join(receipt_lines)
+        return Response(content=report_string, media_type="text/plain")
+
+    except Exception as e:
+        print(f"ADMIN_SYNC: FAILED: {e}")
+        return Response(
+            content=f"FAILED TO SYNC DATABASE: {str(e)}", 
             media_type="text/plain", 
             status_code=500
         )

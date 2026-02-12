@@ -381,6 +381,9 @@ def get_aggregate_stats():
             cur.execute("SELECT name, popularity FROM tracks ORDER BY popularity DESC LIMIT 5")
             stats["most_popular_tracks"] = [f"{name} (Pop: {pop})" for name, pop in cur.fetchall()]
 
+            cur.execute("SELECT display_name FROM users ORDER BY id DESC LIMIT 5")
+            stats["recent_users"] = [row[0] for row in cur.fetchall()]
+
     return stats
 
 def get_user_db_details(spotify_id: str):
@@ -457,3 +460,124 @@ def log_system(level, message, source="BACKEND"):
     print(f"[{level}] {source}: {message}")
 
     threading.Thread(target=_send_log_direct, args=(level, message, source)).start()
+
+def sync_neon_supabase():
+    """
+    Bidirectional sync between Neon (Primary) and Supabase (Secondary).
+    Logic:
+    1. Fetch all important records from both.
+    2. Identify missing records in each.
+    3. Push missing records to Supabase.
+    4. Fetch missing records from Supabase and insert into Neon.
+    """
+    results = {"pushed_to_backup": 0, "pulled_from_backup": 0, "errors": []}
+    
+    primary_conn = None
+    secondary_conn = None
+
+    try:
+        primary_conn = get_db_params() # This gets params, let's use get_conn context instead
+        secondary_conn = get_supabase_conn()
+        
+        if not secondary_conn:
+            return {"error": "Secondary database (Supabase) not configured."}
+
+        tables = ["users", "artists", "tracks", "user_tracks", "user_artists"]
+        
+        with get_conn() as p_conn:
+            with p_conn.cursor() as p_cur:
+                with secondary_conn.cursor() as s_cur:
+                    for table in tables:
+                        # 1. Sync Primary -> Secondary
+                        if table == "users":
+                             p_cur.execute("SELECT spotify_id, display_name, refresh_token, token_expires_at FROM users")
+                             p_data = p_cur.fetchall()
+                             s_cur.execute("SELECT spotify_id FROM users")
+                             s_ids = {row[0] for row in s_cur.fetchall()}
+                             missing_in_s = [r for r in p_data if r[0] not in s_ids]
+                             if missing_in_s:
+                                 execute_values(s_cur, "INSERT INTO users (spotify_id, display_name, refresh_token, token_expires_at) VALUES %s ON CONFLICT DO NOTHING", missing_in_s)
+                                 results["pushed_to_backup"] += len(missing_in_s)
+
+                        elif table == "artists":
+                             p_cur.execute("SELECT id, name, popularity, image_url FROM artists")
+                             p_data = p_cur.fetchall()
+                             s_cur.execute("SELECT id FROM artists")
+                             s_ids = {row[0] for row in s_cur.fetchall()}
+                             missing_in_s = [r for r in p_data if r[0] not in s_ids]
+                             if missing_in_s:
+                                 execute_values(s_cur, "INSERT INTO artists (id, name, popularity, image_url) VALUES %s ON CONFLICT DO NOTHING", missing_in_s)
+                                 results["pushed_to_backup"] += len(missing_in_s)
+
+                        elif table == "tracks":
+                             p_cur.execute("SELECT id, name, popularity, preview_url FROM tracks")
+                             p_data = p_cur.fetchall()
+                             s_cur.execute("SELECT id FROM tracks")
+                             s_ids = {row[0] for row in s_cur.fetchall()}
+                             missing_in_s = [r for r in p_data if r[0] not in s_ids]
+                             if missing_in_s:
+                                 execute_values(s_cur, "INSERT INTO tracks (id, name, popularity, preview_url) VALUES %s ON CONFLICT DO NOTHING", missing_in_s)
+                                 results["pushed_to_backup"] += len(missing_in_s)
+
+                        elif table in ["user_tracks", "user_artists"]:
+                             id_col = "track_id" if table == "user_tracks" else "artist_id"
+                             p_cur.execute(f"SELECT spotify_id, {id_col} FROM {table}")
+                             p_data = p_cur.fetchall()
+                             s_cur.execute(f"SELECT spotify_id, {id_col} FROM {table}")
+                             s_pairs = { (row[0], row[1]) for row in s_cur.fetchall()}
+                             missing_in_s = [r for r in p_data if (r[0], r[1]) not in s_pairs]
+                             if missing_in_s:
+                                 execute_values(s_cur, f"INSERT INTO {table} (spotify_id, {id_col}) VALUES %s ON CONFLICT DO NOTHING", missing_in_s)
+                                 results["pushed_to_backup"] += len(missing_in_s)
+
+                        # 2. Sync Secondary -> Primary (Pulling missing data)
+                        if table == "users":
+                             s_cur.execute("SELECT spotify_id, display_name, refresh_token, token_expires_at FROM users")
+                             s_data = s_cur.fetchall()
+                             p_cur.execute("SELECT spotify_id FROM users")
+                             p_ids = {row[0] for row in p_cur.fetchall()}
+                             missing_in_p = [r for r in s_data if r[0] not in p_ids]
+                             if missing_in_p:
+                                 execute_values(p_cur, "INSERT INTO users (spotify_id, display_name, refresh_token, token_expires_at) VALUES %s ON CONFLICT DO NOTHING", missing_in_p)
+                                 results["pulled_from_backup"] += len(missing_in_p)
+
+                        elif table == "artists":
+                             s_cur.execute("SELECT id, name, popularity, image_url FROM artists")
+                             s_data = s_cur.fetchall()
+                             p_cur.execute("SELECT id FROM artists")
+                             p_ids = {row[0] for row in p_cur.fetchall()}
+                             missing_in_p = [r for r in s_data if r[0] not in p_ids]
+                             if missing_in_p:
+                                 execute_values(p_cur, "INSERT INTO artists (id, name, popularity, image_url) VALUES %s ON CONFLICT DO NOTHING", missing_in_p)
+                                 results["pulled_from_backup"] += len(missing_in_p)
+
+                        elif table == "tracks":
+                             s_cur.execute("SELECT id, name, popularity, preview_url FROM tracks")
+                             s_data = s_cur.fetchall()
+                             p_cur.execute("SELECT id FROM tracks")
+                             p_ids = {row[0] for row in p_cur.fetchall()}
+                             missing_in_p = [r for r in s_data if r[0] not in p_ids]
+                             if missing_in_p:
+                                 execute_values(p_cur, "INSERT INTO tracks (id, name, popularity, preview_url) VALUES %s ON CONFLICT DO NOTHING", missing_in_p)
+                                 results["pulled_from_backup"] += len(missing_in_p)
+
+                        elif table in ["user_tracks", "user_artists"]:
+                             id_col = "track_id" if table == "user_tracks" else "artist_id"
+                             s_cur.execute(f"SELECT spotify_id, {id_col} FROM {table}")
+                             s_data = s_cur.fetchall()
+                             p_cur.execute(f"SELECT spotify_id, {id_col} FROM {table}")
+                             p_pairs = { (row[0], row[1]) for row in p_cur.fetchall()}
+                             missing_in_p = [r for r in s_data if (r[0], r[1]) not in p_pairs]
+                             if missing_in_p:
+                                 execute_values(p_cur, f"INSERT INTO {table} (spotify_id, {id_col}) VALUES %s ON CONFLICT DO NOTHING", missing_in_p)
+                                 results["pulled_from_backup"] += len(missing_in_p)
+                                 
+                    secondary_conn.commit()
+    except Exception as e:
+        results["errors"].append(str(e))
+        print(f"[SYNC] Critical Error: {e}")
+    finally:
+        if secondary_conn:
+            secondary_conn.close()
+
+    return results
