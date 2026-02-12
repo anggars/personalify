@@ -980,6 +980,7 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
 
         sentiment_report = data.get("sentiment_report", "Sentiment analysis is getting ready...")
+        top_emotions = data.get("top_emotions", data.get("sentiment_scores", []))
 
         # Calculate genres from ALL artists (legacy behavior used all for extended list)
         genre_count = {}
@@ -998,8 +999,8 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
             "user": data["user"],
             "image": data.get("image"),
             "time_range": time_range,
-            "emotion_paragraph": emotion_paragraph,
-            "top_emotions": data.get("top_emotions", []),
+            "sentiment_report": sentiment_report,
+            "sentiment_scores": top_emotions,
             "artists": data.get("artists", []),
             "tracks": data.get("tracks", []),
             "genres": genre_list,
