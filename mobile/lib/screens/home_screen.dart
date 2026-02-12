@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personalify/screens/profile_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:personalify/services/api_service.dart';
 import 'package:personalify/services/auth_service.dart';
@@ -6,6 +7,7 @@ import 'package:personalify/models/user_profile.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:personalify/screens/login_screen.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:personalify/widgets/ping_pong_scrolling_text.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int) onTabChange;
@@ -190,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 32), // Consistent Gap
 
-              // 2. Summary Section
+              // 2. Summary Section & Vibe
               Text(
                 _getTimeRangeLabel(widget.selectedTimeRange),
                 style: GoogleFonts.plusJakartaSans(
@@ -200,17 +202,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
+              
+              // Vibe Identity Card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [kSurfaceColor, kBgColor], 
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: kBorderColor),
+                  color: kSurfaceColor,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: kBorderColor, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
                 child: (_isLoading)
                     ? const Center(child: CircularProgressIndicator(color: kAccentColor))
@@ -218,71 +225,61 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildStatRow('Top Artist', _userProfile!.artists.isNotEmpty ? _userProfile!.artists.first.name : '-'),
+                            const Icon(FontAwesomeIcons.quoteLeft, color: kAccentColor, size: 20),
                             const SizedBox(height: 12),
-                            _buildStatRow('Top Track', _userProfile!.tracks.isNotEmpty ? _userProfile!.tracks.first.name : '-'),
-                            const SizedBox(height: 12),
-                            _buildStatRow('Top Genre', _userProfile!.genres.isNotEmpty ? _userProfile!.genres.first.name : '-'),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                  return PingPongScrollingText(
+                                    text: (_userProfile!.emotionParagraph.isNotEmpty 
+                                        ? _userProfile!.emotionParagraph 
+                                        : "Analyze your music to see your vibe.")
+                                        .replaceAll("<b>", "").replaceAll("</b>", ""),
+                                    width: constraints.maxWidth,
+                                    textAlign: TextAlign.left, // Left alignment for Vibe text
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13, // Matched to Stats Value size (was 18)
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      height: 1.4,
+                                    ),
+                                  );
+                              }
+                            ),
                           ],
                         )
-                      : Text("Connect to see stats", style: GoogleFonts.plusJakartaSans(color: kTextSecondary)),
+                      : Text("Connect to see vibe", style: GoogleFonts.plusJakartaSans(color: Colors.white)),
               ),
 
-              const SizedBox(height: 32),
-              
-              // 2.5 Top Emotions (Compact)
-              if (_userProfile != null && _userProfile!.topEmotions.isNotEmpty) ...[
-                Text(
-                  'Top Emotions',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18, 
-                    fontWeight: FontWeight.w700,
-                    color: kTextPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12), 
+              const SizedBox(height: 16), // Reduced Spacing (was 24)
+
+              // Stats Card
+              if (!_isLoading && _userProfile != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 19, horizontal: 20), // Reduced from 24 to match Vibe Card height
                   decoration: BoxDecoration(
-                     color: kSurfaceColor,
-                     borderRadius: BorderRadius.circular(16),
-                     border: Border.all(color: kBorderColor),
+                    color: kSurfaceColor,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: kBorderColor, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: _userProfile!.topEmotions.take(3).map((e) {
-                       return Column(
-                         children: [
-                           Container(
-                             width: 32, 
-                             height: 32,
-                             alignment: Alignment.center,
-                             child: FaIcon(
-                                  _getIconForEmotion(e.label),
-                                  size: 20,
-                                  color: kAccentColor,
-                             ),
-                           ),
-                           const SizedBox(height: 4),
-                           Text(
-                             e.label[0].toUpperCase() + e.label.substring(1),
-                             style: GoogleFonts.plusJakartaSans(
-                               fontWeight: FontWeight.bold,
-                               color: kTextPrimary,
-                               fontSize: 12,
-                             ),
-                           ),
-                           Text(
-                             "${(e.score * 100).toInt()}%",
-                             style: GoogleFonts.plusJakartaSans(color: kTextSecondary, fontSize: 10),
-                           ),
-                         ],
-                       );
-                    }).toList(),
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildCompactStat(Icons.person, "Artist", _userProfile!.artists.isNotEmpty ? _userProfile!.artists.first.name : '-', isLarge: true),
+                      _buildCompactStat(Icons.music_note, "Track", _userProfile!.tracks.isNotEmpty ? _userProfile!.tracks.first.name : '-', isLarge: true),
+                      _buildCompactStat(Icons.category, "Genre", _userProfile!.genres.isNotEmpty ? _userProfile!.genres.first.name : '-', isLarge: true),
+                    ],
                   ),
                 ),
-                 const SizedBox(height: 32),
-               ],
+              
+              const SizedBox(height: 32),
 
               // 3. Menu Shortcuts
               Text(
@@ -311,6 +308,13 @@ class _HomeScreenState extends State<HomeScreen> {
                  title: 'History',
                  description: 'See your recently played tracks from Spotify.',
                  onTap: () => widget.onTabChange(3),
+              ),
+              // NEW: Profile Card in List
+              _buildFeatureCard(
+                 icon: Symbols.account_circle,
+                 title: 'Profile',
+                 description: 'View your profile details and currently playing.',
+                 onTap: () => widget.onTabChange(4),
               ),
               
               const SizedBox(height: 48), // Bottom padding
@@ -422,6 +426,52 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // NEW: Grid Feature Card
+  Widget _buildGridFeatureCard({required IconData icon, required String title, required VoidCallback onTap, String? subtitle}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: kSurfaceColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: kBorderColor),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: kAccentColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: kAccentColor, size: 24),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: kTextPrimary,
+              ),
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10,
+                  color: kTextSecondary,
+                ),
+              ),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+
   // UPDATED: Added onTap
   Widget _buildFeatureCard({required IconData icon, required String title, required String description, required VoidCallback onTap}) {
     return GestureDetector(
@@ -476,4 +526,38 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+  Widget _buildCompactStat(IconData icon, String label, String value, {bool isLarge = false}) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white70, size: isLarge ? 18 : 16), // Moderate Icon
+          const SizedBox(height: 4), // Reduced from 6 to match Vibe Card height (Total content ~50px)
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(fontSize: isLarge ? 11 : 10, color: Colors.white54), // Moderate Label
+          ),
+          const SizedBox(height: 4),
+          // Wrapped in LayoutBuilder for width constraint needed by PingPong
+          LayoutBuilder(
+            builder: (context, constraints) {
+               return PingPongScrollingText(
+                text: value,
+                width: constraints.maxWidth,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: isLarge ? 13 : 12, // Moderate Value
+                  fontWeight: FontWeight.bold, 
+                  color: Colors.white
+                ),
+                // The original code centered text. PingPong usually scrolls if long.
+                // We might want to ensure short text is centered if PingPong supports alignment or just behaves like text.
+                // Assuming PingPongScrollingText handles short text gracefully (as implemented before).
+              );
+            }
+          ),
+        ],
+      ),
+    );
+  }
+
+  // _buildVerticalDivider removed as requested
 }
