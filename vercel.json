@@ -7,6 +7,14 @@
       "destination": "/api/index.py"
     },
     {
+      "source": "/admin-api/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
       "source": "/login",
       "destination": "/api/index.py"
     },
