@@ -127,8 +127,13 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
       // FIX: Extract emotions from nested `emotion_analysis`
       if (lyricsData.containsKey('emotion_analysis')) {
          final analysis = lyricsData['emotion_analysis'];
-         if (analysis is Map && analysis.containsKey('emotions')) {
-             normalizedData['emotions'] = analysis['emotions'];
+         if (analysis is Map) {
+             if (analysis.containsKey('emotions')) {
+                 normalizedData['emotions'] = analysis['emotions'];
+             }
+             if (analysis.containsKey('mbti')) {
+                 normalizedData['mbti'] = analysis['mbti'];
+             }
          } else if (analysis is Map && analysis.containsKey('error')) {
              print("DEBUG_SONG_DETAIL: Analysis Error -> ${analysis['error']}");
          }
@@ -412,6 +417,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
 
     // Extract real emotion data
     final emotions = _lyricsData!['emotions'] as List<dynamic>?;
+    final mbti = _lyricsData!['mbti'] as List<dynamic>?;
     final topEmotion = emotions != null && emotions.isNotEmpty 
         ? emotions.first 
         : {'label': 'Unknown', 'score': 0.0};
@@ -482,8 +488,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
 
           // Show top 5 emotions if available
           if (emotions != null && emotions.length > 1) ...[
-            Text("TOP EMOTIONS", style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1)),
-            const SizedBox(height: 12),
+            // Removed Header "TOP EMOTIONS"
             ...emotions.take(5).map((emotion) {
               final label = capitalize(emotion['label'] ?? 'Unknown');
               final score = (emotion['score'] ?? 0.0) as num;
@@ -510,8 +515,83 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
                 ),
               );
             }).toList(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16), // 16 + 8 padding = 24 (Matches top spacing)
           ],
+          
+          // Section 3: MBTI Analysis (Restored)
+           if (mbti != null && mbti.isNotEmpty) ...[ // Use mbti directly
+             // Adjusted Spacing: Top Emotions has 24h gap after list.
+             // We want the gap between Last Emotion Card and MBTI Card to match the gap between Main Meter and First Emotion Card (which is 24).
+             // The last emotion card has bottom padding of 8.
+             // So if we have SizedBox(height: 24) after the list, total gap is 32.
+             // To make it ~24, we should reduce this SizedBox.
+             // But wait, the code above has `const SizedBox(height: 24)` AFTER the emotion list loop.
+             // Let's change THAT logic instead of adding negative space here.
+             // Actually, let's just reduce the SizedBox inside the emotion block or here.
+             
+             // Removing the SizedBox(height: 24) from the emotion block is cleaner, but let's see.
+             // The code above: `if (emotions...) ... [ ... list ..., SizedBox(height: 24) ]`
+             // I will remove the SizedBox(24) from the emotion block in a separate edit or just tweak it here if I could.
+             // Since I can't reach that block comfortably in this single edit without context, 
+             // I will assume the previous block ends with SizedBox(24).
+             
+             // Actually, looking at previous view_file:
+             // 518:             const SizedBox(height: 24),
+             // 519:           ],
+             
+             // So there IS a gap of 24 + 8 = 32.
+             // I should probably remove that SizedBox(24) in the emotion block.
+             // But for now, let's just proceed with the MBTI block.
+             
+             Builder(
+               builder: (context) {
+                 final mbtiList = mbti as List<dynamic>;
+                 final topMbti = mbtiList.isNotEmpty ? mbtiList[0] : null;
+                 final label = topMbti != null ? (topMbti['label'] as String).toUpperCase() : null;
+                 final score = topMbti != null ? (topMbti['score'] as num) : 0.0;
+                 
+                 // Get connector
+                 String connector = "shades of"; // Default
+                 // Simple connector logic based on label (mock, since actual logic might be in backend or passed)
+                 // Or just use generic text if backend doesn't send connector.
+                 // Actually, let's just say "energy of" or similar if we don't have the map here.
+                 // Or better, let's try to infer or hardcode a simple map if it was removed.
+                 
+                 return AnalysisCard( // Reusing AnalysisCard for consistency
+                   child: Column(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     children: [
+                       const Icon(FontAwesomeIcons.quoteLeft, color: kAccentColor, size: 20),
+                       const SizedBox(height: 12),
+                        Text.rich(
+                         TextSpan(
+                           children: [
+                             const TextSpan(text: "This track radiates the energy of "), // Simplified phrasing
+                             TextSpan(
+                               text: label ?? "UNKNOWN", 
+                               style: GoogleFonts.plusJakartaSans(
+                                 fontWeight: FontWeight.w900, 
+                                 color: Colors.white,
+                                 fontSize: 20, // Highlight MBTI
+                               )
+                             ),
+                             TextSpan(text: " (${(score * 100).toStringAsFixed(1)}%)"),
+                           ]
+                         ),
+                         style: GoogleFonts.plusJakartaSans(
+                           fontSize: 16, 
+                           fontWeight: FontWeight.w500,
+                           color: Colors.white70,
+                           height: 1.5,
+                         ),
+                       ),
+                     ],
+                   ),
+                 );
+               }
+             ),
+             const SizedBox(height: 24),
+           ],
           
           const SizedBox(height: 48),
         ],
@@ -528,28 +608,38 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
         return FontAwesomeIcons.faceSmileBeam;
       case 'sadness':
       case 'sad':
-      case 'grief':
-      case 'loneliness':
         return FontAwesomeIcons.faceSadTear;
+      case 'grief': // Distinct from sadness
+      case 'loneliness':
+        return FontAwesomeIcons.heartCrack;
       case 'anger':
       case 'angry':
       case 'rage':
-      case 'frustration':
         return FontAwesomeIcons.faceAngry;
+      case 'frustration': // Distinct from anger
+      case 'annoyance':
+        return FontAwesomeIcons.faceRollingEyes; // Corrected
       case 'fear':
       case 'scared':
-      case 'anxiety':
+        return FontAwesomeIcons.ghost;
+      case 'anxiety': // Distinct from fear
       case 'nervous':
-        return FontAwesomeIcons.faceFlushed;
+      case 'nervousness':
+        return FontAwesomeIcons.personWalkingDashedLineArrowRight; // Fleeting/Nervous
+      case 'embarrassment': // Distinct from fear/anxiety
+      case 'embarrassed':
+         return FontAwesomeIcons.faceFlushed; // Corrected
       case 'love':
       case 'loving':
       case 'romance':
-      case 'affection':
         return FontAwesomeIcons.heart;
+      case 'affection': // Distinct from love
+        return FontAwesomeIcons.handHoldingHeart;
       case 'excitement':
       case 'excited':
-      case 'thrill':
         return FontAwesomeIcons.bolt;
+      case 'thrill': // Distinct from excitement
+        return FontAwesomeIcons.rocket;
       case 'surprise':
       case 'surprised':
       case 'shock':
@@ -563,7 +653,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
       case 'optimism':
       case 'optimistic':
       case 'hope':
-        return FontAwesomeIcons.lightbulb; // Changed from sun to lightbulb/chart
+        return FontAwesomeIcons.sun;
       case 'pessimism':
       case 'pessimistic':
         return FontAwesomeIcons.cloudRain;
@@ -586,7 +676,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> with SingleTickerPr
         return FontAwesomeIcons.handHoldingHeart;
       case 'realization':
       case 'epiphany':
-        return FontAwesomeIcons.brain;
+        return FontAwesomeIcons.lightbulb;
       case 'gratitude':
       case 'grateful':
       case 'thankful':
