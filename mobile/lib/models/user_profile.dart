@@ -5,7 +5,7 @@ import 'package:personalify/models/track.dart';
 class UserProfile {
   final String userName;
   final String timeRange;
-  final String emotionParagraph;
+  final String sentimentReport;
   final List<Artist> artists;
   final List<Track> tracks;
   final List<Genre> genres;
@@ -16,12 +16,12 @@ class UserProfile {
   final String? image; 
   final String? userId;
   final int? followers; // Added followers
-  final List<Emotion> topEmotions;
+  final List<Emotion> sentimentScores;
 
   UserProfile({
     required this.userName,
     required this.timeRange,
-    required this.emotionParagraph,
+    required this.sentimentReport,
     required this.artists,
     required this.tracks,
     required this.genres,
@@ -30,7 +30,7 @@ class UserProfile {
     this.image,
     this.userId,
     this.followers,
-    this.topEmotions = const [],
+    this.sentimentScores = const [],
   });
   
   // Getter alias consistent with ProfileScreen usage
@@ -40,7 +40,7 @@ class UserProfile {
     return UserProfile(
       userName: json['user'] as String,
       timeRange: json['time_range'] as String? ?? 'short_term',
-      emotionParagraph: json['emotion_paragraph'] as String? ?? '',
+      sentimentReport: json['sentiment_report'] as String? ?? '',
       artists: (json['artists'] as List<dynamic>?)
               ?.map((e) => Artist.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -62,7 +62,7 @@ class UserProfile {
       image: json['image'] as String?,
       userId: json['user_id'] as String? ?? json['user'] as String,
       followers: json['followers'] as int?,
-      topEmotions: (json['top_emotions'] as List<dynamic>?)
+      sentimentScores: (json['sentiment_scores'] as List<dynamic>?)
               ?.map((e) => Emotion.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
