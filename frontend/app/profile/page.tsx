@@ -317,7 +317,7 @@ export default function ProfilePage() {
                     }}
                 >
                     {/* Profile Header */}
-                    <div className="flex flex-col items-center mb-5">
+                    <div className="flex flex-col items-center mt-1 mb-5">
                         {/* Profile Image */}
                         <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-neutral-200 dark:bg-neutral-800 mb-3 shadow-lg ring-2 ring-black/5 dark:ring-white/5">
                             {userImage ? (
