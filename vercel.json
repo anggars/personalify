@@ -7,7 +7,23 @@
       "destination": "/api/index.py"
     },
     {
-      "source": "/admin/(.*)",
+      "source": "/admin/stats",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/admin/clear",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/admin/sync",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/admin/export",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/admin/report/(.*)",
       "destination": "/api/index.py"
     },
     {
