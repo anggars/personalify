@@ -169,19 +169,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: kAccentColor.withOpacity(0.5), width: 2), // Sublime border
+                        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.0), // Synced with Navbar style
                       ),
                       child: ClipOval(
                         child: Image.network(
                           _userProfile?.image ?? '',
-                          width: 44, // Slightly larger touch target
+                          width: 44, 
                           height: 44,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) => Container(
                             width: 44,
                             height: 44,
                             color: kSurfaceColor,
-                            child: const Icon(Icons.person, color: kTextSecondary, size: 24),
+                            child: const Icon(Symbols.person, color: kTextSecondary, size: 24), // Synced with Navbar icon fallback
                           ),
                         ),
                       ),
@@ -311,7 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               // NEW: Profile Card in List
               _buildFeatureCard(
-                 icon: Symbols.account_circle,
+                 icon: Symbols.person, // Changed from account_circle for 100% sync
                  title: 'Profile',
                  description: 'View your profile details and currently playing.',
                  onTap: () => widget.onTabChange(4),
