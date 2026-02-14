@@ -8,9 +8,5 @@
     "dev": "pnpm --filter frontend run dev",
     "build": "pnpm --filter frontend run build",
     "start": "pnpm --filter frontend run start"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "vercel": "^33.0.0"
   }
 }
