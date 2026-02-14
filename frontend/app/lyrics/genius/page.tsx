@@ -468,7 +468,7 @@ export default function GeniusPage() {
                                                 initial={{ opacity: 0, y: 8 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.3 }}
-                                                className="text-center text-sm text-neutral-500 dark:text-[#888] mt-2 -mb-2 font-medium"
+                                                className="text-center text-sm text-neutral-500 dark:text-[#888] mt-2.75 md:mt-2 mb-0.5 md:-mb-2 font-medium"
                                             >
                                                 This track holds {connector}{" "}
                                                 <span className="text-[#1DB954] font-bold">{label}</span>
