@@ -256,11 +256,6 @@
     border-radius: 0.5rem !important;
   }
 
-  /* Mobile textarea smaller */
-  textarea {
-    min-height: 175px !important;
-  }
-
   /* Mobile section card compact */
   .section-card {
     padding: 1.5rem 1rem 0.5rem 1rem !important;
