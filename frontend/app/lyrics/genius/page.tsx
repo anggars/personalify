@@ -403,7 +403,7 @@ export default function GeniusPage() {
                                     />
                                 </div>
                             </div>
-                            <div className="bg-white dark:bg-[#181818] py-3 px-6 rounded-xl border border-neutral-200 dark:border-[#282828] text-neutral-700 dark:text-[#cccccc] leading-6 whitespace-pre-wrap max-h-[307.5px] overflow-y-auto custom-scrollbar mb-3 text-[0.95rem] font-light tracking-wide">
+                            <div className="bg-white dark:bg-[#181818] min-h-[182px] md:min-h-[256px] max-h-[204px] md:max-h-[256px] py-1.5 px-4 md:py-2 md:px-4 rounded-xl border border-neutral-200 dark:border-[#282828] text-neutral-700 dark:text-[#cccccc] leading-6 whitespace-pre-wrap overflow-y-auto custom-scrollbar mb-3 text-[0.95rem] font-light tracking-wide">
                                 {analysis.lyrics.trim()}
                             </div>
                             {analysis.emotion_analysis?.emotions && (
