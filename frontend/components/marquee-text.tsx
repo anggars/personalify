@@ -7,7 +7,7 @@ interface MarqueeTextProps {
     className?: string; // Additional classes for the container or text
 }
 
-const MarqueeText: React.FC<MarqueeTextProps> = ({ text, className = "" }) => {
+const MarqueeText = ({ text, className = "" }: MarqueeTextProps) => {
     const textRef = useRef<HTMLParagraphElement>(null);
     const [isOverflowing, setIsOverflowing] = useState(false);
 
@@ -44,10 +44,10 @@ const MarqueeText: React.FC<MarqueeTextProps> = ({ text, className = "" }) => {
     }, [text]);
 
     return (
-        <div className={`min-w-0 flex-1 overflow-hidden ${isOverflowing ? "mask-active" : ""}`}>
+        <div className={`min-w-0 flex-1 overflow-hidden pb-1 -mb-1 ${isOverflowing ? "mask-active" : ""}`}>
             <p
                 ref={textRef}
-                className={`${className} ${isOverflowing ? "scroll-active" : "truncate"}`}
+                className={`${className} overflow-visible ${isOverflowing ? "scroll-active" : "truncate"}`}
             >
                 {text}
             </p>

@@ -189,7 +189,8 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-sans), "Plus Jakarta Sans", system-ui, sans-serif;
+    font-family:
+      var(--font-sans), "Plus Jakarta Sans", system-ui, sans-serif;
     overflow-x: hidden;
     overflow-y: auto;
     min-height: 100dvh;
@@ -587,7 +588,7 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
   }
 
   .glass-interactive-shadow {
-    box-shadow: 
+    box-shadow:
       inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
       inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
       0 4px 15px rgba(0, 0, 0, 0.2);
@@ -625,7 +626,7 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
   .glass-interactive:hover::before {
     opacity: 1;
   }
-  
+
   .glass-interactive > * {
     position: relative;
     z-index: 2;
@@ -684,10 +685,7 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
 /* Enable touch following for glow effect via JS updating --mouse-x/y */
 @media (hover: none) {
   .glow-card::before {
-    transition:
-      opacity 0.2s ease,
-      left 0.1s ease,
-      top 0.1s ease;
+    transition: opacity 0.2s ease, left 0.1s ease, top 0.1s ease;
   }
 }
 
@@ -907,7 +905,8 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
 }
 
 .show-floating-btn {
-  animation: bounceShow 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+  animation: bounceShow 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards
+    !important;
 }
 
 @keyframes bounceHide {
@@ -1243,14 +1242,13 @@ html {
   background:
     linear-gradient(#fff, #fff) padding-box,
     radial-gradient(
-        circle at 30% 107%,
-        #fdf497 0%,
-        #fdf497 5%,
-        #fd5949 45%,
-        #d6249f 60%,
-        #285aeb 90%
-      )
-      border-box;
+    circle at 30% 107%,
+    #fdf497 0%,
+    #fdf497 5%,
+    #fd5949 45%,
+    #d6249f 60%,
+    #285aeb 90%
+  ) border-box;
   box-shadow: 0 2px 4px rgba(214, 36, 159, 0.08);
 }
 
@@ -1258,14 +1256,13 @@ html {
   background:
     linear-gradient(#1e1e1e, #1e1e1e) padding-box,
     radial-gradient(
-        circle at 30% 107%,
-        #fdf497 0%,
-        #fdf497 5%,
-        #fd5949 45%,
-        #d6249f 60%,
-        #285aeb 90%
-      )
-      border-box;
+    circle at 30% 107%,
+    #fdf497 0%,
+    #fdf497 5%,
+    #fd5949 45%,
+    #d6249f 60%,
+    #285aeb 90%
+  ) border-box;
 }
 
 .instagram-hover:hover svg {
