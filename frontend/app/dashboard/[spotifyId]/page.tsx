@@ -91,56 +91,56 @@ const TIME_RANGE_SUBTITLES: Record<string, string> = {
 };
 
 const GENRE_COLORS = [
-  "#1DB954", // Spotify Green
-  "#3D5AFE", // Indigo/Blue
-  "#FF1744", // Vivid Red
-  "#FFEA00", // Bright Yellow
-  "#D500F9", // Bright Purple
-  "#00E5FF", // Electric Cyan
-  "#FF9100", // Bright Orange
-  "#F06292", // Light Pink (Replaced Spring Green)
-  "#651FFF", // Royal Purple
-  "#2979FF", // Sky Blue
-  "#FFC400", // Amber
-  "#1DE9B6", // Turquoise
-  "#FF3D00", // Deep Orange
-  "#7C4DFF", // Dark Violet
-  "#BDBDBD", // Silver
-  "#C6FF00", // Lime
-  "#00B0FF", // Azure
-  "#FF4081", // Rose/Magenta
-  "#00B8D4", // Teal Blue
-  "#64DD17", // Neon Green
-  "#FFD600", // Vivid Gold
-  "#AA00FF", // Deep Violet
-  "#00BFA5", // Bright Teal
-  "#AEEA00", // Bright Lime
-  "#FF6D00", // Vivid Orange
-  "#304FFE", // Blue Indigo
-  "#0091EA", // Bright Sky Blue
-  "#C51162", // Vivid Crimson
-  "#00C853", // Deep Green
-  "#FFAB00", // Vivid Amber
-  "#DD2C00", // Deep Vermilion
-  "#6200EA", // Vivid Purple
-  "#00B0FF", // Light Blue
-  "#76FF03", // Vivid Green-Yellow
-  "#FF3D00", // Vivid Orange-Red
-  "#C2185B", // Dark Magenta
-  "#1976D2", // Medium Blue
-  "#388E3C", // Medium Green
-  "#FBC02D", // Medium Yellow-Orange
-  "#E64A19", // Medium Orange-Red
-  "#7B1FA2", // Medium Purple
-  "#0288D1", // Medium Blue
-  "#0097A7", // Medium Cyan-Teal
-  "#AFB42B", // Medium Lime-Olive
-  "#FFA000", // Medium Amber-Orange
-  "#D32F2F", // Medium Red
-  "#C0CA33", // Light Lime
-  "#039BE5", // Light Blue
-  "#00ACC1", // Light Cyan
-  "#43A047", // Light Green
+  "#1DB954", // 1. Spotify Green
+  "#E6194B", // 2. Red
+  "#4363D8", // 3. Blue
+  "#FFE119", // 4. Yellow
+  "#F58231", // 5. Orange
+  "#911EB4", // 6. Purple
+  "#42D4F4", // 7. Cyan/Sky
+  "#F032E6", // 8. Magenta
+  "#BFEF45", // 9. Lime
+  "#FABED4", // 10. Pink
+  "#469990", // 11. Teal
+  "#DCBEFF", // 12. Lavender
+  "#9A6324", // 13. Brown
+  "#FFFAC8", // 14. Beige/Cream
+  "#800000", // 15. Maroon
+  "#AAFFC3", // 16. Mint
+  "#808000", // 17. Olive
+  "#FFD8B1", // 18. Apricot
+  "#000075", // 19. Navy
+  "#A9A9A9", // 20. Grey
+  "#FFD700", // 21. Gold
+  "#AEEA00", // 22. Acid Green
+  "#FF1493", // 23. Deep Pink
+  "#00BFFF", // 24. Deep Sky Blue
+  "#FF4500", // 25. Orange Red
+  "#2E8B57", // 26. Sea Green
+  "#8A2BE2", // 27. Blue Violet
+  "#DA70D6", // 28. Orchid
+  "#7FFF00", // 29. Chartreuse
+  "#CD5C5C", // 30. Indian Red
+  "#BC8F8F", // 31. Rosy Brown
+  "#5F9EA0", // 32. Cadet Blue
+  "#9932CC", // 33. Dark Orchid
+  "#FFDAB9", // 34. Peach Puff
+  "#8B4513", // 35. Saddle Brown
+  "#00FF00", // 36. Pure Green
+  "#FF00FF", // 37. Pure Magenta
+  "#00FFFF", // 38. Pure Cyan
+  "#BDBDBD", // 39. Silver
+  "#4682B4", // 40. Steel Blue
+  "#D2691E", // 41. Chocolate
+  "#9ACD32", // 42. Yellow Green
+  "#BA55D3", // 43. Medium Orchid
+  "#008B8B", // 44. Dark Cyan
+  "#B22222", // 45. Fire Brick
+  "#6A5ACD", // 46. Slate Blue
+  "#F08080", // 47. Light Coral
+  "#20B2AA", // 48. Light Sea Green
+  "#FFCC00", // 49. Apple Gold
+  "#AF52DE", // 50. Apple Purple
 ];
 
 function hexToRgba(hex: string, alpha: number) {
