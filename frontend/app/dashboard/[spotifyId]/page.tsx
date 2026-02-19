@@ -372,6 +372,21 @@ export default function DashboardPage() {
       if (pollInterval) clearInterval(pollInterval);
     };
   }, [spotifyId, timeRange, router]);
+  
+  // Reset dashboard states when time range changes to prevent state leakage
+  useEffect(() => {
+    setShowTop20(false);
+    setDisabledGenres(new Set());
+    setActiveEmbed(null);
+    setPlayingTrack(null);
+    setExpandedGenres({});
+    // Reset player specific states to prevent metadata leakage
+    setTrackPosition({});
+    setTrackDuration({});
+    setEmbedReady({});
+    setShowPlayerControls({});
+    setIsBuffering({});
+  }, [timeRange]);
 
   // Animate dots effect (Slower speed: 800ms)
   useEffect(() => {
