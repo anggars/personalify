@@ -12,7 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // OPTIMIZE: Preload Google Fonts to prevent runtime font loading lag
-  GoogleFonts.config.allowRuntimeFetching = false;
+  GoogleFonts.config.allowRuntimeFetching = true;
 
   // OPTIMIZE: Limit memory usage for Image Cache
   // 30 MB Max total size (Reduced from 50MB to help system UI smoothness)

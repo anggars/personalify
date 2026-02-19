@@ -68,11 +68,19 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   static final _appBarBlur = ImageFilter.blur(sigmaX: 6, sigmaY: 6); // OPTIMIZED: Reduced from 10
   
   static const _genreColors = [
-    Color(0xFF1DB954), Color(0xFF00C7B7), Color(0xFF2496ED), Color(0xFF9333EA),
-    Color(0xFFE91E63), Color(0xFFFFD21E), Color(0xFFFF5722), Color(0xFF88B04B),
-    Color(0xFFF7CAC9), Color(0xFF92A8D1), Color(0xFFFF0055), Color(0xFF00E5FF),
-    Color(0xFFAA00FF), Color(0xFFFF9100), Color(0xFF00E676), Color(0xFF3D5AFE),
-    Color(0xFFFFEB3B), Color(0xFF76FF03), Color(0xFFF50057), Color(0xFF651FFF),
+    Color(0xFF1DB954), Color(0xFF3D5AFE), Color(0xFFFF1744), Color(0xFFFFEA00),
+    Color(0xFFD500F9), Color(0xFF00E5FF), Color(0xFFFF9100), Color(0xFFF06292),
+    Color(0xFF651FFF), Color(0xFF2979FF), Color(0xFFFFC400), Color(0xFF1DE9B6),
+    Color(0xFFFF3D00), Color(0xFF7C4DFF), Color(0xFFBDBDBD), Color(0xFFC6FF00),
+    Color(0xFF00B0FF), Color(0xFFFF4081), Color(0xFF00B8D4), Color(0xFF64DD17),
+    Color(0xFFFFD600), Color(0xFFAA00FF), Color(0xFF00BFA5), Color(0xFFAEEA00),
+    Color(0xFFFF6D00), Color(0xFF304FFE), Color(0xFF0091EA), Color(0xFFC51162),
+    Color(0xFF00C853), Color(0xFFFFAB00), Color(0xFFDD2C00), Color(0xFF6200EA),
+    Color(0xFF00B0FF), Color(0xFF76FF03), Color(0xFFFF3D00), Color(0xFFC2185B),
+    Color(0xFF1976D2), Color(0xFF388E3C), Color(0xFFFBC02D), Color(0xFFE64A19),
+    Color(0xFF7B1FA2), Color(0xFF0288D1), Color(0xFF0097A7), Color(0xFFAFB42B),
+    Color(0xFFFFA000), Color(0xFFD32F2F), Color(0xFFC0CA33), Color(0xFF039BE5),
+    Color(0xFF00ACC1), Color(0xFF43A047),
   ];
 
   int _currentTabIndex = 0; 
@@ -389,7 +397,24 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 
   Widget _buildShareGenresList() {
-    final genres = (_userProfile?.genres ?? []).take(10).toList();
+    if (_userProfile == null) return const SizedBox();
+
+    // Calculate Top 10 Genres based on Top 10 Artists ONLY for Share
+    final top10Artists = _userProfile!.artists.take(10).toList();
+    final Map<String, int> counts = {};
+    final Map<String, List<String>> mapping = {};
+
+    for (var artist in top10Artists) {
+      for (var g in artist.genres) {
+        counts[g] = (counts[g] ?? 0) + 1;
+        mapping.putIfAbsent(g, () => []).add(artist.name);
+      }
+    }
+
+    final sortedEntries = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final shareGenres = sortedEntries.take(10).toList();
+
     return Container(
       decoration: BoxDecoration(
         color: kSurfaceColor,
@@ -398,20 +423,21 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
       padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
       child: Column(
-        children: genres.asMap().entries.map((entry) {
-          final g = entry.value;
-          List<String> artistsList = [];
-           if (_userProfile != null) {
-              artistsList = _userProfile!.artists
-                .where((a) => a.genres.contains(g.name))
-                .map((a) => a.name)
-                .toList();
-           }
-           final isLast = entry.key == genres.length - 1;
-           return Padding(
-             padding: EdgeInsets.zero,
-             child: _buildGenreItem(g, entry.key, _getGenreColor(g.name), artistsList, isLast: isLast, isShare: true),
-           );
+        children: shareGenres.asMap().entries.map((entry) {
+          final genreName = entry.value.key;
+          final genreCount = entry.value.value;
+          final artistsList = mapping[genreName] ?? [];
+          
+          final isLast = entry.key == shareGenres.length - 1;
+          
+          // Re-wrap in a mock object to match _buildGenreItem signature if needed, 
+          // or just pass data directly. Let's make a mock Genre obj.
+          final gObj = Genre(name: genreName, count: genreCount);
+
+          return Padding(
+            padding: EdgeInsets.zero,
+            child: _buildGenreItem(gObj, entry.key, _getGenreColor(genreName), artistsList, isLast: isLast, isShare: true),
+          );
         }).toList(),
       ),
     );
