@@ -68,19 +68,19 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   static final _appBarBlur = ImageFilter.blur(sigmaX: 6, sigmaY: 6); // OPTIMIZED: Reduced from 10
   
   static const _genreColors = [
-    Color(0xFF1DB954), Color(0xFF3D5AFE), Color(0xFFFF1744), Color(0xFFFFEA00),
-    Color(0xFFD500F9), Color(0xFF00E5FF), Color(0xFFFF9100), Color(0xFFF06292),
-    Color(0xFF651FFF), Color(0xFF2979FF), Color(0xFFFFC400), Color(0xFF1DE9B6),
-    Color(0xFFFF3D00), Color(0xFF7C4DFF), Color(0xFFBDBDBD), Color(0xFFC6FF00),
-    Color(0xFF00B0FF), Color(0xFFFF4081), Color(0xFF00B8D4), Color(0xFF64DD17),
-    Color(0xFFFFD600), Color(0xFFAA00FF), Color(0xFF00BFA5), Color(0xFFAEEA00),
-    Color(0xFFFF6D00), Color(0xFF304FFE), Color(0xFF0091EA), Color(0xFFC51162),
-    Color(0xFF00C853), Color(0xFFFFAB00), Color(0xFFDD2C00), Color(0xFF6200EA),
-    Color(0xFF00B0FF), Color(0xFF76FF03), Color(0xFFFF3D00), Color(0xFFC2185B),
-    Color(0xFF1976D2), Color(0xFF388E3C), Color(0xFFFBC02D), Color(0xFFE64A19),
-    Color(0xFF7B1FA2), Color(0xFF0288D1), Color(0xFF0097A7), Color(0xFFAFB42B),
-    Color(0xFFFFA000), Color(0xFFD32F2F), Color(0xFFC0CA33), Color(0xFF039BE5),
-    Color(0xFF00ACC1), Color(0xFF43A047),
+    Color(0xFF1DB954), Color(0xFFE6194B), Color(0xFF4363D8), Color(0xFFFFE119),
+    Color(0xFFF58231), Color(0xFF911EB4), Color(0xFF42D4F4), Color(0xFFF032E6),
+    Color(0xFFBFEF45), Color(0xFFFABED4), Color(0xFF469990), Color(0xFFDCBEFF),
+    Color(0xFF9A6324), Color(0xFFFFFAC8), Color(0xFF800000), Color(0xFFAAFFC3),
+    Color(0xFF808000), Color(0xFFFFD8B1), Color(0xFF000075), Color(0xFFA9A9A9),
+    Color(0xFFFFD700), Color(0xFFAEEA00), Color(0xFFFF1493), Color(0xFF00BFFF),
+    Color(0xFFFF4500), Color(0xFF2E8B57), Color(0xFF8A2BE2), Color(0xFFDA70D6),
+    Color(0xFF7FFF00), Color(0xFFCD5C5C), Color(0xFFBC8F8F), Color(0xFF5F9EA0),
+    Color(0xFF9932CC), Color(0xFFFFDAB9), Color(0xFF8B4513), Color(0xFF00FF00),
+    Color(0xFFFF00FF), Color(0xFF00FFFF), Color(0xFFBDBDBD), Color(0xFF4682B4),
+    Color(0xFFD2691E), Color(0xFF9ACD32), Color(0xFFBA55D3), Color(0xFF008B8B),
+    Color(0xFFB22222), Color(0xFF6A5ACD), Color(0xFFF08080), Color(0xFF20B2AA),
+    Color(0xFFFFCC00), Color(0xFFAF52DE),
   ];
 
   int _currentTabIndex = 0; 
