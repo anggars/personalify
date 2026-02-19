@@ -124,7 +124,7 @@
 /* ===== BASE STYLES ===== */
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--border);
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -188,7 +188,10 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-family:
       var(--font-sans), "Plus Jakarta Sans", system-ui, sans-serif;
     overflow-x: hidden;
