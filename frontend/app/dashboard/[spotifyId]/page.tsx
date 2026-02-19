@@ -92,25 +92,55 @@ const TIME_RANGE_SUBTITLES: Record<string, string> = {
 
 const GENRE_COLORS = [
   "#1DB954", // Spotify Green
-  "#00C7B7", // Teal
-  "#2496ED", // Blue
-  "#9333EA", // Purple
-  "#E91E63", // Pink
-  "#FFD21E", // Yellow
-  "#FF5722", // Orange
-  "#88B04B",
-  "#F7CAC9",
-  "#92A8D1",
-  "#FF0055", // Magenta
-  "#00E5FF", // Cyan
-  "#AA00FF", // Violet
-  "#FF9100", // Deep Orange
-  "#00E676", // Bright Green
-  "#3D5AFE", // Indigo
-  "#FFEB3B", // Bright Yellow
-  "#76FF03", // Lime
-  "#F50057", // Crimson
-  "#651FFF", // Deep Purple
+  "#3D5AFE", // Indigo/Blue
+  "#FF1744", // Vivid Red
+  "#FFEA00", // Bright Yellow
+  "#D500F9", // Bright Purple
+  "#00E5FF", // Electric Cyan
+  "#FF9100", // Bright Orange
+  "#F06292", // Light Pink (Replaced Spring Green)
+  "#651FFF", // Royal Purple
+  "#2979FF", // Sky Blue
+  "#FFC400", // Amber
+  "#1DE9B6", // Turquoise
+  "#FF3D00", // Deep Orange
+  "#7C4DFF", // Dark Violet
+  "#BDBDBD", // Silver
+  "#C6FF00", // Lime
+  "#00B0FF", // Azure
+  "#FF4081", // Rose/Magenta
+  "#00B8D4", // Teal Blue
+  "#64DD17", // Neon Green
+  "#FFD600", // Vivid Gold
+  "#AA00FF", // Deep Violet
+  "#00BFA5", // Bright Teal
+  "#AEEA00", // Bright Lime
+  "#FF6D00", // Vivid Orange
+  "#304FFE", // Blue Indigo
+  "#0091EA", // Bright Sky Blue
+  "#C51162", // Vivid Crimson
+  "#00C853", // Deep Green
+  "#FFAB00", // Vivid Amber
+  "#DD2C00", // Deep Vermilion
+  "#6200EA", // Vivid Purple
+  "#00B0FF", // Light Blue
+  "#76FF03", // Vivid Green-Yellow
+  "#FF3D00", // Vivid Orange-Red
+  "#C2185B", // Dark Magenta
+  "#1976D2", // Medium Blue
+  "#388E3C", // Medium Green
+  "#FBC02D", // Medium Yellow-Orange
+  "#E64A19", // Medium Orange-Red
+  "#7B1FA2", // Medium Purple
+  "#0288D1", // Medium Blue
+  "#0097A7", // Medium Cyan-Teal
+  "#AFB42B", // Medium Lime-Olive
+  "#FFA000", // Medium Amber-Orange
+  "#D32F2F", // Medium Red
+  "#C0CA33", // Light Lime
+  "#039BE5", // Light Blue
+  "#00ACC1", // Light Cyan
+  "#43A047", // Light Green
 ];
 
 function hexToRgba(hex: string, alpha: number) {
