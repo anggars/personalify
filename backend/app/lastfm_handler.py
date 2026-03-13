@@ -63,8 +63,8 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 for future in artist_futures:
                     idx = artist_futures[future]
                     try:
-                        sp_id, sp_img = future.result()
-                        artist_results_map[idx] = {"id": sp_id, "image": sp_img}
+                        sp_id, sp_img, sp_genres = future.result()
+                        artist_results_map[idx] = {"id": sp_id, "image": sp_img, "genres": sp_genres}
                     except Exception as e:
                         print(f"BG Spotify artist search error: {e}")
                 
@@ -87,13 +87,13 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 ra["id"] = sp_data["id"]
             if sp_data.get("image"):
                 ra["image"] = sp_data["image"]
-            elif not ra.get("image") or "2a96cbd8b46e442fc41c2b86b821562f" in ra.get("image", ""):
+            elif not ra.get("image") or "blank-profile-picture" in ra.get("image", "") or "2a96cbd8b46e442fc41c2b86b821562f" in ra.get("image", ""):
                 # Try Deezer as fallback
                 deezer_img = _search_deezer_artist(ra.get("name", ""))
                 if deezer_img:
                     ra["image"] = deezer_img
                 else:
-                    ra["image"] = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png" # Human silhouette
+                    ra["image"] = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
             
         # Update cache after artists
         cache_top_data("top_v2", user_id, time_range, result, ttl=300)
@@ -105,14 +105,14 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 rt["id"] = sp_data["id"]
             if sp_data.get("image"):
                 rt["image"] = sp_data["image"]
-            elif not rt.get("image") or "4128a6eb29f94943c9d206c08e625904" in rt.get("image", ""):
+            elif not rt.get("image") or "photo-1614613535308-eb5fbd3d2c17" in rt.get("image", "") or "4128a6eb29f94943c9d206c08e625904" in rt.get("image", ""):
                  # Try iTunes as fallback
                  artist_name = rt.get("artists", [""])[0]
                  itunes_img = _search_itunes_track(rt.get("name", ""), artist_name)
                  if itunes_img:
                      rt["image"] = itunes_img
                  else:
-                     rt["image"] = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&h=300&auto=format&fit=crop" # Generic music art
+                     rt["image"] = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&h=300&auto=format&fit=crop"
 
         # Update cache after tracks
         cache_top_data("top_v2", user_id, time_range, result, ttl=300)
@@ -245,7 +245,7 @@ def _search_spotify_artist(artist_name, token):
                     images = sp_artist.get("images", [])
                     img_url = images[0]["url"] if images else ""
                     print(f"SPOTIFY ARTIST SEARCH: Match found for '{artist_name}' -> '{sp_artist['name']}'")
-                    return sp_artist["id"], img_url
+                    return sp_artist["id"], img_url, sp_artist.get("genres", [])
     except Exception:
         pass
         
@@ -264,12 +264,12 @@ def _search_spotify_artist(artist_name, token):
                     images = sp_artist.get("images", [])
                     img_url = images[0]["url"] if images else ""
                     print(f"SPOTIFY ARTIST SEARCH (Fallback): Match found for '{artist_name}' -> '{sp_artist['name']}'")
-                    return sp_artist["id"], img_url
+                    return sp_artist["id"], img_url, sp_artist.get("genres", [])
     except Exception:
         pass
         
     print(f"SPOTIFY ARTIST SEARCH: No match found for '{artist_name}'")
-    return None, ""
+    return None, "", []
 
 def _search_spotify_track(track_name, artist_name, token):
     """Search for a track on Spotify and return (id, image_url)."""
