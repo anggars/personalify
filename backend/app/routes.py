@@ -26,9 +26,10 @@ from app.db_handler import (
     get_refresh_token
 )
 from app.cache_handler import cache_top_data, get_cached_top_data, clear_top_data_cache, r as redis_client
-from app.mongo_handler import save_user_sync, get_user_history
+from app.mongo_handler import save_user_sync, get_user_history, get_active_provider, set_active_provider
 from app.qstash_handler import get_qstash_client, get_qstash_receiver
 from app.genius_lyrics import get_suggestions, search_artist_id, get_songs_by_artist, get_lyrics_by_id
+from app.lastfm_handler import sync_lastfm_user_data
 
 
 # Request Access Model
@@ -62,6 +63,18 @@ def get_redirect_uri(request: Request):
         return f"{scheme}://{host}/callback"
     else:
         return "http://127.0.0.1:8000/callback"
+
+def get_lastfm_redirect_uri(request: Request):
+    host = str(request.headers.get("x-forwarded-host", request.headers.get("host", "")))
+    if "vercel.app" in host:
+        return "https://personalify.vercel.app/lastfm/callback"
+    
+    if host:
+        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+        scheme = "https" if "vercel.app" in host or proto == "https" else "http"
+        return f"{scheme}://{host}/lastfm/callback"
+    else:
+        return "http://127.0.0.1:8000/lastfm/callback"
 
 @router.get("/", tags=["Root"])
 def root():
@@ -123,6 +136,15 @@ def request_access(data: RequestAccessModel):
 
 @router.get("/login", tags=["Auth"])
 def login(request: Request, mobile: str = Query(None)):
+    # 1. CHECK SYSTEM-WIDE ACTIVE PROVIDER
+    active_provider = get_active_provider()
+    
+    # 2. IF LAST.FM IS ACTIVE, REDIRECT TO LAST.FM FLOW
+    if active_provider == "lastfm":
+        print("DEBUG Login - System is in Last.fm mode. Redirecting...")
+        return RedirectResponse(url="/lastfm/login")
+
+    # 3. SPOTIFY FLOW
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     redirect_uri = get_redirect_uri(request)
     
@@ -136,7 +158,6 @@ def login(request: Request, mobile: str = Query(None)):
         raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
     
     # Pass mobile param through state parameter
-    # Ensure state is URL-safe and clearly indicates mobile
     state_val = f"mobile={mobile}" if mobile else "web"
     
     auth_url = "https://accounts.spotify.com/authorize?" + urlencode({
@@ -157,6 +178,46 @@ async def logout(request: Request):
         print(f"LOGOUT WARNING: {e}") 
     response = RedirectResponse(url="/?error=logged_out", status_code=303)
     response.delete_cookie("spotify_id", path="/")
+    return response
+
+@router.get("/lastfm/login", tags=["Auth"])
+def lastfm_login(request: Request):
+    api_key = os.getenv("LASTFM_API_KEY")
+    cb_url = get_lastfm_redirect_uri(request)
+    auth_url = f"http://www.last.fm/api/auth/?api_key={api_key}&cb={cb_url}"
+    return RedirectResponse(auth_url)
+
+@router.get("/lastfm/callback", tags=["Auth"])
+def lastfm_callback(request: Request, token: str = Query(...)):
+    from app.lastfm_handler import get_session_key
+    session_data = get_session_key(token)
+    if not session_data or "session" not in session_data:
+        return RedirectResponse(url="/?error=lastfm_auth_failed")
+    
+    username = session_data["session"]["name"]
+    session_key = session_data["session"]["key"]
+    
+    # Set cookies
+    original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+    is_local = "127.0.0.1" in original_host or "localhost" in original_host
+    is_secure = not is_local
+    
+    # helper to get frontend url dynamically
+    if "127.0.0.1" in original_host:
+        frontend_url = "http://127.0.0.1:3000"
+    elif "localhost" in original_host:
+        frontend_url = "http://localhost:3000"
+    else:
+        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+        scheme = "https" if "vercel.app" in original_host or proto == "https" else "http"
+        frontend_url = f"{scheme}://{original_host}"
+
+    response = RedirectResponse(url=f"{frontend_url}/dashboard/lastfm:{username}")
+    
+    # We use 'spotify_id' cookie for dashboard lookup, and 'lastfm_session' for scrobbling persistence
+    response.set_cookie(key="spotify_id", value=f"lastfm:{username}", httponly=True, path="/", samesite="lax", max_age=31536000, secure=is_secure)
+    response.set_cookie(key="lastfm_session", value=session_key, httponly=True, path="/", samesite="lax", max_age=31536000, secure=is_secure)
+    
     return response
 
 @router.get("/callback", tags=["Auth"])
@@ -181,7 +242,9 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
     elif "localhost" in original_host:
         frontend_url = "http://localhost:3000"
     else:
-        frontend_url = f"{request.url.scheme}://{original_host}"
+        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+        scheme = "https" if "vercel.app" in original_host or proto == "https" else "http"
+        frontend_url = f"{scheme}://{original_host}"
 
     def error_redirect(reason: str):
         if is_mobile:
@@ -751,12 +814,12 @@ def sync_top_data(
 
 @router.get("/top-data", tags=["Query"])
 def get_top_data(
-    spotify_id: str = Query(..., description="Spotify ID"),
+    profile_id: str = Query(..., description="Profile ID (Spotify/Last.fm)"),
     time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"]),
     limit: int = Query(10, ge=1),
     sort: str = Query("popularity")
 ):
-    data = get_cached_top_data("top_v2", spotify_id, time_range)
+    data = get_cached_top_data("top_v2", profile_id, time_range)
     if not data:
         return {"message": "No cached data found."}
 
@@ -769,10 +832,10 @@ def get_top_data(
 
 @router.get("/top-genres", tags=["Query"])
 def top_genres(
-    spotify_id: str = Query(..., description="Spotify ID"),
+    profile_id: str = Query(..., description="Profile ID (Spotify/Last.fm)"),
     time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"])
 ):
-    data = get_cached_top_data("top_v2", spotify_id, time_range)
+    data = get_cached_top_data("top_v2", profile_id, time_range)
     if not data:
         return {"error": "No cached data found for this user/time_range"}
 
@@ -785,75 +848,69 @@ def top_genres(
     return {"genres": [{"name": name, "count": count} for name, count in sorted_genres]}
 
 @router.get("/history", tags=["Query"])
-def get_sync_history(spotify_id: str = Query(..., description="Spotify ID")):
-    return get_user_history(spotify_id)
+def get_sync_history(profile_id: str = Query(..., description="Profile ID (Spotify/Last.fm)")):
+    return get_user_history(profile_id)
 
-@router.get("/dashboard/{spotify_id}", response_class=HTMLResponse, tags=["Dashboard"])
-def dashboard(spotify_id: str, time_range: str = "medium_term", request: Request = None):
-    try:
-        data = get_cached_top_data("top_v2", spotify_id, time_range)
-        if not data:
-            return RedirectResponse(url="/?error=session_expired")
 
-        sentiment_report = data.get("sentiment_report", "Vibe analysis is getting ready...")
-        sentiment_scores = data.get("sentiment_scores", [])
-        analytics = data.get("analytics") 
-
-        genre_count_top10 = {}
-        genre_artists_map_top10 = {}
-        for artist in data.get("artists", [])[:10]:
-            for genre in artist.get("genres", []):
-                genre_count_top10[genre] = genre_count_top10.get(genre, 0) + 1
-                if genre not in genre_artists_map_top10:
-                    genre_artists_map_top10[genre] = []
-                genre_artists_map_top10[genre].append(artist["name"])
-        sorted_genres_top10 = sorted(genre_count_top10.items(), key=lambda x: x[1], reverse=True)
-        genre_list_top10 = [{"name": name, "count": count} for name, count in sorted_genres_top10]
-
-        genre_count_top20 = {}
-        genre_artists_map_top20 = {}
-        for artist in data.get("artists", []):
-            for genre in artist.get("genres", []):
-                genre_count_top20[genre] = genre_count_top20.get(genre, 0) + 1
-                if genre not in genre_artists_map_top20:
-                    genre_artists_map_top20[genre] = []
-                genre_artists_map_top20[genre].append(artist["name"])
-        sorted_genres_top20 = sorted(genre_count_top20.items(), key=lambda x: x[1], reverse=True)
-        genre_list_top20 = [{"name": name, "count": count} for name, count in sorted_genres_top20]
-
-        return templates.TemplateResponse("dashboard.html", {
-            "request": request,
-            "user": data["user"],
-            "spotify_id": spotify_id,
-            "artists": data["artists"],
-            "tracks": data["tracks"],
-            "genres": genre_list_top10,
-            "genres_extended": genre_list_top20,
-            "time_range": time_range,
-            "genre_artists_map": genre_artists_map_top10,
-            "genre_artists_map_extended": genre_artists_map_top20,
-            "sentiment_report": sentiment_report,
-            "sentiment_scores": sentiment_scores,
-            "analytics": analytics
-        })
-
-    except Exception as e:
-        print(f"DASHBOARD CRASH: {e}")
-        raise HTTPException(status_code=500, detail="Internal Dashboard Error")
-
-@router.get("/api/dashboard/{spotify_id}", tags=["Dashboard API"])
-def dashboard_api(spotify_id: str, request: Request, response: Response, background_tasks: BackgroundTasks, time_range: str = "medium_term"):
+@router.get("/api/dashboard/{profile_id}", tags=["Dashboard API"])
+def dashboard_api(profile_id: str, request: Request, response: Response, background_tasks: BackgroundTasks, time_range: str = "medium_term"):
     """JSON API endpoint for Next.js dashboard"""
     """JSON API endpoint for Next.js dashboard"""
     try:
+        # DEBUG: Log dashboard request
+        print(f"WEB DASHBOARD: Fetching data for {profile_id} [Time range: {time_range}]")
+        
         # Check for access_token cookie to perform REALTIME SYNC
         access_token = request.cookies.get("access_token")
         logged_in_id = request.cookies.get("spotify_id")
         
         # Determine if we are viewing our own profile or someone else's
-        # Determine if we are viewing our own profile or someone else's
         # If logged_in_id is missing, we assume we are just viewing (public view)
-        is_own_profile = (logged_in_id == spotify_id)
+        is_own_profile = (logged_in_id == profile_id)
+
+        # LAST.FM HANDLING: If it's a Last.fm ID, use the Last.fm handler directly
+        if profile_id.startswith("lastfm:"):
+            username = profile_id.replace("lastfm:", "")
+            # For Last.fm, we don't need a token, we just sync by username
+            # We can sync every time or rely on cache. Here we try cache first.
+            data = get_cached_top_data("top_v2", profile_id, time_range)
+            if not data:
+                print(f"WEB DASHBOARD: No cache for {username}. Starting Last.fm sync...")
+                data = sync_lastfm_user_data(username, time_range, background_tasks=background_tasks)
+                if data:
+                    print(f"WEB DASHBOARD: Sync triggered for {username}")
+                else:
+                    print(f"WEB DASHBOARD: Sync failed to start for {username}")
+            
+            if not data:
+                print(f"WEB DASHBOARD ERROR: Sync failed for Last.fm user '{username}'")
+                raise HTTPException(status_code=404, detail="Last.fm user data unavailable. Please verify your username exists and has enough scrobbles.")
+            
+            # Re-format genres for the response (similar to Spotify logic below)
+            genre_count = {}
+            genre_artists_map = {}
+            for artist in data.get("artists", []):
+                for genre in artist.get("genres", []):
+                    genre_count[genre] = genre_count.get(genre, 0) + 1
+                    if genre not in genre_artists_map:
+                        genre_artists_map[genre] = []
+                    genre_artists_map[genre].append(artist["name"])
+            
+            sorted_genres = sorted(genre_count.items(), key=lambda x: x[1], reverse=True)
+            genre_list = [{"name": name, "count": count} for name, count in sorted_genres]
+
+            return {
+                "user": data["user"],
+                "image": data.get("image"),
+                "time_range": time_range,
+                "sentiment_report": data.get("sentiment_report", ""),
+                "sentiment_scores": data.get("sentiment_scores", []),
+                "artists": data.get("artists", []),
+                "tracks": data.get("tracks", []),
+                "genres": genre_list,
+                "genre_artists_map": genre_artists_map,
+                "source": "lastfm"
+            }
 
         if is_own_profile:
             # 1. AUTO-REFRESH LOGIC ...
@@ -874,7 +931,7 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
                         user_data = user_res.json()
                         verified_id = user_data.get("id")
                         
-                        if verified_id == spotify_id:
+                        if verified_id == profile_id:
                             print(f"WEB DASHBOARD: Identity Verified via Token! Restoring session for {verified_id}")
                             is_own_profile = True
                             access_token = token_from_header # Use this token for sync
@@ -888,7 +945,7 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
                             response.set_cookie(key="spotify_id", value=verified_id, httponly=True, path="/", samesite="lax", max_age=2592000, secure=is_secure)
                             response.set_cookie(key="access_token", value=access_token, httponly=True, path="/", samesite="lax", max_age=3600, secure=is_secure)
                         else:
-                            print(f"WEB DASHBOARD: Token belongs to {verified_id}, not {spotify_id}. Public View.")
+                            print(f"WEB DASHBOARD: Token belongs to {verified_id}, not {profile_id}. Public View.")
                 except Exception as e:
                     print(f"WEB DASHBOARD: Token verification failed: {e}")
 
@@ -896,8 +953,8 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
             # 1. AUTO-REFRESH LOGIC (Server-Side) - ONLY FOR OWN PROFILE
             # If no access_token cookie, try to refresh using DB refresh_token
             if not access_token:
-                print(f"WEB DASHBOARD: No access_token cookie. Attempting server-side refresh for {spotify_id}...")
-                refresh_token = get_refresh_token(spotify_id)
+                print(f"WEB DASHBOARD: No access_token cookie. Attempting server-side refresh for {profile_id}...")
+                refresh_token = get_refresh_token(profile_id)
                 
                 if refresh_token:
                     try:
@@ -923,7 +980,7 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
                             # Save new refresh token if rotated
                             token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
                             token_to_save = new_refresh_token if new_refresh_token else refresh_token
-                            save_refresh_token(spotify_id, token_to_save, token_expires_at)
+                            save_refresh_token(profile_id, token_to_save, token_expires_at)
                             
                             # Set cookie for future requests
                             # Determine if running locally (copied from other endpoints logic)
@@ -951,7 +1008,7 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
             # 2. CACHE-FIRST LOGIC - ONLY FOR OWN PROFILE
             if access_token:
                 # 2.1 Check cache first
-                data = get_cached_top_data("top_v2", spotify_id, time_range)
+                data = get_cached_top_data("top_v2", profile_id, time_range)
                 
                 # 2.2 Freshness Check (Optional: Only sync if no cache or cache is old)
                 # For now, if cache exists, we return it. 
@@ -960,15 +1017,15 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
                     # Check if analysis is indeed done, or if it's still "getting ready"
                     sentiment_report = data.get("sentiment_report", "")
                     if "getting ready" in sentiment_report or "being analyzed" in sentiment_report:
-                        print(f"WEB DASHBOARD: Vibe still loading for {spotify_id}. Triggering background refresh.")
+                        print(f"WEB DASHBOARD: Vibe still loading for {profile_id}. Triggering background refresh.")
                         # Import here to avoid circular dependencies
                         from app.spotify_handler import process_sentiment_background
-                        background_tasks.add_task(process_sentiment_background, spotify_id, time_range, data, False)
+                        background_tasks.add_task(process_sentiment_background, profile_id, time_range, data, False)
                     
-                    print(f"WEB DASHBOARD: Returning cached data for {spotify_id}.")
+                    print(f"WEB DASHBOARD: Returning cached data for {profile_id}.")
                 else:
                     # 2.3 No cache -> Sync fresh data
-                    print(f"WEB DASHBOARD: No cache found. Syncing fresh data for {spotify_id}...")
+                    print(f"WEB DASHBOARD: No cache found. Syncing fresh data for {profile_id}...")
                     try:
                         data = sync_user_data(access_token, time_range, background_tasks=background_tasks)
                         print("WEB DASHBOARD: Sync success!")
@@ -976,12 +1033,12 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
                         print(f"WEB DASHBOARD: Sync failed ({e}). Falling back to empty.")
                         data = None
             else:
-                print(f"WEB DASHBOARD: No access_token. Reading from cache for {spotify_id}.")
-                data = get_cached_top_data("top_v2", spotify_id, time_range)
+                print(f"WEB DASHBOARD: No access_token. Reading from cache for {profile_id}.")
+                data = get_cached_top_data("top_v2", profile_id, time_range)
         else:
             # PUBLIC VIEW / OTHER PROFILE
-            print(f"WEB DASHBOARD: Viewing Public Profile {spotify_id} (Logged in as: {logged_in_id}). Skipping Sync.")
-            data = get_cached_top_data("top_v2", spotify_id, time_range)
+            print(f"WEB DASHBOARD: Viewing Public Profile {profile_id} (Logged in as: {logged_in_id}). Skipping Sync.")
+            data = get_cached_top_data("top_v2", profile_id, time_range)
 
         if not data:
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
@@ -1020,8 +1077,11 @@ def dashboard_api(spotify_id: str, request: Request, response: Response, backgro
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
         print(f"DASHBOARD API CRASH: {e}")
-        raise HTTPException(status_code=500, detail="Internal Dashboard Error")
+        print(f"TRACEBACK:\n{error_trace}")
+        raise HTTPException(status_code=500, detail=f"Internal Dashboard Error: {str(e)}")
 
 @router.get("/about", response_class=HTMLResponse, tags=["Pages"])
 def about_page(request: Request): 
@@ -1074,10 +1134,10 @@ def clear_cache():
             status_code=500
         )
 
-@router.get("/admin/report/{spotify_id}", tags=["Admin"])
-def get_user_stats(spotify_id: str):
+@router.get("/admin/report/{profile_id}", tags=["Admin"])
+def get_user_stats(profile_id: str):
     try:
-        details = get_user_report(spotify_id)
+        details = get_user_report(profile_id)
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         RECEIPT_WIDTH = 40
 
@@ -1232,19 +1292,19 @@ def api_get_lyrics_emotion(song_id: int):
     print("="*50)
     emotion = analyze_lyrics_emotion(data['lyrics'])
     return {
-        "track_info": data, 
+        "track_info": data,
         "lyrics": data['lyrics'],
         "emotion_analysis": emotion
     }
 
-async def run_analysis_logic(spotify_id: str):
-    print(f"[START] Processing analysis for: {spotify_id}")
+async def run_analysis_logic(profile_id: str):
+    print(f"[START] Processing analysis for: {profile_id}")
     await asyncio.sleep(2)
-    print(f"[FINISH] Analysis complete for: {spotify_id}")
+    print(f"[FINISH] Analysis complete for: {profile_id}")
 
 @router.post("/start-background-analysis")
 async def start_background_analysis(
-    spotify_id: str, 
+    profile_id: str, 
     background_tasks: BackgroundTasks
 ):
     app_url = os.getenv("APP_URL", "http://127.0.0.1:8000")
@@ -1269,7 +1329,7 @@ async def start_background_analysis(
             response = requests.post(
                 qstash_url,
                 headers=headers,
-                data=json.dumps({"spotify_id": spotify_id})
+                data=json.dumps({"profile_id": profile_id})
             )
             
             if 200 <= response.status_code < 300:
@@ -1296,8 +1356,8 @@ async def process_analysis_task(request: Request):
         print(f"INVALID SIGNATURE: {e}")
         raise HTTPException(status_code=401, detail="Invalid signature")
     data = await request.json()
-    spotify_id = data.get("spotify_id")
-    await run_analysis_logic(spotify_id)
+    profile_id = data.get("profile_id") or data.get("spotify_id")
+    await run_analysis_logic(profile_id)
     return {"status": "Processed"}
 
 @router.post("/fire-qstash-event")
@@ -1493,5 +1553,34 @@ def get_user_profile_detail(
         return result
 
     except Exception as e:
-        print(f"Error fetching user profile: {e}")
+        import traceback
+        print(f"CRITICAL ERROR in dashboard_api: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Backend Error: {str(e)}")
+
+# ========== SYSTEM SETTINGS ==========
+
+@router.get("/api/active-provider", tags=["Settings"])
+def api_get_active_provider():
+    """Get system-wide active provider (spotify or lastfm)"""
+    try:
+        provider = get_active_provider()
+        return {"provider": provider}
+    except Exception as e:
+        print(f"ERROR Fetching Provider: {e}")
+        return {"provider": "spotify"}
+
+@router.post("/api/active-provider", tags=["Settings"])
+def api_set_active_provider(data: dict = Body(...)):
+    """Set system-wide active provider"""
+    provider = data.get("provider")
+    if provider not in ["spotify", "lastfm"]:
+        raise HTTPException(status_code=400, detail="Invalid provider")
+    
+    try:
+        set_active_provider(provider)
+        log_system("ADMIN", f"System provider changed to: {provider}", "ADMIN_CENTER")
+        return {"status": "ok", "provider": provider}
+    except Exception as e:
+        print(f"ERROR Setting Provider: {e}")
         raise HTTPException(status_code=500, detail=str(e))

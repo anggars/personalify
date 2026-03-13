@@ -28,30 +28,34 @@ export default function DashboardRedirect() {
 
     useEffect(() => {
         const checkSession = async () => {
-            // 1. Check LocalStorage first
-            const storedId = localStorage.getItem("spotify_id");
-            if (storedId) {
-                router.replace(`/dashboard/${storedId}?time_range=short_term`);
-                return;
-            }
-
-            // 2. Fallback to API check (incase localStorage cleared but cookies exist)
             try {
+                // 1. Check LocalStorage first for immediate redirect
+                const storedId = localStorage.getItem("profile_id") || localStorage.getItem("spotify_id");
+                
+                // 2. Fallback to API check to see who we are actually logged in as
                 const res = await fetch("/api/me", { credentials: "include" });
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.spotify_id) {
-                        localStorage.setItem("spotify_id", data.spotify_id);
-                        router.replace(`/dashboard/${data.spotify_id}?time_range=short_term`);
+                    const currentId = data.spotify_id || data.profile_id;
+                    
+                    if (currentId) {
+                        // Sync localStorage
+                        localStorage.setItem("profile_id", currentId);
+                        localStorage.setItem("spotify_id", currentId); // Legacy support
+                        router.replace(`/dashboard/${currentId}?time_range=short_term`);
                         return;
                     }
+                } else if (storedId) {
+                    // If API fails but we have a stored ID, try it anyway (public view support)
+                    router.replace(`/dashboard/${storedId}?time_range=short_term`);
+                    return;
                 }
             } catch (err) {
                 console.error("Session check failed:", err);
             }
 
             // 3. Not logged in -> Redirect Home
-            showToast("Please login with Spotify first!", "error");
+            showToast("Please login first!", "error");
             router.replace("/");
         };
 

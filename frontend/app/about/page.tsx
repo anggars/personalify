@@ -45,6 +45,7 @@ import {
   SiHuggingface,
   SiTypescript,
   SiSpotify,
+  SiLastdotfm,
   SiFlutter,
 } from "react-icons/si";
 
@@ -88,9 +89,25 @@ export default function AboutPage() {
   const hasTyped = React.useRef(false);
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
+  const [activeProvider, setActiveProvider] = React.useState<"spotify" | "lastfm">("spotify");
 
   useEffect(() => {
     setMounted(true);
+    
+    // Fetch active provider
+    const fetchProvider = async () => {
+      try {
+        fetch("/api/active-provider")
+          .then(res => res.json())
+          .then(data => {
+            if (data?.provider) setActiveProvider(data.provider);
+          })
+          .catch(() => {});
+      } catch (err) {
+        console.error("Failed to fetch provider on about:", err);
+      }
+    };
+    fetchProvider();
   }, []);
 
   const bwColor = mounted && resolvedTheme === "light" ? "#000000" : "#ffffff";
@@ -217,11 +234,13 @@ export default function AboutPage() {
       active: "active:text-[#e4405f]",
     },
     {
-      icon: FaSpotify,
-      href: "https://open.spotify.com/user/31xon7qetimdnbmhkupbaszl52nu",
-      label: "Spotify",
-      hover: "hover-brand-spotify",
-      active: "active:text-[#1DB954]",
+      icon: activeProvider === "spotify" ? FaSpotify : SiLastdotfm,
+      href: activeProvider === "spotify" 
+        ? "https://open.spotify.com/user/31xon7qetimdnbmhkupbaszl52nu" 
+        : "https://www.last.fm/user/Aanggarts",
+      label: activeProvider === "spotify" ? "Spotify" : "Last.fm",
+      hover: activeProvider === "spotify" ? "hover-brand-spotify" : "hover-brand-lastfm",
+      active: activeProvider === "spotify" ? "active:text-[#1DB954]" : "active:text-[#D51007]",
     },
     {
       icon: XIcon,
@@ -368,11 +387,11 @@ export default function AboutPage() {
               />
               . Data comes from the{" "}
               <TechHover
-                text="Spotify API"
-                href="https://developer.spotify.com/"
-                description="Web API to retrieve metadata, player state, and user information."
-                icon={SiSpotify}
-                color="#1DB954"
+                text={activeProvider === "spotify" ? "Spotify API" : "Last.fm API"}
+                href={activeProvider === "spotify" ? "https://developer.spotify.com/" : "https://www.last.fm/api"}
+                description={activeProvider === "spotify" ? "Web API to retrieve metadata, player state, and user information." : "API to retrieve music metadata and user listening history (scrobbles)."}
+                icon={activeProvider === "spotify" ? SiSpotify : SiLastdotfm}
+                color={activeProvider === "spotify" ? "#1DB954" : "#D51007"}
               />
               . Local dev uses{" "}
               <TechHover

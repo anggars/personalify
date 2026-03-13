@@ -45,3 +45,18 @@ def get_user_sync(spotify_id, time_range):
 
 def get_all_synced_user_ids():
     return db.list_collection_names()
+
+def get_active_provider():
+    try:
+        config = db["AppConfig"].find_one({"_id": "system_config"})
+        return config.get("active_provider", "spotify") if config else "spotify"
+    except Exception as e:
+        print(f"MONGO CONFIG ERROR: {e}")
+        return "spotify"
+
+def set_active_provider(provider: str):
+    db["AppConfig"].update_one(
+        {"_id": "system_config"},
+        {"$set": {"active_provider": provider}},
+        upsert=True
+    )

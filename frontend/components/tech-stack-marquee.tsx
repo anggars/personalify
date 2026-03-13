@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 
 export const TECH_STACK = [
     { name: "Spotify", slug: "spotify", color: "1DB954" },
+    { name: "Last.fm", slug: "lastdotfm", color: "D51007" },
     { name: "Genius", slug: "genius", color: "FFFF00" },
     { name: "Next.js", slug: "nextdotjs", color: "white" },
     { name: "TypeScript", slug: "typescript", color: "3178C6" },

@@ -26,6 +26,19 @@ function HomeContent() {
   const paragraphRef = useRef<HTMLParagraphElement>(null);
   const hasTyped = useRef(false);
   const [isTechStackVisible, setIsTechStackVisible] = useState(false);
+  const [activeProvider, setActiveProvider] = useState<"spotify" | "lastfm">("spotify");
+
+  // Fetch active provider
+  useEffect(() => {
+    fetch("/api/active-provider")
+      .then(res => res.json())
+      .then(data => {
+        if (data?.provider) setActiveProvider(data.provider);
+      })
+      .catch(() => {
+        console.error("Failed to fetch provider on home");
+      });
+  }, []);
 
   const isMobileRef = useRef(false);
 
@@ -131,7 +144,9 @@ function HomeContent() {
     if (hasTyped.current || !paragraphRef.current) return;
     hasTyped.current = true;
 
-    const text = `Discover your most played artists, tracks, and genres through <br class="md:hidden"/>Spotify insights. Go beyond the sound and <a href="/lyrics" class="text-[#888] hover:text-[#1DB954] transition-colors">analyze the essence <br class="md:hidden"/>hidden in the lyrics</a>. Let's explore your unique taste in music.`;
+    const text = activeProvider === "spotify" 
+      ? `Discover your most played artists, tracks, and genres through <br class="md:hidden"/>Spotify insights. Go beyond the sound and <a href="/lyrics" class="text-[#888] hover:text-[#1DB954] transition-colors">analyze the essence <br class="md:hidden"/>hidden in the lyrics</a>. Let's explore your unique taste in music.`
+      : `Experience your music journey through <br class="md:hidden"/>Last.fm insights. Track your listening habits and <a href="/lyrics" class="text-[#888] hover:text-[#D51007] transition-colors">discover new trends <br class="md:hidden"/>in your top tracks</a>. Let's dive deep into your music scrobbles.`;
 
     let index = 0;
     let currentHtml = "";
@@ -166,7 +181,7 @@ function HomeContent() {
 
     // Start after a small delay
     setTimeout(typeWriter, 500);
-  }, []);
+  }, [activeProvider]);
 
   const handleMouseMoveOrTouch = (
     e:
@@ -191,8 +206,14 @@ function HomeContent() {
     el.style.setProperty("--mouse-y", `${y}%`);
   };
 
-  const handleLoginClick = () => {
-    setIsLoading(true);
+  const handleLoginClick = (e: React.MouseEvent) => {
+    if (activeProvider === "lastfm") {
+      e.preventDefault();
+      setIsLoading(true);
+      window.location.href = "/lastfm/login";
+    } else {
+      setIsLoading(true);
+    }
   };
 
   return (
@@ -208,7 +229,7 @@ function HomeContent() {
         className="relative mb-5 flex justify-center"
       >
         <motion.div
-          className="relative h-[80px] max-md:h-[60px] rounded-full overflow-hidden cursor-pointer"
+          className="relative h-[80px] max-md:h-[60px] overflow-hidden cursor-pointer"
           animate={{
             width: isTechStackVisible
               ? isMobileRef.current
@@ -242,8 +263,8 @@ function HomeContent() {
           >
             <div className="w-full h-full p-0 flex items-center justify-center">
               <img
-                src="https://cdn.simpleicons.org/spotify/1DB954"
-                alt="Spotify"
+                src={activeProvider === "spotify" ? "https://cdn.simpleicons.org/spotify/1DB954" : "https://cdn.simpleicons.org/lastdotfm/D51007"}
+                alt={activeProvider === "spotify" ? "Spotify" : "Last.fm"}
                 className="w-full h-full object-contain"
               />
             </div>
@@ -282,7 +303,7 @@ function HomeContent() {
             className={`transition-opacity duration-200 ${isLoading ? "opacity-0" : "opacity-100"
               }`}
           >
-            Login with Spotify
+            {activeProvider === "spotify" ? "Login with Spotify" : "Login with Last.fm"}
           </span>
           <svg
             className={`absolute top-1/2 left-1/2 -ml-3 -mt-3 w-6 h-6 transition-opacity duration-200 spinner-svg ${isLoading ? "opacity-100" : "opacity-0"
@@ -315,6 +336,7 @@ function HomeContent() {
           </button>
         </motion.div>
       )}
+
 
       {/* Request Access Modal */}
       <AnimatePresence>

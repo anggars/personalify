@@ -8,9 +8,10 @@ export default function AdminStatsPage() {
   const [stats, setStats] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [spotifyId, setSpotifyId] = useState("");
+  const [targetId, setTargetId] = useState("");
   const [currentTime, setCurrentTime] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+  const [activeProvider, setActiveProvider] = useState<"spotify" | "lastfm">("spotify");
   const consoleEndRef = useRef<HTMLDivElement>(null);
 
   // Handle Hydration: Only render clock on client
@@ -23,6 +24,46 @@ export default function AdminStatsPage() {
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Load active provider
+  useEffect(() => {
+    const fetchProvider = async () => {
+      try {
+        const res = await fetch("/api/active-provider");
+        if (res.ok) {
+          const data = await res.json();
+          setActiveProvider(data.provider);
+        }
+      } catch (err) {
+        console.error("Failed to fetch provider:", err);
+      }
+    };
+    fetchProvider();
+  }, []);
+
+  const toggleProvider = async () => {
+    const newProvider = activeProvider === "spotify" ? "lastfm" : "spotify";
+    if (!confirm(`SWITCH SYSTEM MODE: Change active provider to ${newProvider.toUpperCase()}?`)) return;
+    
+    setLoading(true);
+    try {
+      const res = await fetch("/api/active-provider", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: newProvider }),
+      });
+      if (res.ok) {
+        setActiveProvider(newProvider);
+        setStats(`SYSTEM_MODE >> ${newProvider.toUpperCase()}\nStatus: SUCCESS\nProvider updated successfully.`);
+      } else {
+        throw new Error("Failed to update provider");
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const scrollToBottom = () => {
     consoleEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,11 +106,11 @@ export default function AdminStatsPage() {
 
   const fetchUserReport = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!spotifyId.trim()) return;
+    if (!targetId.trim()) return;
 
     setLoading(true);
     try {
-      const res = await fetch(`/admin/report/${spotifyId.trim()}`);
+      const res = await fetch(`/admin/report/${targetId.trim()}`);
       if (!res.ok) throw new Error(`User not found or Server error (${res.status})`);
       const text = await res.text();
       setStats(text);
@@ -172,13 +213,29 @@ export default function AdminStatsPage() {
           <div className="lg:col-span-7 flex flex-wrap lg:justify-end gap-2">
              {/* Quick Actions Grid */}
              <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+                {/* Provider Switch Toggle */}
+                <button
+                    onClick={toggleProvider}
+                    disabled={loading}
+                    className={`p-3 rounded-lg border transition-all flex items-center gap-2 group ${
+                        activeProvider === "spotify" 
+                        ? "border-emerald-500/20 hover:border-emerald-500 bg-emerald-500/5" 
+                        : "border-red-500/20 hover:border-red-500 bg-red-500/5"
+                    }`}
+                    title="TOGGLE_SYSTEM_PROVIDER"
+                >
+                    <Zap className={`w-3.5 h-3.5 ${activeProvider === "spotify" ? "text-emerald-500" : "text-red-500"}`} />
+                    <span className="text-[9px] font-bold tracking-widest uppercase">
+                        {activeProvider === "spotify" ? "MODE: SPOTIFY" : "MODE: LAST.FM"}
+                    </span>
+                </button>
                 <form onSubmit={fetchUserReport} className="flex-1 lg:flex-none relative group">
                     <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-emerald-500 transition-colors" />
                     <input 
                     type="text" 
-                    placeholder="SPOTIFY_USER_ID" 
-                    value={spotifyId}
-                    onChange={(e) => setSpotifyId(e.target.value)}
+                    placeholder="PROFILE_ID (SPOTIFY/LFM)" 
+                    value={targetId}
+                    onChange={(e) => setTargetId(e.target.value)}
                     className="bg-zinc-950 border border-zinc-900 rounded-lg pl-10 pr-4 py-3 text-[10px] w-full lg:w-48 focus:outline-none focus:border-emerald-500/50 transition-all placeholder:text-zinc-800"
                     />
                 </form>

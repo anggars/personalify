@@ -3,25 +3,25 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Light Mode Selection (High Contrast) */
+/* Light Mode Selection */
 ::selection {
-  background-color: rgba(29, 185, 84, 0.4);
+  background-color: var(--selection-bg-color);
   color: #000000;
   text-shadow: none;
 }
 ::-moz-selection {
-  background-color: rgba(29, 185, 84, 0.4);
+  background-color: var(--selection-bg-color);
   color: #000000;
   text-shadow: none;
 }
 
-/* Dark Mode Override (White Text) */
+/* Dark Mode Override */
 .dark ::selection {
-  background-color: rgba(29, 185, 84, 0.45);
+  background-color: var(--selection-bg-color);
   color: white;
 }
 .dark ::-moz-selection {
-  background-color: rgba(29, 185, 84, 0.45);
+  background-color: var(--selection-bg-color);
   color: white;
 }
 
@@ -68,6 +68,8 @@
   --popover: #ececec;
   --popover-foreground: #1a1a1a;
   --primary: #1db954;
+  --primary-rgb: 29, 185, 84;
+  --selection-bg-color: rgba(29, 185, 84, 0.4);
   --primary-foreground: #000000;
   --secondary: #d5d5d5;
   --secondary-foreground: #1a1a1a;
@@ -78,7 +80,7 @@
   --destructive: #ff453a;
   --border: rgba(0, 0, 0, 0.15);
   --input: rgba(0, 0, 0, 0.1);
-  --ring: #1db954;
+  --ring: var(--primary);
 
   /* Section colors for light mode */
   --section-bg: #ececec;
@@ -99,6 +101,8 @@
   --popover: #1e1e1e;
   --popover-foreground: #ffffff;
   --primary: #1db954;
+  --primary-rgb: 29, 185, 84;
+  --selection-bg-color: rgba(29, 185, 84, 0.45);
   --primary-foreground: #000000;
   --secondary: #282828;
   --secondary-foreground: #ffffff;
@@ -109,7 +113,7 @@
   --destructive: #ff453a;
   --border: rgba(255, 255, 255, 0.08);
   --input: rgba(255, 255, 255, 0.08);
-  --ring: #1db954;
+  --ring: var(--primary);
 
   /* Section colors for dark mode */
   --section-bg: #1e1e1e;
@@ -613,10 +617,10 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
     top: calc(var(--mouse-y, 50%) - 50%);
     background: radial-gradient(
       circle 50px at center,
-      rgba(29, 185, 84, 0.7) 0%,
-      rgba(29, 185, 84, 0.35) 25%,
-      rgba(29, 185, 84, 0.12) 50%,
-      rgba(29, 185, 84, 0.04) 75%,
+      rgba(var(--primary-rgb), 0.7) 0%,
+      rgba(var(--primary-rgb), 0.35) 25%,
+      rgba(var(--primary-rgb), 0.12) 50%,
+      rgba(var(--primary-rgb), 0.04) 75%,
       transparent 100%
     );
     filter: blur(8px);
@@ -644,10 +648,10 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
     top: calc(var(--mouse-y, 50%) - 50%);
     background: radial-gradient(
       circle 50px at center,
-      rgba(29, 185, 84, 0.6) 0%,
-      rgba(29, 185, 84, 0.3) 25%,
-      rgba(29, 185, 84, 0.1) 50%,
-      rgba(29, 185, 84, 0.03) 75%,
+      rgba(var(--primary-rgb), 0.6) 0%,
+      rgba(var(--primary-rgb), 0.3) 25%,
+      rgba(var(--primary-rgb), 0.1) 50%,
+      rgba(var(--primary-rgb), 0.03) 75%,
       transparent 100%
     );
     filter: blur(8px);
@@ -662,7 +666,7 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
     mix-blend-mode: normal;
     background: radial-gradient(
       circle at center,
-      rgba(29, 185, 84, 0.2) 0%,
+      rgba(var(--primary-rgb), 0.2) 0%,
       transparent 80%
     );
   }
@@ -750,10 +754,10 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
   top: calc(var(--mouse-y, 50%) - 50%);
   background: radial-gradient(
     circle 50px at center,
-    rgba(29, 185, 84, 0.75) 0%,
-    rgba(29, 185, 84, 0.35) 25%,
-    rgba(29, 185, 84, 0.12) 50%,
-    rgba(29, 185, 84, 0.04) 75%,
+    rgba(var(--primary-rgb), 0.75) 0%,
+    rgba(var(--primary-rgb), 0.35) 25%,
+    rgba(var(--primary-rgb), 0.12) 50%,
+    rgba(var(--primary-rgb), 0.04) 75%,
     transparent 100%
   );
   filter: blur(8px);
@@ -768,7 +772,7 @@ div.custom-scrollbar::-webkit-scrollbar-corner {
   mix-blend-mode: normal;
   background: radial-gradient(
     circle at center,
-    rgba(29, 185, 84, 0.2) 0%,
+    rgba(var(--primary-rgb), 0.2) 0%,
     transparent 80%
   );
 }
@@ -1283,14 +1287,19 @@ html {
   border-color: #444 !important;
 }
 .hover-brand-linkedin:hover {
-  color: #0077b5;
-  border-color: #0077b5;
+  color: #0077b5 !important;
+  border-color: #0077b5 !important;
   box-shadow: 0 2px 4px rgba(0, 119, 181, 0.08);
 }
 .hover-brand-spotify:hover {
-  color: #1db954;
-  border-color: #1db954;
+  color: #1db954 !important;
+  border-color: #1db954 !important;
   box-shadow: 0 2px 4px rgba(29, 185, 84, 0.08);
+}
+.hover-brand-lastfm:hover {
+  color: #d51007 !important;
+  border-color: #d51007 !important;
+  box-shadow: 0 2px 4px rgba(213, 16, 7, 0.08);
 }
 /* X/Twitter - black in light mode, white in dark mode */
 :root:not(.dark) .hover-brand-x:hover {
@@ -1303,28 +1312,28 @@ html {
   box-shadow: 0 2px 4px rgba(255, 255, 255, 0.05);
 }
 .hover-brand-youtube:hover {
-  color: #ff0000;
-  border-color: #ff0000;
+  color: #ff0000 !important;
+  border-color: #ff0000 !important;
   box-shadow: 0 2px 4px rgba(255, 0, 0, 0.08);
 }
 .hover-brand-soundcloud:hover {
-  color: #ff5500;
-  border-color: #ff5500;
+  color: #ff5500 !important;
+  border-color: #ff5500 !important;
   box-shadow: 0 2px 4px rgba(255, 85, 0, 0.08);
 }
 .hover-brand-medium:hover {
-  color: #00ab6c;
-  border-color: #00ab6c;
+  color: #00ab6c !important;
+  border-color: #00ab6c !important;
   box-shadow: 0 2px 4px rgba(0, 171, 108, 0.08);
 }
 .hover-brand-telegram:hover {
-  color: #0088cc;
-  border-color: #0088cc;
+  color: #0088cc !important;
+  border-color: #0088cc !important;
   box-shadow: 0 2px 4px rgba(0, 136, 204, 0.08);
 }
 .hover-brand-blog:hover {
-  color: #fee133;
-  border-color: #fee133;
+  color: #fee133 !important;
+  border-color: #fee133 !important;
   box-shadow: 0 2px 4px rgba(254, 225, 51, 0.08);
 }
 

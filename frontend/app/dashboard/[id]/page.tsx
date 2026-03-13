@@ -4,14 +4,14 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
-import { GenreChart } from "@/components/genre-chart";
+import { GenreChart } from "../../../components/genre-chart";
 import * as htmlToImage from "html-to-image";
-import { Slider } from "@/components/ui/slider";
+import { Slider } from "../../../components/ui/slider";
 import { CirclePlay, CirclePause } from "lucide-react";
 
-import MarqueeText from "@/components/marquee-text";
+import MarqueeText from "../../../components/marquee-text";
 import { toast } from "sonner";
-import { fetchWithAuth } from "@/lib/api";
+import { fetchWithAuth } from "../../../lib/api";
 
 // Spotify IFrame API type declarations
 interface SpotifyEmbedController {
@@ -48,6 +48,7 @@ interface Artist {
   image: string;
   genres: string[];
   popularity: number;
+  external_url?: string;
 }
 
 interface Track {
@@ -61,6 +62,7 @@ interface Track {
   };
   popularity: number;
   duration_ms: number;
+  external_url?: string;
 }
 
 interface Genre {
@@ -76,6 +78,7 @@ interface DashboardData {
   tracks: Track[];
   genres: Genre[];
   genre_artists_map: Record<string, string[]>;
+  source?: string;
 }
 
 const TIME_RANGE_LABELS: Record<string, string> = {
@@ -156,7 +159,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
 
-  const spotifyId = params.spotifyId as string;
+  const profileId = params.id as string;
   const timeRange = searchParams.get("time_range") || "short_term";
 
   const [data, setData] = useState<DashboardData | null>(null);
@@ -361,10 +364,18 @@ export default function DashboardPage() {
       if (!isPolling) setLoading(true);
       try {
         const res = await fetchWithAuth(
-          `/api/dashboard/${spotifyId}?time_range=${timeRange}`
+          `/api/dashboard/${profileId}?time_range=${timeRange}`
         );
 
-        if (!res.ok) throw new Error("Failed to fetch dashboard data");
+        if (!res.ok) {
+          // If 500, could be a temporary timeout or crash. Don't throw hard if polling.
+          if (isPolling) {
+            console.warn("DASHBOARD: Poll failed, will retry...");
+            return;
+          }
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.detail || `Server Error (${res.status}): Failed to fetch dashboard data`);
+        }
 
         const json = await res.json();
         setData(json);
@@ -374,7 +385,9 @@ export default function DashboardPage() {
 
         const isStillLoading = 
           report.includes("being analyzed") || 
-          report.includes("getting ready");
+          report.includes("getting ready") ||
+          report.includes("Syncing") ||
+          report.includes("enhancement in progress");
 
         // Start/Stop polling based on state
         if (isStillLoading && !pollInterval) {
@@ -388,9 +401,9 @@ export default function DashboardPage() {
           pollInterval = null;
         }
 
-      } catch (err) {
+      } catch (err: any) {
         console.error("Dashboard fetch error:", err);
-        setError("Failed to load dashboard. Please try again.");
+        setError(err.message || "Failed to load dashboard. Please try again.");
       } finally {
         if (!isPolling) setLoading(false);
       }
@@ -401,7 +414,7 @@ export default function DashboardPage() {
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [spotifyId, timeRange, router]);
+  }, [profileId, timeRange, router]);
   
   // Reset dashboard states when time range changes to prevent state leakage
   useEffect(() => {
@@ -437,7 +450,7 @@ export default function DashboardPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          spotify_id: spotifyId,
+          spotify_id: decodeURIComponent(profileId),
           time_range: timeRange,
           extended: extended,
         }),
@@ -448,10 +461,18 @@ export default function DashboardPage() {
         if (result.sentiment_report) {
           setTypedHtml("");
           setEmotionText(result.sentiment_report);
+        } else if (result.error) {
+          setTypedHtml("");
+          setEmotionText(result.error);
         }
+      } else {
+        setTypedHtml("");
+        setEmotionText("Sentiment analysis is currently unavailable.");
       }
     } catch (err) {
       console.warn("Emotion analysis failed:", err);
+      setTypedHtml("");
+      setEmotionText("Sentiment analysis is currently unavailable.");
     }
   };
 
@@ -602,7 +623,7 @@ export default function DashboardPage() {
 
   const changeTimeRange = (range: string) => {
     setShowTimeModal(false);
-    router.push(`/dashboard/${spotifyId}?time_range=${range}`);
+    router.push(`/dashboard/${profileId}?time_range=${range}`);
   };
 
   const formatTime = (seconds: number) => {
@@ -620,7 +641,18 @@ export default function DashboardPage() {
   };
 
   const openArtistProfile = (artistId: string) => {
-    window.open(`https://open.spotify.com/artist/${artistId}`, "_blank");
+    const artist = data?.artists.find((a: any) => a.id === artistId);
+    if (data?.source === "lastfm" || artistId.startsWith("lfm_")) {
+      if (artist?.external_url) {
+        window.open(artist.external_url, "_blank");
+      } else if (artist) {
+        window.open(`https://www.last.fm/music/${encodeURIComponent(artist.name)}`, "_blank");
+      } else {
+        window.open(`https://www.last.fm/search/artists?q=${encodeURIComponent(artistId.replace("lfm_", ""))}`, "_blank");
+      }
+    } else {
+      window.open(`https://open.spotify.com/artist/${artistId}`, "_blank");
+    }
   };
 
   const getGenreColor = (genreName: string) => {
@@ -1219,7 +1251,7 @@ export default function DashboardPage() {
     // --- FOOTER ---
     const footer = document.createElement("div");
     const currentYear = new Date().getFullYear();
-    footer.innerHTML = `Personalify © ${currentYear} • Powered by Spotify API`;
+    footer.innerHTML = `Personalify © ${currentYear} • Powered by ${params.id?.toString().startsWith("lastfm:") ? "Last.fm API" : "Spotify API"}`;
     Object.assign(footer.style, {
       textAlign: "center",
       fontSize: "0.75rem",
@@ -1350,7 +1382,8 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="page-container w-full max-w-none">
+    <>
+      <div className="page-container w-full max-w-none">
       {/* Saving Overlay */}
       <AnimatePresence>
         {isSaving && (
@@ -1560,9 +1593,9 @@ export default function DashboardPage() {
                 >
                   <span className="rank">{idx + 1}</span>
                   <img
-                    src={artist.image}
+                    src={artist.image || "https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png"}
                     alt={artist.name}
-                    className="cursor-pointer rounded-lg"
+                    className="cursor-pointer rounded-lg object-cover"
                     onClick={() => openArtistProfile(artist.id)}
                   />
                   <div className="info">
@@ -1628,9 +1661,16 @@ export default function DashboardPage() {
                   initial={idx >= 10 ? { opacity: 0, y: 20 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx >= 10 ? (idx - 10) * 0.1 : 0 }}
-                  className={`list-item track-item cursor-pointer hover:bg-accent/50 transition-colors border-b border-border ${activeEmbed === track.id ? "embed-shown" : ""
-                    }`}
-                  onClick={() => toggleEmbed(track.id)}
+                  className={`list-item track-item transition-colors border-b border-border ${
+                      data.source !== "lastfm" || track.external_url
+                        ? "cursor-pointer hover:bg-accent/50"
+                        : "cursor-default"
+                    } ${activeEmbed === track.id ? "embed-shown" : ""}`}
+                  onClick={
+                    data.source === "lastfm"
+                      ? () => track.external_url && window.open(track.external_url, "_blank")
+                      : () => toggleEmbed(track.id)
+                  }
                 >
                   {/* Rank / Close Button */}
                   <span
@@ -1663,7 +1703,7 @@ export default function DashboardPage() {
 
                   {/* Album Art - Always visible */}
                   <img
-                    src={track.image}
+                    src={track.image || "https://lastfm.freetls.fastly.net/i/u/300x300/4128a6eb29f94943c9d206c08e625904.png"}
                     alt={track.name}
                     className="w-12 h-12 md:w-16 md:h-16 rounded-lg object-cover shrink-0"
                   />
@@ -1680,7 +1720,7 @@ export default function DashboardPage() {
                     />
                     {/* Artist - Always visible */}
                     <MarqueeText
-                      text={track.artists.join(", ")}
+                      text={track.artists?.join(", ") || "Unknown Artist"}
                       className="meta text-muted-foreground text-xs md:text-sm"
                     />
 
@@ -1755,7 +1795,7 @@ export default function DashboardPage() {
                                 value={[trackPosition[track.id] || 0]}
                                 max={trackDuration[track.id] || 30}
                                 step={1}
-                                onValueChange={(value) => handleSeek(track.id, value)}
+                                onValueChange={(value: number[]) => handleSeek(track.id, value)}
                                 className="cursor-pointer hover:opacity-100 opacity-80 [&>span:first-child]:h-1 [&>span:first-child]:bg-black/10 dark:[&>span:first-child]:bg-white/20 **:[[role=slider]]:h-2.5 **:[[role=slider]]:w-2.5 **:[[role=slider]]:border-black dark:**:[[role=slider]]:border-white **:[[role=slider]]:bg-black dark:**:[[role=slider]]:bg-white [&>span>span]:bg-black dark:[&>span>span]:bg-white"
                               />
                             </div>
@@ -1956,9 +1996,8 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* Styles */}
-      <style jsx global>
-        {`
+      </div>
+      <style dangerouslySetInnerHTML={{ __html: `
           .track-item.embed-shown .rank.embed-active {
             color: #1db954 !important;
             cursor: pointer;
@@ -1980,8 +2019,7 @@ export default function DashboardPage() {
             font-weight: 700;
             color: var(--foreground);
           }
-        `}
-      </style>
-    </div >
+        ` }} />
+    </>
   );
 }

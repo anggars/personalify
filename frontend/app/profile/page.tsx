@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { staggerContainer, fadeUp, cardReveal } from "@/lib/animations";
 import { ExternalLink, LogOut, Music2, User } from "lucide-react";
 import MarqueeText from "@/components/marquee-text";
+import { cn } from "@/lib/utils";
 
 interface CurrentlyPlaying {
     is_playing: boolean;
@@ -28,7 +29,7 @@ export default function ProfilePage() {
     const router = useRouter();
     const paragraphRef = useRef<HTMLParagraphElement>(null);
     const hasTyped = useRef(false);
-    const [spotifyId, setSpotifyId] = useState<string | null>(null);
+    const [profileId, setProfileId] = useState<string | null>(null);
     const [userName, setUserName] = useState<string | null>(null);
     const [userImage, setUserImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -154,7 +155,7 @@ export default function ProfilePage() {
             router.push("/");
             return;
         }
-        setSpotifyId(storedId);
+        setProfileId(storedId);
 
         // Try to get cached user name
         const cachedName = localStorage.getItem("spotify_user_name");
@@ -279,7 +280,7 @@ export default function ProfilePage() {
         );
     }
 
-    if (!spotifyId) {
+    if (!profileId) {
         return null;
     }
 
@@ -339,7 +340,7 @@ export default function ProfilePage() {
                             {userName || "User"}
                         </h2>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            @{spotifyId}
+                            @{decodeURIComponent(profileId || "").replace("lastfm:", "")}
                         </p>
                     </div>
 
@@ -426,7 +427,9 @@ export default function ProfilePage() {
                                     <p className="text-sm font-bold text-black dark:text-white leading-snug">Advertisement</p>
 
                                     {/* Row 2: Subtitle */}
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-snug">Spotify keeps things free</p>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-snug">
+                                        {profileId?.includes("lastfm") ? "Last.fm keeps things social" : "Spotify keeps things free"}
+                                    </p>
 
                                     {/* Row 3: Real progress */}
                                     <div className="flex items-center gap-1.5">
@@ -462,9 +465,13 @@ export default function ProfilePage() {
 
                     {/* Action Buttons */}
                     <div className="flex flex-col gap-2.5 w-full">
-                        {/* Open Spotify Button */}
+                        {/* Open Profile Button */}
                         <motion.a
-                            href={`https://open.spotify.com/user/${spotifyId}`}
+                            href={
+                                profileId?.includes("lastfm")
+                                    ? `https://www.last.fm/user/${decodeURIComponent(profileId).replace("lastfm:", "")}`
+                                    : `https://open.spotify.com/user/${profileId}`
+                            }
                             target="_blank"
                             rel="noopener noreferrer"
                             onMouseMove={handleMouseMove}
@@ -474,7 +481,7 @@ export default function ProfilePage() {
                             whileTap={{ scale: 0.98 }}
                         >
                             <ExternalLink size={15} />
-                            Open Spotify Profile
+                            Open {profileId?.includes("lastfm") ? "Last.fm" : "Spotify"} Profile
                         </motion.a>
 
                         {/* Logout Button */}
@@ -493,8 +500,11 @@ export default function ProfilePage() {
 
                     {/* Dashboard Link */}
                     <Link
-                        href={`/dashboard/${spotifyId}?time_range=short_term`}
-                        className="mt-4 block text-center text-sm text-neutral-500 dark:text-neutral-400 hover:text-[#1DB954] transition-colors"
+                        href={`/dashboard/${profileId}?time_range=short_term`}
+                        className={cn(
+                            "mt-4 block text-center text-sm text-neutral-500 dark:text-neutral-400 transition-colors",
+                            profileId?.includes("lastfm") ? "hover:text-[#D51007]" : "hover:text-[#1DB954]"
+                        )}
                     >
                         View Dashboard →
                     </Link>

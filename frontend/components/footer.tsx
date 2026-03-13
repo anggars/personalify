@@ -30,14 +30,39 @@ export function Footer() {
     const [loopIndex, setLoopIndex] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
     const [typingSpeed, setTypingSpeed] = useState(80);
+    const [activeProvider, setActiveProvider] = useState<"spotify" | "lastfm">("spotify");
+
+    // Fetch active provider
+    useEffect(() => {
+        fetch("/api/active-provider")
+            .then(res => res.json())
+            .then(data => {
+                if (data?.provider) setActiveProvider(data.provider);
+            })
+            .catch(() => {});
+    }, []);
 
     // Determine which stack to use based on pathname
     const activeStacks = React.useMemo(() => {
-        if (pathname === "/about") return TECH_STACKS;
-        if (pathname?.startsWith("/dashboard")) return DASHBOARD_STACKS;
+        const providerStack = { 
+            phrase: "Powered by", 
+            name: activeProvider === "spotify" ? "Spotify API" : "Last.fm API", 
+            url: activeProvider === "spotify" ? "https://developer.spotify.com/" : "https://www.last.fm/api", 
+            color: activeProvider === "spotify" ? "hover:text-[#1DB954] active:text-[#1DB954]" : "hover:text-[#D51007] active:text-[#D51007]" 
+        };
+
+        if (pathname === "/about") return [...TECH_STACKS, providerStack];
+        if (pathname?.startsWith("/dashboard")) {
+            return [
+                providerStack,
+                { phrase: "Powered by", name: "Hugging Face", url: "https://huggingface.co/", color: "hover:text-[#FFD21E] active:text-[#FFD21E]" },
+            ];
+        }
         if (pathname === "/lyrics/genius") return GENIUS_STACKS;
-        return null;
-    }, [pathname]);
+        
+        // Home page or others
+        return [providerStack];
+    }, [pathname, activeProvider]);
 
     // Typewriter effect logic
     useEffect(() => {
@@ -114,7 +139,7 @@ export function Footer() {
                         rel="noopener noreferrer"
                         className={`transition-colors duration-300 ${isDeleting && displayText.name === currentStack.name
                             ? currentStack.color
-                            : "text-neutral-500"
+                            : "text-neutral-500 hover:text-primary active:text-primary"
                             }`}
                     >
                         {displayText.name}
@@ -123,19 +148,16 @@ export function Footer() {
             );
         }
 
-        // Default for other pages
-        return (
             <span>
                 Powered by{" "}
                 <a
-                    href="https://developer.spotify.com/"
+                    href={activeProvider === "spotify" ? "https://developer.spotify.com/" : "https://www.last.fm/api"}
                     target="_blank"
-                    className="md:hover:text-[#1DB954] active:text-[#1DB954] transition-colors"
+                    className="transition-colors hover:text-primary active:text-primary"
                 >
-                    Spotify API
+                    {activeProvider === "spotify" ? "Spotify API" : "Last.fm API"}
                 </a>
             </span>
-        );
     };
 
     const isDashboard = pathname?.startsWith("/dashboard");
@@ -156,12 +178,12 @@ export function Footer() {
                     {isDashboard ? (
                         <span
                             onClick={handleEasterEgg}
-                            className="cursor-pointer md:hover:text-[#1DB954] active:text-[#1DB954] transition-colors footer-toggler"
+                            className="cursor-pointer hover:text-primary active:text-primary transition-colors footer-toggler"
                         >
                             Personalify
                         </span>
                     ) : (
-                        <Link href="/" className="md:hover:text-[#1DB954] active:text-[#1DB954] transition-colors">
+                        <Link href="/" className="hover:text-primary active:text-primary transition-colors">
                             Personalify
                         </Link>
                     )}{" "}

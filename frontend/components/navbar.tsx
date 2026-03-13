@@ -45,6 +45,7 @@ export const Navbar = () => {
   const [hoveredDropdownPath, setHoveredDropdownPath] = useState<string | null>(
     null,
   );
+  const [activeProvider, setActiveProvider] = useState<"spotify" | "lastfm">("spotify");
 
   // Mount check for portal
   useEffect(() => {
@@ -66,6 +67,18 @@ export const Navbar = () => {
   useEffect(() => {
     setDesktopDropdownOpen(null);
   }, [isScrolled]);
+
+  // Fetch active provider
+  useEffect(() => {
+    fetch("/api/active-provider")
+      .then(res => res.json())
+      .then(data => {
+        if (data?.provider) {
+          setActiveProvider(data.provider);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Notification State
   const [notification, setNotification] = useState<NotificationData | null>(
@@ -132,11 +145,14 @@ export const Navbar = () => {
       return;
     }
 
-    if (pathname?.startsWith("/dashboard/") && params.spotifyId) {
-      localStorage.setItem("spotify_id", params.spotifyId as string);
-      setSpotifyId(params.spotifyId as string);
+    const currentIdId = params.id as string || params.spotifyId as string;
+
+    if (pathname?.startsWith("/dashboard/") && currentIdId) {
+      localStorage.setItem("spotify_id", currentIdId);
+      localStorage.setItem("profile_id", currentIdId);
+      setSpotifyId(currentIdId);
     } else {
-      const storedId = localStorage.getItem("spotify_id");
+      const storedId = localStorage.getItem("profile_id") || localStorage.getItem("spotify_id");
       setSpotifyId(storedId);
     }
   }, [pathname, params]);
@@ -380,7 +396,10 @@ export const Navbar = () => {
             {spotifyId ? (
               <Link
                 href="/profile"
-                className="flex items-center justify-center shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800 hover:ring-2 hover:ring-[#1DB954]/50 transition-all group relative"
+                className={cn(
+                  "flex items-center justify-center shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800 transition-all group relative hover:ring-2",
+                  activeProvider === "lastfm" ? "hover:ring-[#D51007]/50" : "hover:ring-[#1DB954]/50"
+                )}
                 title="View Profile"
               >
                 {userImage ? (
@@ -404,7 +423,10 @@ export const Navbar = () => {
                 href="/"
                 className="flex items-center justify-center shrink-0 p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors group"
               >
-                <span className="font-bold text-lg text-[#1DB954] w-5 h-5 flex items-center justify-center">
+                <span className={cn(
+                  "font-bold text-lg w-5 h-5 flex items-center justify-center",
+                  activeProvider === "lastfm" ? "text-[#D51007]" : "text-[#1DB954]"
+                )}>
                   P
                 </span>
               </Link>
@@ -507,9 +529,15 @@ export const Navbar = () => {
                             {/* Spotlight Glow - Only visible on hover */}
                             <div
                               className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
-                              style={{
-                                backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
-                              }}
+                                style={{
+                                  backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), ${
+                                    activeProvider === "lastfm" ? "rgba(213,16,7,0.45)" : "rgba(29,185,84,0.45)"
+                                  } 0%, ${
+                                    activeProvider === "lastfm" ? "rgba(213,16,7,0.2)" : "rgba(29,185,84,0.2)"
+                                  } 30%, ${
+                                    activeProvider === "lastfm" ? "rgba(213,16,7,0.08)" : "rgba(29,185,84,0.08)"
+                                  } 60%, transparent 100%)`,
+                                }}
                             />
                           </motion.div>
                         )}
@@ -587,7 +615,13 @@ export const Navbar = () => {
                                               : "opacity-0"
                                           )}
                                           style={{
-                                            backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
+                                            backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), ${
+                                              activeProvider === "lastfm" ? "rgba(213,16,7,0.45)" : "rgba(29,185,84,0.45)"
+                                            } 0%, ${
+                                              activeProvider === "lastfm" ? "rgba(213,16,7,0.2)" : "rgba(29,185,84,0.2)"
+                                            } 30%, ${
+                                              activeProvider === "lastfm" ? "rgba(213,16,7,0.08)" : "rgba(29,185,84,0.08)"
+                                            } 60%, transparent 100%)`,
                                           }}
                                         />
                                       </motion.div>
@@ -643,9 +677,15 @@ export const Navbar = () => {
                           {/* Spotlight Glow - Only visible on hover */}
                           <div
                             className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
-                            style={{
-                              backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
-                            }}
+                             style={{
+                               backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), ${
+                               activeProvider === "lastfm" ? "rgba(213,16,7,0.45)" : "rgba(29,185,84,0.45)"
+                             } 0%, ${
+                               activeProvider === "lastfm" ? "rgba(213,16,7,0.2)" : "rgba(29,185,84,0.2)"
+                             } 30%, ${
+                               activeProvider === "lastfm" ? "rgba(213,16,7,0.08)" : "rgba(29,185,84,0.08)"
+                             } 60%, transparent 100%)`,
+                             }}
                           />
                         </motion.div>
                       )}
@@ -693,7 +733,13 @@ export const Navbar = () => {
                         <div
                           className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
                           style={{
-                            backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
+                            backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), ${
+                              activeProvider === "lastfm" ? "rgba(213,16,7,0.45)" : "rgba(29,185,84,0.45)"
+                            } 0%, ${
+                              activeProvider === "lastfm" ? "rgba(213,16,7,0.2)" : "rgba(29,185,84,0.2)"
+                            } 30%, ${
+                              activeProvider === "lastfm" ? "rgba(213,16,7,0.08)" : "rgba(29,185,84,0.08)"
+                            } 60%, transparent 100%)`,
                           }}
                         />
                       </motion.div>

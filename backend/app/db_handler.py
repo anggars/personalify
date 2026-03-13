@@ -129,6 +129,20 @@ def get_conn():
     try:
         if pg_pool:
             conn = pg_pool.getconn()
+            
+            # Liveness check for Neon's aggressive idle disconnects
+            if conn.closed != 0:
+                pg_pool.putconn(conn, close=True)
+                conn = pg_pool.getconn()
+            else:
+                try:
+                    with conn.cursor() as c:
+                        c.execute("SELECT 1")
+                except psycopg2.OperationalError:
+                    # Connection is dead
+                    pg_pool.putconn(conn, close=True)
+                    conn = pg_pool.getconn()
+
             is_pooled = True
             yield conn
         else:
@@ -178,7 +192,8 @@ def init_db():
                     id TEXT PRIMARY KEY,
                     name TEXT,
                     popularity INTEGER,
-                    preview_url TEXT
+                    preview_url TEXT,
+                    image_url TEXT
                 );
 
                 CREATE TABLE IF NOT EXISTS user_tracks (
@@ -197,6 +212,11 @@ def init_db():
                     FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
                 );
             """)
+            conn.commit()
+
+            # Ensure columns exist (for existing databases)
+            cur.execute("ALTER TABLE tracks ADD COLUMN IF NOT EXISTS image_url TEXT;")
+            cur.execute("ALTER TABLE artists ADD COLUMN IF NOT EXISTS image_url TEXT;")
             conn.commit()
 
 def save_user(spotify_id, display_name):
@@ -259,17 +279,18 @@ def save_artist(artist_id, name, popularity, image_url):
             """, (artist_id, name, popularity, image_url))
             conn.commit()
 
-def save_track(track_id, name, popularity, preview_url):
+def save_track(track_id, name, popularity, preview_url, image_url=None):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO tracks (id, name, popularity, preview_url)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO tracks (id, name, popularity, preview_url, image_url)
+                VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT (id) DO UPDATE
                 SET name = EXCLUDED.name,
                     popularity = EXCLUDED.popularity,
-                    preview_url = EXCLUDED.preview_url
-            """, (track_id, name, popularity, preview_url))
+                    preview_url = EXCLUDED.preview_url,
+                    image_url = EXCLUDED.image_url
+            """, (track_id, name, popularity, preview_url, image_url))
             conn.commit()
 
 def save_user_track(spotify_id, track_id):
@@ -329,23 +350,25 @@ def save_tracks_batch(tracks_data):
         with conn.cursor() as cur:
 
             execute_values(cur, """
-                INSERT INTO tracks (id, name, popularity, preview_url)
+                INSERT INTO tracks (id, name, popularity, preview_url, image_url)
                 VALUES %s
                 ON CONFLICT (id) DO UPDATE SET
                     name = EXCLUDED.name,
                     popularity = EXCLUDED.popularity,
-                    preview_url = EXCLUDED.preview_url
+                    preview_url = EXCLUDED.preview_url,
+                    image_url = EXCLUDED.image_url
             """, tracks_data)
             conn.commit()
     
     # SECONDARY: Write to Supabase (async)
     async_batch_write_to_supabase("""
-        INSERT INTO tracks (id, name, popularity, preview_url)
+        INSERT INTO tracks (id, name, popularity, preview_url, image_url)
         VALUES %s
         ON CONFLICT (id) DO UPDATE SET
             name = EXCLUDED.name,
             popularity = EXCLUDED.popularity,
-            preview_url = EXCLUDED.preview_url
+            preview_url = EXCLUDED.preview_url,
+            image_url = EXCLUDED.image_url
     """, tracks_data)
 
 def save_user_associations_batch(table_name, column_name, spotify_id, item_ids):
@@ -510,13 +533,13 @@ def sync_neon_supabase():
                                  results["pushed_to_backup"] += len(missing_in_s)
 
                         elif table == "tracks":
-                             p_cur.execute("SELECT id, name, popularity, preview_url FROM tracks")
+                             p_cur.execute("SELECT id, name, popularity, preview_url, image_url FROM tracks")
                              p_data = p_cur.fetchall()
                              s_cur.execute("SELECT id FROM tracks")
                              s_ids = {row[0] for row in s_cur.fetchall()}
                              missing_in_s = [r for r in p_data if r[0] not in s_ids]
                              if missing_in_s:
-                                 execute_values(s_cur, "INSERT INTO tracks (id, name, popularity, preview_url) VALUES %s ON CONFLICT DO NOTHING", missing_in_s)
+                                 execute_values(s_cur, "INSERT INTO tracks (id, name, popularity, preview_url, image_url) VALUES %s ON CONFLICT DO NOTHING", missing_in_s)
                                  results["pushed_to_backup"] += len(missing_in_s)
 
                         elif table in ["user_tracks", "user_artists"]:
@@ -552,13 +575,13 @@ def sync_neon_supabase():
                                  results["pulled_from_backup"] += len(missing_in_p)
 
                         elif table == "tracks":
-                             s_cur.execute("SELECT id, name, popularity, preview_url FROM tracks")
+                             s_cur.execute("SELECT id, name, popularity, preview_url, image_url FROM tracks")
                              s_data = s_cur.fetchall()
                              p_cur.execute("SELECT id FROM tracks")
                              p_ids = {row[0] for row in p_cur.fetchall()}
                              missing_in_p = [r for r in s_data if r[0] not in p_ids]
                              if missing_in_p:
-                                 execute_values(p_cur, "INSERT INTO tracks (id, name, popularity, preview_url) VALUES %s ON CONFLICT DO NOTHING", missing_in_p)
+                                 execute_values(p_cur, "INSERT INTO tracks (id, name, popularity, preview_url, image_url) VALUES %s ON CONFLICT DO NOTHING", missing_in_p)
                                  results["pulled_from_backup"] += len(missing_in_p)
 
                         elif table in ["user_tracks", "user_artists"]:

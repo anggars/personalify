@@ -6,7 +6,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [{ protocol: "https", hostname: "**" }],
   },
 
-  // API Rewrites to backend
+  // Redirects
+  async redirects() {
+    return [];
+  },
+
   async rewrites() {
     const isProduction = process.env.NODE_ENV === "production";
     const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL ||
@@ -53,6 +57,15 @@ const nextConfig: NextConfig = {
       {
         source: "/logout",
         destination: `${BACKEND_URL}/logout`,
+      },
+      // Last.fm Auth
+      {
+        source: "/lastfm/login",
+        destination: `${BACKEND_URL}/lastfm/login`,
+      },
+      {
+        source: "/lastfm/callback",
+        destination: `${BACKEND_URL}/lastfm/callback`,
       },
       // Admin endpoints (Direct /admin/ paths)
       {

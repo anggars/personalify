@@ -68,9 +68,8 @@ export async function fetchWithAuth(
 
       if (!spotifyId && typeof window !== 'undefined') {
         const pathParts = window.location.pathname.split('/');
-        // Check if path is like /dashboard/[id]
         if (pathParts[1] === 'dashboard' && pathParts[2]) {
-          spotifyId = pathParts[2];
+          spotifyId = decodeURIComponent(pathParts[2]);
           console.log('[fetchWithAuth] Found spotify_id in URL fallback:', spotifyId);
         }
       }
