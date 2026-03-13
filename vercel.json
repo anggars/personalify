@@ -43,6 +43,14 @@
       "destination": "/api/index.py"
     },
     {
+      "source": "/lastfm/login",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/lastfm/callback",
+      "destination": "/api/index.py"
+    },
+    {
       "source": "/analyze-lyrics",
       "destination": "/api/index.py"
     },
