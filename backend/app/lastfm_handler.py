@@ -105,14 +105,14 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 rt["id"] = sp_data["id"]
             if sp_data.get("image"):
                 rt["image"] = sp_data["image"]
-            elif not rt.get("image") or "photo-1614613535308-eb5fbd3d2c17" in rt.get("image", "") or "4128a6eb29f94943c9d206c08e625904" in rt.get("image", ""):
+            elif not rt.get("image") or "photo-1493225255756-d9584f8606e9" in rt.get("image", "") or "photo-1614613535308-eb5fbd3d2c17" in rt.get("image", "") or "4128a6eb29f94943c9d206c08e625904" in rt.get("image", ""):
                  # Try iTunes as fallback
                  artist_name = rt.get("artists", [""])[0]
                  itunes_img = _search_itunes_track(rt.get("name", ""), artist_name)
                  if itunes_img:
                      rt["image"] = itunes_img
                  else:
-                     rt["image"] = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&h=300&auto=format&fit=crop"
+                     rt["image"] = "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=300&h=300&auto=format&fit=crop"
 
         # Update cache after tracks
         cache_top_data("top_v2", user_id, time_range, result, ttl=300)
@@ -577,7 +577,7 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
                 break
         
         if not track_image:
-            track_image = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&h=300&auto=format&fit=crop"
+            track_image = "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=300&h=300&auto=format&fit=crop"
 
         track_ids.append(track_id)
         tracks_to_save.append((track_id, track_name, playcount, None, track_image))
