@@ -541,6 +541,7 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
         
         # Fast Image fetch from LFM
         artist_image = ""
+        images = artist.get("image", [])
         for img in reversed(images):
             url = img.get("#text", "")
             if url and url.strip() and "2a96cbd8b46e442fc41c2b86b821562f" not in url and "4128a6eb29f94943c9d206c08e625904" not in url:
