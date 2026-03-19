@@ -59,6 +59,9 @@ export function Footer() {
             ];
         }
         if (pathname === "/lyrics/genius") return GENIUS_STACKS;
+        if (pathname === "/lyrics" || pathname?.startsWith("/lyrics/")) return [
+            { phrase: "Powered by", name: "Hugging Face", url: "https://huggingface.co/", color: "hover:text-[#FFD21E] active:text-[#FFD21E]" }
+        ];
         
         // Home page or others
         return [providerStack];
@@ -128,36 +131,43 @@ export function Footer() {
     }, [pathname]);
 
     const renderPoweredBy = () => {
-        if (activeStacks) {
-            const currentStack = activeStacks[loopIndex % activeStacks.length];
+        if (!activeStacks || activeStacks.length === 0) return null;
+
+        // If only 1 stack, render statically without typing effect
+        if (activeStacks.length === 1) {
+            const currentStack = activeStacks[0];
             return (
                 <span>
-                    <span>{displayText.phrase}</span>{" "}
+                    {currentStack.phrase}{" "}
                     <a
                         href={currentStack.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`transition-colors duration-300 ${isDeleting && displayText.name === currentStack.name
-                            ? currentStack.color
-                            : "text-neutral-500 hover:text-primary active:text-primary"
-                            }`}
+                        className={`transition-colors duration-300 ${currentStack.color || "hover:text-primary active:text-primary"}`}
                     >
-                        {displayText.name}
+                        {currentStack.name}
                     </a>
                 </span>
             );
         }
 
+        const currentStack = activeStacks[loopIndex % activeStacks.length];
+        return (
             <span>
-                Powered by{" "}
+                <span>{displayText.phrase}</span>{" "}
                 <a
-                    href={activeProvider === "spotify" ? "https://developer.spotify.com/" : "https://www.last.fm/api"}
+                    href={currentStack.url}
                     target="_blank"
-                    className="transition-colors hover:text-primary active:text-primary"
+                    rel="noopener noreferrer"
+                    className={`transition-colors duration-300 ${isDeleting && displayText.name === currentStack.name
+                        ? currentStack.color || "hover:text-primary active:text-primary"
+                        : "text-neutral-500 hover:text-primary active:text-primary"
+                        }`}
                 >
-                    {activeProvider === "spotify" ? "Spotify API" : "Last.fm API"}
+                    {displayText.name}
                 </a>
             </span>
+        );
     };
 
     const isDashboard = pathname?.startsWith("/dashboard");
