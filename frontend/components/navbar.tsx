@@ -396,10 +396,7 @@ export const Navbar = () => {
             {spotifyId ? (
               <Link
                 href="/profile"
-                className={cn(
-                  "flex items-center justify-center shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800 transition-all group relative hover:ring-2",
-                  activeProvider === "lastfm" ? "hover:ring-[#D51007]/50" : "hover:ring-[#1DB954]/50"
-                )}
+                className="flex items-center justify-center shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800 transition-all group relative hover:ring-2 hover:ring-[#1DB954]/50"
                 title="View Profile"
               >
                 {userImage ? (
@@ -423,10 +420,7 @@ export const Navbar = () => {
                 href="/"
                 className="flex items-center justify-center shrink-0 p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors group"
               >
-                <span className={cn(
-                  "font-bold text-lg w-5 h-5 flex items-center justify-center",
-                  activeProvider === "lastfm" ? "text-[#D51007]" : "text-[#1DB954]"
-                )}>
+                <span className="font-bold text-lg w-5 h-5 flex items-center justify-center text-[#1DB954]">
                   P
                 </span>
               </Link>
@@ -530,13 +524,7 @@ export const Navbar = () => {
                             <div
                               className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
                                 style={{
-                                  backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), ${
-                                    activeProvider === "lastfm" ? "rgba(213,16,7,0.45)" : "rgba(29,185,84,0.45)"
-                                  } 0%, ${
-                                    activeProvider === "lastfm" ? "rgba(213,16,7,0.2)" : "rgba(29,185,84,0.2)"
-                                  } 30%, ${
-                                    activeProvider === "lastfm" ? "rgba(213,16,7,0.08)" : "rgba(29,185,84,0.08)"
-                                  } 60%, transparent 100%)`,
+                            backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
                                 }}
                             />
                           </motion.div>
