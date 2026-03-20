@@ -30,7 +30,8 @@ function HomeContent() {
 
   // Fetch active provider
   useEffect(() => {
-    fetch("/api/active-provider")
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+    fetch(`${apiUrl}/api/active-provider`)
       .then(res => res.json())
       .then(data => {
         if (data?.provider) setActiveProvider(data.provider);
