@@ -27,6 +27,9 @@ PERIOD_MAP = {
     "long_term": "12month"
 }
 
+# Minimalist gray vinyl record SVG as a placeholder
+DEFAULT_TRACK_IMAGE = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjNjY2NjY2IiBkPSJNMjU2IDUxMmMxNDEuNCAwIDI1Ni0xMTQuNiAyNTYtMjU2UzM5Ny40IDAgMjU2IDAgMCAxMTQuNiAwIDI1NmMwIDE0MS40IDExNC42IDI1NiAyNTYgMjU2em0wLTEyOGMtNzAuNyAwLTEyOC01Ny4zLTEyOC0xMjhTMTg1LjMgMTI4IDI1NiAxMjhDMzI2LjcgMTI4IDM4NCAxODUuMyAzODQgMjU2UzMyNi43IDM4NCAyNTYgMzg0em0wLTY0YzM1LjMgMCA2NC0yOC43IDY0LTY0UzI5MS4zIDE5MiAyNTYgMTkyIDE5MiAyMjAuNyAxOTIgMjU2UzIyMC43IDMyMCAyNTYgMzIweiIvPjwvc3ZnPg=="
+
 # --- BACKGROUND PROCESSING ---
 
 def process_lastfm_enhancement_background(username, time_range, result, extended=False):
@@ -34,87 +37,65 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
     Background task to enhance Last.fm data with Spotify metadata,
     artist tags (genres), and sentiment analysis.
     """
+    def _scrape_lastfm_artist_image(artist_name):
+        """Fallback scraper to get artist image from last.fm website without API limits."""
+        import re
+        try:
+            url = f"https://www.last.fm/music/{quote_plus(artist_name)}"
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+            res = requests.get(url, headers=headers, timeout=5)
+            if res.status_code == 200:
+                match = re.search(r'<meta\s+property="og:image"\s+content="([^"]+)"', res.text)
+                if match:
+                    img_url = match.group(1)
+                    if "2a96cbd8b46e442fc41c2b86b821562f" not in img_url and "avatar" not in img_url and "default_artist" not in img_url:
+                        return img_url
+        except Exception:
+            pass
+        return ""
+
     try:
         user_id = f"lastfm:{username}"
-        print(f"LASTFM BG: Starting enhancement for '{username}'...")
-        
-        # 1. Spotify Metadata Enhancement
-        sp_token = _get_spotify_app_token()
-        artist_results_map = {}
-        track_results_map = {}
+        print(f"LASTFM BG: Starting enhancement for '{username}' without Spotify mapping...")
         
         raw_artists = result.get("_raw_artists", [])
         raw_tracks = result.get("_raw_tracks", [])
 
-        if sp_token:
-            print(f"LASTFM BG: Mapping to Spotify...")
-            with ThreadPoolExecutor(max_workers=10) as executor:
-                artist_futures = {
-                    executor.submit(_search_spotify_artist, a.get("name"), sp_token): i 
-                    for i, a in enumerate(raw_artists)
-                }
-                track_futures = {
-                    executor.submit(_search_spotify_track, t.get("name"), 
-                                    t.get("artist", {}).get("name") if isinstance(t.get("artist"), dict) else t.get("artist"), 
-                                    sp_token): i 
-                    for i, t in enumerate(raw_tracks)
-                }
-                
-                for future in artist_futures:
-                    idx = artist_futures[future]
-                    try:
-                        sp_id, sp_img, sp_genres = future.result()
-                        artist_results_map[idx] = {"id": sp_id, "image": sp_img, "genres": sp_genres}
-                    except Exception as e:
-                        print(f"BG Spotify artist search error: {e}")
-                
-                for future in track_futures:
-                    idx = track_futures[future]
-                    try:
-                        sp_id, sp_img = future.result()
-                        track_results_map[idx] = {"id": sp_id, "image": sp_img}
-                    except Exception as e:
-                        print(f"BG Spotify track search error: {e}")
+        # 1. Fetch Artist Images via Last.fm direct scrape
+        print(f"LASTFM BG: Scraping Last.fm for exact artist images...")
+        artist_results_map = {}
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            artist_futures = {
+                executor.submit(_scrape_lastfm_artist_image, a.get("name")): i 
+                for i, a in enumerate(raw_artists)
+            }
+            for future in artist_futures:
+                idx = artist_futures[future]
+                try:
+                    img_url = future.result()
+                    if img_url:
+                        artist_results_map[idx] = img_url
+                except Exception as e:
+                    pass
 
-        # 2. Update Artists & Tracks with enhanced metadata incrementally
+        # 2. Update Artists & Tracks
         enhanced_artists = result.get("artists", [])
         enhanced_tracks = result.get("tracks", [])
         
         print(f"LASTFM BG: Enhancing artists...")
         for i, ra in enumerate(enhanced_artists):
-            sp_data = artist_results_map.get(i, {})
-            if sp_data.get("id"):
-                ra["id"] = sp_data["id"]
-            if sp_data.get("image"):
-                ra["image"] = sp_data["image"]
+            scraped_img = artist_results_map.get(i)
+            if scraped_img:
+                ra["image"] = scraped_img
             elif not ra.get("image") or "blank-profile-picture" in ra.get("image", "") or "2a96cbd8b46e442fc41c2b86b821562f" in ra.get("image", ""):
-                # Try Deezer as fallback
-                deezer_img = _search_deezer_artist(ra.get("name", ""))
-                if deezer_img:
-                    ra["image"] = deezer_img
-                else:
-                    ra["image"] = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                 ra["image"] = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
             
-        # Update cache after artists
-        cache_top_data("top_v2", user_id, time_range, result, ttl=300)
-            
-        print(f"LASTFM BG: Enhancing tracks...")
+        print(f"LASTFM BG: Enhancing tracks (checking placeholders)...")
         for i, rt in enumerate(enhanced_tracks):
-            sp_data = track_results_map.get(i, {})
-            if sp_data.get("id"):
-                rt["id"] = sp_data["id"]
-            if sp_data.get("image"):
-                rt["image"] = sp_data["image"]
-            elif not rt.get("image") or "photo-1614613535308-eb5fbd3d2c17" in rt.get("image", "") or "photo-1493225255756-d9584f8606e9" in rt.get("image", "") or "4128a6eb29f94943c9d206c08e625904" in rt.get("image", ""):
-                 # Try iTunes as fallback
-                 artist_name = rt.get("artists", [""])[0]
-                 itunes_img = _search_itunes_track(rt.get("name", ""), artist_name)
-                 if itunes_img:
-                     rt["image"] = itunes_img
-                 else:
-                     rt["image"] = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&h=300&auto=format&fit=crop"
+            if not rt.get("image") or "photo-1493225255756-d9584f8606e9" in rt.get("image", "") or "4128a6eb29f94943c9d206c08e625904" in rt.get("image", "") or "data:image/svg+xml" in rt.get("image", ""):
+                 rt["image"] = DEFAULT_TRACK_IMAGE
 
-        # Update cache after tracks
+        # Update cache after images
         cache_top_data("top_v2", user_id, time_range, result, ttl=300)
 
         # 3. Fetch Artist Tags (Genres) - Optimized with threading
@@ -138,14 +119,9 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 artist_name = future_genres[future]
                 try:
                     genres = future.result()
-                    # Fallback to Spotify genres if LFM tags are thin
+                    # Fallback to empty if LFM tags are thin
                     if not genres or len(genres) < 2:
-                        # Find the index of this artist in results
-                        artist_idx = next((i for i, n in enumerate(artist_names) if n == artist_name), None)
-                        if artist_idx is not None:
-                            sp_genres = artist_results_map.get(artist_idx, {}).get("genres", [])
-                            if sp_genres:
-                                genres = list(set(genres + sp_genres))[:5]
+                        pass # No Spotify fallback anymore
 
                     for g in genres:
                         # Filter out useless tags
@@ -227,46 +203,48 @@ def _get_spotify_app_token():
 def _search_spotify_artist(artist_name, token):
     """Search for an artist on Spotify and return (id, image_url)."""
     if not token or not artist_name:
-        return None, ""
+        return None, "", []
     headers = {"Authorization": f"Bearer {token}"}
     
+    target_name = artist_name.lower().strip()
+    sp_artist = None
+
+    def find_best_match(items):
+        # 1. Exact match
+        for a in items:
+            if a["name"].lower().strip() == target_name:
+                return a
+        # 2. Strict substring match
+        for a in items:
+            sp_name = a["name"].lower().strip()
+            if target_name in sp_name or sp_name in target_name:
+                return a
+        return None
+
     # Try exact match first
-    params = {"q": f"artist:\"{artist_name}\"", "type": "artist", "limit": 1}
+    params = {"q": f"artist:\"{artist_name}\"", "type": "artist", "limit": 5}
     try:
         res = requests.get("https://api.spotify.com/v1/search", headers=headers, params=params, timeout=5)
         if res.status_code == 200:
-            items = res.json().get("artists", {}).get("items", [])
-            if items:
-                sp_artist = items[0]
-                # STRICT MATCH CHECK: Only accept if names are reasonably similar
-                sp_name = sp_artist["name"].lower()
-                target_name = artist_name.lower()
-                if target_name in sp_name or sp_name in target_name:
-                    images = sp_artist.get("images", [])
-                    img_url = images[0]["url"] if images else ""
-                    print(f"SPOTIFY ARTIST SEARCH: Match found for '{artist_name}' -> '{sp_artist['name']}'")
-                    return sp_artist["id"], img_url, sp_artist.get("genres", [])
+            sp_artist = find_best_match(res.json().get("artists", {}).get("items", []))
     except Exception:
         pass
         
     # Fallback to broad search
-    params = {"q": artist_name, "type": "artist", "limit": 1}
-    try:
-        res = requests.get("https://api.spotify.com/v1/search", headers=headers, params=params, timeout=5)
-        if res.status_code == 200:
-            items = res.json().get("artists", {}).get("items", [])
-            if items:
-                sp_artist = items[0]
-                # STRICT MATCH CHECK for fallback
-                sp_name = sp_artist["name"].lower()
-                target_name = artist_name.lower()
-                if target_name in sp_name or sp_name in target_name:
-                    images = sp_artist.get("images", [])
-                    img_url = images[0]["url"] if images else ""
-                    print(f"SPOTIFY ARTIST SEARCH (Fallback): Match found for '{artist_name}' -> '{sp_artist['name']}'")
-                    return sp_artist["id"], img_url, sp_artist.get("genres", [])
-    except Exception:
-        pass
+    if not sp_artist:
+        params = {"q": artist_name, "type": "artist", "limit": 5}
+        try:
+            res = requests.get("https://api.spotify.com/v1/search", headers=headers, params=params, timeout=5)
+            if res.status_code == 200:
+                sp_artist = find_best_match(res.json().get("artists", {}).get("items", []))
+        except Exception:
+            pass
+
+    if sp_artist:
+        images = sp_artist.get("images", [])
+        img_url = images[0]["url"] if images else ""
+        print(f"SPOTIFY ARTIST SEARCH: Match found for '{artist_name}' -> '{sp_artist['name']}'")
+        return sp_artist["id"], img_url, sp_artist.get("genres", [])
         
     print(f"SPOTIFY ARTIST SEARCH: No match found for '{artist_name}'")
     return None, "", []
@@ -577,7 +555,7 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
                 break
         
         if not track_image:
-            track_image = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&h=300&auto=format&fit=crop"
+            track_image = DEFAULT_TRACK_IMAGE
 
         track_ids.append(track_id)
         tracks_to_save.append((track_id, track_name, playcount, None, track_image))
@@ -603,7 +581,7 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
         "genres": [],
         "time_range": time_range,
         "source": "lastfm",
-        "sentiment_report": "Syncing your music vibe... (Metadata enhancement in progress)",
+        "sentiment_report": "Syncing your music vibe",
         "sentiment_scores": [],
         "_raw_artists": raw_artists,
         "_raw_tracks": raw_tracks

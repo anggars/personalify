@@ -323,7 +323,8 @@ export default function DashboardPage() {
   const isAnalyzing =
     emotionText?.includes("being analyzed") ||
     emotionText?.includes("getting ready") ||
-    emotionText?.includes("Digging deeper");
+    emotionText?.includes("Digging deeper") ||
+    emotionText?.includes("Syncing");
   useEffect(() => {
     if (!isAnalyzing) return;
     const dotsInterval = setInterval(() => {
@@ -392,7 +393,7 @@ export default function DashboardPage() {
         // Start/Stop polling based on state
         if (isStillLoading && !pollInterval) {
           console.log("DASHBOARD: Vibe is loading, starting poll...");
-          pollInterval = setInterval(() => fetchData(true), 10000);
+          pollInterval = setInterval(() => fetchData(true), 2000);
           // Also trigger re-analysis in case it died
           fetchEmotionAnalysis(false);
         } else if (!isStillLoading && pollInterval) {
