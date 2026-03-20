@@ -603,13 +603,7 @@ export const Navbar = () => {
                                               : "opacity-0"
                                           )}
                                           style={{
-                                            backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), ${
-                                              activeProvider === "lastfm" ? "rgba(213,16,7,0.45)" : "rgba(29,185,84,0.45)"
-                                            } 0%, ${
-                                              activeProvider === "lastfm" ? "rgba(213,16,7,0.2)" : "rgba(29,185,84,0.2)"
-                                            } 30%, ${
-                                              activeProvider === "lastfm" ? "rgba(213,16,7,0.08)" : "rgba(29,185,84,0.08)"
-                                            } 60%, transparent 100%)`,
+                                            backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
                                           }}
                                         />
                                       </motion.div>
@@ -666,13 +660,7 @@ export const Navbar = () => {
                           <div
                             className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
                              style={{
-                               backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), ${
-                               activeProvider === "lastfm" ? "rgba(213,16,7,0.45)" : "rgba(29,185,84,0.45)"
-                             } 0%, ${
-                               activeProvider === "lastfm" ? "rgba(213,16,7,0.2)" : "rgba(29,185,84,0.2)"
-                             } 30%, ${
-                               activeProvider === "lastfm" ? "rgba(213,16,7,0.08)" : "rgba(29,185,84,0.08)"
-                             } 60%, transparent 100%)`,
+                               backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
                              }}
                           />
                         </motion.div>
@@ -721,13 +709,7 @@ export const Navbar = () => {
                         <div
                           className={cn("absolute inset-0 transition-opacity duration-300", isHovered ? "opacity-100" : "opacity-0")}
                           style={{
-                            backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), ${
-                              activeProvider === "lastfm" ? "rgba(213,16,7,0.45)" : "rgba(29,185,84,0.45)"
-                            } 0%, ${
-                              activeProvider === "lastfm" ? "rgba(213,16,7,0.2)" : "rgba(29,185,84,0.2)"
-                            } 30%, ${
-                              activeProvider === "lastfm" ? "rgba(213,16,7,0.08)" : "rgba(29,185,84,0.08)"
-                            } 60%, transparent 100%)`,
+                            backgroundImage: `radial-gradient(circle 35px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29,185,84,0.45) 0%, rgba(29,185,84,0.2) 30%, rgba(29,185,84,0.08) 60%, transparent 100%)`,
                           }}
                         />
                       </motion.div>
