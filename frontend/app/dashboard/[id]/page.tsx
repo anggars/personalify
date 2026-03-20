@@ -394,8 +394,7 @@ export default function DashboardPage() {
         if (isStillLoading && !pollInterval) {
           console.log("DASHBOARD: Vibe is loading, starting poll...");
           pollInterval = setInterval(() => fetchData(true), 2000);
-          // Also trigger re-analysis in case it died
-          fetchEmotionAnalysis(false);
+          // BACKEND now handles triggering analysis automatically via QStash
         } else if (!isStillLoading && pollInterval) {
           console.log("DASHBOARD: Vibe ready, stopping poll.");
           clearInterval(pollInterval);
@@ -1438,7 +1437,7 @@ export default function DashboardPage() {
         </p>
         <p className="emotion-recap mt-4">
           {isAnalyzing ? (
-            <span className="animate-pulse text-neutral-500 dark:text-[#B3B3B3]">
+            <span className="progress-text animate-pulse text-neutral-500 dark:text-[#B3B3B3]">
               {emotionText.replace(/\.\.\.$/, "")}{animatedDots}
             </span>
           ) : (

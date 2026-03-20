@@ -306,6 +306,15 @@
   font-style: italic;
 }
 
+.progress-text {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90vw;
+  margin: 0 auto;
+}
+
 :root:not(.dark) .dashboard-header .emotion-recap {
   color: #333333; /* Darker contrast for light mode */
 }
