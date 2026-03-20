@@ -27,8 +27,9 @@ PERIOD_MAP = {
     "long_term": "12month"
 }
 
-# Minimalist gray vinyl record SVG as a placeholder
-DEFAULT_TRACK_IMAGE = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjNjY2NjY2IiBkPSJNMjU2IDUxMmMxNDEuNCAwIDI1Ni0xMTQuNiAyNTYtMjU2UzM5Ny40IDAgMjU2IDAgMCAxMTQuNiAwIDI1NmMwIDE0MS40IDExNC42IDI1NiAyNTYgMjU2em0wLTEyOGMtNzAuNyAwLTEyOC01Ny4zLTEyOC0xMjhTMTg1LjMgMTI4IDI1NiAxMjhDMzI2LjcgMTI4IDM4NCAxODUuMyAzODQgMjU2UzMyNi43IDM4NCAyNTYgMzg0em0wLTY0YzM1LjMgMCA2NC0yOC43IDY0LTY0UzI5MS4zIDE5MiAyNTYgMTkyIDE5MiAyMjAuNyAxOTIgMjU2UzIyMC43IDMyMCAyNTYgMzIweiIvPjwvc3ZnPg=="
+# User requested lucide/disc-3 for tracks and lucide/users for artists with dark zinc styling and proportional padding
+DEFAULT_TRACK_IMAGE = "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%22-3%20-3%2030%2030%22%20fill%3D%22none%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20style%3D%22background-color%3A%2327272a%3B%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%2210%22%2F%3E%3Cpath%20d%3D%22M6%2012c0-1.7.7-3.2%201.8-4.2%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22M18%2012c0%201.7-.7%203.2-1.8%204.2%22%2F%3E%3C%2Fsvg%3E"
+DEFAULT_ARTIST_IMAGE = "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%22-3%20-3%2030%2030%22%20fill%3D%22none%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20style%3D%22background-color%3A%2327272a%3B%22%3E%3Cpath%20d%3D%22M16%2021v-2a4%204%200%200%200-4-4H6a4%204%200%200%200-4%204v2%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%227%22%20r%3D%224%22%2F%3E%3Cpath%20d%3D%22M22%2021v-2a4%204%200%200%200-3-3.87%22%2F%3E%3Cpath%20d%3D%22M16%203.13a4%204%200%200%201%200%207.75%22%2F%3E%3C%2Fsvg%3E"
 
 # --- BACKGROUND PROCESSING ---
 
@@ -42,13 +43,44 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         import re
         try:
             url = f"https://www.last.fm/music/{quote_plus(artist_name)}"
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.5"
+            }
             res = requests.get(url, headers=headers, timeout=5)
             if res.status_code == 200:
-                match = re.search(r'<meta\s+property="og:image"\s+content="([^"]+)"', res.text)
-                if match:
-                    img_url = match.group(1)
+                matches = re.findall(r'<meta\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]\s+content=[\'"]([^\'"]+)[\'"]', res.text)
+                if not matches:
+                     # Fallback to alternate attribute order
+                     matches = re.findall(r'<meta\s+content=[\'"]([^\'"]+)[\'"]\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]', res.text)
+                
+                for img_url in matches:
                     if "2a96cbd8b46e442fc41c2b86b821562f" not in img_url and "avatar" not in img_url and "default_artist" not in img_url:
+                        # Fix for tiny images, last.fm usually stores the high res by dropping the resolution part of the path, but standard is fine
+                        return img_url
+        except Exception:
+            pass
+        return ""
+
+    def _scrape_lastfm_track_image(track_name, artist_name):
+        """Fallback scraper to get track image from last.fm website without API limits."""
+        import re
+        try:
+            url = f"https://www.last.fm/music/{quote_plus(artist_name)}/_/{quote_plus(track_name)}"
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.5"
+            }
+            res = requests.get(url, headers=headers, timeout=5)
+            if res.status_code == 200:
+                matches = re.findall(r'<meta\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]\s+content=[\'"]([^\'"]+)[\'"]', res.text)
+                if not matches:
+                     matches = re.findall(r'<meta\s+content=[\'"]([^\'"]+)[\'"]\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]', res.text)
+                
+                for img_url in matches:
+                    if "2a96cbd8b46e442fc41c2b86b821562f" not in img_url and "avatar" not in img_url and "default" not in img_url:
                         return img_url
         except Exception:
             pass
@@ -60,6 +92,8 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         
         raw_artists = result.get("_raw_artists", [])
         raw_tracks = result.get("_raw_tracks", [])
+        
+        sp_token = _get_spotify_app_token()
 
         # 1. Fetch Artist Images via Last.fm direct scrape
         print(f"LASTFM BG: Scraping Last.fm for exact artist images...")
@@ -78,6 +112,54 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 except Exception as e:
                     pass
 
+        # 1b. Fetch Track Images via Spotify & iTunes Fallback
+        track_results_map = {}
+        
+        def _get_best_track_image(idx, t_name, a_name):
+            sp_id, sp_img = None, ""
+            if sp_token:
+                try:
+                    sp_id, sp_img = _search_spotify_track(t_name, a_name, sp_token)
+                except Exception:
+                    pass
+            
+            if not sp_img:
+                try:
+                    it_img = _search_itunes_track(t_name, a_name)
+                    if it_img:
+                        print(f"LASTFM BG: iTunes Match Found! '{t_name}'")
+                        return idx, sp_id, it_img
+                except Exception as e:
+                    print(f"BG iTunes track search error: {e}")
+            
+            # Absolute Last Resort: Scrape Last.fm Website (for rare indie/local tracks like Murphy Radio)
+            if not sp_img:
+                try:
+                    lfm_img = _scrape_lastfm_track_image(t_name, a_name)
+                    if lfm_img:
+                        print(f"LASTFM BG: Direct Last.fm Scrape Match Found! '{t_name}'")
+                        return idx, sp_id, lfm_img
+                except Exception:
+                    pass
+            
+            return idx, sp_id, sp_img
+
+        print(f"LASTFM BG: Mapping Tracks (Spotify + iTunes Fallback)...")
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            track_futures = {
+                executor.submit(_get_best_track_image, i, t.get("name"), 
+                                t.get("artist", {}).get("name") if isinstance(t.get("artist"), dict) else t.get("artist")
+                               ): i 
+                for i, t in enumerate(raw_tracks)
+            }
+            
+            for future in track_futures:
+                try:
+                    res_idx, sp_id, sp_img = future.result()
+                    track_results_map[res_idx] = {"id": sp_id, "image": sp_img}
+                except Exception as e:
+                    print(f"BG Track mapping error: {e}")
+
         # 2. Update Artists & Tracks
         enhanced_artists = result.get("artists", [])
         enhanced_tracks = result.get("tracks", [])
@@ -87,16 +169,21 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             scraped_img = artist_results_map.get(i)
             if scraped_img:
                 ra["image"] = scraped_img
-            elif not ra.get("image") or "blank-profile-picture" in ra.get("image", "") or "2a96cbd8b46e442fc41c2b86b821562f" in ra.get("image", ""):
-                 ra["image"] = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+            elif not ra.get("image") or "blank-profile-picture" in ra.get("image", "") or "2a96cbd8b46e442fc41c2b86b821562f" in ra.get("image", "") or "data:image/svg+xml" in ra.get("image", ""):
+                 ra["image"] = DEFAULT_ARTIST_IMAGE
             
         print(f"LASTFM BG: Enhancing tracks (checking placeholders)...")
         for i, rt in enumerate(enhanced_tracks):
-            if not rt.get("image") or "photo-1493225255756-d9584f8606e9" in rt.get("image", "") or "4128a6eb29f94943c9d206c08e625904" in rt.get("image", "") or "data:image/svg+xml" in rt.get("image", ""):
+            sp_data = track_results_map.get(i, {})
+            if sp_data.get("id"):
+                rt["id"] = sp_data["id"]
+            if sp_data.get("image"):
+                rt["image"] = sp_data["image"]
+            elif not rt.get("image") or "photo-1493225255756-d9584f8606e9" in rt.get("image", "") or "4128a6eb29f94943c9d206c08e625904" in rt.get("image", "") or "data:image/svg+xml" in rt.get("image", ""):
                  rt["image"] = DEFAULT_TRACK_IMAGE
 
         # Update cache after images
-        cache_top_data("top_v2", user_id, time_range, result, ttl=300)
+        cache_top_data("top_v2", user_id, time_range, result, ttl=60)
 
         # 3. Fetch Artist Tags (Genres) - Optimized with threading
         genre_count = {}
@@ -140,7 +227,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         
         result["genres"] = genres_list
         # Update cache after genres
-        cache_top_data("top_v2", user_id, time_range, result, ttl=300)
+        cache_top_data("top_v2", user_id, time_range, result, ttl=60)
 
         # 4. Sentiment Analysis
         num_to_analyze = 20 if extended else 10
@@ -527,7 +614,7 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
                 break
         
         if not artist_image:
-             artist_image = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+             artist_image = DEFAULT_ARTIST_IMAGE
 
         artist_ids.append(artist_id)
         artists_to_save.append((artist_id, artist_name, playcount, artist_image))
@@ -590,7 +677,7 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
     # 5. Handle Background Tasks
     if background_tasks:
         # Save temporary results
-        cache_top_data("top_v2", user_id, time_range, result, ttl=300)
+        cache_top_data("top_v2", f"lastfm:{username}", time_range, result, ttl=60)
         background_tasks.add_task(process_lastfm_enhancement_background, username, time_range, result, extended)
         print(f"LASTFM SYNC: Fast sync success for {username}. Background task triggered.")
     else:

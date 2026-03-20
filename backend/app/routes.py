@@ -865,8 +865,47 @@ def dashboard_api(profile_id: str, request: Request, response: Response, backgro
         logged_in_id = request.cookies.get("spotify_id")
         
         # Determine if we are viewing our own profile or someone else's
-        # If logged_in_id is missing, we assume we are just viewing (public view)
         is_own_profile = (logged_in_id == profile_id)
+
+        # ROBUST AUTH: If cookie is missing, check Authorization header?
+        # This handles cases where browser drops cookies (e.g. SameSite localhost issues)
+        if not is_own_profile and not profile_id.startswith("lastfm:"):
+            auth_header = request.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                token_from_header = auth_header.split(" ")[1]
+                print(f"WEB DASHBOARD: Cookie missing but found Bearer token. Verifying identity...")
+                
+                # Check identity via Spotify
+                try:
+                    user_res = requests.get("https://api.spotify.com/v1/me", headers={"Authorization": f"Bearer {token_from_header}"})
+                    if user_res.status_code == 200:
+                        user_data = user_res.json()
+                        verified_id = user_data.get("id")
+                        
+                        if verified_id == profile_id:
+                            print(f"WEB DASHBOARD: Identity Verified via Token! Restoring session for {verified_id}")
+                            is_own_profile = True
+                            access_token = token_from_header # Use this token for sync
+                            logged_in_id = verified_id
+                            
+                            # CRITICAL: Restore cookies in response to fix browser state
+                            original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+                            is_local = "127.0.0.1" in original_host or "localhost" in original_host
+                            is_secure = not is_local
+
+                            response.set_cookie(key="spotify_id", value=verified_id, httponly=True, path="/", samesite="lax", max_age=2592000, secure=is_secure)
+                            response.set_cookie(key="access_token", value=access_token, httponly=True, path="/", samesite="lax", max_age=3600, secure=is_secure)
+                        else:
+                            print(f"WEB DASHBOARD: Token belongs to {verified_id}, not {profile_id}. Public View.")
+                except Exception as e:
+                    print(f"WEB DASHBOARD: Token verification failed: {e}")
+
+        # STRICT PRIVACY ENFORCEMENT
+        # The user requested that public viewing is entirely disabled.
+        # If they are logged out or viewing someone else's dashboard, immediately reject.
+        if not is_own_profile:
+            print(f"WEB DASHBOARD: Access denied for {profile_id}. User is not authenticated.")
+            raise HTTPException(status_code=401, detail="Unauthorized. Please login again.")
 
         # LAST.FM HANDLING: If it's a Last.fm ID, use the Last.fm handler directly
         if profile_id.startswith("lastfm:"):
@@ -874,6 +913,40 @@ def dashboard_api(profile_id: str, request: Request, response: Response, backgro
             # For Last.fm, we don't need a token, we just sync by username
             # We can sync every time or rely on cache. Here we try cache first.
             data = get_cached_top_data("top_v2", profile_id, time_range)
+            
+            if data:
+                # Live fetch user info to keep profile picture instantly synced
+                try:
+                    from app.lastfm_handler import get_user_info
+                    live_user = get_user_info(username)
+                    if live_user:
+                        li_name = live_user.get("realname") or live_user.get("name", username)
+                        li_img = ""
+                        for img in reversed(live_user.get("image", [])):
+                            url = img.get("#text", "")
+                            if url and url.strip():
+                                li_img = url
+                                break
+                        if li_img:
+                            data["image"] = li_img
+                        data["user"] = li_name
+                except Exception:
+                    pass
+                
+                # Live Placeholder Substitution
+                # Ensure developers see their placeholder code changes instantly upon F5
+                try:
+                    from app.lastfm_handler import DEFAULT_TRACK_IMAGE, DEFAULT_ARTIST_IMAGE
+                    for rt in data.get("tracks", []):
+                        if rt.get("image", "").startswith("data:image/svg+xml"):
+                            rt["image"] = DEFAULT_TRACK_IMAGE
+                    
+                    for ra in data.get("artists", []):
+                        if ra.get("image", "").startswith("data:image/svg+xml") or "blank-profile-picture" in ra.get("image", ""):
+                            ra["image"] = DEFAULT_ARTIST_IMAGE
+                except Exception:
+                    pass
+
             if not data:
                 print(f"WEB DASHBOARD: No cache for {username}. Starting Last.fm sync...")
                 data = sync_lastfm_user_data(username, time_range, background_tasks=background_tasks)
@@ -916,38 +989,7 @@ def dashboard_api(profile_id: str, request: Request, response: Response, backgro
             # 1. AUTO-REFRESH LOGIC ...
             pass # Logic continues below
             
-        # ROBUST AUTH: If cookie is missing, check Authorization header?
-        # This handles cases where browser drops cookies (e.g. SameSite localhost issues)
-        if not is_own_profile:
-            auth_header = request.headers.get("Authorization")
-            if auth_header and auth_header.startswith("Bearer "):
-                token_from_header = auth_header.split(" ")[1]
-                print(f"WEB DASHBOARD: Cookie missing but found Bearer token. Verifying identity...")
-                
-                # Check identity via Spotify
-                try:
-                    user_res = requests.get("https://api.spotify.com/v1/me", headers={"Authorization": f"Bearer {token_from_header}"})
-                    if user_res.status_code == 200:
-                        user_data = user_res.json()
-                        verified_id = user_data.get("id")
-                        
-                        if verified_id == profile_id:
-                            print(f"WEB DASHBOARD: Identity Verified via Token! Restoring session for {verified_id}")
-                            is_own_profile = True
-                            access_token = token_from_header # Use this token for sync
-                            logged_in_id = verified_id
-                            
-                            # CRITICAL: Restore cookies in response to fix browser state
-                            original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-                            is_local = "127.0.0.1" in original_host or "localhost" in original_host
-                            is_secure = not is_local
-
-                            response.set_cookie(key="spotify_id", value=verified_id, httponly=True, path="/", samesite="lax", max_age=2592000, secure=is_secure)
-                            response.set_cookie(key="access_token", value=access_token, httponly=True, path="/", samesite="lax", max_age=3600, secure=is_secure)
-                        else:
-                            print(f"WEB DASHBOARD: Token belongs to {verified_id}, not {profile_id}. Public View.")
-                except Exception as e:
-                    print(f"WEB DASHBOARD: Token verification failed: {e}")
+        # (Robust Auth logic was moved above to enforce strict privacy)
 
         if is_own_profile:
             # 1. AUTO-REFRESH LOGIC (Server-Side) - ONLY FOR OWN PROFILE
@@ -1031,14 +1073,97 @@ def dashboard_api(profile_id: str, request: Request, response: Response, backgro
                         print("WEB DASHBOARD: Sync success!")
                     except Exception as e:
                         print(f"WEB DASHBOARD: Sync failed ({e}). Falling back to empty.")
-                        data = None
-            else:
-                print(f"WEB DASHBOARD: No access_token. Reading from cache for {profile_id}.")
-                data = get_cached_top_data("top_v2", profile_id, time_range)
-        else:
-            # PUBLIC VIEW / OTHER PROFILE
-            print(f"WEB DASHBOARD: Viewing Public Profile {profile_id} (Logged in as: {logged_in_id}). Skipping Sync.")
+        # If we reach here, it's a Spotify profile and is_own_profile must be True due to the 401 check above.
+        # 1. AUTO-REFRESH LOGIC (Server-Side) - ONLY FOR OWN PROFILE
+        # If no access_token cookie, try to refresh using DB refresh_token
+        if not access_token:
+            print(f"WEB DASHBOARD: No access_token cookie. Attempting server-side refresh for {profile_id}...")
+            refresh_token = get_refresh_token(profile_id)
+            
+            if refresh_token:
+                try:
+                        # Request new access token from Spotify
+                    client_id = os.getenv("SPOTIFY_CLIENT_ID")
+                    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+                    
+                    payload = {
+                        "grant_type": "refresh_token",
+                        "refresh_token": refresh_token,
+                        "client_id": client_id,
+                        "client_secret": client_secret
+                    }
+                    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+                    
+                    res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
+                    if res.status_code == 200:
+                        tokens = res.json()
+                        access_token = tokens.get("access_token")
+                        new_refresh_token = tokens.get("refresh_token")
+                        expires_in = tokens.get("expires_in", 3600)
+                        
+                        # Save new refresh token if rotated
+                        token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
+                        token_to_save = new_refresh_token if new_refresh_token else refresh_token
+                        save_refresh_token(profile_id, token_to_save, token_expires_at)
+                        
+                        # Set cookie for future requests
+                        # Determine if running locally (copied from other endpoints logic)
+                        # In FastAPI dependency injection, request.url.hostname could also work, 
+                        # but sticking to existing pattern for consistency
+                        original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+                        is_local = "127.0.0.1" in original_host or "localhost" in original_host
+                        is_secure = not is_local
+
+                        response.set_cookie(
+                            key="access_token",
+                            value=access_token,
+                            httponly=True,
+                            path="/",
+                            samesite="lax",
+                            max_age=expires_in,
+                            secure=is_secure
+                        )
+                        print("WEB DASHBOARD: Server-side refresh success! Cookie set.")
+                    else:
+                        print(f"WEB DASHBOARD: Server-side refresh failed ({res.text})")
+                except Exception as e:
+                    print(f"WEB DASHBOARD: Server-side refresh error: {e}")
+
+        # 2. CACHE-FIRST LOGIC - ONLY FOR OWN PROFILE
+        if access_token:
+            # 2.1 Check cache first
             data = get_cached_top_data("top_v2", profile_id, time_range)
+            
+            # 2.2 Freshness Check (Optional: Only sync if no cache or cache is old)
+            # For now, if cache exists, we return it. 
+            # frontend-side will handle manual refresh if needed.
+            if data:
+                # Check if analysis is indeed done, or if it's still "getting ready"
+                sentiment_report = data.get("sentiment_report", "")
+                if "getting ready" in sentiment_report or "being analyzed" in sentiment_report:
+                    print(f"WEB DASHBOARD: Vibe still loading for {profile_id}. Triggering background refresh.")
+                    # Import here to avoid circular dependencies
+                    from app.spotify_handler import process_sentiment_background
+                    background_tasks.add_task(process_sentiment_background, profile_id, time_range, data, False)
+                
+                print(f"WEB DASHBOARD: Returning cached data for {profile_id}.")
+            else:
+                # 2.3 No cache -> Sync fresh data
+                print(f"WEB DASHBOARD: No cache found. Syncing fresh data for {profile_id}...")
+                try:
+                    data = sync_user_data(access_token, time_range, background_tasks=background_tasks)
+                    print("WEB DASHBOARD: Sync success!")
+                except Exception as e:
+                    print(f"WEB DASHBOARD: Sync failed ({e}). Falling back to empty.")
+                    data = None
+        else:
+            print(f"WEB DASHBOARD: No access_token. Reading from cache for {profile_id}.")
+            data = get_cached_top_data("top_v2", profile_id, time_range)
+        # PUBLIC VIEW / OTHER PROFILE        # Public caching fallback is disabled because we now enforce strict privacy
+        # The user requested that the dashboard cannot be opened after logout.
+        # This code is now unreachable due to the 401 check above, but left for context:
+        if not is_own_profile:
+            pass
 
         if not data:
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
