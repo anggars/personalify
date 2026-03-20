@@ -487,29 +487,131 @@ def analyze_lyrics_emotion(lyrics: str):
         return {"error": "Error parsing results."}
 
 
-def generate_sentiment_analysis(track_names, extended=False):
+def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
     """
-    Generates a textual summary ("Shades of ...") based on a list of track names.
-    Concatenates all track titles into one text and sends as a single API call.
-    Now includes MBTI: "Shades of [emo1] and [emo2] [connector] [MBTI]."
+    Generates a textual summary ("Shades of ...") based on lyrics from top tracks.
+    Sequentially scrapes lyrics from Genius, analyzes them individually, and averages the scores.
     """
-    if not track_names:
+    if not tracks:
         return "Couldn't analyze music mood.", []
 
-    num_tracks = len(track_names) if extended else min(10, len(track_names))
-    tracks_to_analyze = track_names[:num_tracks]
-    combined_text = ", ".join(tracks_to_analyze)
+    num_tracks = len(tracks) if extended else min(10, len(tracks))
+    tracks_to_analyze = tracks[:num_tracks]
 
-    txt = prepare_text_for_analysis(combined_text)
-    if not txt:
+    from app.genius_lyrics import search_track_lyrics
+
+    all_emotions_accum = {}
+    all_mbti_accum = {}
+    successful_analyses = 0
+
+    for idx, track in enumerate(tracks_to_analyze):
+        # Support both dictionaries and direct string fallbacks just in case
+        if isinstance(track, dict):
+            track_name = track.get("name", "")
+            artist_name = track.get("artist", "")
+            if not artist_name and "artists" in track:
+                arr = track.get("artists", [])
+                if arr and isinstance(arr, list):
+                    if isinstance(arr[0], dict):
+                        artist_name = arr[0].get("name", "")
+                    else:
+                        artist_name = str(arr[0])
+            elif isinstance(artist_name, dict):
+                artist_name = artist_name.get("name", "")
+        else:
+            # Legacy string support: "Track Name by Artist Name"
+            track_str = str(track)
+            if " by " in track_str:
+                parts = track_str.split(" by ", 1)
+                track_name = parts[0]
+                artist_name = parts[1]
+            else:
+                track_name = track_str
+                artist_name = ""
+            
+        # Prepare names for UI and fallback/cache
+        display_name = f"{track_name} by {artist_name}" if artist_name else track_name
+        short_track_name = track_name[:30] + "..." if len(track_name) > 33 else track_name
+
+        # --- OPTIMIZATION: Check if this track is ALREADY in our long-term cache ---
+        # (This is especially useful for Extended Sync to skip tracks 1-10)
+        cached_analysis = _analysis_cache.get(display_name)
+
+        # 1. Fire generic progress callback (only for tracks 11+ in extended mode)
+        if progress_callback:
+            try:
+                should_show = True
+                if extended and idx < 10:
+                    should_show = False
+                
+                if should_show:
+                    progress_callback(f"Syncing ({idx+1}/{num_tracks}): Analyzing {short_track_name}")
+            except Exception as e:
+                print(f"NLP: Callback Error: {e}")
+
+        # Try to use cached analysis if we have it for this EXACT display name (title by artist)
+        # This allows us to skip search_track_lyrics entirely for the first 10 tracks!
+        emotions = None
+        mbti = None
+        
+        if cached_analysis:
+            emotions, mbti = cached_analysis
+            print(f"NLP: Instance Cache Hit for '{display_name}'. Skipping search.")
+        else:
+            # 2. Fetch lyrics
+            lyrics = None
+            if track_name and artist_name:
+                # Check for instrumental markers
+                is_instrumental = "instrumental" in track_name.lower() or "instrumental" in (artist_name or "").lower()
+                if not is_instrumental:
+                    lyrics = search_track_lyrics(track_name, artist_name)
+
+            # 3. Fallback to title if lyrics not found
+            text_to_analyze = lyrics if lyrics else display_name
+
+            txt = prepare_text_for_analysis(text_to_analyze)
+            if not txt:
+                print(f"NLP: Skipping '{track_name}' - Preprocessing returned empty.")
+                continue
+
+            # 4. Analyze Text
+            print(f"NLP: Analyzing track {idx+1}/{num_tracks}: {track_name}...")
+            emotions, mbti = get_emotion_from_text(txt)
+            
+            # Save to cache using the display_name so it's hit next time even before search
+            if emotions:
+                _analysis_cache[display_name] = (emotions, mbti)
+
+        if emotions:
+            successful_analyses += 1
+            for e in emotions:
+                all_emotions_accum[e["label"]] = all_emotions_accum.get(e["label"], 0) + e["score"]
+
+        if mbti:
+            for m in mbti:
+                all_mbti_accum[m["label"]] = all_mbti_accum.get(m["label"], 0) + m["score"]
+
+    if successful_analyses == 0:
         return "No clear vibe detected.", []
 
-    # Single API call for all tracks
-    emotions, mbti = get_emotion_from_text(txt)
+    # --- AVERAGING RESULTS ---
+    avg_emotions = []
+    for label, total_score in all_emotions_accum.items():
+        avg_emotions.append({"label": label, "score": total_score / successful_analyses})
+    avg_emotions.sort(key=lambda x: x["score"], reverse=True)
 
-    if not emotions:
-        return "No clear vibe detected.", []
+    avg_mbti = []
+    if all_mbti_accum:
+        # Some fallback tracks might not return MBTI, but we divide by total successful analyses
+        # to ensure the ratio is proportional to tracks that DID return MBTI.
+        mbti_count = sum(1 for label, total_score in all_mbti_accum.items())
+        total_mbti_tracks = successful_analyses if mbti_count > 0 else 1 # avoid div zero
+        for label, total_score in all_mbti_accum.items(): 
+            avg_mbti.append({"label": label, "score": total_score / total_mbti_tracks})
+        avg_mbti.sort(key=lambda x: x["score"], reverse=True)
 
+    emotions = avg_emotions
+    mbti = avg_mbti
     has_mbti = mbti and len(mbti) > 0
 
     if has_mbti:

@@ -172,8 +172,12 @@ def login(request: Request, mobile: str = Query(None)):
 
 @router.get("/logout")
 async def logout(request: Request):
+    # Get ID before clearing cookies
+    spotify_id = request.cookies.get("spotify_id")
     try:
-        request.session.clear()
+        if spotify_id:
+            from app.cache_handler import clear_user_cache
+            clear_user_cache(spotify_id)
     except Exception as e:
         print(f"LOGOUT WARNING: {e}") 
     response = RedirectResponse(url="/?error=logged_out", status_code=303)
@@ -201,6 +205,13 @@ def lastfm_callback(request: Request, token: str = Query(...)):
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
     is_local = "127.0.0.1" in original_host or "localhost" in original_host
     is_secure = not is_local
+    
+    # NEW: Force fresh sync by clearing existing cache for this user during login
+    try:
+        from app.cache_handler import clear_user_cache
+        clear_user_cache(f"lastfm:{username}")
+    except Exception as e:
+        print(f"CACHE CLEAR ERROR on Last.fm Login: {e}")
     
     # helper to get frontend url dynamically
     if "127.0.0.1" in original_host:
@@ -299,6 +310,13 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         
         save_user(spotify_id, display_name)
         
+        # NEW: Force fresh sync by clearing existing cache for this user during login
+        try:
+            from app.cache_handler import clear_user_cache
+            clear_user_cache(spotify_id)
+        except Exception as e:
+            print(f"CACHE CLEAR ERROR on Spotify Login: {e}")
+
         # Save refresh token if available
         if refresh_token:
             save_refresh_token(spotify_id, refresh_token, token_expires_at)
@@ -711,39 +729,55 @@ def get_user_profile(spotify_id: str, request: Request):
 
 @router.post("/analyze-sentiment-background", tags=["Background"])
 async def analyze_sentiment_background(
+    background_tasks: BackgroundTasks,
     spotify_id: str = Body(..., embed=True, description="Spotify ID"),
     time_range: str = Body("short_term", embed=True, description="Time range"),
     extended: bool = Body(False, embed=True, description="Use extended track list (20 tracks)")
 ):
-
+    """
+    Easter Egg trigger: Upgrades sentiment report to Top 20 tracks.
+    Now runs asynchronously to prevent HTTP timeouts.
+    """
     try:
+        # Detect provider from spotify_id prefix
+        provider = "spotify"
+        user_id = spotify_id
+        if ":" in spotify_id:
+            provider = spotify_id.split(":")[0]
+            user_id = spotify_id.split(":")[1]
+            
+        # Initial Cache Update & Instant Reload Logic
         cached_data = get_cached_top_data("top_v2", spotify_id, time_range)
-        if not cached_data:
-            return {"error": "No data found for analysis"}
-        tracks_to_analyze = cached_data.get("tracks", [])
-        if extended:
-            track_names = [f"{t['name']} by {', '.join(t.get('artists', []))}" if t.get('artists') else t['name'] for t in tracks_to_analyze]
-        else:
-            # Standard View: Strictly Top 10
-            track_names = [f"{t['name']} by {', '.join(t.get('artists', []))}" if t.get('artists') else t['name'] for t in tracks_to_analyze[:10]]
-        sentiment_report, sentiment_scores = generate_sentiment_analysis(track_names, extended=extended)
+        if cached_data:
+            # INSTANT RELOAD: If we already have a 20-track result, use it immediately
+            if extended and cached_data.get('extended_sentiment_report'):
+                print(f"EASTER EGG: Instant reload from cache for {spotify_id}")
+                cached_data['sentiment_report'] = cached_data['extended_sentiment_report']
+                cached_data['sentiment_scores'] = cached_data.get('extended_sentiment_scores', [])
+                cache_top_data("top_v2", spotify_id, time_range, cached_data)
+                return {
+                    "status": "Analysis loaded from cache", 
+                    "extended": True,
+                    "sentiment_report": cached_data['extended_sentiment_report']
+                }
 
-        if extended:
-
-            print("EXTENDED ANALYSIS REQUESTED. RETURNING TEMPORARY RESULT WITHOUT CACHING.")
-        else:
-
-            print("STANDARD ANALYSIS. UPDATING CACHE AND DATABASE.")
-            cached_data['sentiment_report'] = sentiment_report
-            cached_data['sentiment_scores'] = sentiment_scores
+            # Force "Syncing" state to prevent "Unavailable" UI
+            cached_data['sentiment_report'] = "Syncing (11/20): Initializing..."
             cache_top_data("top_v2", spotify_id, time_range, cached_data)
-            save_user_sync(spotify_id, time_range, cached_data)
 
-        return {"sentiment_report": sentiment_report, "sentiment_scores": sentiment_scores}
+        if provider == "lastfm":
+            from app.lastfm_handler import process_lastfm_sentiment_background
+            # Pass original FULL ID (e.g. lastfm:anggarnts) for cache consistency
+            background_tasks.add_task(process_lastfm_sentiment_background, spotify_id, time_range, extended)
+        else:
+            from app.spotify_handler import process_sentiment_background
+            background_tasks.add_task(process_sentiment_background, spotify_id, time_range, cached_data, extended)
 
+        return {"status": "Analysis triggered", "extended": extended}
+        
     except Exception as e:
-        print(f"BACKGROUND SENIMENT ANALYSIS FAILED: {e}")
-        return {"sentiment_report": "Sentiment analysis is currently unavailable."}
+        print(f"EASTER EGG ERROR: {e}")
+        return {"error": str(e)}
 
 @router.post("/analyze-lyrics", tags=["NLP"])
 async def analyze_lyrics(
@@ -1138,13 +1172,21 @@ def dashboard_api(profile_id: str, request: Request, response: Response, backgro
             # For now, if cache exists, we return it. 
             # frontend-side will handle manual refresh if needed.
             if data:
-                # Check if analysis is indeed done, or if it's still "getting ready"
+                # Check if analysis is indeed done, or if it's still loading
                 sentiment_report = data.get("sentiment_report", "")
-                if "getting ready" in sentiment_report or "being analyzed" in sentiment_report:
+                loading_keywords = ["getting ready", "being analyzed", "Syncing", "Initializing", "Analyzing lyrics", "enhancement in progress"]
+                is_loading = any(kw in sentiment_report for kw in loading_keywords)
+                
+                if is_loading:
                     print(f"WEB DASHBOARD: Vibe still loading for {profile_id}. Triggering background refresh.")
-                    # Import here to avoid circular dependencies
-                    from app.spotify_handler import process_sentiment_background
-                    background_tasks.add_task(process_sentiment_background, profile_id, time_range, data, False)
+                    provider = data.get("source", "spotify") 
+                    
+                    if provider == "lastfm":
+                        from app.lastfm_handler import process_lastfm_sentiment_background
+                        background_tasks.add_task(process_lastfm_sentiment_background, profile_id, time_range, False)
+                    else:
+                        from app.spotify_handler import process_sentiment_background
+                        background_tasks.add_task(process_sentiment_background, profile_id, time_range, data, False)
                 
                 print(f"WEB DASHBOARD: Returning cached data for {profile_id}.")
             else:
@@ -1484,6 +1526,45 @@ async def process_analysis_task(request: Request):
     profile_id = data.get("profile_id") or data.get("spotify_id")
     await run_analysis_logic(profile_id)
     return {"status": "Processed"}
+
+@router.post("/api/tasks/process-sentiment")
+async def process_sentiment_task(request: Request):
+    """
+    QStash Worker for heavy lyrics-based sentiment analysis.
+    Verifies signature and dispatches to the correct handler.
+    """
+    from app.qstash_handler import get_qstash_receiver
+    receiver = get_qstash_receiver()
+    signature = request.headers.get("Upstash-Signature")
+    body_bytes = await request.body()
+    
+    try:
+        receiver.verify(
+            body=body_bytes.decode("utf-8"),
+            signature=signature,
+            url=str(request.url)
+        )
+    except Exception as e:
+        print(f"QSTASH WORKER: INVALID SIGNATURE: {e}")
+        raise HTTPException(status_code=401, detail="Invalid signature")
+        
+    data = await request.json()
+    spotify_id = data.get("spotify_id")
+    time_range = data.get("time_range", "medium_term")
+    extended = data.get("extended", False)
+    provider = data.get("provider", "spotify")
+    
+    print(f"QSTASH WORKER: Starting sentiment for {spotify_id} ({provider})")
+    
+    if provider == "lastfm":
+        from app.lastfm_handler import process_lastfm_sentiment_background
+        process_lastfm_sentiment_background(spotify_id, time_range, extended=extended)
+    else:
+        from app.spotify_handler import process_sentiment_background
+        # Spotify handler expects a 'result' dict but we refactored it to refresh from cache
+        process_sentiment_background(spotify_id, time_range, {}, extended=extended)
+        
+    return {"status": "Sentiment processed"}
 
 @router.post("/fire-qstash-event")
 async def fire_qstash_event(

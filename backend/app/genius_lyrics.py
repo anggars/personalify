@@ -189,3 +189,37 @@ def get_lyrics_by_id(song_id):
     except Exception as e:
         print(f"GENIUS SCRAPER CRASH: {e}")
         return None
+
+def search_track_lyrics(track_name, artist_name):
+    """
+    Directly searches and scrapes lyrics for a given track and artist.
+    Returns the lyrics string or None if not found.
+    """
+    try:
+        clean_track = track_name.split(" - ")[0].split(" (")[0].strip()
+        query = f"{clean_track} {artist_name}"
+        res = requests.get(
+            f"{GENIUS_API_URL}/search",
+            params={"q": query},
+            headers=get_headers(),
+            timeout=10
+        )
+        if res.status_code != 200: 
+            return None
+            
+        hits = res.json().get("response", {}).get("hits", [])
+        for hit in hits:
+            if hit["type"] == "song":
+                result = hit["result"]
+                # Verify artist name roughly matches to avoid grabbing random covers
+                hit_artist = result.get("primary_artist", {}).get("name", "").lower()
+                if artist_name.lower() in hit_artist or hit_artist in artist_name.lower():
+                    song_id = result["id"]
+                    lyrics_data = get_lyrics_by_id(song_id)
+                    if lyrics_data and lyrics_data.get("lyrics"):
+                        return lyrics_data["lyrics"]
+                    return None
+        return None
+    except Exception as e:
+        print(f"GENIUS TRACK SEARCH ERROR: {e}")
+        return None

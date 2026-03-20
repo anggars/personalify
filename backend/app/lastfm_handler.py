@@ -11,7 +11,7 @@ from app.db_handler import (
     save_tracks_batch,
     save_user_associations_batch
 )
-from app.cache_handler import cache_top_data
+from app.cache_handler import cache_top_data, get_cached_top_data
 from app.mongo_handler import save_user_sync
 from app.nlp_handler import generate_sentiment_analysis
 from fastapi import BackgroundTasks
@@ -179,6 +179,10 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 rt["id"] = sp_data["id"]
             if sp_data.get("image"):
                 rt["image"] = sp_data["image"]
+            
+            # Incremental save every 5 tracks to show images in UI
+            if (i + 1) % 5 == 0:
+                 cache_top_data("top_v2", user_id, time_range, result, ttl=300)
             elif not rt.get("image") or "photo-1493225255756-d9584f8606e9" in rt.get("image", "") or "4128a6eb29f94943c9d206c08e625904" in rt.get("image", "") or "data:image/svg+xml" in rt.get("image", ""):
                  rt["image"] = DEFAULT_TRACK_IMAGE
 
@@ -229,30 +233,90 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         # Update cache after genres
         cache_top_data("top_v2", user_id, time_range, result, ttl=60)
 
-        # 4. Sentiment Analysis
+        # 5. Final Initial Cache (Metadata Only)
+        # Cleanup raw data to save space before delegating
+        if "_raw_artists" in result: del result["_raw_artists"]
+        if "_raw_tracks" in result: del result["_raw_tracks"]
+        
+        cache_top_data("top_v2", user_id, time_range, result, ttl=300)
+        save_user_sync(user_id, time_range, result)
+        print(f"LASTFM BG: Base enhancement + Metadata completed for '{username}'. Sentiment delegating...")
+
+        # 4. Sentiment Analysis - DELEGATED TO QSTASH
+        from app.qstash_handler import publish_to_qstash
+        did_publish = publish_to_qstash("/api/tasks/process-sentiment", {
+            "spotify_id": user_id,
+            "time_range": time_range,
+            "extended": extended,
+            "provider": "lastfm"
+        })
+
+        if not did_publish:
+            print(f"LASTFM BG: Running local analysis fallback.")
+            process_lastfm_sentiment_background(user_id, time_range, extended=extended)
+        
+    except Exception as e:
+        print(f"LASTFM BG ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        print(f"LASTFM BG ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+
+def process_lastfm_sentiment_background(user_id, time_range, extended=False):
+    """
+    Dedicated worker function to run the heavy AI sentiment analysis via QStash.
+    """
+    try:
+        # 1. Get current cached state
+        result = get_cached_top_data("top_v2", user_id, time_range)
+        if not result:
+            print(f"LASTFM SENTIMENT ERROR: No cached data for {user_id}")
+            return
+            
+        enhanced_tracks = result.get("tracks", [])
         num_to_analyze = 20 if extended else 10
         tracks_to_analyze = enhanced_tracks[:num_to_analyze]
-        track_names = [
-            f"{t['name']} by {', '.join(t.get('artists', []))}" if t.get('artists') 
-            else t['name'] 
-            for t in tracks_to_analyze
-        ]
         
-        print(f"LASTFM BG: Generating sentiment analysis...")
-        sentiment_report, sentiment_scores = generate_sentiment_analysis(track_names, extended=extended)
+        print(f"LASTFM SENTIMENT WORKER: Processing {len(tracks_to_analyze)} tracks for {user_id}...")
+        
+        def _update_progress(msg):
+            # RACE CONDITION PROTECTION: 
+            # If we are a standard worker but the cache already shows an extended sync (x/20), we stop.
+            if not extended:
+                current = get_cached_top_data("top_v2", user_id, time_range)
+                if current and "/20)" in current.get("sentiment_report", ""):
+                    print(f"LASTFM WORKER: Stopping standard sync because an extended sync is in progress for {user_id}")
+                    raise Exception("Interrupted by extended sync")
+            
+            # Fetch latest result again in case something else touched it
+            # (Though in QStash worker, we are the only one writing this field)
+            result['sentiment_report'] = msg
+            cache_top_data("top_v2", user_id, time_range, result, ttl=300)
+            
+        sentiment_report, sentiment_scores = generate_sentiment_analysis(
+            tracks_to_analyze, 
+            progress_callback=_update_progress, 
+            extended=extended
+        )
+        
         result['sentiment_report'] = sentiment_report
         result['sentiment_scores'] = sentiment_scores
         
-        # Cleanup raw data to save space
-        if "_raw_artists" in result: del result["_raw_artists"]
-        if "_raw_tracks" in result: del result["_raw_tracks"]
+        # Save to persistent extended cache for Easter Egg instant-reload
+        if extended:
+            result['extended_sentiment_report'] = sentiment_report
+            result['extended_sentiment_scores'] = sentiment_scores
 
-        # 5. Final Cache & Archive
+        # Final Save
         cache_top_data("top_v2", user_id, time_range, result)
         save_user_sync(user_id, time_range, result)
-        print(f"LASTFM BG SUCCESS: Enhancement completed for '{username}'")
-        
+        print(f"LASTFM SENTIMENT WORKER SUCCESS: Completed for {user_id}")
+
     except Exception as e:
+        print(f"LASTFM SENTIMENT WORKER ERROR: {e}")
+        import traceback
+        traceback.print_exc()
         print(f"LASTFM BG ERROR: {e}")
 
 # --- SPOTIFY ENHANCEMENT HELPERS ---

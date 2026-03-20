@@ -7,11 +7,9 @@ load_dotenv()
 REDIS_URL = os.getenv("REDIS_URL")
 
 if REDIS_URL:
-
     print(f"CACHE HANDLER: CONNECTING TO CLOUD REDIS VIA URL.")
     r = redis.from_url(REDIS_URL, decode_responses=True)
 else:
-
     redis_host = os.getenv("REDIS_HOST", "redisfy")
     redis_port = int(os.getenv("REDIS_PORT", 6379))
     print(f"CACHE HANDLER: CONNECTING TO LOCAL REDIS AT {redis_host}:{redis_port}.")
@@ -45,4 +43,18 @@ def clear_top_data_cache():
     pipe.execute()
 
     print(f"CACHE_HANDLER: DONE. {len(keys_to_delete)} CACHE ENTRIES DELETED.")
-    return len(keys_to_delete) 
+    return len(keys_to_delete)
+
+def clear_user_cache(spotify_id):
+    """Deletes all cached dashboard terms for a specific user to force a fresh sync on next login."""
+    try:
+        count = 0
+        for term in ["short_term", "medium_term", "long_term"]:
+            key = f"top_v2:{spotify_id}:{term}"
+            if r.delete(key):
+                count += 1
+        print(f"CACHE_HANDLER: Cleared {count} cache keys for {spotify_id}")
+        return count
+    except Exception as e:
+        print(f"CACHE_HANDLER ERROR Clearing User {spotify_id}: {e}")
+        return 0

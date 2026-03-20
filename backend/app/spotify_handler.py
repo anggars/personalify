@@ -14,31 +14,56 @@ from app.nlp_handler import generate_sentiment_analysis
 
 def process_sentiment_background(spotify_id, time_range, result, extended=False):
     """
-    Helper function to run emotion analysis and caching in background/foreground.
+    Helper function to run emotion analysis and caching.
+    Now supports live polling progress updates.
     """
     try:
-        # 6. Analyze Emotions (Hybrid Model)
-        # STANDARD: Use Top 10 tracks for analysis (vibe/MBTI) for concentrated results by default.
-        # EXTENDED: Use Top 20 tracks if requested (e.g. for Web Easter Eggs).
-        tracks = result.get("tracks", [])
+        from app.cache_handler import get_cached_top_data
+        
+        # 1. Refresh result from cache to ensure we have latest tracks
+        cached_result = get_cached_top_data("top_v2", spotify_id, time_range)
+        if not cached_result:
+            print(f"SPOTIFY SENTIMENT ERROR: No cached data for {spotify_id}")
+            return
+            
+        tracks = cached_result.get("tracks", [])
         num_to_analyze = 20 if extended else 10
         tracks_to_analyze = tracks[:num_to_analyze]
         
-        # Include artist name for better AI context
-        track_names = [f"{t['name']} by {', '.join(t.get('artists', []))}" if t.get('artists') else t['name'] for t in tracks_to_analyze]
+        def _update_progress(msg):
+            # RACE CONDITION PROTECTION: 
+            # If we are a standard worker but the cache already shows an extended sync (x/20), we stop.
+            if not extended:
+                current = get_cached_top_data("top_v2", spotify_id, time_range)
+                if current and "/20)" in current.get("sentiment_report", ""):
+                    print(f"SPOTIFY WORKER: Stopping standard sync because an extended sync is in progress for {spotify_id}")
+                    raise Exception("Interrupted by extended sync")
+            
+            cached_result['sentiment_report'] = msg
+            cache_top_data("top_v2", spotify_id, time_range, cached_result, ttl=300)
+            
+        sentiment_report, sentiment_scores = generate_sentiment_analysis(
+            tracks_to_analyze, 
+            progress_callback=_update_progress, 
+            extended=extended
+        )
         
-        # Pass extended flag to paragraph generator
-        sentiment_report, sentiment_scores = generate_sentiment_analysis(track_names, extended=extended)
+        cached_result['sentiment_report'] = sentiment_report
+        cached_result['sentiment_scores'] = sentiment_scores
         
-        result['sentiment_report'] = sentiment_report
-        result['sentiment_scores'] = sentiment_scores
+        # Save to persistent extended cache for Easter Egg instant-reload
+        if extended:
+            cached_result['extended_sentiment_report'] = sentiment_report
+            cached_result['extended_sentiment_scores'] = sentiment_scores
 
-        # 7. Cache & Archive
-        cache_top_data("top_v2", spotify_id, time_range, result)
-        save_user_sync(spotify_id, time_range, result)
+        # 7. Final Cache & Archive
+        cache_top_data("top_v2", spotify_id, time_range, cached_result)
+        save_user_sync(spotify_id, time_range, cached_result)
         print(f"BACKGROUND PROCESSING SUCCESS: {'EXTENDED' if extended else 'STANDARD'} Sentiment analysis completed for {spotify_id}")
     except Exception as e:
         print(f"BACKGROUND PROCESSING ERROR: {e}")
+        import traceback
+        traceback.print_exc()
 
 def sync_user_data(access_token: str, time_range: str = "medium_term", background_tasks: BackgroundTasks = None, extended: bool = False):
     """
@@ -181,10 +206,16 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
         # 6.2 Cache partial result with short TTL
         cache_top_data("top_v2", spotify_id, time_range, result, ttl=300) 
         
-        # 6.3 Trigger real analysis in background
-        background_tasks.add_task(process_sentiment_background, spotify_id, time_range, result, extended)
+        # 6.3 Trigger real analysis in background via QStash
+        from app.qstash_handler import publish_to_qstash
+        publish_to_qstash("/api/tasks/process-sentiment", {
+            "spotify_id": spotify_id,
+            "time_range": time_range,
+            "extended": extended,
+            "provider": "spotify"
+        })
     else:
-        # Legacy/Mobile synchronous mode
+        # Legacy/Mobile synchronous mode or Local test
         process_sentiment_background(spotify_id, time_range, result, extended)
 
     return result
