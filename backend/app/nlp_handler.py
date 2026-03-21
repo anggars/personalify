@@ -542,9 +542,8 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
                 print(f"NLP: Cache Hit for '{d_name}'.")
 
         if cached:
-            # For extended mode, tracks 0-9 are loaded from cache only (no progress update)
-            # For tracks 10+ in extended mode, or all tracks in standard, update progress
-            if progress_callback and (not extended or idx >= 10):
+            # Show ✓ for cached tracks so user sees progress for all 1-20
+            if progress_callback:
                 short_n = t_name[:30] + "..." if len(t_name) > 33 else t_name
                 try:
                     progress_callback(f"Syncing ({idx+1}/{num_tracks}): ✓ {short_n}")
@@ -560,12 +559,8 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
                 successful_analyses += 1
             continue
 
-        # --- For extended mode, tracks 0-9 that aren't cached just get skipped ---
-        # (They'll be picked up if they never ran, but shouldn't re-analyze)
-        if extended and idx < 10:
-            print(f"NLP: Extended mode — skipping uncached track {idx+1} '{d_name}' (not in top-10 cache).")
-            continue
-
+        # Track not in cache — analyze fresh regardless of position (idx 0-9 also get retried)
+        # This ensures tracks that previously had no Genius lyrics get another attempt
         # --- LYRICS FETCH (Genius primary, LRCLib fallback, skip if none) ---
         short_n = t_name[:30] + "..." if len(t_name) > 33 else t_name
         if progress_callback:
