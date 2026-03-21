@@ -35,22 +35,21 @@ def get_page_html(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    for attempt in range(3):
+    # Reduce retries and timeout for Vercel Serverless (max 60s total execution)
+    for attempt in range(2):
         try:
-            print(f"ATTEMPTING GOOGLE TRANSLATE PROXY (Try {attempt+1}/3): {url}")
-            r = requests.get(translate_url, headers=headers, timeout=20)
+            print(f"ATTEMPTING GOOGLE TRANSLATE PROXY (Try {attempt+1}/2): {url}")
+            r = requests.get(translate_url, headers=headers, timeout=5)
             
             if r.status_code == 200:
                 return r.text
             else:
-                print(f"GOOGLE TRANSLATE BLOCKED ({r.status_code}). Retrying in 1s...")
-                time.sleep(1) # Tunggu 1 detik sebelum coba lagi
+                print(f"GOOGLE TRANSLATE BLOCKED ({r.status_code}).")
                 
         except Exception as e:
             print(f"GOOGLE TRANSLATE ERROR (Try {attempt+1}): {e}")
-            time.sleep(1) # Tunggu 1 detik kalau error koneksi
 
-    print("FAILED TO RETRIEVE HTML AFTER 3 ATTEMPTS.")
+    print("FAILED TO RETRIEVE HTML AFTER 2 ATTEMPTS.")
     return None
 
 def search_artist_id(query):
@@ -136,7 +135,7 @@ def get_lyrics_by_id(song_id):
         res = requests.get(
             f"{GENIUS_API_URL}/songs/{song_id}",
             headers=get_headers(),
-            timeout=10
+            timeout=5
         )
         if res.status_code != 200:
             print(f"METADATA FETCH FAILED: {res.status_code}")
@@ -202,7 +201,7 @@ def search_track_lyrics(track_name, artist_name):
             f"{GENIUS_API_URL}/search",
             params={"q": query},
             headers=get_headers(),
-            timeout=10
+            timeout=5
         )
         if res.status_code != 200: 
             return None

@@ -983,9 +983,12 @@ def get_dashboard_data(
         # LAST.FM HANDLING: If it's a Last.fm ID, use the Last.fm handler directly
         if profile_id.startswith("lastfm:"):
             username = profile_id.replace("lastfm:", "")
-            # For Last.fm, we don't need a token, we just sync by username
-            # We can sync every time or rely on cache. Here we try cache first.
-            data = get_cached_top_data("top_v2", profile_id, time_range)
+            
+            data = None
+            if force_sync:
+                print(f"WEB DASHBOARD: force_sync=True for Last.fm user {username}. Bypassing cache.")
+            else:
+                data = get_cached_top_data("top_v2", profile_id, time_range)
             
             if data:
                 # Live fetch user info to keep profile picture instantly synced
@@ -1007,7 +1010,6 @@ def get_dashboard_data(
                     pass
                 
                 # Live Placeholder Substitution
-                # Ensure developers see their placeholder code changes instantly upon F5
                 try:
                     from app.lastfm_handler import DEFAULT_TRACK_IMAGE, DEFAULT_ARTIST_IMAGE
                     for rt in data.get("tracks", []):

@@ -109,9 +109,10 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         img = _scrape_lastfm_artist_image(name)
         if img: return idx, img
         
-        # 2. Try Spotify Fallback
+        # 2. Try Spotify Fallback (Broad Search)
         if token:
-            img = _search_spotify_artist_image(name, token)
+            from app.lastfm_handler import _search_spotify_artist
+            _, img, _ = _search_spotify_artist(name, token)
             if img: return idx, img
             
         return idx, ""
@@ -133,7 +134,9 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 executor.submit(_get_best_artist_image, i, a.get("name"), sp_token): i 
                 for i, a in enumerate(raw_artists)
             }
-            for future in artist_futures:
+            from concurrent.futures import as_completed
+            for future in as_completed(artist_futures):
+                # idx = artist_futures[future] # Optional if not using res_idx from result
                 try:
                     res_idx, img_url = future.result()
                     if img_url:
@@ -182,7 +185,8 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 for i, t in enumerate(raw_tracks)
             }
             
-            for future in track_futures:
+            for future in as_completed(track_futures):
+                idx = track_futures[future]
                 try:
                     res_idx, sp_id, sp_img = future.result()
                     track_results_map[res_idx] = {"id": sp_id, "image": sp_img}
