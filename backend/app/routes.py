@@ -179,14 +179,14 @@ async def logout(request: Request):
     lastfm_username = request.cookies.get("lastfm_username")  # e.g. "anggarnts"
     
     try:
-        from app.cache_handler import clear_user_cache
+        from app.cache_handler import hard_clear_user_cache
         if spotify_id:
-            cleared = clear_user_cache(spotify_id)
-            print(f"LOGOUT: Cleared {cleared} cache keys for Spotify user '{spotify_id}'")
+            cleared = hard_clear_user_cache(spotify_id)
+            print(f"LOGOUT: Hard cleared {cleared} cache keys for Spotify user '{spotify_id}'")
         if lastfm_username:
             lastfm_id = f"lastfm:{lastfm_username}"
-            cleared = clear_user_cache(lastfm_id)
-            print(f"LOGOUT: Cleared {cleared} cache keys for Last.fm user '{lastfm_id}'")
+            cleared = hard_clear_user_cache(lastfm_id)
+            print(f"LOGOUT: Hard cleared {cleared} cache keys for Last.fm user '{lastfm_id}'")
     except Exception as e:
         print(f"LOGOUT WARNING: Cache clear failed: {e}") 
         
@@ -228,12 +228,12 @@ def lastfm_callback(request: Request, token: str = Query(...)):
     is_local = "127.0.0.1" in original_host or "localhost" in original_host
     is_secure = not is_local
     
-    # NEW: Force fresh sync by clearing existing cache for this user during login
+    # Hard clear: wipes dashboard + NLP analysis cache for fresh re-analysis on login
     try:
-        from app.cache_handler import clear_user_cache
-        clear_user_cache(f"lastfm:{username}")
+        from app.cache_handler import hard_clear_user_cache
+        hard_clear_user_cache(f"lastfm:{username}")
     except Exception as e:
-        print(f"CACHE CLEAR ERROR on Last.fm Login: {e}")
+        print(f"CACHE HARD CLEAR ERROR on Last.fm Login: {e}")
     
     # helper to get frontend url dynamically
     if "127.0.0.1" in original_host:
