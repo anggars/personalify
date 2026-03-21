@@ -141,7 +141,8 @@ _KNOWN_BAD_IMAGE_SUBSTRINGS = [
     "__NOT_FOUND__",
     "blank-profile-picture",
     "default_artist",
-    "placeholder"
+    "placeholder",
+    "data:image"
 ]
 
 def is_bad_image(url: str) -> bool:
