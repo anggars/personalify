@@ -571,7 +571,8 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
     results_in_order = [None] * num_tracks
     
     # We use a smaller pool to avoid slamming rate limits (Hugging Face / Genius)
-    with ThreadPoolExecutor(max_workers=8) as executor:
+    # 4 workers is optimal for Vercel's 1-vCPU serverless environment
+    with ThreadPoolExecutor(max_workers=4) as executor:
 
         futures = {executor.submit(_process_single_track, i, t): i for i, t in enumerate(tracks_to_analyze)}
         for future in as_completed(futures):
