@@ -64,6 +64,27 @@ def clear_user_cache(spotify_id):
         print(f"CACHE_HANDLER ERROR Clearing User {spotify_id}: {e}")
         return 0
 
+def hard_clear_user_cache(spotify_id):
+    """
+    HARD CLEAR: wipes dashboard cache + ALL NLP analysis results (analysis_v1:*).
+    NLP cache is track-keyed (not user-keyed) so this affects all cached tracks globally,
+    forcing full re-analysis on next login. Called on logout and on fresh login.
+    """
+    count = clear_user_cache(spotify_id)
+    
+    # Wipe all NLP analysis cache entries (forces fresh re-analysis on next login)
+    try:
+        nlp_keys = list(r.scan_iter("analysis_v1:*"))
+        if nlp_keys:
+            r.delete(*nlp_keys)
+            count += len(nlp_keys)
+            print(f"CACHE_HANDLER: Hard clear — wiped {len(nlp_keys)} NLP analysis keys.")
+    except Exception as e:
+        print(f"CACHE_HANDLER HARD CLEAR ERROR: {e}")
+    
+    print(f"CACHE_HANDLER: Hard clear total: {count} keys wiped for {spotify_id}")
+    return count
+
 def get_analysis_cache(display_name):
     """Retrieve individual track analysis (emotions, mbti) from Redis."""
     try:
