@@ -491,8 +491,14 @@ def analyze_lyrics_emotion(lyrics: str):
 
 def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
     """
-    Generates a textual summary ("Shades of ...") based on lyrics from top tracks.
-    Sequentially scrapes lyrics from Genius, analyzes them individually, and averages the scores.
+    Generates a textual summary based on lyrics from top tracks.
+    - Genius is the PRIMARY lyrics source (user explicit preference)
+    - LRCLib is the fallback
+    - Instrumentals and tracks with no lyrics are SKIPPED (not analyzed as title)
+    - Already-cached tracks (Redis) are returned instantly without re-fetching
+    - In extended mode (Top 20), tracks 0-9 are read from cache only; 
+      tracks 10-19 are newly analyzed. This allows resumption from 11/20.
+    - All track emotions are collected per-track, then averaged at the end.
     """
     if not tracks:
         return "Couldn't analyze music mood.", []
@@ -500,20 +506,18 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
     num_tracks = len(tracks) if extended else min(10, len(tracks))
     tracks_to_analyze = tracks[:num_tracks]
 
-    from app.genius_lyrics import search_track_lyrics
+    from app.genius_lyrics import search_track_lyrics, fetch_lrclib_lyrics
+    from app.cache_handler import get_analysis_cache, set_analysis_cache
 
     all_emotions_accum = {}
     all_mbti_accum = {}
     successful_analyses = 0
-    # --- PARALLEL PROCESSING FOR NEW TRACKS ---
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    from app.cache_handler import get_analysis_cache, set_analysis_cache
-        # helper for individual track processing
-    def _process_single_track(idx, track):
-        if not isinstance(track, dict): return None
-        
+
+    for idx, track in enumerate(tracks_to_analyze):
+        if not isinstance(track, dict):
+            continue
+
         t_name = track.get("name", "")
-        # Robust Artist Extraction
         a_name = ""
         raw_a = track.get("artist") or track.get("artists")
         if isinstance(raw_a, list) and raw_a:
@@ -523,84 +527,108 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
             a_name = raw_a.get("name", "")
         elif raw_a:
             a_name = str(raw_a)
-        
+
         d_name = f"{t_name} by {a_name}" if a_name else t_name
-        
-        # Check Cache (Memory then Redis)
+
+        # --- CACHE CHECK (always first, regardless of position) ---
         with _cache_lock:
             cached = _analysis_cache.get(d_name)
-        
+
         if not cached:
             cached = get_analysis_cache(d_name)
             if cached:
                 with _cache_lock:
-                    _analysis_cache[d_name] = (cached[0], cached[1]) # Sync to memory cache
-                print(f"NLP: Persistent Cache Hit for '{d_name}'.")
+                    _analysis_cache[d_name] = (cached[0], cached[1])
+                print(f"NLP: Cache Hit for '{d_name}'.")
 
         if cached:
-            return idx, d_name, t_name, cached[0], cached[1], True
-            
-        # UI Progress for new tracks
+            # For extended mode, tracks 0-9 are loaded from cache only (no progress update)
+            # For tracks 10+ in extended mode, or all tracks in standard, update progress
+            if progress_callback and (not extended or idx >= 10):
+                short_n = t_name[:30] + "..." if len(t_name) > 33 else t_name
+                try:
+                    progress_callback(f"Syncing ({idx+1}/{num_tracks}): ✓ {short_n}")
+                except:
+                    pass
+            emo, mbti_r = cached[0], cached[1]
+            if emo:
+                for e in emo:
+                    all_emotions_accum[e["label"]] = all_emotions_accum.get(e["label"], 0) + e["score"]
+                if mbti_r:
+                    for m in mbti_r:
+                        all_mbti_accum[m["label"]] = all_mbti_accum.get(m["label"], 0) + m["score"]
+                successful_analyses += 1
+            continue
+
+        # --- For extended mode, tracks 0-9 that aren't cached just get skipped ---
+        # (They'll be picked up if they never ran, but shouldn't re-analyze)
+        if extended and idx < 10:
+            print(f"NLP: Extended mode — skipping uncached track {idx+1} '{d_name}' (not in top-10 cache).")
+            continue
+
+        # --- LYRICS FETCH (Genius primary, LRCLib fallback, skip if none) ---
+        short_n = t_name[:30] + "..." if len(t_name) > 33 else t_name
         if progress_callback:
             try:
-                # ONLY show progress for tracks 11-20 in extended mode to prevent UI jump
-                if not extended or idx >= 10:
-                    short_n = t_name[:30] + "..." if len(t_name) > 33 else t_name
-                    progress_callback(f"Syncing ({idx+1}/{num_tracks}): Analyzing {short_n}")
-            except: pass
+                progress_callback(f"Syncing ({idx+1}/{num_tracks}): {short_n}")
+            except:
+                pass
 
-        # Fetch & Analyze
         lyrics = None
-        if t_name and a_name and "instrumental" not in t_name.lower():
+
+        # Skip known instrumentals
+        is_instrumental = (
+            "instrumental" in t_name.lower() or
+            "interlude" in t_name.lower() or
+            not t_name or not a_name
+        )
+
+        if not is_instrumental:
+            # 1. Try Genius first (user explicit preference)
             try:
-                from app.genius_lyrics import search_track_lyrics
                 lyrics = search_track_lyrics(t_name, a_name)
-            except: pass
-        
-        text_to_analyze = lyrics if lyrics else d_name
-        txt = prepare_text_for_analysis(text_to_analyze)
-        if not txt: return None
-        
+            except:
+                pass
+
+            # 2. LRCLib fallback only if Genius returned nothing
+            if not lyrics:
+                try:
+                    lyrics = fetch_lrclib_lyrics(t_name, a_name)
+                except:
+                    pass
+
+        # CRITICAL: If no lyrics found, SKIP this track entirely (don't fall back to title)
+        if not lyrics:
+            print(f"NLP: No lyrics for '{d_name}' — skipping.")
+            continue
+
+        txt = prepare_text_for_analysis(lyrics)
+        if not txt:
+            print(f"NLP: Lyrics couldn't be prepared for '{d_name}' — skipping.")
+            continue
+
         try:
-            emo, mbti = get_emotion_from_text(txt)
+            emo, mbti_r = get_emotion_from_text(txt)
             if emo:
                 with _cache_lock:
-                    _analysis_cache[d_name] = (emo, mbti)
-                set_analysis_cache(d_name, [emo, mbti])
-                return idx, d_name, t_name, emo, mbti, False
-        except: pass
-        return None
+                    _analysis_cache[d_name] = (emo, mbti_r)
+                set_analysis_cache(d_name, [emo, mbti_r])
 
-    results_in_order = [None] * num_tracks
-    
-    # We use a smaller pool to avoid slamming rate limits (Hugging Face / Genius)
-    # 4 workers is optimal for Vercel's 1-vCPU serverless environment
-    with ThreadPoolExecutor(max_workers=4) as executor:
-
-        futures = {executor.submit(_process_single_track, i, t): i for i, t in enumerate(tracks_to_analyze)}
-        for future in as_completed(futures):
-            res = future.result()
-            if res:
-                idx, d_name, t_name, emo, mbti, was_cached = res
-                results_in_order[idx] = (emo, mbti)
-                # successful_analyses counts any track that yielded emotions, cached or new
-                if emo: # Only count if emotions were actually returned
-                    successful_analyses += 1
-
-    for res in results_in_order:
-        if res:
-            emotions, mbti = res
-            if emotions:
-                for e in emotions:
+                for e in emo:
                     all_emotions_accum[e["label"]] = all_emotions_accum.get(e["label"], 0) + e["score"]
-            if mbti:
-                for m in mbti:
-                    all_mbti_accum[m["label"]] = all_mbti_accum.get(m["label"], 0) + m["score"]
+                if mbti_r:
+                    for m in mbti_r:
+                        all_mbti_accum[m["label"]] = all_mbti_accum.get(m["label"], 0) + m["score"]
+                successful_analyses += 1
+                print(f"NLP: Analyzed '{d_name}' → top emotion: {emo[0]['label'] if emo else 'none'}")
+        except Exception as e:
+            print(f"NLP: Error analyzing '{d_name}': {e}")
+            continue
 
     if successful_analyses == 0:
         return "No clear vibe detected.", []
 
-    # --- AVERAGING RESULTS ---
+    # --- AVERAGING ---
     avg_emotions = []
     for label, total_score in all_emotions_accum.items():
         avg_emotions.append({"label": label, "score": total_score / successful_analyses})
@@ -608,13 +636,12 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
 
     avg_mbti = []
     if all_mbti_accum:
-        # Some fallback tracks might not return MBTI, but we divide by total successful analyses
-        # to ensure the ratio is proportional to tracks that DID return MBTI.
-        mbti_count = sum(1 for label, total_score in all_mbti_accum.items())
-        total_mbti_tracks = successful_analyses if mbti_count > 0 else 1 # avoid div zero
-        for label, total_score in all_mbti_accum.items(): 
-            avg_mbti.append({"label": label, "score": total_score / total_mbti_tracks})
+        for label, total_score in all_mbti_accum.items():
+            avg_mbti.append({"label": label, "score": total_score / successful_analyses})
         avg_mbti.sort(key=lambda x: x["score"], reverse=True)
+
+    all_emotions_accum = avg_emotions
+    all_mbti_accum = avg_mbti
 
     emotions = avg_emotions
     mbti = avg_mbti
