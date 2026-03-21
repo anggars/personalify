@@ -173,15 +173,22 @@ def login(request: Request, mobile: str = Query(None)):
 @router.get("/logout")
 async def logout(request: Request):
     """
-    Clears all auth cookies and redirects to home.
+    Clears all auth cookies and Redis user cache, then redirects to home.
     """
     spotify_id = request.cookies.get("spotify_id")
+    lastfm_username = request.cookies.get("lastfm_username")  # e.g. "anggarnts"
+    
     try:
+        from app.cache_handler import clear_user_cache
         if spotify_id:
-            from app.cache_handler import clear_user_cache
-            clear_user_cache(spotify_id)
+            cleared = clear_user_cache(spotify_id)
+            print(f"LOGOUT: Cleared {cleared} cache keys for Spotify user '{spotify_id}'")
+        if lastfm_username:
+            lastfm_id = f"lastfm:{lastfm_username}"
+            cleared = clear_user_cache(lastfm_id)
+            print(f"LOGOUT: Cleared {cleared} cache keys for Last.fm user '{lastfm_id}'")
     except Exception as e:
-        print(f"LOGOUT WARNING: {e}") 
+        print(f"LOGOUT WARNING: Cache clear failed: {e}") 
         
     # Get base URL for absolute redirect
     original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
@@ -195,6 +202,7 @@ async def logout(request: Request):
     response.delete_cookie("spotify_id", path="/")
     response.delete_cookie("access_token", path="/")
     response.delete_cookie("lastfm_session", path="/")
+    response.delete_cookie("lastfm_username", path="/")
     
     return response
 
@@ -242,6 +250,7 @@ def lastfm_callback(request: Request, token: str = Query(...)):
     # We use 'spotify_id' cookie for dashboard lookup, and 'lastfm_session' for scrobbling persistence
     response.set_cookie(key="spotify_id", value=f"lastfm:{username}", httponly=True, path="/", samesite="lax", max_age=31536000, secure=is_secure)
     response.set_cookie(key="lastfm_session", value=session_key, httponly=True, path="/", samesite="lax", max_age=31536000, secure=is_secure)
+    response.set_cookie(key="lastfm_username", value=username, httponly=True, path="/", samesite="lax", max_age=31536000, secure=is_secure)
     
     return response
 

@@ -423,7 +423,7 @@ export default function DashboardPage() {
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [profileId, timeRange, router]);
+  }, [profileId, timeRange, router, showTop20]);
   
   // Reset dashboard states when time range changes to prevent state leakage
   useEffect(() => {
