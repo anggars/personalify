@@ -335,10 +335,11 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         
         # NEW: Force fresh sync by clearing existing cache for this user during login
         try:
-            from app.cache_handler import clear_user_cache
-            clear_user_cache(spotify_id)
+            from app.cache_handler import hard_clear_user_cache
+            hard_clear_user_cache(spotify_id)
+            print(f"CALLBACK: Hard cleared cache (dashboard + NLP analysis) for {spotify_id}")
         except Exception as e:
-            print(f"CACHE CLEAR ERROR on Spotify Login: {e}")
+            print(f"CACHE HARD CLEAR ERROR on Spotify Login: {e}")
 
         # Save refresh token if available
         if refresh_token:
