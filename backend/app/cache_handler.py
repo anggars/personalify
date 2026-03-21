@@ -50,11 +50,6 @@ def clear_user_cache(spotify_id):
     try:
         count = 0
         for term in ["short_term", "medium_term", "long_term"]:
-def clear_user_cache(spotify_id):
-    """Deletes all cached dashboard terms for a specific user to force a fresh sync on next login."""
-    try:
-        count = 0
-        for term in ["short_term", "medium_term", "long_term"]:
             key = f"top:{spotify_id}:{term}"
             if r.delete(key):
                 count += 1
@@ -79,6 +74,7 @@ def hard_clear_user_cache(spotify_id):
     try:
         nlp_keys = list(r.scan_iter("analysis:*"))
         if nlp_keys:
+            # Use * splat only if list is not empty to avoid RedisError
             r.delete(*nlp_keys)
             count += len(nlp_keys)
             print(f"CACHE_HANDLER: Hard clear — wiped {len(nlp_keys)} NLP analysis keys.")
