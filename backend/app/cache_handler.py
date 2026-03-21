@@ -133,3 +133,26 @@ def set_image_cache(artist_name, img_url, ttl=604800): # 7 days
         r.setex(key, ttl, img_url)
     except:
         pass
+
+# Known bad placeholder hashes from Last.fm (generic background images)
+_KNOWN_BAD_IMAGE_SUBSTRINGS = [
+    "2a96cbd8b46e442fc41c2b86b821562f",  # Last.fm default artist
+    "4128a6eb29f94943c9d206c08e625904",  # Last.fm default track
+    "__NOT_FOUND__",
+    "blank-profile-picture",
+    "default_artist",
+    "placeholder"
+]
+
+def is_bad_image(url: str) -> bool:
+    """Return True if the URL points to a known placeholder or broken image."""
+    if not url:
+        return True
+    return any(bad in url for bad in _KNOWN_BAD_IMAGE_SUBSTRINGS)
+
+def get_valid_image_cache(artist_name: str) -> str | None:
+    """Retrieve image from cache ONLY if it's not a known placeholder."""
+    cached = get_image_cache(artist_name)
+    if cached and not is_bad_image(cached):
+        return cached
+    return None
