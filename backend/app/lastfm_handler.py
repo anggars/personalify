@@ -280,6 +280,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
              print(f"LASTFM BG SENTIMENT: {msg}")
              # Incremental save during sentiment to keep UI updated
              if "Analyzing" in msg:
+                 result["sentiment_report"] = msg
                  cache_top_data("top_v2", user_id, time_range, result, ttl=300)
         
         # We pass ra["tracks"] which are the enhanced ones
