@@ -36,8 +36,10 @@ else:
     hf_client = None
 
 # --- CACHE ---
-# Simple in-memory cache to save API calls
+# Simple in-memory cache to save API callsimport threading
+
 _analysis_cache = {}
+_cache_lock = threading.Lock()
 
 
 # --- SLANG DICTIONARY (Shared with Streamlit) ---
@@ -503,93 +505,93 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
     all_emotions_accum = {}
     all_mbti_accum = {}
     successful_analyses = 0
-
-    for idx, track in enumerate(tracks_to_analyze):
-        # Support both dictionaries and direct string fallbacks just in case
-        if isinstance(track, dict):
-            track_name = track.get("name", "")
-            artist_name = track.get("artist", "")
-            if not artist_name and "artists" in track:
-                arr = track.get("artists", [])
-                if arr and isinstance(arr, list):
-                    if isinstance(arr[0], dict):
-                        artist_name = arr[0].get("name", "")
-                    else:
-                        artist_name = str(arr[0])
-            elif isinstance(artist_name, dict):
-                artist_name = artist_name.get("name", "")
-        else:
-            # Legacy string support: "Track Name by Artist Name"
-            track_str = str(track)
-            if " by " in track_str:
-                parts = track_str.split(" by ", 1)
-                track_name = parts[0]
-                artist_name = parts[1]
-            else:
-                track_name = track_str
-                artist_name = ""
+    # --- PARALLEL PROCESSING FOR NEW TRACKS ---
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from app.cache_handler import get_analysis_cache, set_analysis_cache
+        # helper for individual track processing
+    def _process_single_track(idx, track):
+        if not isinstance(track, dict): return None
+        
+        t_name = track.get("name", "")
+        # Robust Artist Extraction
+        a_name = ""
+        raw_a = track.get("artist") or track.get("artists")
+        if isinstance(raw_a, list) and raw_a:
+            first_a = raw_a[0]
+            a_name = first_a.get("name", "") if isinstance(first_a, dict) else str(first_a)
+        elif isinstance(raw_a, dict):
+            a_name = raw_a.get("name", "")
+        elif raw_a:
+            a_name = str(raw_a)
+        
+        d_name = f"{t_name} by {a_name}" if a_name else t_name
+        
+        # Check Cache (Memory then Redis)
+        with _cache_lock:
+            cached = _analysis_cache.get(d_name)
+        
+        if not cached:
+            cached = get_analysis_cache(d_name)
+            if cached:
+                with _cache_lock:
+                    _analysis_cache[d_name] = (cached[0], cached[1]) # Sync to memory cache
+                print(f"NLP: Persistent Cache Hit for '{d_name}'.")
             
-        # Prepare names for UI and fallback/cache
-        display_name = f"{track_name} by {artist_name}" if artist_name else track_name
-        short_track_name = track_name[:30] + "..." if len(track_name) > 33 else track_name
-
-        # --- OPTIMIZATION: Check if this track is ALREADY in our long-term cache ---
-        # (This is especially useful for Extended Sync to skip tracks 1-10)
-        cached_analysis = _analysis_cache.get(display_name)
-
-        # 1. Fire generic progress callback (only for tracks 11+ in extended mode)
+        # UI Progress for new tracks
         if progress_callback:
             try:
-                should_show = True
-                if extended and idx < 10:
-                    should_show = False
-                
-                if should_show:
-                    progress_callback(f"Syncing ({idx+1}/{num_tracks}): Analyzing {short_track_name}")
-            except Exception as e:
-                print(f"NLP: Callback Error: {e}")
+                # ONLY show progress for tracks 11-20 in extended mode to prevent UI jump
+                if not extended or idx >= 10:
+                    short_n = t_name[:30] + "..." if len(t_name) > 33 else t_name
+                    progress_callback(f"Syncing ({idx+1}/{num_tracks}): Analyzing {short_n}")
+            except: pass
 
-        # Try to use cached analysis if we have it for this EXACT display name (title by artist)
-        # This allows us to skip search_track_lyrics entirely for the first 10 tracks!
-        emotions = None
-        mbti = None
+        # Fetch & Analyze
+        lyrics = None
+        if t_name and a_name and "instrumental" not in t_name.lower():
+            try:
+                from app.genius_lyrics import search_track_lyrics
+                lyrics = search_track_lyrics(t_name, a_name)
+            except: pass
         
-        if cached_analysis:
-            emotions, mbti = cached_analysis
-            print(f"NLP: Instance Cache Hit for '{display_name}'. Skipping search.")
-        else:
-            # 2. Fetch lyrics
-            lyrics = None
-            if track_name and artist_name:
-                # Check for instrumental markers
-                is_instrumental = "instrumental" in track_name.lower() or "instrumental" in (artist_name or "").lower()
-                if not is_instrumental:
-                    lyrics = search_track_lyrics(track_name, artist_name)
+        text_to_analyze = lyrics if lyrics else d_name
+        txt = prepare_text_for_analysis(text_to_analyze)
+        if not txt: return None
+        
+        try:
+            emo, mbti = get_emotion_from_text(txt)
+            if emo:
+                with _cache_lock:
+                    _analysis_cache[d_name] = (emo, mbti)
+                set_analysis_cache(d_name, [emo, mbti])
+                return idx, d_name, t_name, emo, mbti, False
+        except: pass
+        return None
 
-            # 3. Fallback to title if lyrics not found
-            text_to_analyze = lyrics if lyrics else display_name
+    results_in_order = [None] * num_tracks
+    
+    # We use a smaller pool to avoid slamming rate limits (Hugging Face / Genius)
+    with ThreadPoolExecutor(max_workers=8) as executor:
 
-            txt = prepare_text_for_analysis(text_to_analyze)
-            if not txt:
-                print(f"NLP: Skipping '{track_name}' - Preprocessing returned empty.")
-                continue
+        futures = {executor.submit(_process_single_track, i, t): i for i, t in enumerate(tracks_to_analyze)}
+        for future in as_completed(futures):
+            res = future.result()
+            if res:
+                idx, d_name, t_name, emo, mbti, was_cached = res
+                results_in_order[idx] = (emo, mbti)
+                # successful_analyses counts any track that yielded emotions, cached or new
+                if emo: # Only count if emotions were actually returned
+                    successful_analyses += 1
 
-            # 4. Analyze Text
-            print(f"NLP: Analyzing track {idx+1}/{num_tracks}: {track_name}...")
-            emotions, mbti = get_emotion_from_text(txt)
-            
-            # Save to cache using the display_name so it's hit next time even before search
+    for res in results_in_order:
+        if res:
+            emotions, mbti = res
             if emotions:
-                _analysis_cache[display_name] = (emotions, mbti)
-
-        if emotions:
-            successful_analyses += 1
-            for e in emotions:
-                all_emotions_accum[e["label"]] = all_emotions_accum.get(e["label"], 0) + e["score"]
-
-        if mbti:
-            for m in mbti:
-                all_mbti_accum[m["label"]] = all_mbti_accum.get(m["label"], 0) + m["score"]
+                for e in emotions:
+                    all_emotions_accum[e["label"]] = all_emotions_accum.get(e["label"], 0) + e["score"]
+            if mbti:
+                for m in mbti:
+                    all_mbti_accum[m["label"]] = all_mbti_accum.get(m["label"], 0) + m["score"]
 
     if successful_analyses == 0:
         return "No clear vibe detected.", []
