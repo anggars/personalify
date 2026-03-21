@@ -53,6 +53,11 @@ def clear_user_cache(spotify_id):
             key = f"top_v2:{spotify_id}:{term}"
             if r.delete(key):
                 count += 1
+        
+        # Also clear profile cache 
+        if r.delete(f"profile:{spotify_id}"):
+            count += 1
+            
         print(f"CACHE_HANDLER: Cleared {count} cache keys for {spotify_id}")
         return count
     except Exception as e:
