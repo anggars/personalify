@@ -173,7 +173,18 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
 
     # Populate result tracks
     for track in tracks:
-        album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
+        # Get artist image as fallback for the track if album image is missing
+        artist_image = ""
+        if artist_resp.status_code == 200:
+             # Match track's first artist to our fetched artists list if possible
+             track_artist_id = track["artists"][0]["id"] if track.get("artists") else None
+             for a in artists:
+                 if a["id"] == track_artist_id:
+                     artist_image = a["images"][0]["url"] if a.get("images") else ""
+                     break
+
+        images = track.get("album", {}).get("images", [])
+        album_image_url = images[0]["url"] if images and len(images) > 0 else artist_image
         result["tracks"].append({
             "id": track["id"], 
             "name": track["name"], 

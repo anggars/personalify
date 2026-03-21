@@ -223,7 +223,7 @@ def lastfm_callback(request: Request, token: str = Query(...)):
         scheme = "https" if "vercel.app" in original_host or proto == "https" else "http"
         frontend_url = f"{scheme}://{original_host}"
 
-    response = RedirectResponse(url=f"{frontend_url}/dashboard/lastfm:{username}")
+    response = RedirectResponse(url=f"{frontend_url}/dashboard/lastfm:{username}?sync=true")
     
     # We use 'spotify_id' cookie for dashboard lookup, and 'lastfm_session' for scrobbling persistence
     response.set_cookie(key="spotify_id", value=f"lastfm:{username}", httponly=True, path="/", samesite="lax", max_age=31536000, secure=is_secure)
@@ -401,7 +401,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         # Web app - existing flow
         # For local development, redirect to Next.js frontend on port 3000
         log_system("AUTH", f"User Login Success: {display_name}", "SPOTIFY")
-        response = RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?time_range=short_term")
+        response = RedirectResponse(url=f"{frontend_url}/dashboard/{spotify_id}?sync=true")
         
         # Determine if running locally for cookie domain
         # CRITICAL: For localhost, DO NOT set domain parameter!
@@ -906,12 +906,18 @@ def get_sync_history(profile_id: str = Query(..., description="Profile ID (Spoti
 
 
 @router.get("/api/dashboard/{profile_id}", tags=["Dashboard API"])
-def dashboard_api(profile_id: str, request: Request, response: Response, background_tasks: BackgroundTasks, time_range: str = "medium_term"):
-    """JSON API endpoint for Next.js dashboard"""
+def get_dashboard_data(
+    profile_id: str, 
+    background_tasks: BackgroundTasks, 
+    time_range: str = "short_term", 
+    force_sync: bool = False,
+    request: Request = None, 
+    response: Response = None
+):
     """JSON API endpoint for Next.js dashboard"""
     try:
         # DEBUG: Log dashboard request
-        print(f"WEB DASHBOARD: Fetching data for {profile_id} [Time range: {time_range}]")
+        print(f"WEB DASHBOARD: Fetching data for {profile_id} [Time range: {time_range}] (Force Sync: {force_sync})")
         
         # Check for access_token cookie to perform REALTIME SYNC
         access_token = request.cookies.get("access_token")
@@ -1182,10 +1188,12 @@ def dashboard_api(profile_id: str, request: Request, response: Response, backgro
                 except Exception as e:
                     print(f"WEB DASHBOARD: Server-side refresh error: {e}")
 
-        # 2. CACHE-FIRST LOGIC - ONLY FOR OWN PROFILE
+        # 2. CACHING & SYNC LOGIC
         if access_token:
-            # 2.1 Check cache first
-            data = get_cached_top_data("top_v2", profile_id, time_range)
+            # 2.1 Check cache first (unless force_sync is handled)
+            data = None
+            if not force_sync:
+                data = get_cached_top_data("top_v2", profile_id, time_range)
             
             # 2.2 Freshness Check (Optional: Only sync if no cache or cache is old)
             # For now, if cache exists, we return it. 
@@ -1615,6 +1623,42 @@ async def fire_qstash_event(
         except Exception as e:
             print(f"QStash Error: {e}")
             return {"status": "Failed"}
+
+@router.post("/api/tasks/lastfm-enhancement")
+async def lastfm_enhancement_task(request: Request):
+    """
+    QStash Worker Endpoint: Handles image/genre enhancement for Last.fm.
+    """
+    receiver = get_qstash_receiver()
+    signature = request.headers.get("Upstash-Signature")
+    body_bytes = await request.body()
+    
+    app_url = os.getenv("APP_URL", "")
+    if "localhost" not in app_url and "127.0.0.1" not in app_url:
+        try:
+            receiver.verify(
+                body=body_bytes.decode("utf-8"),
+                signature=signature,
+                url=str(request.url)
+            )
+        except Exception as e:
+            return {"status": "Forbidden", "error": str(e)}
+
+    data = await request.json()
+    username = data.get("username")
+    time_range = data.get("time_range", "medium_term")
+    extended = data.get("extended", False)
+    result = data.get("result")
+
+    print(f"QSTASH WORKER: Starting Last.fm Enhancement for {username}")
+
+    try:
+        from app.lastfm_handler import process_lastfm_enhancement_background
+        process_lastfm_enhancement_background(username, time_range, result, extended)
+        return {"status": "Enhancement Complete"}
+    except Exception as e:
+        print(f"QSTASH WORKER ERROR (LFM): {e}")
+        return {"status": "Failed", "error": str(e)}
 
 @router.post("/api/tasks/analyze-sentiment")
 async def analyze_sentiment_task(request: Request):

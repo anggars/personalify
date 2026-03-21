@@ -706,7 +706,8 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
                 break
         
         if not track_image:
-            track_image = DEFAULT_TRACK_IMAGE
+            # Fallback to artist image if track image missing from LFM
+            track_image = artist_image if artist_image and artist_image != DEFAULT_ARTIST_IMAGE else DEFAULT_TRACK_IMAGE
 
         track_ids.append(track_id)
         tracks_to_save.append((track_id, track_name, playcount, None, track_image))
@@ -738,14 +739,25 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
         "_raw_tracks": raw_tracks
     }
 
-    # 5. Handle Background Tasks
-    if background_tasks:
-        # Save temporary results
-        cache_top_data("top_v2", f"lastfm:{username}", time_range, result, ttl=60)
+    # 5. Handle Background Tasks (QStash for Vercel, BackgroundTasks for Local)
+    # Save temporary results first
+    cache_top_data("top_v2", f"lastfm:{username}", time_range, result, ttl=300)
+    
+    from app.qstash_handler import publish_to_qstash
+    did_push = publish_to_qstash("/api/tasks/lastfm-enhancement", {
+        "username": username,
+        "time_range": time_range,
+        "extended": extended,
+        "result": result # Pass current state to avoid re-syncing from scratch in worker
+    })
+
+    if not did_push and background_tasks:
         background_tasks.add_task(process_lastfm_enhancement_background, username, time_range, result, extended)
-        print(f"LASTFM SYNC: Fast sync success for {username}. Background task triggered.")
+        print(f"LASTFM SYNC: Fast sync success for {username}. Local background task triggered.")
+    elif did_push:
+        print(f"LASTFM SYNC: Fast sync success for {username}. QStash enhancement triggered.")
     else:
-        # Synchronous fallback (if needed)
+        # Fallback to sync if no other choice
         process_lastfm_enhancement_background(username, time_range, result, extended)
         
     return result
