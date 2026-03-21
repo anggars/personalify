@@ -172,7 +172,9 @@ def login(request: Request, mobile: str = Query(None)):
 
 @router.get("/logout")
 async def logout(request: Request):
-    # Get ID before clearing cookies
+    """
+    Clears all auth cookies and redirects to home.
+    """
     spotify_id = request.cookies.get("spotify_id")
     try:
         if spotify_id:
@@ -180,8 +182,20 @@ async def logout(request: Request):
             clear_user_cache(spotify_id)
     except Exception as e:
         print(f"LOGOUT WARNING: {e}") 
-    response = RedirectResponse(url="/?error=logged_out", status_code=303)
+        
+    # Get base URL for absolute redirect
+    original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    scheme = "https" if "vercel.app" in original_host or proto == "https" else "http"
+    base_url = f"{scheme}://{original_host}"
+
+    response = RedirectResponse(url=f"{base_url}/?error=logged_out", status_code=303)
+    
+    # Delete all possible auth cookies
     response.delete_cookie("spotify_id", path="/")
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("lastfm_session", path="/")
+    
     return response
 
 @router.get("/lastfm/login", tags=["Auth"])
