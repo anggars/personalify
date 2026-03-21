@@ -39,7 +39,7 @@ def get_page_html(url):
     for attempt in range(2):
         try:
             print(f"ATTEMPTING GOOGLE TRANSLATE PROXY (Try {attempt+1}/2): {url}")
-            r = requests.get(translate_url, headers=headers, timeout=5)
+            r = requests.get(translate_url, headers=headers, timeout=10)
             
             if r.status_code == 200:
                 return r.text
@@ -189,11 +189,36 @@ def get_lyrics_by_id(song_id):
         print(f"GENIUS SCRAPER CRASH: {e}")
         return None
 
+import urllib.parse
+
+def fetch_lrclib_lyrics(track_name, artist_name):
+    """Fetch lyrics using the free and open LRCLib API (No scraping needed)"""
+    try:
+        # LRCLib is highly optimized for "Track Name - Artist Name" matching
+        t_clean = track_name.split(" - ")[0].split(" (")[0].strip()
+        url = f"https://lrclib.net/api/get?artist_name={urllib.parse.quote(artist_name)}&track_name={urllib.parse.quote(t_clean)}"
+        res = requests.get(url, timeout=5)
+        if res.status_code == 200:
+            data = res.json()
+            if data and data.get("plainLyrics"):
+                print(f"LRCLIB: Success for '{t_clean}' by '{artist_name}'")
+                return data["plainLyrics"]
+    except Exception as e:
+        print(f"LRCLIB ERROR: {e}")
+    return None
+
 def search_track_lyrics(track_name, artist_name):
     """
-    Directly searches and scrapes lyrics for a given track and artist.
-    Returns the lyrics string or None if not found.
+    Primary: LRCLib (JSON, extremely fast, no proxy blocks).
+    Fallback: Genius Search -> HTML Scrape (Prone to Cloudflare / Google Translate blocks).
     """
+    # 1. Try LRCLib First
+    lrclib_lyrics = fetch_lrclib_lyrics(track_name, artist_name)
+    if lrclib_lyrics:
+        return lrclib_lyrics
+
+    # 2. Fallback to Genius
+    print(f"GENIUS FALLBACK: Searching for '{track_name}' by '{artist_name}'")
     try:
         clean_track = track_name.split(" - ")[0].split(" (")[0].strip()
         query = f"{clean_track} {artist_name}"

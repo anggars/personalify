@@ -105,15 +105,15 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         return ""
 
     def _get_best_artist_image(idx, name, token):
-        # 1. Try Scrape (Last.fm)
-        img = _scrape_lastfm_artist_image(name)
-        if img: return idx, img
-        
-        # 2. Try Spotify Fallback (Broad Search)
+        # 1. Try Spotify FIRST (Fast, Unblocked, High Quality)
         if token:
             from app.lastfm_handler import _search_spotify_artist
             _, img, _ = _search_spotify_artist(name, token)
             if img: return idx, img
+            
+        # 2. Try Scrape (Last.fm)
+        img = _scrape_lastfm_artist_image(name)
+        if img: return idx, img
             
         return idx, ""
 
@@ -412,7 +412,8 @@ def _search_spotify_artist(artist_name, token):
             sp_name = a["name"].lower().strip()
             if target_name in sp_name or sp_name in target_name:
                 return a
-        return None
+        # 3. Absolute fallback: trust Spotify's search rank
+        return items[0] if items else None
 
     # Try exact match first
     params = {"q": f"artist:\"{artist_name}\"", "type": "artist", "limit": 5}
