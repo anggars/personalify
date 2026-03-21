@@ -536,6 +536,9 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
                 with _cache_lock:
                     _analysis_cache[d_name] = (cached[0], cached[1]) # Sync to memory cache
                 print(f"NLP: Persistent Cache Hit for '{d_name}'.")
+
+        if cached:
+            return idx, d_name, t_name, cached[0], cached[1], True
             
         # UI Progress for new tracks
         if progress_callback:
