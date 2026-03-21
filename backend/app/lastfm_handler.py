@@ -49,8 +49,8 @@ def _search_spotify_artist_image(artist_name, token):
             
             for artist in items:
                 sp_name = artist.get("name", "").lower().strip()
-                # Strict check: names must match or one must contain the other exactly
-                if sp_name == target or target in sp_name or sp_name in target:
+                # STRICT EXACT MATCH ONLY to avoid "salah kaprah" (misguided) images
+                if sp_name == target:
                     images = artist.get("images", [])
                     if images:
                         return images[0]["url"]
@@ -66,7 +66,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
     """
     def _scrape_lastfm_artist_image(artist_name):
         """Robust Last.fm scraper using LD+JSON and flexible meta tags."""
-        import re, json
+        import re, json, html
         from urllib.parse import unquote
         try:
             url = f"https://www.last.fm/music/{quote_plus(artist_name)}"
@@ -79,36 +79,34 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             if res.status_code != 200:
                 return ""
             
-            html = res.text
+            res_html = res.text
             
             # 1. Try LD+JSON (Most reliable)
             try:
-                ld_json_matches = re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL)
+                ld_json_matches = re.findall(r'<script type="application/ld\+json">(.*?)</script>', res_html, re.DOTALL)
                 for ld_text in ld_json_matches:
                     data = json.loads(ld_text)
                     if isinstance(data, dict):
-                        # Some pages have a list of objects, some just one
                         items = data if isinstance(data, list) else [data]
                         for item in items:
                             if item.get("@type") == "MusicGroup" and item.get("image"):
-                                return item["image"]
+                                return html.unescape(item["image"])
             except: pass
 
-            # 2. Flexible Meta Tag Search (Handles different attribute orders)
-            # Find all content="..." where property/name is og:image or twitter:image
+            # 2. Flexible Meta Tag Search
             meta_patterns = [
                 r'<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\'][^>]+content=["\']([^"\']+)["\']',
                 r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\']'
             ]
             
             for pattern in meta_patterns:
-                matches = re.findall(pattern, html, re.IGNORECASE)
+                matches = re.findall(pattern, res_html, re.IGNORECASE)
                 for img_url in matches:
-                    # Filter out placeholders
-                    if "2a96cbd8b46e442fc41c2b86b821562f" not in img_url and \
-                       "avatar" not in img_url and \
-                       "default_artist" not in img_url:
-                        return img_url
+                    clean_url = html.unescape(img_url)
+                    # Filter out placeholders & generics
+                    poisoned = ["2a96cbd8b46e442fc41c2b86b821562f", "avatar", "default_artist", "lastfm_logo", "placeholder"]
+                    if not any(p in clean_url for p in poisoned):
+                        return clean_url
                         
         except Exception as e:
             print(f"SCRAPE ERROR for {artist_name}: {e}")
@@ -606,8 +604,8 @@ def _search_deezer_artist(artist_name):
             
             for item in items:
                 dz_name = item.get("name", "").lower().strip()
-                # Strict check for Deezer fallback to avoid random mismatches
-                if dz_name == target or target in dz_name or dz_name in target:
+                # STRICT EXACT MATCH ONLY for Deezer fallback
+                if dz_name == target:
                     best_img = item.get('picture_xl') or item.get('picture_big') or item.get('picture_medium')
                     if best_img:
                         return best_img

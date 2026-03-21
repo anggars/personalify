@@ -7,7 +7,7 @@ import { useTheme } from "next-themes";
 import { GenreChart } from "../../../components/genre-chart";
 import * as htmlToImage from "html-to-image";
 import { Slider } from "../../../components/ui/slider";
-import { CirclePlay, CirclePause } from "lucide-react";
+import { CirclePlay, CirclePause, Users, Disc3 } from "lucide-react";
 
 import MarqueeText from "../../../components/marquee-text";
 import { toast } from "sonner";
@@ -1182,17 +1182,35 @@ export default function DashboardPage() {
       li.appendChild(rank);
 
       if (category !== "genres") {
-        const img = document.createElement("img");
-        img.src = (item as Artist | Track).image;
-        img.crossOrigin = "anonymous";
-        Object.assign(img.style, {
-          width: "60px",
-          height: "60px",
-          borderRadius: "8px",
-          objectFit: "cover",
-          flexShrink: "0",
-        });
-        li.appendChild(img);
+        const itemObj = item as Artist | Track;
+        if (itemObj.image) {
+          const img = document.createElement("img");
+          img.src = itemObj.image;
+          img.crossOrigin = "anonymous";
+          Object.assign(img.style, {
+            width: "60px",
+            height: "60px",
+            borderRadius: "8px",
+            objectFit: "cover",
+            flexShrink: "0",
+          });
+          li.appendChild(img);
+        } else {
+          const placeholder = document.createElement("div");
+          Object.assign(placeholder.style, {
+            width: "60px",
+            height: "60px",
+            borderRadius: "8px",
+            background: isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: "0",
+          });
+          // Simple text fallback for icon during screenshot if actual SVG is too complex for html-to-image
+          placeholder.innerHTML = category === "artists" ? `<span style="font-size: 20px;">👤</span>` : `<span style="font-size: 20px;">📀</span>`;
+          li.appendChild(placeholder);
+        }
       }
 
       const info = document.createElement("div");
@@ -1601,12 +1619,21 @@ export default function DashboardPage() {
                   className="list-item hover:bg-accent/50 transition-colors"
                 >
                   <span className="rank">{idx + 1}</span>
-                  <img
-                    src={artist.image || "https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png"}
-                    alt={artist.name}
-                    className="cursor-pointer rounded-lg object-cover"
-                    onClick={() => openArtistProfile(artist.id)}
-                  />
+                  {artist.image ? (
+                    <img
+                      src={artist.image}
+                      alt={artist.name}
+                      className="cursor-pointer rounded-lg object-cover w-[60px] h-[60px]"
+                      onClick={() => openArtistProfile(artist.id)}
+                    />
+                  ) : (
+                    <div 
+                      className="cursor-pointer rounded-lg flex items-center justify-center bg-accent/20 w-[60px] h-[60px]"
+                      onClick={() => openArtistProfile(artist.id)}
+                    >
+                      <Users className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                  )}
                   <div className="info">
                     <p
                       className="name cursor-pointer"
@@ -1711,11 +1738,17 @@ export default function DashboardPage() {
                   </span>
 
                   {/* Album Art - Always visible */}
-                  <img
-                    src={track.image || "https://lastfm.freetls.fastly.net/i/u/300x300/4128a6eb29f94943c9d206c08e625904.png"}
-                    alt={track.name}
-                    className="w-12 h-12 md:w-16 md:h-16 rounded-lg object-cover shrink-0"
-                  />
+                  {track.image ? (
+                    <img
+                      src={track.image}
+                      alt={track.name}
+                      className="w-12 h-12 md:w-16 md:h-16 rounded-lg object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg flex items-center justify-center bg-accent/20 shrink-0">
+                      <Disc3 className="w-6 h-6 text-muted-foreground animate-spin-slow" />
+                    </div>
+                  )}
 
                   {/* Info Area */}
                   <div className="info min-w-0 flex-1 overflow-hidden">
