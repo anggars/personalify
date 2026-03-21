@@ -925,6 +925,7 @@ def get_dashboard_data(
     background_tasks: BackgroundTasks, 
     time_range: str = "short_term", 
     force_sync: bool = False,
+    extended: bool = Query(False),
     request: Request = None, 
     response: Response = None
 ):
@@ -1024,7 +1025,7 @@ def get_dashboard_data(
 
             if not data:
                 print(f"WEB DASHBOARD: No cache for {username}. Starting Last.fm sync...")
-                data = sync_lastfm_user_data(username, time_range, background_tasks=background_tasks)
+                data = sync_lastfm_user_data(username, time_range, background_tasks=background_tasks, extended=extended)
                 if data:
                     print(f"WEB DASHBOARD: Sync triggered for {username}")
                 else:
@@ -1226,10 +1227,12 @@ def get_dashboard_data(
                     
                     if provider == "lastfm":
                         from app.lastfm_handler import process_lastfm_sentiment_background
-                        background_tasks.add_task(process_lastfm_sentiment_background, profile_id, time_range, False)
+                        # Legacy function name fallback replaced by combined worker
+                        from app.lastfm_handler import process_lastfm_enhancement_background
+                        background_tasks.add_task(process_lastfm_enhancement_background, profile_id.replace("lastfm:", ""), time_range, data, extended)
                     else:
                         from app.spotify_handler import process_sentiment_background
-                        background_tasks.add_task(process_sentiment_background, profile_id, time_range, data, False)
+                        background_tasks.add_task(process_sentiment_background, profile_id, time_range, data, extended)
                 
                 print(f"WEB DASHBOARD: Returning cached data for {profile_id}.")
             else:
