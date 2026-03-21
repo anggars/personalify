@@ -364,8 +364,10 @@ export default function DashboardPage() {
     async function fetchData(isPolling = false) {
       if (!isPolling) setLoading(true);
       try {
+        const isFreshLogin = searchParams.get("sync") === "true";
+        const timestamp = new Date().getTime();
         const res = await fetchWithAuth(
-          `/api/dashboard/${profileId}?time_range=${timeRange}`
+          `/api/dashboard/${profileId}?time_range=${timeRange}&force_sync=${isFreshLogin}&_t=${timestamp}`
         );
 
         if (!res.ok) {
