@@ -262,7 +262,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             if scraped_img and scraped_img.strip() and not is_bad_image(scraped_img):
                 ra["image"] = scraped_img
             elif not ra.get("image") or is_bad_image(ra.get("image", "")):
-                ra["image"] = DEFAULT_ARTIST_IMAGE
+                ra["image"] = ""
             
         print(f"LASTFM BG: Enhancing tracks (checking placeholders)...")
         for i, rt in enumerate(enhanced_tracks):
@@ -272,7 +272,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             if sp_data.get("image") and sp_data.get("image").strip() and not is_bad_image(sp_data.get("image")):
                 rt["image"] = sp_data["image"]
             elif not rt.get("image") or is_bad_image(rt.get("image", "")):
-                rt["image"] = DEFAULT_TRACK_IMAGE
+                rt["image"] = ""
 
         # Update cache after images
         cache_top_data("top", user_id, time_range, result, ttl=60)
@@ -791,7 +791,7 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
                 break
         
         if not artist_image:
-             artist_image = DEFAULT_ARTIST_IMAGE
+             artist_image = ""
 
         artist_ids.append(artist_id)
         artists_to_save.append((artist_id, artist_name, playcount, artist_image))
@@ -820,7 +820,7 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
         
         if not track_image:
             # Fallback to artist image if track image missing from LFM
-            track_image = artist_image if artist_image and artist_image != DEFAULT_ARTIST_IMAGE else DEFAULT_TRACK_IMAGE
+            track_image = artist_image if artist_image else ""
 
         track_ids.append(track_id)
         tracks_to_save.append((track_id, track_name, playcount, None, track_image))
