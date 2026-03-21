@@ -57,12 +57,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
     artist tags (genres), and sentiment analysis.
     """
     def _scrape_lastfm_artist_image(artist_name):
-        """Fallback scraper to get artist image from last.fm website without API limits."""
-        from app.cache_handler import get_image_cache, set_image_cache
-        cached_img = get_image_cache(artist_name)
-        if cached_img:
-            return "" if cached_img == "__NOT_FOUND__" else cached_img
-
+        """Raw Last.fm website scraper. No caching here — caller handles cache."""
         import re
         try:
             url = f"https://www.last.fm/music/{quote_plus(artist_name)}"
@@ -73,21 +68,16 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             }
             res = requests.get(url, headers=headers, timeout=5)
             if res.status_code == 200:
-                matches = re.findall(r'<meta\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]\s+content=[\'"]([^\'"]+)[\'"]', res.text)
-                if not matches:
-                     # Fallback to alternate attribute order
-                     matches = re.findall(r'<meta\s+content=[\'"]([^\'"]+)[\'"]\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]', res.text)
-                
-                for img_url in matches:
+                matches = re.findall(r'<meta\s+(?:property|name)=[\'"](og:image|twitter:image)[\'"]\s+content=[\'"](([^\'"]+))[\'"]()', res.text)
+                # Try both attribute orders
+                pattern1 = re.findall(r'<meta\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]\s+content=[\'"]([^\'"]+)[\'"]', res.text)
+                pattern2 = re.findall(r'<meta\s+content=[\'"]([^\'"]+)[\'"]\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]', res.text)
+                all_matches = pattern1 + pattern2
+                for img_url in all_matches:
                     if "2a96cbd8b46e442fc41c2b86b821562f" not in img_url and "avatar" not in img_url and "default_artist" not in img_url:
-                        # Fix for tiny images
-                        set_image_cache(artist_name, img_url)
                         return img_url
         except Exception:
             pass
-        
-        # Cache failure to prevent repeated 5s timeouts for the same artist
-        set_image_cache(artist_name, "__NOT_FOUND__", ttl=43200) # 12 hours
         return ""
 
     def _scrape_lastfm_track_image(track_name, artist_name):
@@ -123,14 +113,41 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         return ""
 
     def _get_best_artist_image(idx, name, token):
-        # Primary: Last.fm website scraper
+        """Resolve artist image: Last.fm → Spotify → Deezer. Successful result cached in img_v3."""
+        from app.cache_handler import get_image_cache, set_image_cache
+
+        # Check unified cache first (successful result from any source)
+        cached = get_image_cache(name)
+        if cached:
+            return idx, cached
+
+        # 1. Try Last.fm scraper
         img = _scrape_lastfm_artist_image(name)
-        if img: return idx, img
-        # Fallback: Spotify (when Last.fm scraper is blocked by Vercel IP)
-        # User's music is from Spotify so all their artists are guaranteed to exist there
+        if img:
+            set_image_cache(name, img)
+            print(f"IMG: Last.fm hit for '{name}'")
+            return idx, img
+
+        # 2. Try Spotify API (needs SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET in env)
         if token:
             img = _search_spotify_artist_image(name, token)
-            if img: return idx, img
+            if img:
+                set_image_cache(name, img)
+                print(f"IMG: Spotify hit for '{name}'")
+                return idx, img
+
+        # 3. Try Deezer (no credentials needed)
+        try:
+            img = _search_deezer_artist(name)
+            if img:
+                set_image_cache(name, img)
+                print(f"IMG: Deezer hit for '{name}'")
+                return idx, img
+        except Exception:
+            pass
+
+        # No image found — do NOT cache failure, so next login can retry
+        print(f"IMG: No image found for '{name}' (all 3 sources failed)")
         return idx, ""
 
     try:
