@@ -35,8 +35,8 @@ if HF_API_KEY:
 else:
     hf_client = None
 
-# --- CACHE ---
-# Simple in-memory cache to save API callsimport threading
+# Simple in-memory cache to save API calls
+import threading
 
 _analysis_cache = {}
 _cache_lock = threading.Lock()
