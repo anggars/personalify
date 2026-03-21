@@ -768,12 +768,31 @@ async def analyze_sentiment_background(
         if provider == "lastfm":
             from app.lastfm_handler import process_lastfm_sentiment_background
             # Pass original FULL ID (e.g. lastfm:anggarnts) for cache consistency
-            background_tasks.add_task(process_lastfm_sentiment_background, spotify_id, time_range, extended)
+            
+            # Use QStash in production, BackgroundTasks in local
+            from app.qstash_handler import publish_to_qstash
+            did_push = publish_to_qstash("/api/tasks/analyze-sentiment", {
+                "spotify_id": spotify_id,
+                "time_range": time_range,
+                "extended": extended,
+                "provider": "lastfm"
+            })
+            if not did_push:
+                background_tasks.add_task(process_lastfm_sentiment_background, spotify_id, time_range, extended)
         else:
             from app.spotify_handler import process_sentiment_background
-            background_tasks.add_task(process_sentiment_background, spotify_id, time_range, cached_data, extended)
+            # Use QStash in production, BackgroundTasks in local
+            from app.qstash_handler import publish_to_qstash
+            did_push = publish_to_qstash("/api/tasks/analyze-sentiment", {
+                "spotify_id": spotify_id,
+                "time_range": time_range,
+                "extended": extended,
+                "provider": "spotify"
+            })
+            if not did_push:
+                background_tasks.add_task(process_sentiment_background, spotify_id, time_range, cached_data, extended)
 
-        return {"status": "Analysis triggered", "extended": extended}
+        return {"status": "Analysis triggered", "extended": extended, "method": "QStash" if "localhost" not in os.getenv("APP_URL", "") else "Local"}
         
     except Exception as e:
         print(f"EASTER EGG ERROR: {e}")
@@ -1596,6 +1615,55 @@ async def fire_qstash_event(
         except Exception as e:
             print(f"QStash Error: {e}")
             return {"status": "Failed"}
+
+@router.post("/api/tasks/analyze-sentiment")
+async def analyze_sentiment_task(request: Request):
+    """
+    QStash Worker Endpoint: Handles heavy sentiment analysis for Spotify/Last.fm.
+    """
+    receiver = get_qstash_receiver()
+    signature = request.headers.get("Upstash-Signature")
+    body_bytes = await request.body()
+    
+    # Verify signature in production
+    app_url = os.getenv("APP_URL", "")
+    if "localhost" not in app_url and "127.0.0.1" not in app_url:
+        try:
+            receiver.verify(
+                body=body_bytes.decode("utf-8"),
+                signature=signature,
+                url=str(request.url)
+            )
+        except Exception as e:
+            print(f"QSTASH VERIFY ERROR: {e}")
+            return {"status": "Forbidden", "error": str(e)}
+
+    data = await request.json()
+    spotify_id = data.get("spotify_id")
+    time_range = data.get("time_range", "short_term")
+    extended = data.get("extended", False)
+    provider = data.get("provider", "spotify")
+
+    print(f"QSTASH WORKER: Starting Sentiment Analysis for {spotify_id} (Provider: {provider}, Extended: {extended})")
+
+    try:
+        if provider == "lastfm":
+            from app.lastfm_handler import process_lastfm_sentiment_background
+            process_lastfm_sentiment_background(spotify_id, time_range, extended=extended)
+        else:
+            from app.spotify_handler import process_sentiment_background
+            # For Spotify, we need to fetch cached_data first
+            from app.cache_handler import get_cached_top_data
+            cached_data = get_cached_top_data("top_v2", spotify_id, time_range)
+            if cached_data:
+                process_sentiment_background(spotify_id, time_range, cached_data, extended=extended)
+            else:
+                print(f"QSTASH ERROR: No cached data for {spotify_id}")
+        
+        return {"status": "Analysis Complete"}
+    except Exception as e:
+        print(f"QSTASH WORKER ERROR: {e}")
+        return {"status": "Failed", "error": str(e)}
 
 @router.post("/api/tasks/log-activity")
 async def log_activity_task(request: Request):
