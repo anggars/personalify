@@ -105,16 +105,9 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         return ""
 
     def _get_best_artist_image(idx, name, token):
-        # 1. Try Spotify FIRST (Fast, Unblocked, High Quality)
-        if token:
-            from app.lastfm_handler import _search_spotify_artist
-            _, img, _ = _search_spotify_artist(name, token)
-            if img: return idx, img
-            
-        # 2. Try Scrape (Last.fm)
+        # User explicitly requested ONLY Last.fm for artist images
         img = _scrape_lastfm_artist_image(name)
         if img: return idx, img
-            
         return idx, ""
 
     try:
@@ -442,6 +435,26 @@ def _search_spotify_artist(artist_name, token):
         
     print(f"SPOTIFY ARTIST SEARCH: No match found for '{artist_name}'")
     return None, "", []
+
+def _search_deezer_artist(artist_name):
+    """Fallback: Search for an artist on Deezer (Free, no auth) and return image_url."""
+    if not artist_name:
+        return ""
+    try:
+        res = requests.get(f"https://api.deezer.com/search/artist?q={artist_name}", timeout=5)
+        if res.status_code == 200:
+            data = res.json()
+            if data and data.get("data"):
+                items = data["data"]
+                if items:
+                    # Return the biggest picture available
+                    best_img = items[0].get("picture_xl") or items[0].get("picture_big") or items[0].get("picture_medium")
+                    if best_img:
+                        print(f"DEEZER ARTIST SEARCH: Match found for '{artist_name}'")
+                        return best_img
+    except Exception as e:
+        print(f"DEEZER API ERROR: {e}")
+    return ""
 
 def _search_spotify_track(track_name, artist_name, token):
     """Search for a track on Spotify and return (id, image_url)."""
