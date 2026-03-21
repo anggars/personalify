@@ -34,18 +34,26 @@ DEFAULT_ARTIST_IMAGE = "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2
 # --- HELPERS ---
 
 def _search_spotify_artist_image(artist_name, token):
-    """Fetch artist image using Spotify API."""
-    if not token: return ""
+    """Fetch artist image using Spotify API with strict name verification."""
+    if not token or not artist_name: return ""
     try:
         from urllib.parse import quote_plus
-        url = f"https://api.spotify.com/v1/search?q=artist:%22{quote_plus(artist_name)}%22&type=artist&limit=1"
+        # Get more results to find closer name match
+        url = f"https://api.spotify.com/v1/search?q=artist:%22{quote_plus(artist_name)}%22&type=artist&limit=5"
         headers = {"Authorization": f"Bearer {token}"}
         res = requests.get(url, headers=headers, timeout=5)
         if res.status_code == 200:
             data = res.json()
             items = data.get("artists", {}).get("items", [])
-            if items and items[0].get("images"):
-                return items[0]["images"][0]["url"]
+            target = artist_name.lower().strip()
+            
+            for artist in items:
+                sp_name = artist.get("name", "").lower().strip()
+                # Strict check: names must match or one must contain the other exactly
+                if sp_name == target or target in sp_name or sp_name in target:
+                    images = artist.get("images", [])
+                    if images:
+                        return images[0]["url"]
     except: pass
     return ""
 
@@ -57,27 +65,53 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
     artist tags (genres), and sentiment analysis.
     """
     def _scrape_lastfm_artist_image(artist_name):
-        """Raw Last.fm website scraper. No caching here — caller handles cache."""
-        import re
+        """Robust Last.fm scraper using LD+JSON and flexible meta tags."""
+        import re, json
+        from urllib.parse import unquote
         try:
             url = f"https://www.last.fm/music/{quote_plus(artist_name)}"
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.5"
             }
             res = requests.get(url, headers=headers, timeout=5)
-            if res.status_code == 200:
-                matches = re.findall(r'<meta\s+(?:property|name)=[\'"](og:image|twitter:image)[\'"]\s+content=[\'"](([^\'"]+))[\'"]()', res.text)
-                # Try both attribute orders
-                pattern1 = re.findall(r'<meta\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]\s+content=[\'"]([^\'"]+)[\'"]', res.text)
-                pattern2 = re.findall(r'<meta\s+content=[\'"]([^\'"]+)[\'"]\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]', res.text)
-                all_matches = pattern1 + pattern2
-                for img_url in all_matches:
-                    if "2a96cbd8b46e442fc41c2b86b821562f" not in img_url and "avatar" not in img_url and "default_artist" not in img_url:
+            if res.status_code != 200:
+                return ""
+            
+            html = res.text
+            
+            # 1. Try LD+JSON (Most reliable)
+            try:
+                ld_json_matches = re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL)
+                for ld_text in ld_json_matches:
+                    data = json.loads(ld_text)
+                    if isinstance(data, dict):
+                        # Some pages have a list of objects, some just one
+                        items = data if isinstance(data, list) else [data]
+                        for item in items:
+                            if item.get("@type") == "MusicGroup" and item.get("image"):
+                                return item["image"]
+            except: pass
+
+            # 2. Flexible Meta Tag Search (Handles different attribute orders)
+            # Find all content="..." where property/name is og:image or twitter:image
+            meta_patterns = [
+                r'<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\'][^>]+content=["\']([^"\']+)["\']',
+                r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\']'
+            ]
+            
+            for pattern in meta_patterns:
+                matches = re.findall(pattern, html, re.IGNORECASE)
+                for img_url in matches:
+                    # Filter out placeholders
+                    if "2a96cbd8b46e442fc41c2b86b821562f" not in img_url and \
+                       "avatar" not in img_url and \
+                       "default_artist" not in img_url:
                         return img_url
-        except Exception:
-            pass
+                        
+        except Exception as e:
+            print(f"SCRAPE ERROR for {artist_name}: {e}")
         return ""
 
     def _scrape_lastfm_track_image(track_name, artist_name):
@@ -559,7 +593,7 @@ def _search_itunes_track(track_name, artist_name):
     return ""
 
 def _search_deezer_artist(artist_name):
-    """Fallback search using Deezer API for artist pictures (No auth required)."""
+    """Fallback search using Deezer API with strict name verification."""
     if not artist_name:
         return ""
     try:
@@ -567,10 +601,16 @@ def _search_deezer_artist(artist_name):
         res = requests.get(url, timeout=5)
         if res.status_code == 200:
             data = res.json()
-            if 'data' in data and len(data['data']) > 0:
-                # Return the biggest picture available
-                item = data['data'][0]
-                return item.get('picture_xl') or item.get('picture_big') or item.get('picture_medium') or ""
+            items = data.get("data", [])
+            target = artist_name.lower().strip()
+            
+            for item in items:
+                dz_name = item.get("name", "").lower().strip()
+                # Strict check for Deezer fallback to avoid random mismatches
+                if dz_name == target or target in dz_name or dz_name in target:
+                    best_img = item.get('picture_xl') or item.get('picture_big') or item.get('picture_medium')
+                    if best_img:
+                        return best_img
     except Exception as e:
         print(f"DEEZER FALLBACK ERROR: {e}")
     return ""
