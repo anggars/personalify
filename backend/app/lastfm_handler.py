@@ -71,7 +71,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.5"
             }
-            res = requests.get(url, headers=headers, timeout=2)
+            res = requests.get(url, headers=headers, timeout=5)
             if res.status_code == 200:
                 matches = re.findall(r'<meta\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]\s+content=[\'"]([^\'"]+)[\'"]', res.text)
                 if not matches:
@@ -106,7 +106,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.5"
             }
-            res = requests.get(url, headers=headers, timeout=2)
+            res = requests.get(url, headers=headers, timeout=5)
             if res.status_code == 200:
                 matches = re.findall(r'<meta\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]\s+content=[\'"]([^\'"]+)[\'"]', res.text)
                 if not matches:
