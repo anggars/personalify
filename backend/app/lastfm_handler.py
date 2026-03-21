@@ -123,9 +123,14 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         return ""
 
     def _get_best_artist_image(idx, name, token):
-        # User explicitly requested ONLY Last.fm for artist images
+        # Primary: Last.fm website scraper
         img = _scrape_lastfm_artist_image(name)
         if img: return idx, img
+        # Fallback: Spotify (when Last.fm scraper is blocked by Vercel IP)
+        # User's music is from Spotify so all their artists are guaranteed to exist there
+        if token:
+            img = _search_spotify_artist_image(name, token)
+            if img: return idx, img
         return idx, ""
 
     try:
