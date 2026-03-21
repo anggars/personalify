@@ -82,3 +82,19 @@ def set_analysis_cache(display_name, data, ttl=604800): # 7 days
         r.setex(key, ttl, json.dumps(data))
     except Exception as e:
         print(f"CACHE_HANDLER ERROR: set_analysis_cache failed: {e}")
+
+def get_image_cache(artist_name):
+    """Retrieve scraped artist image from Redis."""
+    try:
+        key = f"img_v1:{artist_name.lower().strip()}"
+        return r.get(key)
+    except:
+        return None
+
+def set_image_cache(artist_name, img_url, ttl=604800): # 7 days
+    """Store scraped artist image in Redis."""
+    try:
+        key = f"img_v1:{artist_name.lower().strip()}"
+        r.setex(key, ttl, img_url)
+    except:
+        pass
