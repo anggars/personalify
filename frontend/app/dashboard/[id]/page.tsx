@@ -1628,10 +1628,10 @@ export default function DashboardPage() {
                     />
                   ) : (
                     <div 
-                      className="cursor-pointer rounded-lg flex items-center justify-center bg-accent/20 border border-border/40 w-[60px] h-[60px] shrink-0"
+                      className="cursor-pointer rounded-lg flex items-center justify-center bg-zinc-900/40 border border-border/60 w-[60px] h-[60px] shrink-0 shadow-inner"
                       onClick={() => openArtistProfile(artist.id)}
                     >
-                      <Users className="w-7 h-7 text-muted-foreground/60" />
+                      <Users className="w-7 h-7 text-zinc-400" />
                     </div>
                   )}
                   <div className="info">
@@ -1745,8 +1745,8 @@ export default function DashboardPage() {
                       className="w-12 h-12 md:w-16 md:h-16 rounded-lg object-cover shrink-0"
                     />
                   ) : (
-                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg flex items-center justify-center bg-accent/20 border border-border/40 shrink-0 shadow-inner">
-                      <Disc3 className="w-7 h-7 md:w-8 md:h-8 text-muted-foreground/60 animate-spin-slow" />
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg flex items-center justify-center bg-zinc-900/40 border border-border/60 shrink-0 shadow-inner">
+                      <Disc3 className="w-7 h-7 md:w-8 md:h-8 text-zinc-400 animate-spin-slow" />
                     </div>
                   )}
 
