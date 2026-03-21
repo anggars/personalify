@@ -21,7 +21,7 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
         from app.cache_handler import get_cached_top_data
         
         # 1. Refresh result from cache to ensure we have latest tracks
-        cached_result = get_cached_top_data("top_v2", spotify_id, time_range)
+        cached_result = get_cached_top_data("top", spotify_id, time_range)
         if not cached_result:
             print(f"SPOTIFY SENTIMENT ERROR: No cached data for {spotify_id}")
             return
@@ -34,13 +34,13 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
             # RACE CONDITION PROTECTION: 
             # If we are a standard worker but the cache already shows an extended sync (x/20), we stop.
             if not extended:
-                current = get_cached_top_data("top_v2", spotify_id, time_range)
+                current = get_cached_top_data("top", spotify_id, time_range)
                 if current and "/20)" in current.get("sentiment_report", ""):
                     print(f"SPOTIFY WORKER: Stopping standard sync because an extended sync is in progress for {spotify_id}")
                     raise Exception("Interrupted by extended sync")
             
             cached_result['sentiment_report'] = msg
-            cache_top_data("top_v2", spotify_id, time_range, cached_result, ttl=300)
+            cache_top_data("top", spotify_id, time_range, cached_result, ttl=300)
             
         sentiment_report, sentiment_scores = generate_sentiment_analysis(
             tracks_to_analyze, 
@@ -57,7 +57,7 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
             cached_result['extended_sentiment_scores'] = sentiment_scores
 
         # 7. Final Cache & Archive
-        cache_top_data("top_v2", spotify_id, time_range, cached_result)
+        cache_top_data("top", spotify_id, time_range, cached_result)
         save_user_sync(spotify_id, time_range, cached_result)
         print(f"BACKGROUND PROCESSING SUCCESS: {'EXTENDED' if extended else 'STANDARD'} Sentiment analysis completed for {spotify_id}")
     except Exception as e:
@@ -204,7 +204,7 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
     if background_tasks:
         # 6.1 Check for existing sentiment to avoid "getting ready" if we already had a vibe
         from app.cache_handler import get_cached_top_data
-        existing_cached = get_cached_top_data("top_v2", spotify_id, time_range)
+        existing_cached = get_cached_top_data("top", spotify_id, time_range)
         
         if existing_cached and existing_cached.get('sentiment_report'):
             result['sentiment_report'] = existing_cached.get('sentiment_report')
@@ -215,7 +215,7 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
             result['sentiment_scores'] = []
         
         # 6.2 Cache partial result with short TTL
-        cache_top_data("top_v2", spotify_id, time_range, result, ttl=300) 
+        cache_top_data("top", spotify_id, time_range, result, ttl=300) 
         
         # 6.3 Trigger real analysis in background via QStash
         from app.qstash_handler import publish_to_qstash

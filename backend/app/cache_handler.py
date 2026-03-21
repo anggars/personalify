@@ -50,7 +50,12 @@ def clear_user_cache(spotify_id):
     try:
         count = 0
         for term in ["short_term", "medium_term", "long_term"]:
-            key = f"top_v2:{spotify_id}:{term}"
+def clear_user_cache(spotify_id):
+    """Deletes all cached dashboard terms for a specific user to force a fresh sync on next login."""
+    try:
+        count = 0
+        for term in ["short_term", "medium_term", "long_term"]:
+            key = f"top:{spotify_id}:{term}"
             if r.delete(key):
                 count += 1
         
@@ -66,15 +71,13 @@ def clear_user_cache(spotify_id):
 
 def hard_clear_user_cache(spotify_id):
     """
-    HARD CLEAR: wipes dashboard cache + ALL NLP analysis results (analysis_v1:*).
-    NLP cache is track-keyed (not user-keyed) so this affects all cached tracks globally,
-    forcing full re-analysis on next login. Called on logout and on fresh login.
+    HARD CLEAR: wipes dashboard cache + ALL NLP analysis results (analysis:*).
     """
     count = clear_user_cache(spotify_id)
     
     # Wipe all NLP analysis cache entries (forces fresh re-analysis on next login)
     try:
-        nlp_keys = list(r.scan_iter("analysis_v1:*"))
+        nlp_keys = list(r.scan_iter("analysis:*"))
         if nlp_keys:
             r.delete(*nlp_keys)
             count += len(nlp_keys)
@@ -88,7 +91,7 @@ def hard_clear_user_cache(spotify_id):
 def get_analysis_cache(display_name):
     """Retrieve individual track analysis (emotions, mbti) from Redis."""
     try:
-        key = f"analysis_v1:{display_name.lower().strip()}"
+        key = f"analysis:{display_name.lower().strip()}"
         cached = r.get(key)
         if cached:
             return json.loads(cached)
@@ -99,7 +102,7 @@ def get_analysis_cache(display_name):
 def set_analysis_cache(display_name, data, ttl=604800): # 7 days
     """Store individual track analysis results in Redis."""
     try:
-        key = f"analysis_v1:{display_name.lower().strip()}"
+        key = f"analysis:{display_name.lower().strip()}"
         r.setex(key, ttl, json.dumps(data))
     except Exception as e:
         print(f"CACHE_HANDLER ERROR: set_analysis_cache failed: {e}")
@@ -107,7 +110,7 @@ def set_analysis_cache(display_name, data, ttl=604800): # 7 days
 def get_image_cache(artist_name):
     """Retrieve scraped artist image from Redis."""
     try:
-        key = f"img_v3:{artist_name.lower().strip()}"
+        key = f"img:{artist_name.lower().strip()}"
         return r.get(key)
     except:
         return None
@@ -115,7 +118,7 @@ def get_image_cache(artist_name):
 def set_image_cache(artist_name, img_url, ttl=604800): # 7 days
     """Store scraped artist image in Redis."""
     try:
-        key = f"img_v3:{artist_name.lower().strip()}"
+        key = f"img:{artist_name.lower().strip()}"
         r.setex(key, ttl, img_url)
     except:
         pass

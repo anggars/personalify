@@ -109,21 +109,20 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         except Exception:
             pass
             
-        set_image_cache(cache_key, "__NOT_FOUND__", ttl=43200) # 12 hours
         return ""
 
     def _get_best_artist_image(idx, name, token):
-        """Resolve artist image: Last.fm → Spotify → Deezer. Successful result cached in img_v3."""
+        """Resolve artist image: Last.fm → Spotify → Deezer. Successful result cached in img."""
         from app.cache_handler import get_image_cache, set_image_cache
 
         # Check unified cache first (successful result from any source)
         cached = get_image_cache(name)
-        if cached:
+        if cached and cached != "__NOT_FOUND__":
             return idx, cached
 
         # 1. Try Last.fm scraper
         img = _scrape_lastfm_artist_image(name)
-        if img:
+        if img and img != "__NOT_FOUND__":
             set_image_cache(name, img)
             print(f"IMG: Last.fm hit for '{name}'")
             return idx, img
@@ -136,17 +135,14 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 print(f"IMG: Spotify hit for '{name}'")
                 return idx, img
 
-        # 3. Try Deezer (no credentials needed)
-        try:
-            img = _search_deezer_artist(name)
-            if img:
-                set_image_cache(name, img)
-                print(f"IMG: Deezer hit for '{name}'")
-                return idx, img
-        except Exception:
-            pass
+        # 3. Try Deezer (no credentials needed, no auth)
+        img = _search_deezer_artist(name)
+        if img:
+            set_image_cache(name, img)
+            print(f"IMG: Deezer hit for '{name}'")
+            return idx, img
 
-        # No image found — do NOT cache failure, so next login can retry
+        # No image found — do NOT cache failure in img level, so next login can retry
         print(f"IMG: No image found for '{name}' (all 3 sources failed)")
         return idx, ""
 
@@ -250,7 +246,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                  rt["image"] = DEFAULT_TRACK_IMAGE
 
         # Update cache after images
-        cache_top_data("top_v2", user_id, time_range, result, ttl=60)
+        cache_top_data("top", user_id, time_range, result, ttl=60)
 
         # 3. Fetch Artist Tags (Genres) - Optimized with threading
         genre_count = {}
@@ -294,14 +290,14 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         
         result["genres"] = genres_list
         # Update cache after genres
-        cache_top_data("top_v2", user_id, time_range, result, ttl=60)
+        cache_top_data("top", user_id, time_range, result, ttl=60)
 
         # 5. Final Initial Cache (Metadata Only)
         # Cleanup raw data to save space before delegating
         if "_raw_artists" in result: del result["_raw_artists"]
         if "_raw_tracks" in result: del result["_raw_tracks"]
         
-        cache_top_data("top_v2", user_id, time_range, result, ttl=300)
+        cache_top_data("top", user_id, time_range, result, ttl=300)
         save_user_sync(user_id, time_range, result)
         print(f"LASTFM BG: Base enhancement + Metadata completed for '{username}'. Sentiment delegating...")
 
@@ -314,7 +310,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
              # Incremental save during sentiment to keep UI updated
              if "Analyzing" in msg:
                  result["sentiment_report"] = msg
-                 cache_top_data("top_v2", user_id, time_range, result, ttl=300)
+                 cache_top_data("top", user_id, time_range, result, ttl=300)
         
         # We pass ra["tracks"] which are the enhanced ones
         sentiment_report, sentiment_scores = generate_sentiment_analysis(
@@ -327,7 +323,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         result["sentiment_scores"] = sentiment_scores
         
         # FINAL SAVE
-        cache_top_data("top_v2", user_id, time_range, result, ttl=3600)
+        cache_top_data("top", user_id, time_range, result, ttl=3600)
         print(f"LASTFM BG: All enhancements complete for {user_id}")
         
     except Exception as e:
@@ -344,7 +340,7 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
     """
     try:
         # 1. Get current cached state
-        result = get_cached_top_data("top_v2", user_id, time_range)
+        result = get_cached_top_data("top", user_id, time_range)
         if not result:
             print(f"LASTFM SENTIMENT ERROR: No cached data for {user_id}")
             return
@@ -359,7 +355,7 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
             # RACE CONDITION PROTECTION: 
             # If we are a standard worker but the cache already shows an extended sync (x/20), we stop.
             if not extended:
-                current = get_cached_top_data("top_v2", user_id, time_range)
+                current = get_cached_top_data("top", user_id, time_range)
                 if current and "/20)" in current.get("sentiment_report", ""):
                     print(f"LASTFM WORKER: Stopping standard sync because an extended sync is in progress for {user_id}")
                     raise Exception("Interrupted by extended sync")
@@ -367,7 +363,7 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
             # Fetch latest result again in case something else touched it
             # (Though in QStash worker, we are the only one writing this field)
             result['sentiment_report'] = msg
-            cache_top_data("top_v2", user_id, time_range, result, ttl=300)
+            cache_top_data("top", user_id, time_range, result, ttl=300)
             
         sentiment_report, sentiment_scores = generate_sentiment_analysis(
             tracks_to_analyze, 
@@ -384,7 +380,7 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
             result['extended_sentiment_scores'] = sentiment_scores
 
         # Final Save
-        cache_top_data("top_v2", user_id, time_range, result)
+        cache_top_data("top", user_id, time_range, result)
         save_user_sync(user_id, time_range, result)
         print(f"LASTFM SENTIMENT WORKER SUCCESS: Completed for {user_id}")
 
@@ -476,25 +472,7 @@ def _search_spotify_artist(artist_name, token):
     print(f"SPOTIFY ARTIST SEARCH: No match found for '{artist_name}'")
     return None, "", []
 
-def _search_deezer_artist(artist_name):
-    """Fallback: Search for an artist on Deezer (Free, no auth) and return image_url."""
-    if not artist_name:
-        return ""
-    try:
-        res = requests.get(f"https://api.deezer.com/search/artist?q={artist_name}", timeout=5)
-        if res.status_code == 200:
-            data = res.json()
-            if data and data.get("data"):
-                items = data["data"]
-                if items:
-                    # Return the biggest picture available
-                    best_img = items[0].get("picture_xl") or items[0].get("picture_big") or items[0].get("picture_medium")
-                    if best_img:
-                        print(f"DEEZER ARTIST SEARCH: Match found for '{artist_name}'")
-                        return best_img
-    except Exception as e:
-        print(f"DEEZER API ERROR: {e}")
-    return ""
+
 
 def _search_spotify_track(track_name, artist_name, token):
     """Search for a track on Spotify and return (id, image_url)."""
@@ -581,14 +559,18 @@ def _search_itunes_track(track_name, artist_name):
     return ""
 
 def _search_deezer_artist(artist_name):
-    """Fallback search using Deezer API for artist pictures."""
+    """Fallback search using Deezer API for artist pictures (No auth required)."""
+    if not artist_name:
+        return ""
     try:
         url = f"https://api.deezer.com/search/artist?q={quote_plus(artist_name)}"
         res = requests.get(url, timeout=5)
         if res.status_code == 200:
             data = res.json()
             if 'data' in data and len(data['data']) > 0:
-                return data['data'][0].get('picture_xl', '')
+                # Return the biggest picture available
+                item = data['data'][0]
+                return item.get('picture_xl') or item.get('picture_big') or item.get('picture_medium') or ""
     except Exception as e:
         print(f"DEEZER FALLBACK ERROR: {e}")
     return ""
@@ -837,7 +819,7 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
 
     # 5. Handle Background Tasks (QStash for Vercel, BackgroundTasks for Local)
     # Save temporary results first
-    cache_top_data("top_v2", f"lastfm:{username}", time_range, result, ttl=300)
+    cache_top_data("top", f"lastfm:{username}", time_range, result, ttl=300)
     
     from app.qstash_handler import publish_to_qstash
     did_push = publish_to_qstash("/api/tasks/lastfm-enhancement", {

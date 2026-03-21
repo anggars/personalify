@@ -403,7 +403,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                 })
 
             result['sentiment_report'] = "Your music vibe is being analyzed..."
-            cache_top_data("top_v2", spotify_id, time_range, result)
+            cache_top_data("top", spotify_id, time_range, result)
             save_user_sync(spotify_id, time_range, result)
             
     except Exception as e:
@@ -770,14 +770,14 @@ async def analyze_sentiment_background(
             user_id = spotify_id.split(":")[1]
             
         # Initial Cache Update & Instant Reload Logic
-        cached_data = get_cached_top_data("top_v2", spotify_id, time_range)
+        cached_data = get_cached_top_data("top", spotify_id, time_range)
         if cached_data:
             # INSTANT RELOAD: If we already have a 20-track result, use it immediately
             if extended and cached_data.get('extended_sentiment_report'):
                 print(f"EASTER EGG: Instant reload from cache for {spotify_id}")
                 cached_data['sentiment_report'] = cached_data['extended_sentiment_report']
                 cached_data['sentiment_scores'] = cached_data.get('extended_sentiment_scores', [])
-                cache_top_data("top_v2", spotify_id, time_range, cached_data)
+                cache_top_data("top", spotify_id, time_range, cached_data)
                 return {
                     "status": "Analysis loaded from cache", 
                     "extended": True,
@@ -786,7 +786,7 @@ async def analyze_sentiment_background(
 
             # Force "Syncing" state to prevent "Unavailable" UI
             cached_data['sentiment_report'] = "Syncing (11/20): Initializing..."
-            cache_top_data("top_v2", spotify_id, time_range, cached_data)
+            cache_top_data("top", spotify_id, time_range, cached_data)
 
         if provider == "lastfm":
             from app.lastfm_handler import process_lastfm_sentiment_background
@@ -895,7 +895,7 @@ def get_top_data(
     limit: int = Query(10, ge=1),
     sort: str = Query("popularity")
 ):
-    data = get_cached_top_data("top_v2", profile_id, time_range)
+    data = get_cached_top_data("top", profile_id, time_range)
     if not data:
         return {"message": "No cached data found."}
 
@@ -911,7 +911,7 @@ def top_genres(
     profile_id: str = Query(..., description="Profile ID (Spotify/Last.fm)"),
     time_range: str = Query("medium_term", enum=["short_term", "medium_term", "long_term"])
 ):
-    data = get_cached_top_data("top_v2", profile_id, time_range)
+    data = get_cached_top_data("top", profile_id, time_range)
     if not data:
         return {"error": "No cached data found for this user/time_range"}
 
@@ -998,7 +998,7 @@ def get_dashboard_data(
             if force_sync:
                 print(f"WEB DASHBOARD: force_sync=True for Last.fm user {username}. Bypassing cache.")
             else:
-                data = get_cached_top_data("top_v2", profile_id, time_range)
+                data = get_cached_top_data("top", profile_id, time_range)
             
             if data:
                 # Live fetch user info to keep profile picture instantly synced
@@ -1135,7 +1135,7 @@ def get_dashboard_data(
             # 2. CACHE-FIRST LOGIC - ONLY FOR OWN PROFILE
             if access_token:
                 # 2.1 Check cache first
-                data = get_cached_top_data("top_v2", profile_id, time_range)
+                data = get_cached_top_data("top", profile_id, time_range)
                 
                 # 2.2 Freshness Check (Optional: Only sync if no cache or cache is old)
                 # For now, if cache exists, we return it. 
@@ -1219,7 +1219,7 @@ def get_dashboard_data(
             # 2.1 Check cache first (unless force_sync is handled)
             data = None
             if not force_sync:
-                data = get_cached_top_data("top_v2", profile_id, time_range)
+                data = get_cached_top_data("top", profile_id, time_range)
             
             # 2.2 Freshness Check (Optional: Only sync if no cache or cache is old)
             # For now, if cache exists, we return it. 
@@ -1255,7 +1255,7 @@ def get_dashboard_data(
                     data = None
         else:
             print(f"WEB DASHBOARD: No access_token. Reading from cache for {profile_id}.")
-            data = get_cached_top_data("top_v2", profile_id, time_range)
+            data = get_cached_top_data("top", profile_id, time_range)
         # PUBLIC VIEW / OTHER PROFILE        # Public caching fallback is disabled because we now enforce strict privacy
         # The user requested that the dashboard cannot be opened after logout.
         # This code is now unreachable due to the 401 check above, but left for context:
@@ -1726,7 +1726,7 @@ async def analyze_sentiment_task(request: Request):
             from app.spotify_handler import process_sentiment_background
             # For Spotify, we need to fetch cached_data first
             from app.cache_handler import get_cached_top_data
-            cached_data = get_cached_top_data("top_v2", spotify_id, time_range)
+            cached_data = get_cached_top_data("top", spotify_id, time_range)
             if cached_data:
                 process_sentiment_background(spotify_id, time_range, cached_data, extended=extended)
             else:
