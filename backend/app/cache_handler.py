@@ -66,22 +66,37 @@ def clear_user_cache(spotify_id):
 
 def hard_clear_user_cache(spotify_id):
     """
-    HARD CLEAR: wipes dashboard cache + ALL NLP analysis results (analysis:*).
+    NUCLEAR CLEAR: wipes:
+    1. User dashboard cache (top:*)
+    2. User profile (profile:*)
+    3. GLOBAL NLP analysis results (analysis:*)
+    4. GLOBAL Artist image cache (img:*)
+    
+    This ensures a 100% fresh start for the user, resolving "stubborn" cache issues.
     """
     count = clear_user_cache(spotify_id)
     
-    # Wipe all NLP analysis cache entries (forces fresh re-analysis on next login)
+    # 1. Wipe all NLP analysis cache entries (forces fresh re-analysis on next login)
     try:
         nlp_keys = list(r.scan_iter("analysis:*"))
         if nlp_keys:
-            # Use * splat only if list is not empty to avoid RedisError
             r.delete(*nlp_keys)
             count += len(nlp_keys)
-            print(f"CACHE_HANDLER: Hard clear — wiped {len(nlp_keys)} NLP analysis keys.")
+            print(f"CACHE_HANDLER: Nuclear clear — wiped {len(nlp_keys)} NLP analysis keys.")
     except Exception as e:
-        print(f"CACHE_HANDLER HARD CLEAR ERROR: {e}")
+        print(f"CACHE_HANDLER HARD CLEAR ERROR (NLP): {e}")
+
+    # 2. Wipe all GLOBAL Artist image cache entries (forces fresh scraping/verification)
+    try:
+        img_keys = list(r.scan_iter("img:*"))
+        if img_keys:
+            r.delete(*img_keys)
+            count += len(img_keys)
+            print(f"CACHE_HANDLER: Nuclear clear — wiped {len(img_keys)} Image cache keys.")
+    except Exception as e:
+        print(f"CACHE_HANDLER HARD CLEAR ERROR (IMG): {e}")
     
-    print(f"CACHE_HANDLER: Hard clear total: {count} keys wiped for {spotify_id}")
+    print(f"CACHE_HANDLER: Nuclear clear total: {count} keys wiped.")
     return count
 
 def get_analysis_cache(display_name):
