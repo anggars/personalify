@@ -11,7 +11,7 @@ from app.db_handler import (
     save_tracks_batch,
     save_user_associations_batch
 )
-from app.cache_handler import cache_top_data, get_cached_top_data
+from app.cache_handler import cache_top_data, get_cached_top_data, get_valid_image_cache, is_bad_image, set_image_cache
 from app.mongo_handler import save_user_sync
 from app.nlp_handler import generate_sentiment_analysis
 from fastapi import BackgroundTasks
@@ -145,21 +145,20 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
 
     def _get_best_artist_image(idx, name, token):
         """Resolve artist image: Last.fm → Spotify → Deezer. Successful result cached in img."""
-        from app.cache_handler import get_image_cache, set_image_cache
-
-        # Check unified cache first (successful result from any source)
-        cached = get_image_cache(name)
-        if cached and cached != "__NOT_FOUND__":
+        
+        # Check unified cache — but HANYA kalau gambarnya valid (bukan placeholder)
+        cached = get_valid_image_cache(name)
+        if cached:
             return idx, cached
 
         # 1. Try Last.fm scraper
         img = _scrape_lastfm_artist_image(name)
-        if img and img != "__NOT_FOUND__":
+        if img and not is_bad_image(img):
             set_image_cache(name, img)
             print(f"IMG: Last.fm hit for '{name}'")
             return idx, img
 
-        # 2. Try Spotify API (needs SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET in env)
+        # 2. Try Spotify API
         if token:
             img = _search_spotify_artist_image(name, token)
             if img:
@@ -167,14 +166,13 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 print(f"IMG: Spotify hit for '{name}'")
                 return idx, img
 
-        # 3. Try Deezer (no credentials needed, no auth)
+        # 3. Try Deezer
         img = _search_deezer_artist(name)
         if img:
             set_image_cache(name, img)
             print(f"IMG: Deezer hit for '{name}'")
             return idx, img
 
-        # No image found — do NOT cache failure in img level, so next login can retry
         print(f"IMG: No image found for '{name}' (all 3 sources failed)")
         return idx, ""
 
@@ -261,21 +259,20 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         print(f"LASTFM BG: Enhancing artists...")
         for i, ra in enumerate(enhanced_artists):
             scraped_img = artist_results_map.get(i)
-            if scraped_img and scraped_img.strip():
+            if scraped_img and scraped_img.strip() and not is_bad_image(scraped_img):
                 ra["image"] = scraped_img
-            # ONLY use default if it's truly empty or a known broken hash
-            elif not ra.get("image") or "2a96cbd8b46e442fc41c2b86b821562f" in str(ra.get("image", "")):
-                 ra["image"] = DEFAULT_ARTIST_IMAGE
+            elif not ra.get("image") or is_bad_image(ra.get("image", "")):
+                ra["image"] = DEFAULT_ARTIST_IMAGE
             
         print(f"LASTFM BG: Enhancing tracks (checking placeholders)...")
         for i, rt in enumerate(enhanced_tracks):
             sp_data = track_results_map.get(i, {})
             if sp_data.get("id"):
                 rt["id"] = sp_data["id"]
-            if sp_data.get("image") and sp_data.get("image").strip():
+            if sp_data.get("image") and sp_data.get("image").strip() and not is_bad_image(sp_data.get("image")):
                 rt["image"] = sp_data["image"]
-            elif not rt.get("image") or "4128a6eb29f94943c9d206c08e625904" in str(rt.get("image", "")):
-                 rt["image"] = DEFAULT_TRACK_IMAGE
+            elif not rt.get("image") or is_bad_image(rt.get("image", "")):
+                rt["image"] = DEFAULT_TRACK_IMAGE
 
         # Update cache after images
         cache_top_data("top", user_id, time_range, result, ttl=60)
