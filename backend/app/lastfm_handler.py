@@ -58,6 +58,11 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
     """
     def _scrape_lastfm_artist_image(artist_name):
         """Fallback scraper to get artist image from last.fm website without API limits."""
+        from app.cache_handler import get_image_cache, set_image_cache
+        cached_img = get_image_cache(artist_name)
+        if cached_img:
+            return "" if cached_img == "__NOT_FOUND__" else cached_img
+
         import re
         try:
             url = f"https://www.last.fm/music/{quote_plus(artist_name)}"
@@ -75,10 +80,14 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 
                 for img_url in matches:
                     if "2a96cbd8b46e442fc41c2b86b821562f" not in img_url and "avatar" not in img_url and "default_artist" not in img_url:
-                        # Fix for tiny images, last.fm usually stores the high res by dropping the resolution part of the path, but standard is fine
+                        # Fix for tiny images
+                        set_image_cache(artist_name, img_url)
                         return img_url
         except Exception:
             pass
+        
+        # Cache failure to prevent repeated 5s timeouts for the same artist
+        set_image_cache(artist_name, "__NOT_FOUND__", ttl=43200) # 12 hours
         return ""
 
     def _scrape_lastfm_track_image(track_name, artist_name):
