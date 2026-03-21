@@ -63,3 +63,22 @@ def clear_user_cache(spotify_id):
     except Exception as e:
         print(f"CACHE_HANDLER ERROR Clearing User {spotify_id}: {e}")
         return 0
+
+def get_analysis_cache(display_name):
+    """Retrieve individual track analysis (emotions, mbti) from Redis."""
+    try:
+        key = f"analysis_v1:{display_name.lower().strip()}"
+        cached = r.get(key)
+        if cached:
+            return json.loads(cached)
+    except Exception as e:
+        print(f"CACHE_HANDLER ERROR: get_analysis_cache failed: {e}")
+    return None
+
+def set_analysis_cache(display_name, data, ttl=604800): # 7 days
+    """Store individual track analysis results in Redis."""
+    try:
+        key = f"analysis_v1:{display_name.lower().strip()}"
+        r.setex(key, ttl, json.dumps(data))
+    except Exception as e:
+        print(f"CACHE_HANDLER ERROR: set_analysis_cache failed: {e}")
