@@ -324,6 +324,8 @@ export default function DashboardPage() {
     emotionText?.includes("being analyzed") ||
     emotionText?.includes("getting ready") ||
     emotionText?.includes("Digging deeper") ||
+    emotionText?.includes("enhancement in progress") ||
+    emotionText?.includes("Analyzing") ||
     emotionText?.includes("Syncing");
   useEffect(() => {
     if (!isAnalyzing) return;
@@ -390,7 +392,8 @@ export default function DashboardPage() {
           report.includes("being analyzed") || 
           report.includes("getting ready") ||
           report.includes("Syncing") ||
-          report.includes("enhancement in progress");
+          report.includes("enhancement in progress") ||
+          report.includes("Analyzing");
 
         // Start/Stop polling based on state
         if (isStillLoading && !pollInterval) {
