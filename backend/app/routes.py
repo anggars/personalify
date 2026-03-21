@@ -1020,22 +1020,10 @@ def get_dashboard_data(
                 except Exception:
                     pass
                 
-                # Live Placeholder Substitution
-                try:
-                    from app.lastfm_handler import DEFAULT_TRACK_IMAGE, DEFAULT_ARTIST_IMAGE
-                    for rt in data.get("tracks", []):
-                        if rt.get("image", "").startswith("data:image/svg+xml"):
-                            rt["image"] = DEFAULT_TRACK_IMAGE
-                    
-                    for ra in data.get("artists", []):
-                        if ra.get("image", "").startswith("data:image/svg+xml") or "blank-profile-picture" in ra.get("image", ""):
-                            ra["image"] = DEFAULT_ARTIST_IMAGE
-                except Exception:
-                    pass
 
             if not data:
-                print(f"WEB DASHBOARD: No cache for {username}. Starting Last.fm sync...")
-                data = sync_lastfm_user_data(username, time_range, background_tasks=background_tasks, extended=extended)
+                print(f"WEB DASHBOARD: No cache for {username}. Starting Last.fm sync (Force: {force_sync})...")
+                data = sync_lastfm_user_data(username, time_range, background_tasks=background_tasks, extended=extended, force_sync=force_sync)
                 if data:
                     print(f"WEB DASHBOARD: Sync triggered for {username}")
                 else:
@@ -1678,12 +1666,13 @@ async def lastfm_enhancement_task(request: Request):
     time_range = data.get("time_range", "medium_term")
     extended = data.get("extended", False)
     result = data.get("result")
+    force_sync = data.get("force_sync", False)
 
-    print(f"QSTASH WORKER: Starting Last.fm Enhancement for {username}")
+    print(f"QSTASH WORKER: Starting Last.fm Enhancement for {username} (Force: {force_sync})")
 
     try:
         from app.lastfm_handler import process_lastfm_enhancement_background
-        process_lastfm_enhancement_background(username, time_range, result, extended)
+        process_lastfm_enhancement_background(username, time_range, result, extended, force_sync)
         return {"status": "Enhancement Complete"}
     except Exception as e:
         print(f"QSTASH WORKER ERROR (LFM): {e}")

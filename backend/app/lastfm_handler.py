@@ -59,7 +59,7 @@ def _search_spotify_artist_image(artist_name, token):
 
 # --- BACKGROUND PROCESSING ---
 
-def process_lastfm_enhancement_background(username, time_range, result, extended=False):
+def process_lastfm_enhancement_background(username, time_range, result, extended=False, force_sync=False):
     """
     Background task to enhance Last.fm data with Spotify metadata,
     artist tags (genres), and sentiment analysis.
@@ -143,28 +143,29 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             
         return ""
 
-    def _get_best_artist_image(idx, name, token):
-        """Resolve artist image: Last.fm → Spotify → Deezer. Successful result cached in img."""
+    def _get_best_artist_image(idx, name, token, force_refresh=False):
+        """Resolve artist image: Spotify → Last.fm → Deezer. Successful result cached in img."""
         
         # Check unified cache — but HANYA kalau gambarnya valid (bukan placeholder)
-        cached = get_valid_image_cache(name)
-        if cached:
-            return idx, cached
+        if not force_refresh:
+            cached = get_valid_image_cache(name)
+            if cached:
+                return idx, cached
 
-        # 1. Try Last.fm scraper
-        img = _scrape_lastfm_artist_image(name)
-        if img and not is_bad_image(img):
-            set_image_cache(name, img)
-            print(f"IMG: Last.fm hit for '{name}'")
-            return idx, img
-
-        # 2. Try Spotify API
+        # 1. Try Spotify API FIRST (Official/Vetted photos)
         if token:
             img = _search_spotify_artist_image(name, token)
             if img:
                 set_image_cache(name, img)
-                print(f"IMG: Spotify hit for '{name}'")
+                print(f"IMG: Spotify (PRIORITY) hit for '{name}'")
                 return idx, img
+
+        # 2. Fallback to Last.fm scraper
+        img = _scrape_lastfm_artist_image(name)
+        if img and not is_bad_image(img):
+            set_image_cache(name, img)
+            print(f"IMG: Last.fm (FALLBACK) hit for '{name}'")
+            return idx, img
 
         # 3. Try Deezer
         img = _search_deezer_artist(name)
@@ -190,7 +191,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         artist_results_map = {}
         with ThreadPoolExecutor(max_workers=5) as executor:
             artist_futures = {
-                executor.submit(_get_best_artist_image, i, a.get("name"), sp_token): i 
+                executor.submit(_get_best_artist_image, i, a.get("name"), sp_token, force_refresh=force_sync): i 
                 for i, a in enumerate(raw_artists)
             }
             from concurrent.futures import as_completed
@@ -744,7 +745,7 @@ def _get_track_image(artist_name, track_name):
     return ""
 
 
-def sync_lastfm_user_data(username: str, time_range: str = "medium_term", background_tasks: BackgroundTasks = None, extended: bool = False):
+def sync_lastfm_user_data(username: str, time_range: str = "medium_term", background_tasks: BackgroundTasks = None, extended: bool = False, force_sync: bool = False):
     """
     Fast-sync user from Last.fm and trigger background enrichment.
     """
@@ -861,16 +862,17 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
         "username": username,
         "time_range": time_range,
         "extended": extended,
-        "result": result 
+        "result": result,
+        "force_sync": force_sync
     })
 
     if not did_push and background_tasks:
-        background_tasks.add_task(process_lastfm_enhancement_background, username, time_range, result, extended)
-        print(f"LASTFM SYNC: Fast sync success for {username}. Local background task triggered.")
+        background_tasks.add_task(process_lastfm_enhancement_background, username, time_range, result, extended, force_sync)
+        print(f"LASTFM SYNC: Fast sync success for {username}. Local background task triggered (Force: {force_sync}).")
     elif did_push:
-        print(f"LASTFM SYNC: Fast sync success for {username}. QStash enhancement triggered.")
+        print(f"LASTFM SYNC: Fast sync success for {username}. QStash enhancement triggered (Force: {force_sync}).")
     else:
         # Fallback to sync if no other choice
-        process_lastfm_enhancement_background(username, time_range, result, extended)
+        process_lastfm_enhancement_background(username, time_range, result, extended, force_sync)
         
     return result
