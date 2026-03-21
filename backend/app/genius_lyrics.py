@@ -36,10 +36,10 @@ def get_page_html(url):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     # Reduce retries and timeout for Vercel Serverless (max 60s total execution)
-    for attempt in range(2):
+    for attempt in range(1):
         try:
-            print(f"ATTEMPTING GOOGLE TRANSLATE PROXY (Try {attempt+1}/2): {url}")
-            r = requests.get(translate_url, headers=headers, timeout=10)
+            print(f"ATTEMPTING GOOGLE TRANSLATE PROXY: {url}")
+            r = requests.get(translate_url, headers=headers, timeout=3)
             
             if r.status_code == 200:
                 return r.text
@@ -58,7 +58,7 @@ def search_artist_id(query):
             f"{GENIUS_API_URL}/search",
             params={"q": query},
             headers=get_headers(),
-            timeout=10
+            timeout=3
         )
         if res.status_code != 200: return []
         hits = res.json()["response"]["hits"]
@@ -226,7 +226,7 @@ def search_track_lyrics(track_name, artist_name):
             f"{GENIUS_API_URL}/search",
             params={"q": query},
             headers=get_headers(),
-            timeout=5
+            timeout=3
         )
         if res.status_code != 200: 
             return None
