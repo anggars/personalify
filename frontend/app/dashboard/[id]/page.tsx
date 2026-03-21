@@ -165,6 +165,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasForceSynced = useRef(false);
 
   // Error Handling - dispatch custom notification event like navbar
   useEffect(() => {
@@ -366,7 +367,10 @@ export default function DashboardPage() {
     async function fetchData(isPolling = false) {
       if (!isPolling) setLoading(true);
       try {
-        const isFreshLogin = searchParams.get("sync") === "true";
+        const isFreshLogin = searchParams.get("sync") === "true" && !hasForceSynced.current;
+        if (isFreshLogin && !isPolling) {
+            hasForceSynced.current = true;
+        }
         const timestamp = new Date().getTime();
         const res = await fetchWithAuth(
           `/api/dashboard/${profileId}?time_range=${timeRange}&force_sync=${isFreshLogin}&_t=${timestamp}`
