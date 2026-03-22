@@ -206,7 +206,6 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             print(f"IMG: No image found for '{name}' (all 3 sources failed)")
             return idx, ""
 
-    try:
         user_id = f"lastfm:{username}"
         print(f"LASTFM BG: Starting enhancement for '{username}' without Spotify mapping...")
         
