@@ -64,11 +64,11 @@ flowchart TD
     Flutter <--> FastAPI
     
     %% API Engines (Dual Engine)
-    Spotify("Spotify API (Auth & Metadata)")
-    LastFM("Last.fm API (User Data)")
-    QStash("Upstash QStash (Job Queue)")
-    HF("Hugging Face (AI Analysis)")
-    Genius("Genius API (Lyrics Scraper)")
+    Spotify("Spotify API")
+    LastFM("Last.fm API")
+    QStash("Upstash QStash")
+    HF("Hugging Face (NLP)")
+    Genius("Genius API")
 
     %% Dual Flow
     FastAPI --> Spotify
@@ -79,7 +79,7 @@ flowchart TD
     FastAPI --> Genius
     
     %% Storage Layer
-    Supabase("Supabase (PostgreSQL)")
+    Supabase("Supabase (Postgres)")
     Upstash("Upstash (Redis Cache)")
     MongoDB("MongoDB (Sync Logs)")
     FDW("PostgreSQL FDW")
