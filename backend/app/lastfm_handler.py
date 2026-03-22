@@ -348,78 +348,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             result["error_detail"] = err_msg
             result["sentiment_report"] = f"Gagal Sinkronisasi: {err_msg[:50]}..."
             cache_top_data("top", user_id, time_range, result, ttl=300)
-00)
 
-def process_lastfm_sentiment_background(user_id, time_range, extended=False):
-    """
-    Dedicated worker function to run the heavy AI sentiment analysis via QStash.
-    """
-    try:
-        # 1. Get current cached state
-        result = get_cached_top_data("top", user_id, time_range)
-        if not result:
-            print(f"LASTFM SENTIMENT ERROR: No cached data for {user_id}")
-            return
-            
-        enhanced_tracks = result.get("tracks", [])
-        num_to_analyze = 20 if extended else 10
-        tracks_to_analyze = enhanced_tracks[:num_to_analyze]
-        
-        print(f"LASTFM SENTIMENT WORKER: Processing {len(tracks_to_analyze)} tracks for {user_id}...")
-        
-        def _update_progress(msg):
-            if isinstance(msg, dict):
-                cache_top_data("progress", user_id, time_range, msg, ttl=60)
-                report_str = f"Syncing ({msg['current']}/{msg['total']}): {msg['trackName'][:30]}..."
-            else:
-                report_str = msg
-
-            # RACE CONDITION PROTECTION: 
-            # If we are a standard worker but the cache already shows an extended sync (x/20), we stop.
-            if not extended:
-                current = get_cached_top_data("top", user_id, time_range)
-                if current and "/20)" in current.get("sentiment_report", ""):
-                    print(f"LASTFM WORKER: Stopping standard sync because an extended sync is in progress for {user_id}")
-                    raise Exception("Interrupted by extended sync")
-            
-            # Fetch latest result again in case something else touched it
-            # (Though in QStash worker, we are the only one writing this field)
-            if extended:
-                result['extended_sentiment_report'] = report_str
-            else:
-                result['sentiment_report'] = report_str
-            cache_top_data("top", user_id, time_range, result, ttl=300)
-            
-        sentiment_report, sentiment_scores = generate_sentiment_analysis(
-            tracks_to_analyze, 
-            progress_callback=_update_progress, 
-            extended=extended
-        )
-        
-        if extended:
-            result['extended_sentiment_report'] = sentiment_report
-            result['extended_sentiment_scores'] = sentiment_scores
-            result['extended_sentiment_count'] = 20
-        else:
-            result['sentiment_report'] = sentiment_report
-            result['sentiment_scores'] = sentiment_scores
-            result['sentiment_count'] = 10
-        
-        # Final Save
-        cache_top_data("top", user_id, time_range, result)
-        save_user_sync(user_id, time_range, result)
-        print(f"LASTFM SENTIMENT WORKER SUCCESS: Completed for {user_id}")
-
-    except Exception as e:
-        import traceback
-        err_msg = str(e)
-        print(f"LASTFM BG ERROR: {err_msg}")
-        traceback.print_exc()
-        if 'result' in locals() and result:
-            result["error_code"] = "enhancement_failed"
-            result["error_detail"] = err_msg
-            result["sentiment_report"] = f"Gagal Sinkronisasi: {err_msg[:50]}..."
-            cache_top_data("top", user_id, time_range, result, ttl=300)
 
 def process_lastfm_sentiment_background(user_id, time_range, extended=False):
     """
