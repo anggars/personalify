@@ -144,7 +144,6 @@ _KNOWN_BAD_IMAGE_SUBSTRINGS = [
     "placeholder",
     "data:image",
     "818148bf682d429dc215c1705eb27b98",  # Last.fm alternate default (star/silhouette)
-    "000000-80-0-0",  # Deezer generic empty
     "561d5fbcde",     # Deezer alternate empty hash
     "images/artist//" # Deezer empty ID path
 ]
