@@ -1493,6 +1493,7 @@ export default function DashboardPage() {
             </span>
           ) : (
             <span dangerouslySetInnerHTML={{ __html: typedHtml }} />
+          )}
         </p>
       </motion.header>
 
