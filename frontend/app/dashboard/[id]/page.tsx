@@ -397,7 +397,7 @@ export default function DashboardPage() {
         }
         const timestamp = new Date().getTime();
         const res = await fetchWithAuth(
-          `/api/dashboard/${profileId}?time_range=${timeRange}&force_sync=${isFreshLogin}&_t=${timestamp}`
+          `/api/dashboard/${profileId}?time_range=${timeRange}&force_sync=${isFreshLogin}&extended=${showTop20}&_t=${timestamp}`
         );
 
         if (!res.ok) {
