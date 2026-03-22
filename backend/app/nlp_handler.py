@@ -572,15 +572,6 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
         # Track not in cache — analyze fresh regardless of position (idx 0-9 also get retried)
         # This ensures tracks that previously had no Genius lyrics get another attempt
         # --- LYRICS FETCH (Genius primary, LRCLib fallback, skip if none) ---
-        if progress_callback:
-            try:
-                progress_callback({
-                    "current": idx + 1,
-                    "total": num_tracks,
-                    "trackName": t_name
-                })
-            except:
-                pass
 
         lyrics = None
 
@@ -592,23 +583,27 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
         )
 
         if not is_instrumental:
-            # 1. Try Genius first (user explicit preference)
+            # Try combined search (LRCLib -> Genius -> Google)
             try:
                 lyrics = search_track_lyrics(t_name, a_name)
             except:
                 pass
 
-            # 2. LRCLib fallback only if Genius returned nothing
-            if not lyrics:
-                try:
-                    lyrics = fetch_lrclib_lyrics(t_name, a_name)
-                except:
-                    pass
-
         # CRITICAL: If no lyrics found, SKIP this track entirely (don't fall back to title)
         if not lyrics:
             log_output += f"--- SKIPPED: {d_name} (No lyrics found) ---\n\n"
             continue
+
+        # MOVED PROGRESS: Only show "Analyzing" once lyrics are found
+        if progress_callback:
+            try:
+                progress_callback({
+                    "current": idx + 1,
+                    "total": num_tracks,
+                    "trackName": t_name
+                })
+            except:
+                pass
 
         txt = prepare_text_for_analysis(lyrics)
         if not txt:
