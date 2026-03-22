@@ -159,13 +159,10 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                             return img_url
             except Exception:
                 pass
-                
             return ""
 
         def _get_best_artist_image(idx, name, token, force_refresh=False):
             """Resolve artist image: Spotify → Last.fm → Deezer. Successful result cached in img."""
-            
-            # Check unified cache 
             if not force_refresh:
                 cached = get_image_cache(name)
                 if cached:
@@ -174,48 +171,36 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                     else:
                         return idx, cached
 
-            # 1. First priority: Try Last.fm official artist.getInfo for high quality image
             lfm_api_img = _get_artist_image(name)
             if _is_valid_image(lfm_api_img):
                 set_image_cache(name, lfm_api_img)
-                print(f"IMG: Last.fm API hit for '{name}'")
                 return idx, lfm_api_img
 
-            # 2. Try Spotify API (Official/Vetted photos)
             if token:
                 img = _search_spotify_artist_image(name, token)
                 if img:
                     set_image_cache(name, img)
-                    print(f"IMG: Spotify (PRIORITY) hit for '{name}'")
                     return idx, img
 
-            # 3. Fallback to Last.fm scraper
             img = _scrape_lastfm_artist_image(name)
             if _is_valid_image(img):
                 set_image_cache(name, img)
-                print(f"IMG: Last.fm Scrape (FALLBACK) hit for '{name}'")
                 return idx, img
 
-            # 4. Try Deezer
             img = _search_deezer_artist(name)
             if img:
                 set_image_cache(name, img)
-                print(f"IMG: Deezer hit for '{name}'")
                 return idx, img
-
-            print(f"IMG: No image found for '{name}' (all 3 sources failed)")
             return idx, ""
 
         user_id = f"lastfm:{username}"
-        print(f"LASTFM BG: Starting enhancement for '{username}' without Spotify mapping...")
+        print(f"LASTFM BG: Starting enhancement for '{username}'...")
         
         raw_artists = result.get("_raw_artists", [])
         raw_tracks = result.get("_raw_tracks", [])
-        
         sp_token = _get_spotify_app_token()
 
-        # 1. Fetch Artist Images via Last.fm direct scrape + Spotify Fallback
-        print(f"LASTFM BG: Fetching artist images (Syncing Scrape + Spotify)...")
+        # 1. Fetch Artist Images
         artist_results_map = {}
         with ThreadPoolExecutor(max_workers=5) as executor:
             artist_futures = {
@@ -224,7 +209,6 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             }
             from concurrent.futures import as_completed
             for future in as_completed(artist_futures):
-                # idx = artist_futures[future] # Optional if not using res_idx from result
                 try:
                     res_idx, img_url = future.result()
                     if img_url:
@@ -232,47 +216,31 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 except Exception:
                     pass
 
-        # 1b. Fetch Track Images via Spotify & iTunes Fallback
+        # 1b. Fetch Track Images
         track_results_map = {}
-        
         def _get_best_track_image(idx, t_name, a_name):
             sp_id, final_img = None, ""
-            
-            # 1. Try Last.fm official track.getInfo first
             lfm_api_img = _get_track_image(a_name, t_name)
             if _is_valid_image(lfm_api_img):
-                print(f"LASTFM BG: Track API Match Found! '{t_name}'")
                 return idx, sp_id, lfm_api_img
-
-            # 2. Try Spotify Fallback
             if sp_token:
                 try:
                     sp_id, final_img = _search_spotify_track(t_name, a_name, sp_token)
-                except Exception:
-                    pass
-            
+                except Exception: pass
             if not final_img:
                 try:
                     it_img = _search_itunes_track(t_name, a_name)
                     if _is_valid_image(it_img):
-                        print(f"LASTFM BG: iTunes Match Found! '{t_name}'")
                         return idx, sp_id, it_img
-                except Exception as e:
-                    print(f"BG iTunes track search error: {e}")
-            
-            # Absolute Last Resort: Scrape Last.fm Website (for rare indie/local tracks like Murphy Radio)
+                except Exception: pass
             if not final_img:
                 try:
                     lfm_img = _scrape_lastfm_track_image(t_name, a_name)
                     if _is_valid_image(lfm_img):
-                        print(f"LASTFM BG: Direct Last.fm Scrape Match Found! '{t_name}'")
                         return idx, sp_id, lfm_img
-                except Exception:
-                    pass
-            
+                except Exception: pass
             return idx, sp_id, final_img
 
-        print(f"LASTFM BG: Mapping Tracks (Spotify + iTunes Fallback)...")
         with ThreadPoolExecutor(max_workers=5) as executor:
             track_futures = {
                 executor.submit(_get_best_track_image, i, t.get("name"), 
@@ -280,20 +248,16 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                                ): i 
                 for i, t in enumerate(raw_tracks)
             }
-            
             for future in as_completed(track_futures):
-                idx = track_futures[future]
                 try:
                     res_idx, sp_id, sp_img = future.result()
                     track_results_map[res_idx] = {"id": sp_id, "image": sp_img}
-                except Exception as e:
-                    print(f"BG Track mapping error: {e}")
+                except Exception: pass
 
         # 2. Update Artists & Tracks
         enhanced_artists = result.get("artists", [])
         enhanced_tracks = result.get("tracks", [])
         
-        print(f"LASTFM BG: Enhancing artists...")
         for i, ra in enumerate(enhanced_artists):
             scraped_img = artist_results_map.get(i)
             if scraped_img and scraped_img.strip() and not is_bad_image(scraped_img):
@@ -301,7 +265,6 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             elif not ra.get("image") or is_bad_image(ra.get("image", "")):
                 ra["image"] = ""
             
-        print(f"LASTFM BG: Enhancing tracks (checking placeholders)...")
         for i, rt in enumerate(enhanced_tracks):
             sp_data = track_results_map.get(i, {})
             if sp_data.get("id"):
@@ -311,10 +274,9 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             elif not rt.get("image") or is_bad_image(rt.get("image", "")):
                 rt["image"] = ""
 
-        # Update cache after images
         cache_top_data("top", user_id, time_range, result, ttl=60)
 
-        # 3. Fetch Artist Tags (Genres) - Optimized with threading
+        # 3. Fetch Artist Tags
         genre_count = {}
         def _fetch_artist_genres(artist_name):
             try:
@@ -322,78 +284,44 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 if tag_data and "toptags" in tag_data:
                     tags = tag_data["toptags"].get("tag", [])
                     return [t.get("name", "").lower() for t in tags[:5]]
-            except:
-                pass
+            except: pass
             return []
 
-        print(f"LASTFM BG: Fetching artist tags...")
         with ThreadPoolExecutor(max_workers=5) as executor:
-            artist_names = [a.get("name") for a in raw_artists[:15]] # Use more artists for better genre coverage
+            artist_names = [a.get("name") for a in raw_artists[:15]]
             future_genres = {executor.submit(_fetch_artist_genres, name): name for name in artist_names}
-            
-            for future in future_genres:
+            for future in as_completed(future_genres):
                 artist_name = future_genres[future]
                 try:
                     genres = future.result()
-                    # Fallback to empty if LFM tags are thin
-                    if not genres or len(genres) < 2:
-                        pass # No Spotify fallback anymore
-
                     for g in genres:
-                        # Filter out useless tags
                         if g not in ["seen live", "favorites", "favourite", "awesome", "scrobble", "alternative", "all", "amazing"]:
                             genre_count[g] = genre_count.get(g, 0) + 1
-                    # Update result Entry
                     for ra in enhanced_artists:
                         if ra["name"] == artist_name:
                             ra["genres"] = genres
                             break
-                except:
-                    continue
+                except: continue
 
         sorted_genres = sorted(genre_count.items(), key=lambda x: x[1], reverse=True)
-        genres_list = [{"name": name, "count": count} for name, count in sorted_genres[:20]]
-        
-        result["genres"] = genres_list
-        # Update cache after genres
-        cache_top_data("top", user_id, time_range, result, ttl=60)
-
-        # 5. Final Initial Cache (Metadata Only)
-        # Cleanup raw data to save space before delegating
-        if "_raw_artists" in result: del result["_raw_artists"]
-        if "_raw_tracks" in result: del result["_raw_tracks"]
-        
+        result["genres"] = [{"name": name, "count": count} for name, count in sorted_genres[:20]]
         cache_top_data("top", user_id, time_range, result, ttl=300)
         save_user_sync(user_id, time_range, result)
-        print(f"LASTFM BG: Base enhancement + Metadata completed for '{username}'. Sentiment delegating...")
 
-        # 4. Sentiment Analysis - INTEGRATED DIRECTLY
-        print(f"LASTFM BG: Starting sentiment analysis (integrated)...")
+        # 4. Sentiment Analysis
         from app.nlp_handler import generate_sentiment_analysis
-        
         def sentiment_progress(msg):
              if isinstance(msg, dict):
                  cache_top_data("progress", user_id, time_range, msg, ttl=60)
                  report_str = f"Syncing ({msg['current']}/{msg['total']}): {msg['trackName'][:30]}..."
              else:
                  report_str = msg
-
-             print(f"LASTFM BG SENTIMENT: {report_str}")
-             # Incremental save during sentiment to keep UI updated
              if "Syncing" in report_str or "Analyzing" in report_str:
-                 if extended:
-                     result["extended_sentiment_report"] = report_str
-                 else:
-                     result["sentiment_report"] = report_str
+                 if extended: result["extended_sentiment_report"] = report_str
+                 else: result["sentiment_report"] = report_str
                  cache_top_data("top", user_id, time_range, result, ttl=300)
         
-        # We pass ra["tracks"] which are the enhanced ones
-        sentiment_report, sentiment_scores = generate_sentiment_analysis(
-            result["tracks"], 
-            progress_callback=sentiment_progress,
-            extended=extended
-        )
-        
+        sentiment_report, sentiment_scores = generate_sentiment_analysis(result["tracks"], progress_callback=sentiment_progress, extended=extended)
         if extended:
             result["extended_sentiment_report"] = sentiment_report
             result["extended_sentiment_scores"] = sentiment_scores
@@ -403,7 +331,10 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             result["sentiment_scores"] = sentiment_scores
             result["sentiment_count"] = 10
         
-        # FINAL SAVE
+        # Cleanup
+        if "_raw_artists" in result: del result["_raw_artists"]
+        if "_raw_tracks" in result: del result["_raw_tracks"]
+        
         cache_top_data("top", user_id, time_range, result, ttl=3600)
         print(f"LASTFM BG: All enhancements complete for {user_id}")
         
@@ -412,16 +343,12 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         err_msg = str(e)
         print(f"LASTFM BG ERROR: {err_msg}")
         traceback.print_exc()
-        
-        # Store error in result and cache it so UI can show failure
         if 'result' in locals() and result:
             result["error_code"] = "enhancement_failed"
             result["error_detail"] = err_msg
             result["sentiment_report"] = f"Gagal Sinkronisasi: {err_msg[:50]}..."
-            if extended:
-                result["extended_sentiment_report"] = f"Gagal Sinkronisasi (Extended): {err_msg[:50]}..."
-            
             cache_top_data("top", user_id, time_range, result, ttl=300)
+00)
 
 def process_lastfm_sentiment_background(user_id, time_range, extended=False):
     """
@@ -484,10 +411,77 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
         print(f"LASTFM SENTIMENT WORKER SUCCESS: Completed for {user_id}")
 
     except Exception as e:
+        import traceback
+        err_msg = str(e)
+        print(f"LASTFM BG ERROR: {err_msg}")
+        traceback.print_exc()
+        if 'result' in locals() and result:
+            result["error_code"] = "enhancement_failed"
+            result["error_detail"] = err_msg
+            result["sentiment_report"] = f"Gagal Sinkronisasi: {err_msg[:50]}..."
+            cache_top_data("top", user_id, time_range, result, ttl=300)
+
+def process_lastfm_sentiment_background(user_id, time_range, extended=False):
+    """
+    Dedicated worker function to run the heavy AI sentiment analysis via QStash.
+    """
+    try:
+        # 1. Get current cached state
+        result = get_cached_top_data("top", user_id, time_range)
+        if not result:
+            print(f"LASTFM SENTIMENT ERROR: No cached data for {user_id}")
+            return
+            
+        enhanced_tracks = result.get("tracks", [])
+        num_to_analyze = 20 if extended else 10
+        tracks_to_analyze = enhanced_tracks[:num_to_analyze]
+        
+        print(f"LASTFM SENTIMENT WORKER: Processing {len(tracks_to_analyze)} tracks for {user_id}...")
+        
+        def _update_progress(msg):
+            if isinstance(msg, dict):
+                cache_top_data("progress", user_id, time_range, msg, ttl=60)
+                report_str = f"Syncing ({msg['current']}/{msg['total']}): {msg['trackName'][:30]}..."
+            else:
+                report_str = msg
+
+            # RACE CONDITION PROTECTION
+            if not extended:
+                current = get_cached_top_data("top", user_id, time_range)
+                if current and "/20)" in current.get("sentiment_report", ""):
+                    print(f"LASTFM WORKER: Stopping standard sync because an extended sync is in progress for {user_id}")
+                    raise Exception("Interrupted by extended sync")
+            
+            if extended:
+                result['extended_sentiment_report'] = report_str
+            else:
+                result['sentiment_report'] = report_str
+            cache_top_data("top", user_id, time_range, result, ttl=300)
+            
+        sentiment_report, sentiment_scores = generate_sentiment_analysis(
+            tracks_to_analyze, 
+            progress_callback=_update_progress, 
+            extended=extended
+        )
+        
+        if extended:
+            result['extended_sentiment_report'] = sentiment_report
+            result['extended_sentiment_scores'] = sentiment_scores
+            result['extended_sentiment_count'] = 20
+        else:
+            result['sentiment_report'] = sentiment_report
+            result['sentiment_scores'] = sentiment_scores
+            result['sentiment_count'] = 10
+        
+        # Final Save
+        cache_top_data("top", user_id, time_range, result)
+        save_user_sync(user_id, time_range, result)
+        print(f"LASTFM SENTIMENT WORKER SUCCESS: Completed for {user_id}")
+
+    except Exception as e:
         print(f"LASTFM SENTIMENT WORKER ERROR: {e}")
         import traceback
         traceback.print_exc()
-        print(f"LASTFM BG ERROR: {e}")
 
 # --- SPOTIFY ENHANCEMENT HELPERS ---
 
