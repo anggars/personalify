@@ -31,6 +31,12 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
         tracks_to_analyze = tracks[:num_to_analyze]
         
         def _update_progress(msg):
+            if isinstance(msg, dict):
+                cache_top_data("progress", spotify_id, time_range, msg, ttl=60)
+                report_str = f"Syncing ({msg['current']}/{msg['total']}): {msg['trackName'][:30]}..."
+            else:
+                report_str = msg
+
             # RACE CONDITION PROTECTION: 
             # If we are a standard worker but the cache already shows an extended sync (x/20), we stop.
             if not extended:
@@ -40,9 +46,9 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
                     raise Exception("Interrupted by extended sync")
             
             if extended:
-                cached_result['extended_sentiment_report'] = msg
+                cached_result['extended_sentiment_report'] = report_str
             else:
-                cached_result['sentiment_report'] = msg
+                cached_result['sentiment_report'] = report_str
             cache_top_data("top", spotify_id, time_range, cached_result, ttl=300)
             
         sentiment_report, sentiment_scores = generate_sentiment_analysis(

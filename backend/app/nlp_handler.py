@@ -548,9 +548,12 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
         if cached:
             # Show progress for cached tracks so user sees progress for all 1-20
             if progress_callback:
-                short_n = t_name[:30] + "..." if len(t_name) > 33 else t_name
                 try:
-                    progress_callback(f"Syncing ({idx+1}/{num_tracks}): {short_n}")
+                    progress_callback({
+                        "current": idx + 1,
+                        "total": num_tracks,
+                        "trackName": t_name
+                    })
                 except:
                     pass
             emo, mbti_r = cached[0], cached[1]
@@ -571,10 +574,13 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
         # Track not in cache — analyze fresh regardless of position (idx 0-9 also get retried)
         # This ensures tracks that previously had no Genius lyrics get another attempt
         # --- LYRICS FETCH (Genius primary, LRCLib fallback, skip if none) ---
-        short_n = t_name[:30] + "..." if len(t_name) > 33 else t_name
         if progress_callback:
             try:
-                progress_callback(f"Syncing ({idx+1}/{num_tracks}): {short_n}")
+                progress_callback({
+                    "current": idx + 1,
+                    "total": num_tracks,
+                    "trackName": t_name
+                })
             except:
                 pass
 

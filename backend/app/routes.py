@@ -171,19 +171,26 @@ def login(request: Request, mobile: str = Query(None)):
     return RedirectResponse(auth_url)
 
 @router.get("/logout")
-async def logout(request: Request):
+async def logout(request: Request, profile_id: Optional[str] = Query(None)):
     """
     Clears all auth cookies and Redis user cache, then redirects to home.
+    Optionally accepts profile_id query param to target specific cache clear.
     """
     spotify_id = request.cookies.get("spotify_id")
     lastfm_username = request.cookies.get("lastfm_username")  # e.g. "anggarnts"
     
+    target_id = profile_id or spotify_id
+    
     try:
         from app.cache_handler import hard_clear_user_cache
-        if spotify_id:
-            cleared = hard_clear_user_cache(spotify_id)
-            print(f"LOGOUT: Hard cleared {cleared} cache keys for Spotify user '{spotify_id}'")
-        if lastfm_username:
+        
+        # Clear specific requested profile ID or standard logged in Spotify cache
+        if target_id:
+            cleared = hard_clear_user_cache(target_id)
+            print(f"LOGOUT: Hard cleared {cleared} cache keys for user '{target_id}'")
+            
+        # Still clear last.fm username cache if it is set differently
+        if lastfm_username and f"lastfm:{lastfm_username}" != target_id:
             lastfm_id = f"lastfm:{lastfm_username}"
             cleared = hard_clear_user_cache(lastfm_id)
             print(f"LOGOUT: Hard cleared {cleared} cache keys for Last.fm user '{lastfm_id}'")
@@ -205,6 +212,22 @@ async def logout(request: Request):
     response.delete_cookie("lastfm_username", path="/")
     
     return response
+
+class ClearCacheRequest(BaseModel):
+    profile_id: str
+
+@router.post("/api/clear-cache", tags=["Cache"])
+def clear_user_cache(data: ClearCacheRequest):
+    """
+    Clears targeted Redis keys for a given profile_id. 
+    Frontend hook uses this on user switch.
+    """
+    try:
+        from app.cache_handler import hard_clear_user_cache
+        cleared = hard_clear_user_cache(data.profile_id)
+        return {"status": "ok", "cleared": cleared, "message": f"Cleared {cleared} keys for {data.profile_id}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/lastfm/login", tags=["Auth"])
 def lastfm_login(request: Request):
@@ -1060,12 +1083,16 @@ def get_dashboard_data(
                 # updated sentiment_report? We'll fix that in the workers next.
                 pass
 
+            # Fetch detailed loading progress object
+            progress_data = get_cached_top_data("progress", profile_id, time_range)
+
             return {
                 "user": data["user"],
                 "image": data.get("image"),
                 "time_range": time_range,
                 "sentiment_report": data.get("sentiment_report", ""),
                 "sentiment_scores": data.get("sentiment_scores", []),
+                "sentiment_progress": progress_data,
                 "artists": data.get("artists", []),
                 "tracks": data.get("tracks", []),
                 "genres": genre_list,
@@ -1308,12 +1335,18 @@ def get_dashboard_data(
         sorted_genres = sorted(genre_count.items(), key=lambda x: x[1], reverse=True)
         genre_list = [{"name": name, "count": count} for name, count in sorted_genres]
 
+        # Fetch detailed loading progress object
+        progress_data = get_cached_top_data("progress", profile_id, time_range)
+
         return {
             "user": data["user"],
             "image": data.get("image"),
             "time_range": time_range,
             "sentiment_report": sentiment_report,
             "sentiment_scores": sentiment_scores,
+            "sentiment_progress": progress_data,
+            "error_code": data.get("error_code"),
+            "error_detail": data.get("error_detail"),
             "artists": data.get("artists", []),
             "tracks": data.get("tracks", []),
             "genres": genre_list,

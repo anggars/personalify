@@ -134,6 +134,14 @@ def set_image_cache(artist_name, img_url, ttl=604800): # 7 days
     except:
         pass
 
+def delete_image_cache(artist_name):
+    """Delete scraped artist image from Redis."""
+    try:
+        key = f"img:{artist_name.lower().strip()}"
+        r.delete(key)
+    except:
+        pass
+
 # Known bad placeholder hashes from Last.fm (generic background images)
 _KNOWN_BAD_IMAGE_SUBSTRINGS = [
     "2a96cbd8b46e442fc41c2b86b821562f",  # Last.fm default artist

@@ -7,11 +7,12 @@ import { useTheme } from "next-themes";
 import { GenreChart } from "../../../components/genre-chart";
 import * as htmlToImage from "html-to-image";
 import { Slider } from "../../../components/ui/slider";
-import { CirclePlay, CirclePause, Users, Disc3 } from "lucide-react";
+import { CirclePlay, CirclePause, Users, Disc3, AlertTriangle } from "lucide-react";
 
 import MarqueeText from "../../../components/marquee-text";
 import { toast } from "sonner";
 import { fetchWithAuth } from "../../../lib/api";
+import { placeholders } from "../../../lib/placeholders";
 
 // Spotify IFrame API type declarations
 interface SpotifyEmbedController {
@@ -79,6 +80,9 @@ interface DashboardData {
   genres: Genre[];
   genre_artists_map: Record<string, string[]>;
   source?: string;
+  sentiment_progress?: { current: number; total: number; trackName?: string } | null;
+  error_code?: string;
+  error_detail?: string;
 }
 
 const TIME_RANGE_LABELS: Record<string, string> = {
@@ -87,9 +91,8 @@ const TIME_RANGE_LABELS: Record<string, string> = {
   long_term: "Long Term",
 };
 
-const PLACEHOLDER_VISUAL =
-  "bg-white/5 shadow-inner";
-const PLACEHOLDER_ICON_COLOR = "text-white/40";
+const PLACEHOLDER_VISUAL = placeholders.wrapper;
+const PLACEHOLDER_ICON_COLOR = placeholders.iconColor;
 
 const TIME_RANGE_SUBTITLES: Record<string, string> = {
   short_term: "Here's your monthly recap",
@@ -269,6 +272,7 @@ export default function DashboardPage() {
   const [sentimentProgress, setSentimentProgress] = useState<{
     current: number;
     total: number;
+    trackName?: string;
   } | null>(null);
 
   const chartRef = useRef<any>(null);
@@ -344,21 +348,8 @@ export default function DashboardPage() {
     return () => clearInterval(dotsInterval);
   }, [isAnalyzing]);
 
-  useEffect(() => {
-    if (!emotionText) {
-      setSentimentProgress(null);
-      return;
-    }
-    const match = emotionText.match(/Syncing \((\d+)\/(\d+)\)/i);
-    if (match) {
-      setSentimentProgress({
-        current: Number(match[1]),
-        total: Number(match[2]),
-      });
-    } else {
-      setSentimentProgress(null);
-    }
-  }, [emotionText]);
+  // Use server-provided progress object instead of regex
+  // Handled directly when setting data
 
   // Check screen size
   useEffect(() => {
@@ -415,6 +406,7 @@ export default function DashboardPage() {
         
         const report = json.sentiment_report || "";
         setEmotionText(report);
+        setSentimentProgress(json.sentiment_progress || null);
 
         const isStillLoading = 
           report.includes("being analyzed") || 
@@ -434,6 +426,14 @@ export default function DashboardPage() {
           pollInterval = null;
         }
 
+        // Handle error codes from backend
+        if (json.error_code && !isPolling) {
+          toast.error(`Sync Issue: ${json.error_code}`, {
+            description: json.error_detail || "Something went wrong during sync.",
+            duration: 5000,
+          });
+        }
+
       } catch (err: any) {
         console.error("Dashboard fetch error:", err);
         setError(err.message || "Failed to load dashboard. Please try again.");
@@ -447,7 +447,7 @@ export default function DashboardPage() {
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [profileId, timeRange, router, showTop20]);
+  }, [profileId, timeRange, router, showTop20, searchParams]);
   
   // Reset dashboard states when time range changes to prevent state leakage
   useEffect(() => {
@@ -1230,9 +1230,23 @@ export default function DashboardPage() {
             alignItems: "center",
             justifyContent: "center",
             flexShrink: "0",
+            position: "relative",
+            overflow: "hidden",
           });
+          
+          // Shimmer effect for the generated image
+          const shimmer = document.createElement("div");
+          Object.assign(shimmer.style, {
+            position: "absolute",
+            inset: "0",
+            transform: "translateX(-100%)",
+            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
+            animation: "shimmer 2s infinite",
+          });
+          placeholder.appendChild(shimmer);
+
           // Simple text fallback for icon during screenshot if actual SVG is too complex for html-to-image
-          placeholder.innerHTML = category === "artists" ? `<span style="font-size: 20px;">👤</span>` : `<span style="font-size: 20px;">📀</span>`;
+          placeholder.innerHTML += category === "artists" ? `<span style="font-size: 20px; position: relative; z-index: 1;">👤</span>` : `<span style="font-size: 20px; position: relative; z-index: 1;">📀</span>`;
           li.appendChild(placeholder);
         }
       }
@@ -1486,15 +1500,45 @@ export default function DashboardPage() {
           {TIME_RANGE_SUBTITLES[timeRange]},{" "}
           <span className="font-bold">{data.user}</span>!
         </p>
-        <p className="emotion-recap mt-4">
+        <div className="emotion-recap mt-4 flex flex-col items-center justify-center">
           {isAnalyzing ? (
-            <span className="progress-text animate-pulse text-neutral-500 dark:text-[#B3B3B3]">
-              {emotionText.replace(/\.\.\.$/, "")}{animatedDots}
-            </span>
+            <div className="flex flex-col items-center w-full max-w-md mx-auto space-y-3">
+              <span className="progress-text animate-pulse text-neutral-500 dark:text-[#B3B3B3]">
+                {sentimentProgress?.trackName ? `Sedang menganalisis: ${sentimentProgress.trackName}${animatedDots}` : emotionText.replace(/\.\.\.$/, "") + animatedDots}
+              </span>
+              {sentimentProgress && sentimentProgress.total > 0 && (
+                <div className="w-full bg-neutral-200 dark:bg-neutral-800 rounded-full h-2.5 overflow-hidden">
+                  <motion.div 
+                    className="bg-[#1DB954] h-2.5 rounded-full" 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, (sentimentProgress.current / sentimentProgress.total) * 100)}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  />
+                </div>
+              )}
+            </div>
           ) : (
-            <span dangerouslySetInnerHTML={{ __html: typedHtml }} />
+            <div className="flex flex-col items-center space-y-3">
+              <span dangerouslySetInnerHTML={{ __html: typedHtml }} />
+              {data.error_code && (
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={() => {
+                      const newParams = new URLSearchParams(window.location.search);
+                      newParams.set("sync", "true");
+                      router.push(`${window.location.pathname}?${newParams.toString()}`);
+                      window.location.reload(); // Force a fresh sync
+                  }}
+                  className="px-4 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-bold rounded-full border border-red-500/20 transition-all flex items-center gap-2"
+                >
+                  <AlertTriangle size={14} />
+                  Retry Sync
+                </motion.button>
+              )}
+            </div>
           )}
-        </p>
+        </div>
       </motion.header>
 
       {/* Filters */}

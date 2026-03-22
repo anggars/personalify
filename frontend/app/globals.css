@@ -1401,3 +1401,13 @@ html {
 .animate-spin-slow {
   animation: spin-slow 8s linear infinite;
 }
+/* ===== ANIMATIONS ===== */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}

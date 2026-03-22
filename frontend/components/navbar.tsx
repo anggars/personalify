@@ -124,8 +124,10 @@ export const Navbar = () => {
     if (errorParam === "logged_out" || errorParam === "session_expired") {
       localStorage.removeItem("spotify_id");
       localStorage.removeItem("spotify_user_image");
+      localStorage.removeItem("spotify_user_image_v2");
       localStorage.removeItem("profile_id");
       localStorage.removeItem("spotify_user_name");
+      localStorage.removeItem("spotify_user_name_v2");
       setSpotifyId(null);
       setUserImage(null);
       if (errorParam === "session_expired") {
@@ -150,6 +152,17 @@ export const Navbar = () => {
     const currentIdId = params.id as string || params.spotifyId as string;
 
     if (pathname?.startsWith("/dashboard/") && currentIdId) {
+      const storedId = localStorage.getItem("profile_id") || localStorage.getItem("spotify_id");
+      
+      if (storedId && storedId !== currentIdId) {
+        // Switch user detected - bust their cache
+        fetch("/api/clear-cache", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profile_id: storedId })
+        }).catch(() => {});
+      }
+
       localStorage.setItem("spotify_id", currentIdId);
       localStorage.setItem("profile_id", currentIdId);
       setSpotifyId(currentIdId);
@@ -166,7 +179,7 @@ export const Navbar = () => {
       return;
     }
 
-    const cachedImage = localStorage.getItem("spotify_user_image");
+    const cachedImage = localStorage.getItem("spotify_user_image_v2");
     if (cachedImage) {
       setUserImage(cachedImage);
       return;
@@ -180,7 +193,7 @@ export const Navbar = () => {
       .then((data) => {
         if (data?.image) {
           setUserImage(data.image);
-          localStorage.setItem("spotify_user_image", data.image);
+          localStorage.setItem("spotify_user_image_v2", data.image);
         } else if (!data?.image) {
           // Fallback to dashboard API
           return fetch(`/api/dashboard/${spotifyId}?time_range=short_term`, {
@@ -190,7 +203,7 @@ export const Navbar = () => {
             .then((dashData) => {
               if (dashData?.image) {
                 setUserImage(dashData.image);
-                localStorage.setItem("spotify_user_image", dashData.image);
+                localStorage.setItem("spotify_user_image_v2", dashData.image);
               }
             });
         }
@@ -204,7 +217,7 @@ export const Navbar = () => {
           .then((dashData) => {
             if (dashData?.image) {
               setUserImage(dashData.image);
-              localStorage.setItem("spotify_user_image", dashData.image);
+              localStorage.setItem("spotify_user_image_v2", dashData.image);
             }
           })
           .catch(() => { });
