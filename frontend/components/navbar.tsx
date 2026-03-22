@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { placeholders } from "@/lib/placeholders";
 import { ThemeToggle } from "./ui/theme-toggle";
 import { ChevronDown, Menu, X, CheckCircle, AlertTriangle, User } from "lucide-react";
 import Image from "next/image";
@@ -425,8 +426,8 @@ export const Navbar = () => {
                     />
                   </>
                 ) : (
-                  <div className="w-9 h-9 flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
-                    <User size={20} />
+                  <div className={cn("w-9 h-9 flex items-center justify-center border-2 border-transparent rounded-lg", placeholders.wrapper)}>
+                    <User size={20} className={placeholders.iconColor} />
                   </div>
                 )}
               </Link>
@@ -785,8 +786,8 @@ export const Navbar = () => {
                       className="object-cover border-2 border-neutral-100 dark:border-neutral-800 rounded-lg filter grayscale opacity-80"
                     />
                   ) : (
-                    <div className="w-9 h-9 flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
-                      <User size={20} />
+                    <div className={cn("w-9 h-9 flex items-center justify-center border-2 border-transparent rounded-lg", placeholders.wrapper)}>
+                      <User size={20} className={placeholders.iconColor} />
                     </div>
                   )}
                 </Link>
