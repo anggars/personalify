@@ -21,10 +21,12 @@ else:
     db = client["personalify_db"] 
 
 def save_user_sync(spotify_id, time_range, data):
-
-    collection = db[spotify_id]
+    collection = db["user_syncs"]
     collection.update_one(
-        {'time_range': time_range},
+        {
+            'spotify_id': spotify_id,
+            'time_range': time_range
+        },
         {
             '$set': {
                 'data': data,
@@ -35,16 +37,17 @@ def save_user_sync(spotify_id, time_range, data):
     )
 
 def get_user_history(spotify_id):
-    collection = db[spotify_id]
-    history = collection.find({}, {'_id': 0}).sort('last_synced', -1)
+    collection = db["user_syncs"]
+    history = collection.find({'spotify_id': spotify_id}, {'_id': 0}).sort('last_synced', -1)
     return list(history)
 
 def get_user_sync(spotify_id, time_range):
-    collection = db[spotify_id]
-    return collection.find_one({"time_range": time_range}, {"_id": 0})
+    collection = db["user_syncs"]
+    return collection.find_one({"spotify_id": spotify_id, "time_range": time_range}, {"_id": 0})
 
 def get_all_synced_user_ids():
-    return db.list_collection_names()
+    collection = db["user_syncs"]
+    return collection.distinct("spotify_id")
 
 def get_active_provider():
     try:
