@@ -196,22 +196,19 @@ async def logout(request: Request, profile_id: Optional[str] = Query(None)):
             print(f"LOGOUT: Hard cleared {cleared} cache keys for Last.fm user '{lastfm_id}'")
     except Exception as e:
         print(f"LOGOUT WARNING: Cache clear failed: {e}") 
-        
-    # Get base URL for absolute redirect
-    original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
-    scheme = "https" if "vercel.app" in original_host or proto == "https" else "http"
-    base_url = f"{scheme}://{original_host}"
 
-    response = RedirectResponse(url=f"{base_url}/?error=logged_out", status_code=303)
-    
-    # Delete all possible auth cookies
-    response.delete_cookie("spotify_id", path="/")
-    response.delete_cookie("access_token", path="/")
-    response.delete_cookie("lastfm_session", path="/")
-    response.delete_cookie("lastfm_username", path="/")
-    
-    return response
+    print(f"DEBUG LOGOUT: Creating redirect response to /")
+    try:
+        response = RedirectResponse(url="/?error=logged_out", status_code=303)
+        response.delete_cookie("spotify_id", path="/")
+        response.delete_cookie("access_token", path="/")
+        response.delete_cookie("lastfm_session", path="/")
+        response.delete_cookie("lastfm_username", path="/")
+        print("DEBUG LOGOUT: Response created and cookies set for deletion.")
+        return response
+    except Exception as e:
+        print(f"DEBUG LOGOUT CRITICAL: Failed to create RedirectResponse: {e}")
+        return JSONResponse(status_code=500, content={"error": "Logout failed", "detail": str(e)})
 
 class ClearCacheRequest(BaseModel):
     profile_id: str
