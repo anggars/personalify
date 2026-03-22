@@ -39,11 +39,21 @@ class RequestAccessModel(BaseModel):
 
 router = APIRouter()
 
-# Setup Jinja2 Templates (Safe fallback if directory missing)
+# Setup Jinja2 Templates (Safe fallback for Vercel read-only FS)
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
-if not os.path.exists(templates_dir):
-    os.makedirs(templates_dir, exist_ok=True)
-templates = Jinja2Templates(directory=templates_dir)
+# Only attempt to create if not on Vercel or if it's missing locally
+if not os.path.exists(templates_dir) and not os.getenv("VERCEL"):
+    try:
+        os.makedirs(templates_dir, exist_ok=True)
+    except Exception as e:
+        print(f"TEMPLATES DIR ERROR: Could not create {templates_dir} - {e}")
+
+if os.path.exists(templates_dir):
+    templates = Jinja2Templates(directory=templates_dir)
+else:
+    # Fallback to an empty mock or handle correctly in routes
+    templates = None
+    print("TEMPLATES DIR WARNING: Folder missing, templates disabled.")
 
 # Global cache for log deduplication
 _last_logged_track = {}
