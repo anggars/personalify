@@ -786,7 +786,8 @@ async def analyze_sentiment_background(
                 }
 
             # Force "Syncing" state to prevent "Unavailable" UI
-            cached_data['sentiment_report'] = "Syncing (11/20): Initializing..."
+            # We write to extended_sentiment_report so sentiment_report (Top 10) stays intact.
+            cached_data['extended_sentiment_report'] = "Syncing (11/20): Initializing..."
             cache_top_data("top", spotify_id, time_range, cached_data)
 
         if provider == "lastfm":
@@ -1052,7 +1053,13 @@ def get_dashboard_data(
                     data["sentiment_report"] = data["extended_sentiment_report"]
                     data["sentiment_scores"] = data.get("extended_sentiment_scores", [])
                 else:
+                    # If extended requested but no report/sync yet, we show this lock
                     data["sentiment_report"] = "Syncing (11/20): Digging deeper..."
+            else:
+                # If NOT extended, we strictly use the Top 10 report.
+                # If they just came from an extended sync, the worker might have
+                # updated sentiment_report? We'll fix that in the workers next.
+                pass
 
             return {
                 "user": data["user"],
@@ -1265,6 +1272,13 @@ def get_dashboard_data(
                 data["sentiment_scores"] = data.get("extended_sentiment_scores", [])
             else:
                 data["sentiment_report"] = "Syncing (11/20): Digging deeper..."
+        elif data and not extended:
+            # If standard mode requested, but the worker is currently a Top 20 worker
+            # which might be updating sentiment_report erroneously? 
+            # (We'll fix the worker to stop doing that, but this is a double-check)
+            if "extended_sentiment_report" in data and data["sentiment_report"] == data["extended_sentiment_report"]:
+                # This means they are identical, which shouldn't happen after our fix.
+                pass
 
         if not data:
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
