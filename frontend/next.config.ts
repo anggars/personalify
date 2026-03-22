@@ -19,10 +19,6 @@ const nextConfig: NextConfig = {
     console.log(
       `[NextConfig] Using BACKEND_URL for rewrites: ${BACKEND_URL || "SAME_DOMAIN"}`,
     );
-
-    // If in production and no API_URL provided, we rely on vercel.json or same-domain routing
-    // BUT we still need to return the list of rewrites. 
-    // If BACKEND_URL is "", the destination becomes "/api/:path*" which is an internal rewrite.
     
     return [
       // Resume hidden link
