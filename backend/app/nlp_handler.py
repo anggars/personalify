@@ -546,11 +546,11 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
                 print(f"NLP: Cache Hit for '{d_name}'.")
 
         if cached:
-            # Show ✓ for cached tracks so user sees progress for all 1-20
+            # Show progress for cached tracks so user sees progress for all 1-20
             if progress_callback:
                 short_n = t_name[:30] + "..." if len(t_name) > 33 else t_name
                 try:
-                    progress_callback(f"Syncing ({idx+1}/{num_tracks}): ✓ {short_n}")
+                    progress_callback(f"Syncing ({idx+1}/{num_tracks}): {short_n}")
                 except:
                     pass
             emo, mbti_r = cached[0], cached[1]
