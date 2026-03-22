@@ -1046,6 +1046,14 @@ def get_dashboard_data(
             sorted_genres = sorted(genre_count.items(), key=lambda x: x[1], reverse=True)
             genre_list = [{"name": name, "count": count} for name, count in sorted_genres]
 
+            # Protect UI polling from race condition during Easter Egg
+            if extended:
+                if "extended_sentiment_report" in data and data["extended_sentiment_report"]:
+                    data["sentiment_report"] = data["extended_sentiment_report"]
+                    data["sentiment_scores"] = data.get("extended_sentiment_scores", [])
+                else:
+                    data["sentiment_report"] = "Syncing (11/20): Digging deeper..."
+
             return {
                 "user": data["user"],
                 "image": data.get("image"),
@@ -1250,6 +1258,13 @@ def get_dashboard_data(
         # This code is now unreachable due to the 401 check above, but left for context:
         if not is_own_profile:
             pass
+
+        if data and extended:
+            if "extended_sentiment_report" in data and data["extended_sentiment_report"]:
+                data["sentiment_report"] = data["extended_sentiment_report"]
+                data["sentiment_scores"] = data.get("extended_sentiment_scores", [])
+            else:
+                data["sentiment_report"] = "Syncing (11/20): Digging deeper..."
 
         if not data:
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
