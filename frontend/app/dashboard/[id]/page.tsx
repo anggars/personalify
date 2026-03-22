@@ -88,8 +88,8 @@ const TIME_RANGE_LABELS: Record<string, string> = {
 };
 
 const PLACEHOLDER_VISUAL =
-  "bg-zinc-800 border border-zinc-700/50 shadow-sm";
-const PLACEHOLDER_ICON_COLOR = "text-zinc-300";
+  "bg-white/5 shadow-inner";
+const PLACEHOLDER_ICON_COLOR = "text-white/40";
 
 const TIME_RANGE_SUBTITLES: Record<string, string> = {
   short_term: "Here's your monthly recap",
@@ -389,7 +389,7 @@ export default function DashboardPage() {
     let pollInterval: NodeJS.Timeout | null = null;
     
     async function fetchData(isPolling = false) {
-      if (!isPolling) setLoading(true);
+      if (!isPolling && !showTop20) setLoading(true);
       try {
         const isFreshLogin = searchParams.get("sync") === "true" && !hasForceSynced.current;
         if (isFreshLogin && !isPolling) {
@@ -447,7 +447,7 @@ export default function DashboardPage() {
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [profileId, timeRange, router]);
+  }, [profileId, timeRange, router, showTop20]);
   
   // Reset dashboard states when time range changes to prevent state leakage
   useEffect(() => {
