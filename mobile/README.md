@@ -4,19 +4,10 @@ Flutter mobile app port of the Personalify Dashboard from Next.js web app.
 
 ## Features
 
-- **Spotify Authentication**: OAuth login using `flutter_web_auth_2`.
-- **Dashboard View**: Display top tracks, artists, and genres with premium
-  "Liquid Glass" styling.
-- **Smooth Marquee (Ping-Pong)**: Auto-scrolling text for long titles and names
-  in lists and headers.
-- **Native Glass Flow**: Interactive spotlights and backdrop blurs mapping to
-  the tech stack's aesthetic.
-- **Emotion & MBTI Analysis**: AI-generated music vibe summaries and **MBTI
-  personality insights** with shimmering, high-contrast charts.
-- **Token Auto-Refresh**: Seamless server-side token rotation for background
-  data fetching and session persistence.
-- **Time Ranges**: Switch between short term, mid term, and long term listening
-  data.
+- **Dual-Provider Authentication**: Support for both Spotify OAuth2 and Last.fm Public Sync.
+- **Dashboard View**: Display top tracks, artists, and genres with premium "Liquid Glass" styling.
+- **AI Analysis**: Emotion & MBTI insights with shimmering charts and pulse animations.
+- **Sync Engine**: Shares the same robust Dual-Engine backend (Spotify + Last.fm) for consistent data.
 - **Secure Storage**: Tokens stored with `flutter_secure_storage`.
 
 ## Architecture

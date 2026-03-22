@@ -6,33 +6,21 @@ AI-driven analysis.
 
 ## Core Responsibilities
 
-- **Spotify OAuth2**: Securely manages login flows and token rotation for both
-  Web and Mobile.
-- **Data Pipeline**: Synchronizes top artists, tracks, and genres into a
-  multi-layer storage system (PostgreSQL + MongoDB).
-- **AI Intelligence**: Performs deep emotion **and MBTI** analysis on lyrics and
-  track titles using a hybrid NLP approach.
-- **Real-Time Tracking**: Provides low-latency endpoints for "Currently Playing"
-  status and progress.
+- **Dual-Provider Sync**: Manages data pipelines for both **Spotify** (OAuth2) and **Last.fm** (Public Username).
+- **QStash Job Queue**: Handles asynchronous background tasks for data enhancement and AI analysis on Vercel.
+- **AI Intelligence**: Performs deep emotion and MBTI analysis on tracks using a hybrid NLP approach (Hugging Face).
+- **Metadata Scraper**: Fallback scrapers for Last.fm tracks/artists when Spotify metadata is unavailable.
 
 ## System Architecture & Handlers
 
 The backend follows a modular architecture where each handler manages a specific
 domain:
 
-- **`spotify_handler.py`**: The heart of Spotify integration. Handles recursive
-  syncing, token refreshment, and raw data parsing.
-- **`nlp_handler.py`**: A sophisticated analysis engine. Includes **Google
-  Translation**, **Custom Slang Dictionary**, and **MBTI Personality Detection**
-  to ensure high-accuracy sentiment analysis across languages.
-- **`genius_lyrics.py`**: Scrapes and parses lyrics from the Genius API with
-  built-in caching.
-- **`db_handler.py`**: Manages the relational schema in **PostgreSQL** (Users,
-  Tracks, Artists).
-- **`mongo_handler.py`**: Logs detailed synchronization history for auditing and
-  analysis.
-- **`cache_handler.py`**: High-speed caching layer using **Redis/Upstash** to
-  minimize API latency.
+- **`lastfm_handler.py`**: The bridge for Last.fm integration. Handles public profile scraping, track/artist image resolution, and metadata enhancement.
+- **`qstash_handler.py`**: Manages communication with Upstash QStash for reliable serverless background job triggering.
+- **`spotify_handler.py`**: Handles Spotify OAuth2, recursive syncing, and metadata enrichment for both providers.
+- **`nlp_handler.py`**: The AI core. Includes **MBTI Personality Detection** and emotion analysis via custom models.
+- **`cache_handler.py`**: High-speed caching using **Redis/Upstash** for dashboard and image data.
 
 ## API Endpoints
 
@@ -52,8 +40,9 @@ domain:
 | Method | Endpoint                       | Description                                                 |
 | :----- | :----------------------------- | :---------------------------------------------------------- |
 | `GET`  | `/sync/top-data`               | Synchronizes Top Spotify data into the persistent database. |
-| `POST` | `/analyze-emotions-background` | Queues background emotion analysis for all top tracks.      |
-| `POST` | `/analyze-lyrics`              | Immediate NLP analysis for raw text/lyrics input.           |
+| `GET`  | `/sync/lastfm-user`            | Fast-sync user data from Last.fm Username.                  |
+| `POST` | `/api/tasks/lastfm-enhancement`| **Worker**. Background QStash task for Last.fm enhancement. |
+| `POST` | `/analyze-emotions-background` | Queues background emotion analysis for tracks.              |
 
 ### Dashboard & Player (Next.js / Mobile)
 

@@ -32,17 +32,9 @@ frontend/
 
 ## Key Features
 
-- **Real-Time Playback Card**: Located on the **Profile page**, it tracks your
-  Spotify session with pixel-perfect symmetry, high-fidelity metadata rendering
-  (ping-pong marquee), and 1s local ticker progress accuracy.
-- **Tech Stack Marquee & Hover**: Advanced interactive elements on the home
-  page. Use the `TechHover` component to explore the stack details with smooth
-  animations.
-- **High-Fidelity Dashboard**: Comprehensive visualization of top spotify data
-  using adaptive dark mode and liquid glass effects.
-- **Lyrics Sentiment & MBTI Analyzer**: Connects to the Genius API to analyze
-  the emotional landscape and **MBTI personality traits** of your favorite
-  tracks using NLP models.
+- **Dual-Engine Dashboard**: High-fidelity visualization for both **Spotify** (OAuth2) and **Last.fm** (Public Username) data providers.
+- **Adaptive Loading UI**: Informative progress tracking ("Analyzing 1/10...") with smooth, minimalist animations.
+- **Lyrics Sentiment & MBTI Analyzer**: Connects to the Genius API to analyze the emotional landscape and **MBTI traits** using AI.
 - **Universal Design Language**: Consistent premium aesthetics across Web and
   Mobile, achieved through standardized spacing and typography.
 - **Legal & About Sections**: Dedicated pages for Privacy Policy, Terms of

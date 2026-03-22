@@ -9,15 +9,11 @@ link: **[https://personalify.vercel.app](https://personalify.vercel.app)**
 
 ## 1. Introduction
 
-Personalify is a personal Spotify analytics dashboard built to display user
-music preferences based on data from the Spotify API. This project not only
-displays data but also analyzes the **emotions and MBTI personality** of
-songs using Natural Language Processing (NLP) from Hugging Face. Additionally,
-users can **search for lyrics from any artist or song** via the Genius API and
-analyze the emotional tone and personality traits of those lyrics. The project
-is designed with a distributed system approach, leveraging the integration of
-various databases (PostgreSQL, MongoDB, Redis) as well as features like FDW and
-caching.
+Personalify is a high-fidelity personal music analytics platform, now powered by a **Dual-Engine architecture (Spotify + Last.fm)**. 
+
+Initially built for the Spotify API, the project has evolved to integrate **Last.fm** as a primary data source. This shift was a response to the increasing restrictions and "developer greed" from the Spotify platform (strict rate limits, user-not-found errors, and rigid OAuth requirements). 
+
+Personalify not only displays data but also performs deep **AI-driven Emotion and MBTI personality analysis** on your tracks and lyrics using custom-retrained NLP models from Hugging Face.
 
 ## Mobile App (Flutter)
 
@@ -38,14 +34,14 @@ Auto-Refresh** for seamless session management.
 
 | Use Case                   | Description                                                                                 |
 | -------------------------- | ------------------------------------------------------------------------------------------- |
-| Spotify Login/Auth         | Users log in using Spotify OAuth2 to authorize access to their music data.                  |
-| Sync Top Data              | Data such as top artists, top tracks, and genres are synchronized and stored in database.   |
-| Emotion & MBTI Analysis (NLP) | Analyzes song titles and lyrics to determine dominant emotion and MBTI personality traits. |
-| Genius Lyrics Search       | Search for any song lyrics from Genius and analyze the emotional content.                   |
-| Caching & History          | Redis is used for fast caching, MongoDB for storing user synchronization history.           |
-| Dashboard                  | Responsive frontend displays visualizations based on user device (desktop/mobile).          |
-| Legal & Info               | Dedicated pages for **Terms of Service**, **Privacy Policy**, and **About** (Project Info). |
-| Distributed Query          | FDW enables cross-PostgreSQL queries and external sources (distribution simulation).        |
+| Social Login & Providers   | Support for Spotify OAuth2 and Last.fm Username-based sync.                                 |
+| Dual-Engine Sync           | Fetches data from Spotify OR Last.fm (with Spotify enhancement/scrapers for art/popularity).|
+| Emotion & MBTI Analysis (NLP) | AI analysis of song titles and lyrics via customretrained Hugging Face models.           |
+| Genius Lyrics Search       | Search for any song lyrics from Genius and analyze the emotional tone.                      |
+| Async Processing (QStash)  | Background tasks for heavy NLP analysis and data enhancement on Vercel.                     |
+| Caching & History          | Upstash Redis for low-latency caching, MongoDB for synchronization history logs.            |
+| Dashboard                  | Premium "Liquid Glass" UI for Web and native experience for Mobile.                         |
+| Distributed Query          | PostgreSQL FDW for cross-node query simulation in distributed environments.                 |
 
 ## 3. System Architecture
 
@@ -56,67 +52,62 @@ PostgreSQL, Redis, MongoDB, and FDW).
 
 ```mermaid
 flowchart TD
-    %% Compute Layer (Diamond Pillars)
+    %% Compute Layer
     Vercel("Vercel (Platform)")
-    NextJS("Next.js (Web)")
-    Flutter("Flutter (Mobile)")
-    FastAPI("FastAPI (Backend)")
+    NextJS("Next.js (Web Frontend)")
+    Flutter("Flutter (Mobile App)")
+    FastAPI("FastAPI (Core Backend)")
 
-    %% Symmetrical Flow
     Vercel --> NextJS
     Vercel --> Flutter
     NextJS <--> FastAPI
     Flutter <--> FastAPI
     
-    %% APIs (Spotify Green Stroke)
-    Spotify("Spotify API")
-    HF("Hugging Face (NLP)")
-    Genius("Genius API")
-    
-    %% Storage (Deep Blue Stroke)
-    Supabase("Supabase (PostgreSQL)")
-    Upstash("Upstash (Redis)")
-    MongoDB("MongoDB Atlas")
-    FDW("PostgreSQL FDW")
+    %% API Engines (Dual Engine)
+    Spotify("Spotify API (Auth & Metadata)")
+    LastFM("Last.fm API (User Data)")
+    QStash("Upstash QStash (Job Queue)")
+    HF("Hugging Face (AI Analysis)")
+    Genius("Genius API (Lyrics Scraper)")
 
+    %% Dual Flow
     FastAPI --> Spotify
+    FastAPI --> LastFM
+    FastAPI --> QStash
+    QStash -.-> FastAPI
     FastAPI --> HF
     FastAPI --> Genius
     
+    %% Storage Layer
+    Supabase("Supabase (PostgreSQL)")
+    Upstash("Upstash (Redis Cache)")
+    MongoDB("MongoDB (Sync Logs)")
+    FDW("PostgreSQL FDW")
+
     FastAPI --> Supabase
     FastAPI --> Upstash
     FastAPI --> MongoDB
-    
     Supabase --> FDW
 
-    %% Styling - Minimalist Desaturated Palette
+    %% Styling 
     classDef vrc fill:#121212,stroke:#888,stroke-width:1px,color:#fff
     classDef nxt fill:#121212,stroke:#888,stroke-width:1px,color:#fff
     classDef flt fill:#121212,stroke:#4B6A88,stroke-width:1px,color:#fff
-    classDef fas fill:#121212,stroke:#4B8880,stroke-width:1px,color:#fff
+    classDef fas fill:#121212,stroke:#4B8880,stroke-width:2px,color:#fff
     
-    classDef spt fill:#121212,stroke:#4B885C,stroke-width:1px,color:#fff
-    classDef hf  fill:#121212,stroke:#887D4B,stroke-width:1px,color:#fff
-    classDef gen fill:#121212,stroke:#88884B,stroke-width:1px,color:#fff
-    
-    classDef sub fill:#121212,stroke:#5C8875,stroke-width:1px,color:#fff
-    classDef ups fill:#121212,stroke:#884B4B,stroke-width:1px,color:#fff
-    classDef mng fill:#121212,stroke:#5C885C,stroke-width:1px,color:#fff
+    classDef engine fill:#121212,stroke:#4B885C,stroke-width:1.5px,color:#fff
+    classDef job fill:#121212,stroke:#884B4B,stroke-width:1px,stroke-dasharray: 5 5,color:#fff
+    classDef storage fill:#121212,stroke:#5C8875,stroke-width:1.5px,color:#fff
 
     class Vercel vrc
     class NextJS nxt
     class Flutter flt
     class FastAPI fas
     
-    class Spotify spt
-    class HF hf
-    class Genius gen
-    
-    class Supabase,FDW sub
-    class Upstash ups
-    class MongoDB mng
-    
-    %% Global Graph Style - High Visibility Links
+    class Spotify,LastFM,HF,Genius engine
+    class QStash job
+    class Supabase,Upstash,MongoDB,FDW storage
+
     linkStyle default stroke:#fff,stroke-width:1.5px,opacity:0.8
 ```
 
@@ -126,19 +117,15 @@ flowchart TD
   the FastAPI backend in a serverless environment and serves the frontend assets
   globally.
 
-- **Spotify API:** The primary external data source. It handles user
-  authentication (OAuth2) and provides the core music data (top artists, tracks,
-  genres) for the application.
-
+- **Spotify API:** Secondary data source for metadata enhancement (images, popularity). Handles legal OAuth2 authentication for the Spotify integration engine.
+- **Last.fm API:** The primary data engine for user history. Provides top artists and tracks without requiring complex OAuth for public profiles, bypassing many Spotify developer restrictions.
+- **Upstash QStash:** Serverless message queue used to trigger background enhancement and AI analysis tasks asynchronously, ensuring the UI remains fast while heavy NLP processing happens in the background.
 - **Frontend (Next.js):**\
   Modern React-based framework providing a fast, interactive UI with Tailwind
   CSS for styling and Framer Motion for animations. It communicates with the
-  backend via REST API.
-
+  backend via REST API and handles provider-specific flows.
 - **Mobile App (Flutter):** Cross-platform mobile application providing a native
-  experience for Spotify analytics and lyrics. It shares the same FastAPI
-  backend and features premium UI elements like interactive spotlights and
-  marquee text.
+  experience. Shares the same FastAPI backend and supports both Spotify and Last.fm sync flows.
 
 - **FastAPI (Backend API):**\
   Main server that handles Spotify authentication (OAuth2), data
@@ -176,19 +163,14 @@ flowchart TD
 | ----------------- | --------------------- | ------------------------------------------------------------------------------------ |
 | **Mobile App**    | Flutter (Dart)        | Cross-platform mobile development (Android/iOS) with native performance.             |
 | **Frontend**      | Next.js (React)       | Server-side rendering (SSR), fast performance, modern ecosystem with Tailwind CSS.   |
-| **UI Library**    | shadcn/ui             | Reusable components built with Radix UI and Tailwind CSS.                            |
-| **Styling**       | Tailwind CSS          | Utility-first CSS for rapid and consistent UI development.                           |
-| **Animation**     | Framer Motion         | Powerful library for complex, fluid animations (marquee, transitions).               |
-| **Language**      | TypeScript / Python   | TS for type-safe frontend, Python for robust backend logic.                          |
-| **Backend API**   | FastAPI               | Modern Python framework, supports async, fast for building REST APIs.                |
-| **Main Database** | PostgreSQL (Supabase) | Open source Firebase alternative with real-time PostgreSQL database.                 |
-| **Cache**         | Redis (Upstash)       | Serverless Redis for extremely fast, low-latency caching at the edge.                |
-| **Sync Storage**  | MongoDB (Atlas)       | Flexible document store for logging semi-structured sync history.                    |
-| **Auth**          | Spotify OAuth2        | Official standard protocol from Spotify, secure for login and user data access.      |
-| **Lyrics**        | Genius API            | Genius provides lyrics data; custom scraping logic handles retrieval.                |
-| **NLP Model**     | Hugging Face          | Custom XLM-RoBERTa model retrained on a specialized dataset for Emotion and MBTI Personality.   |
-| **FDW**           | PostgreSQL FDW        | Used for simulating queries between PostgreSQL instances (distributed query).        |
-| **Deployment**    | Vercel                | Zero-config deployment for Next.js frontend and Python backend serverless functions. |
+| **Backend API**   | FastAPI               | Modern Python framework, supports async, ideal for orchestration.                    |
+| **Job Queue**     | Upstash QStash        | HTTP-based serverless queueing for background NLP tasks on Vercel.                   |
+| **Main Database** | PostgreSQL (Supabase) | Relational store for user metadata, artists, and tracks.                             |
+| **Cache**         | Redis (Upstash)       | Low-latency caching for dashboard results and session data.                          |
+| **Sync Storage**  | MongoDB (Atlas)       | Flexible document store for logging synchronization history.                         |
+| **Music Engines** | Spotify & Last.fm     | Dual-provider support for maximum reliability and data richness.                     |
+| **AI Intelligence**| Hugging Face          | Custom XLM-RoBERTa models for Emotion and MBTI analysis.                             |
+| **Deployment**    | Vercel                | Serverless deployment for both Web and Backend (Python functions).                   |
 
 ---
 
