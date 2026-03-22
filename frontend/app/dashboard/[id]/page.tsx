@@ -1504,7 +1504,7 @@ export default function DashboardPage() {
           {isAnalyzing ? (
             <div className="flex flex-col items-center w-full max-w-md mx-auto space-y-2">
               <span className="progress-text animate-pulse text-neutral-500 dark:text-[#B3B3B3] text-sm md:text-base">
-                {sentimentProgress?.trackName ? `Analyzing: ${sentimentProgress.trackName}${animatedDots}` : emotionText.replace(/\.\.\.$/, "") + animatedDots}
+                {sentimentProgress?.trackName ? `Analyzing (${sentimentProgress.current}/${sentimentProgress.total}): ${sentimentProgress.trackName}${animatedDots}` : emotionText.replace(/\.\.\.$/, "") + animatedDots}
               </span>
             </div>
           ) : (
