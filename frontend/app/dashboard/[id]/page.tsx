@@ -88,8 +88,8 @@ const TIME_RANGE_LABELS: Record<string, string> = {
 };
 
 const PLACEHOLDER_VISUAL =
-  "bg-gradient-to-br from-[#111213] via-[#1c1e22] to-[#08080a] border border-[#1DB954]/20 shadow-[0_16px_30px_rgba(13,204,121,0.25)]";
-const PLACEHOLDER_ICON_COLOR = "text-[#C4FFF4]";
+  "bg-zinc-800 border border-zinc-700/50 shadow-sm";
+const PLACEHOLDER_ICON_COLOR = "text-zinc-300";
 
 const TIME_RANGE_SUBTITLES: Record<string, string> = {
   short_term: "Here's your monthly recap",
@@ -447,7 +447,7 @@ export default function DashboardPage() {
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [profileId, timeRange, router, showTop20]);
+  }, [profileId, timeRange, router]);
   
   // Reset dashboard states when time range changes to prevent state leakage
   useEffect(() => {
@@ -1652,12 +1652,12 @@ export default function DashboardPage() {
                     <img
                       src={artist.image}
                       alt={artist.name}
-                      className="cursor-pointer rounded-lg object-cover w-[60px] h-[60px]"
+                      className="cursor-pointer rounded-lg object-cover w-[60px] h-[60px] shrink-0"
                       onClick={() => openArtistProfile(artist.id)}
                     />
                     ) : (
                       <div
-                        className={`cursor-pointer rounded-lg flex items-center justify-center w-[60px] h-[60px] shrink-0 shadow-inner ${PLACEHOLDER_VISUAL}`}
+                        className={`cursor-pointer rounded-lg flex items-center justify-center w-[60px] h-[60px] shrink-0 ${PLACEHOLDER_VISUAL}`}
                         onClick={() => openArtistProfile(artist.id)}
                       >
                         <Users
