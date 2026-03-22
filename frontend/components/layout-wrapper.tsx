@@ -6,7 +6,6 @@ import { Footer } from "@/components/footer";
 
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // Hide Navbar and Footer on admin routes
   const isAdmin = pathname?.startsWith("/admin");
 
   return (
