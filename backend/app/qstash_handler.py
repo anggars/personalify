@@ -6,7 +6,7 @@ def get_qstash_client():
     if not token:
         print("CRITICAL: QSTASH_TOKEN is MISSING in Env Variables!")
     else:
-        print(f"ℹ️ Token Loaded: {token[:5]}...xxx (Length: {len(token)})")
+        print(f"Token Loaded: {token[:5]}...xxx (Length: {len(token)})")
     return QStash(token=token)
 
 def get_qstash_receiver():
