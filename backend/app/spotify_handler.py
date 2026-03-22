@@ -54,9 +54,11 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
         if extended:
             cached_result['extended_sentiment_report'] = sentiment_report
             cached_result['extended_sentiment_scores'] = sentiment_scores
+            cached_result['extended_sentiment_count'] = 20
         else:
             cached_result['sentiment_report'] = sentiment_report
             cached_result['sentiment_scores'] = sentiment_scores
+            cached_result['sentiment_count'] = 10
         
         # Save to persistent extended cache for Easter Egg instant-reload
         if extended:

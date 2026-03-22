@@ -1230,9 +1230,16 @@ def get_dashboard_data(
             # frontend-side will handle manual refresh if needed.
             if data:
                 # Check if analysis is indeed done, or if it's still loading
-                sentiment_report = data.get("sentiment_report", "")
-                loading_keywords = ["getting ready", "being analyzed", "Syncing", "Initializing", "Analyzing lyrics", "enhancement in progress"]
-                is_loading = any(kw in sentiment_report for kw in loading_keywords)
+                # We check the CORRECT report and the CORRECT track count for the current mode.
+                target_report = data.get("extended_sentiment_report" if extended else "sentiment_report", "")
+                target_count = data.get("extended_sentiment_count" if extended else "sentiment_count", 0)
+                expected_count = 20 if extended else 10
+                
+                loading_keywords = ["getting ready", "being analyzed", "Syncing", "Initializing", "Analyzing lyrics", "enhancement in progress", "Digging deeper"]
+                is_status_loading = any(kw in target_report for kw in loading_keywords)
+                
+                # It's loading if the status says so, OR if the report is missing, OR if the count is wrong
+                is_loading = is_status_loading or not target_report or target_count != expected_count
                 
                 if is_loading:
                     print(f"WEB DASHBOARD: Vibe still loading for {profile_id}. Triggering background refresh.")
