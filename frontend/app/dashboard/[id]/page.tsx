@@ -1502,20 +1502,10 @@ export default function DashboardPage() {
         </p>
         <div className="emotion-recap mt-4 flex flex-col items-center justify-center">
           {isAnalyzing ? (
-            <div className="flex flex-col items-center w-full max-w-md mx-auto space-y-3">
-              <span className="progress-text animate-pulse text-neutral-500 dark:text-[#B3B3B3]">
-                {sentimentProgress?.trackName ? `Sedang menganalisis: ${sentimentProgress.trackName}${animatedDots}` : emotionText.replace(/\.\.\.$/, "") + animatedDots}
+            <div className="flex flex-col items-center w-full max-w-md mx-auto space-y-2">
+              <span className="progress-text animate-pulse text-neutral-500 dark:text-[#B3B3B3] text-sm md:text-base">
+                {sentimentProgress?.trackName ? `Analyzing: ${sentimentProgress.trackName}${animatedDots}` : emotionText.replace(/\.\.\.$/, "") + animatedDots}
               </span>
-              {sentimentProgress && sentimentProgress.total > 0 && (
-                <div className="w-full bg-neutral-200 dark:bg-neutral-800 rounded-full h-2.5 overflow-hidden">
-                  <motion.div 
-                    className="bg-[#1DB954] h-2.5 rounded-full" 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, (sentimentProgress.current / sentimentProgress.total) * 100)}%` }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                  />
-                </div>
-              )}
             </div>
           ) : (
             <div className="flex flex-col items-center space-y-3">

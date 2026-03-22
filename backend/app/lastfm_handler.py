@@ -346,7 +346,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         if 'result' in locals() and result:
             result["error_code"] = "enhancement_failed"
             result["error_detail"] = err_msg
-            result["sentiment_report"] = f"Gagal Sinkronisasi: {err_msg[:50]}..."
+            result["sentiment_report"] = f"Sync Failed: {err_msg[:50]}..."
             cache_top_data("top", user_id, time_range, result, ttl=300)
 
 
