@@ -339,7 +339,10 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
              print(f"LASTFM BG SENTIMENT: {msg}")
              # Incremental save during sentiment to keep UI updated
              if "Syncing" in msg or "Analyzing" in msg:
-                 result["sentiment_report"] = msg
+                 if extended:
+                     result["extended_sentiment_report"] = msg
+                 else:
+                     result["sentiment_report"] = msg
                  cache_top_data("top", user_id, time_range, result, ttl=300)
         
         # We pass ra["tracks"] which are the enhanced ones
@@ -349,8 +352,14 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             extended=extended
         )
         
-        result["sentiment_report"] = sentiment_report
-        result["sentiment_scores"] = sentiment_scores
+        if extended:
+            result["extended_sentiment_report"] = sentiment_report
+            result["extended_sentiment_scores"] = sentiment_scores
+            result["extended_sentiment_count"] = 20
+        else:
+            result["sentiment_report"] = sentiment_report
+            result["sentiment_scores"] = sentiment_scores
+            result["sentiment_count"] = 10
         
         # FINAL SAVE
         cache_top_data("top", user_id, time_range, result, ttl=3600)
@@ -413,11 +422,6 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
             result['sentiment_scores'] = sentiment_scores
             result['sentiment_count'] = 10
         
-        # Save to persistent extended cache for Easter Egg instant-reload
-        if extended:
-            result['extended_sentiment_report'] = sentiment_report
-            result['extended_sentiment_scores'] = sentiment_scores
-
         # Final Save
         cache_top_data("top", user_id, time_range, result)
         save_user_sync(user_id, time_range, result)

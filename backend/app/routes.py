@@ -776,13 +776,12 @@ async def analyze_sentiment_background(
             # INSTANT RELOAD: If we already have a 20-track result, use it immediately
             if extended and cached_data.get('extended_sentiment_report'):
                 print(f"EASTER EGG: Instant reload from cache for {spotify_id}")
-                cached_data['sentiment_report'] = cached_data['extended_sentiment_report']
-                cached_data['sentiment_scores'] = cached_data.get('extended_sentiment_scores', [])
-                cache_top_data("top", spotify_id, time_range, cached_data)
+                # We return it in the response, but we DO NOT overwrite the Top 10 field in the cache.
                 return {
                     "status": "Analysis loaded from cache", 
                     "extended": True,
-                    "sentiment_report": cached_data['extended_sentiment_report']
+                    "sentiment_report": cached_data['extended_sentiment_report'],
+                    "sentiment_scores": cached_data.get('extended_sentiment_scores', [])
                 }
 
             # Force "Syncing" state to prevent "Unavailable" UI
