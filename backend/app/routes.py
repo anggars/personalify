@@ -58,6 +58,15 @@ else:
 # Global cache for log deduplication
 _last_logged_track = {}
 
+def safe_get_image(images_list, default=None):
+    """Safely extract image URL from Spotify images list."""
+    if not images_list or not isinstance(images_list, list) or len(images_list) == 0:
+        return default
+    first_image = images_list[0]
+    if not isinstance(first_image, dict):
+        return default
+    return first_image.get("url", default)
+
 def get_redirect_uri(request: Request):
     host = str(request.headers.get("x-forwarded-host", request.headers.get("host", "")))
     
@@ -369,7 +378,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         user_profile = user_res.json()
         spotify_id = user_profile["id"]
         display_name = user_profile.get("display_name", "Unknown")
-        user_image = user_profile["images"][0]["url"] if user_profile.get("images") else None
+        user_image = safe_get_image(user_profile.get("images"))
         
         save_user(spotify_id, display_name)
         
@@ -400,7 +409,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                     artist["id"],
                     artist["name"],
                     artist["popularity"],
-                    artist["images"][0]["url"] if artist.get("images") else None
+                    safe_get_image(artist.get("images"))
                 ))
 
             tracks_to_save = []
@@ -411,7 +420,8 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                     track["id"],
                     track["name"],
                     track["popularity"],
-                    track.get("preview_url")
+                    track.get("preview_url"),
+                    safe_get_image(track.get("album", {}).get("images"), "")
                 ))
 
             save_artists_batch(artists_to_save)
@@ -424,10 +434,10 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
             for artist in artists:
                  result["artists"].append({
                     "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
-                    "popularity": artist["popularity"], "image": artist["images"][0]["url"] if artist.get("images") else ""
+                    "popularity": artist["popularity"], "image": safe_get_image(artist.get("images"), "")
                 })
             for track in tracks:
-                album_image_url = track["album"]["images"][0]["url"] if track.get("album", {}).get("images") else ""
+                album_image_url = safe_get_image(track.get("album", {}).get("images"), "")
                 result["tracks"].append({
                     "id": track["id"], 
                     "name": track["name"],
@@ -452,6 +462,7 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
         error_trace = traceback.format_exc()
         print(f"AUTH EXCEPTION in callback: {e}")
         print(f"TRACEBACK: {error_trace}")
+        log_system("ERROR", f"Auth Callback Failed: {e} | {error_trace[:200]}...", "SPOTIFY")
         return error_redirect("server_error")
     
     # Success Redirect
