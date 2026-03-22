@@ -509,6 +509,10 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
     from app.genius_lyrics import search_track_lyrics, fetch_lrclib_lyrics
     from app.cache_handler import get_analysis_cache, set_analysis_cache
 
+    log_output = "\n" + "="*50 + "\n"
+    log_output += " NLP SENTIMENT ANALYSIS REPORT\n"
+    log_output += "="*50 + "\n\n"
+
     all_emotions_accum = {}
     all_mbti_accum = {}
     successful_analyses = 0
@@ -550,6 +554,11 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
                 except:
                     pass
             emo, mbti_r = cached[0], cached[1]
+            
+            log_output += f"--- CACHE HIT FOR: {d_name} ---\n"
+            log_output += f"Cached Track Scores -> Emotions: {emo} | MBTI: {mbti_r}\n"
+            log_output += "----------------------------------\n\n"
+            
             if emo:
                 for e in emo:
                     all_emotions_accum[e["label"]] = all_emotions_accum.get(e["label"], 0) + e["score"]
@@ -594,13 +603,16 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
 
         # CRITICAL: If no lyrics found, SKIP this track entirely (don't fall back to title)
         if not lyrics:
-            print(f"NLP: No lyrics for '{d_name}' — skipping.")
+            log_output += f"--- SKIPPED: {d_name} (No lyrics found) ---\n\n"
             continue
 
         txt = prepare_text_for_analysis(lyrics)
         if not txt:
-            print(f"NLP: Lyrics couldn't be prepared for '{d_name}' — skipping.")
+            log_output += f"--- SKIPPED: {d_name} (Lyrics preparation failed) ---\n\n"
             continue
+            
+        log_output += f"--- STARTING ANALYSIS FOR: {d_name} ---\n"
+        log_output += f"LYRICS USED IN CALCULATION:\n{txt}\n----------------------------------\n"
 
         try:
             emo, mbti_r = get_emotion_from_text(txt)
@@ -608,6 +620,9 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
                 with _cache_lock:
                     _analysis_cache[d_name] = (emo, mbti_r)
                 set_analysis_cache(d_name, [emo, mbti_r])
+                
+                log_output += f"ANALYSIS SUCCESS FOR '{d_name}'.\n"
+                log_output += f"Fresh Track Scores -> Emotions: {emo} | MBTI: {mbti_r}\n\n"
 
                 for e in emo:
                     all_emotions_accum[e["label"]] = all_emotions_accum.get(e["label"], 0) + e["score"]
@@ -615,25 +630,41 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
                     for m in mbti_r:
                         all_mbti_accum[m["label"]] = all_mbti_accum.get(m["label"], 0) + m["score"]
                 successful_analyses += 1
-                print(f"NLP: Analyzed '{d_name}' → top emotion: {emo[0]['label'] if emo else 'none'}")
+                # log_output += f"Analyzed '{d_name}' → top emotion: {emo[0]['label'] if emo else 'none'}\n"
         except Exception as e:
-            print(f"NLP: Error analyzing '{d_name}': {e}")
+            log_output += f"--- ERROR ANALYZING '{d_name}': {e} ---\n\n"
             continue
 
     if successful_analyses == 0:
+        log_output += "NO CLEAR VIBE DETECTED. 0 SUCCESSFUL ANALYSES.\n"
+        log_output += "="*50 + "\n"
+        print(log_output)
         return "No clear vibe detected.", []
+
+    log_output += f"=== AVERAGING COMPLETION ===\n"
+    log_output += f"Total successfully analyzed tracks: {successful_analyses}\n"
+    log_output += f"Accumulated Emotion Scores: {all_emotions_accum}\n"
+    log_output += f"Accumulated MBTI Scores: {all_mbti_accum}\n"
 
     # --- AVERAGING ---
     avg_emotions = []
     for label, total_score in all_emotions_accum.items():
-        avg_emotions.append({"label": label, "score": total_score / successful_analyses})
+        avg = total_score / successful_analyses
+        avg_emotions.append({"label": label, "score": avg})
     avg_emotions.sort(key=lambda x: x["score"], reverse=True)
 
     avg_mbti = []
     if all_mbti_accum:
         for label, total_score in all_mbti_accum.items():
-            avg_mbti.append({"label": label, "score": total_score / successful_analyses})
+            avg = total_score / successful_analyses
+            avg_mbti.append({"label": label, "score": avg})
         avg_mbti.sort(key=lambda x: x["score"], reverse=True)
+
+    log_output += f"Final Averaged Emotions -> {avg_emotions}\n"
+    log_output += f"Final Averaged MBTI -> {avg_mbti}\n"
+    log_output += "="*50 + "\n"
+
+    print(log_output)
 
     all_emotions_accum = avg_emotions
     all_mbti_accum = avg_mbti
