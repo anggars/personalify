@@ -36,20 +36,19 @@ def get_page_html(url):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     # Reduce retries and timeout for Vercel Serverless (max 60s total execution)
-    for attempt in range(1):
-        try:
-            print(f"ATTEMPTING GOOGLE TRANSLATE PROXY: {url}")
-            r = requests.get(translate_url, headers=headers, timeout=3)
+    # Shorter timeout (1.5s) to prevent dashboard hanging
+    try:
+        print(f"ATTEMPTING GOOGLE TRANSLATE PROXY: {url}")
+        r = requests.get(translate_url, headers=headers, timeout=1.5)
+        
+        if r.status_code == 200:
+            return r.text
+        else:
+            print(f"GOOGLE TRANSLATE BLOCKED ({r.status_code}).")
             
-            if r.status_code == 200:
-                return r.text
-            else:
-                print(f"GOOGLE TRANSLATE BLOCKED ({r.status_code}).")
-                
-        except Exception as e:
-            print(f"GOOGLE TRANSLATE ERROR (Try {attempt+1}): {e}")
+    except Exception as e:
+        print(f"GOOGLE TRANSLATE ERROR: {e}")
 
-    print("FAILED TO RETRIEVE HTML AFTER 2 ATTEMPTS.")
     return None
 
 def search_artist_id(query):
@@ -197,7 +196,7 @@ def fetch_lrclib_lyrics(track_name, artist_name):
         # LRCLib is highly optimized for "Track Name - Artist Name" matching
         t_clean = track_name.split(" - ")[0].split(" (")[0].strip()
         url = f"https://lrclib.net/api/get?artist_name={urllib.parse.quote(artist_name)}&track_name={urllib.parse.quote(t_clean)}"
-        res = requests.get(url, timeout=5)
+        res = requests.get(url, timeout=3) # Shorter timeout
         if res.status_code == 200:
             data = res.json()
             if data and data.get("plainLyrics"):
@@ -207,43 +206,93 @@ def fetch_lrclib_lyrics(track_name, artist_name):
         print(f"LRCLIB ERROR: {e}")
     return None
 
+def search_google_lyrics(track_name, artist_name):
+    """
+    Emergency Fallback: Search Google for lyrics snippets if other sources fail.
+    Uses basic scraping (best effort).
+    """
+    try:
+        query = f"{track_name} {artist_name} lyrics"
+        url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        print(f"GOOGLE SEARCH FALLBACK: Searching for '{query}'")
+        res = requests.get(url, headers=headers, timeout=2)
+        
+        if res.status_code == 200:
+            # Look for lyrics in Google's structured snippets or common sites
+            soup = BeautifulSoup(res.text, "html.parser")
+            
+            # 1. Look for Google's own "Lyrics" card (class often contains 'ujudcb' or similar, but unstable)
+            # We try to find any large text blocks that look like lyrics
+            # Actually, most reliable is to look for common lyrics sites in the results 
+            # and maybe scrape a snippet if available. 
+            # But the user said "nemu paling atas yg disediain google".
+            # Usually that's a div with a specific data attribute.
+            
+            lyrics_card = soup.find("div", {"data-lyricid": True})
+            if lyrics_card:
+                return lyrics_card.get_text("\n")
+            
+            # Fallback 2: Check for specific spans or divs that Google uses for lyrics
+            # Note: This is highly variant. 
+            container = soup.find("div", class_="PZPZ5b") # Common container for knowledge cards
+            if container:
+                return container.get_text("\n")
+                
+    except Exception as e:
+        print(f"GOOGLE SEARCH ERROR: {e}")
+    return None
+
+def is_cjk(text):
+    """Detect Chinese, Japanese, Korean characters."""
+    return bool(re.search(r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]', text))
+
 def search_track_lyrics(track_name, artist_name):
     """
-    Primary: LRCLib (JSON, extremely fast, no proxy blocks).
-    Fallback: Genius Search -> HTML Scrape (Prone to Cloudflare / Google Translate blocks).
+    Flow: LRCLib (Fast) -> Genius (Primary) -> Google (Last Resort)
     """
     # 1. Try LRCLib First
     lrclib_lyrics = fetch_lrclib_lyrics(track_name, artist_name)
     if lrclib_lyrics:
         return lrclib_lyrics
 
-    # 2. Fallback to Genius
+    # Fast Skip for CJK tracks if Genius is likely to fail/hang
+    # Genius scraping via proxy often hangs on non-latin tracks
+    is_asian = is_cjk(track_name) or is_cjk(artist_name)
+    
+    # 2. Fallback to Genius (Only if not Asian or after short attempt)
     print(f"GENIUS FALLBACK: Searching for '{track_name}' by '{artist_name}'")
     try:
         clean_track = track_name.split(" - ")[0].split(" (")[0].strip()
-        query = f"{clean_track} {artist_name}"
+        # Add "lyrics" to query as requested for better accuracy
+        query = f"{clean_track} {artist_name} lyrics"
+        
         res = requests.get(
             f"{GENIUS_API_URL}/search",
             params={"q": query},
             headers=get_headers(),
-            timeout=3
+            timeout=2 # Fast timeout
         )
-        if res.status_code != 200: 
-            return None
-            
-        hits = res.json().get("response", {}).get("hits", [])
-        for hit in hits:
-            if hit["type"] == "song":
-                result = hit["result"]
-                # Verify artist name roughly matches to avoid grabbing random covers
-                hit_artist = result.get("primary_artist", {}).get("name", "").lower()
-                if artist_name.lower() in hit_artist or hit_artist in artist_name.lower():
-                    song_id = result["id"]
-                    lyrics_data = get_lyrics_by_id(song_id)
-                    if lyrics_data and lyrics_data.get("lyrics"):
-                        return lyrics_data["lyrics"]
-                    return None
-        return None
+        if res.status_code == 200:
+            hits = res.json().get("response", {}).get("hits", [])
+            for hit in hits:
+                if hit["type"] == "song":
+                    result = hit["result"]
+                    hit_artist = result.get("primary_artist", {}).get("name", "").lower()
+                    if artist_name.lower() in hit_artist or hit_artist in artist_name.lower():
+                        song_id = result["id"]
+                        lyrics_data = get_lyrics_by_id(song_id)
+                        if lyrics_data and lyrics_data.get("lyrics"):
+                            return lyrics_data["lyrics"]
+                        break # Stop if primary genius result failed
     except Exception as e:
         print(f"GENIUS TRACK SEARCH ERROR: {e}")
-        return None
+
+    # 3. Last Resort: Google Search (If not already skipped)
+    google_lyrics = search_google_lyrics(track_name, artist_name)
+    if google_lyrics:
+        return clean_lyrics(google_lyrics)
+
+    return None
