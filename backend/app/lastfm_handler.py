@@ -776,7 +776,6 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
     # 3. Fast Map to Personalify format (No Spotify search here, just raw LFM)
     artists_to_save = []
     artist_ids = []
-    artist_image_map = {}
     result_artists = []
     for artist in raw_artists:
         artist_name = artist.get("name", "Unknown")
@@ -794,8 +793,6 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
         
         if not artist_image:
              artist_image = ""
-
-        artist_image_map[artist_name.lower().strip()] = artist_image
 
         artist_ids.append(artist_id)
         artists_to_save.append((artist_id, artist_name, playcount, artist_image))
@@ -823,9 +820,7 @@ def sync_lastfm_user_data(username: str, time_range: str = "medium_term", backgr
                 break
         
         if not track_image:
-            # Fallback to artist image if track image missing from LFM
-            artist_key = artist_name.lower().strip()
-            track_image = artist_image_map.get(artist_key, "")
+            track_image = ""
 
         track_ids.append(track_id)
         tracks_to_save.append((track_id, track_name, playcount, None, track_image))
