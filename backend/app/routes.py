@@ -1296,8 +1296,18 @@ def about_page(request: Request):
 
 @router.get("/admin/stats", tags=["Admin"])
 def get_stats():
-    report = get_system_wide_stats()
-    return PlainTextResponse(content=report)
+    try:
+        report = get_system_wide_stats()
+        return PlainTextResponse(content=report)
+    except Exception as e:
+        import traceback
+        trace = traceback.format_exc()
+        print(f"ADMIN STATS CRASH: {e}")
+        print(f"TRACEBACK: {trace}")
+        return PlainTextResponse(
+            content=f"ERROR_SYSTEM_REPORT_FAILED\n\nMESSAGE: {str(e)}\n\n{trace}", 
+            status_code=500
+        )
 
 @router.get("/admin/clear", tags=["Admin"])
 def clear_cache():
