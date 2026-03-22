@@ -417,8 +417,6 @@ def get_emotion_from_text(text: str):
             return fallback_result, None
         return None, None
 
-# --- PUBLIC FUNCTIONS (Used by Routes) ---
-
 def analyze_lyrics_emotion(lyrics: str):
     """
     Analyzes lyrics and returns the top 5 emotions + top 3 MBTI.
