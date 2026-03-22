@@ -11,7 +11,7 @@ from app.db_handler import (
     save_tracks_batch,
     save_user_associations_batch
 )
-from app.cache_handler import cache_top_data, get_cached_top_data, get_valid_image_cache, is_bad_image, set_image_cache, delete_image_cache
+from app.cache_handler import cache_top_data, get_cached_top_data, get_valid_image_cache, is_bad_image, set_image_cache, delete_image_cache, get_image_cache
 from app.mongo_handler import save_user_sync
 from app.nlp_handler import generate_sentiment_analysis
 from fastapi import BackgroundTasks
@@ -213,8 +213,8 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                     res_idx, img_url = future.result()
                     if img_url:
                         artist_results_map[res_idx] = img_url
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"LASTFM BG ARTIST IMAGE ERROR at index {artist_futures.get(future)}: {e}")
 
         # 1b. Fetch Track Images
         track_results_map = {}
@@ -252,7 +252,8 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                 try:
                     res_idx, sp_id, sp_img = future.result()
                     track_results_map[res_idx] = {"id": sp_id, "image": sp_img}
-                except Exception: pass
+                except Exception as e:
+                    print(f"LASTFM BG TRACK IMAGE ERROR at index {track_futures.get(future)}: {e}")
 
         # 2. Update Artists & Tracks
         enhanced_artists = result.get("artists", [])
