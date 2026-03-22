@@ -38,8 +38,12 @@ class RequestAccessModel(BaseModel):
     email: str
 
 router = APIRouter()
-# Templates removed
-# templates = Jinja2Templates(directory=templates_dir)
+
+# Setup Jinja2 Templates (Safe fallback if directory missing)
+templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+if not os.path.exists(templates_dir):
+    os.makedirs(templates_dir, exist_ok=True)
+templates = Jinja2Templates(directory=templates_dir)
 
 # Global cache for log deduplication
 _last_logged_track = {}
@@ -100,6 +104,8 @@ def get_me(request: Request):
     if not spotify_id:
         return JSONResponse(status_code=401, content={"error": "Not authenticated"})
     return {"spotify_id": spotify_id}
+@router.post("/api/request-access", tags=["Public"])
+@router.post("/request-access", include_in_schema=False)
 def request_access(data: RequestAccessModel):
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
@@ -157,18 +163,22 @@ def login(request: Request, mobile: str = Query(None)):
     if not client_id or not redirect_uri:
         raise HTTPException(status_code=500, detail="Spotify client_id or redirect_uri not configured.")
     
-    # Pass mobile param through state parameter
-    state_val = f"mobile={mobile}" if mobile else "web"
-    
-    auth_url = "https://accounts.spotify.com/authorize?" + urlencode({
-        "response_type": "code",
-        "client_id": client_id,
-        "scope": scope,
-        "redirect_uri": redirect_uri,
-        "state": state_val
-    })
-    
-    return RedirectResponse(auth_url)
+    try:
+        # Pass mobile param through state parameter
+        state_val = f"mobile={mobile}" if mobile else "web"
+        
+        auth_url = "https://accounts.spotify.com/authorize?" + urlencode({
+            "response_type": "code",
+            "client_id": client_id,
+            "scope": scope,
+            "redirect_uri": redirect_uri,
+            "state": state_val
+        })
+        
+        return RedirectResponse(auth_url)
+    except Exception as e:
+        print(f"LOGIN ERROR: {e}")
+        return JSONResponse(status_code=500, content={"error": "Login initialization failed", "detail": str(e)})
 
 @router.get("/logout")
 async def logout(request: Request, profile_id: Optional[str] = Query(None)):
@@ -428,7 +438,10 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
             save_user_sync(spotify_id, time_range, result)
             
     except Exception as e:
-        print(f"AUTH EXCEPTION: {e}")
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"AUTH EXCEPTION in callback: {e}")
+        print(f"TRACEBACK: {error_trace}")
         return error_redirect("server_error")
     
     # Success Redirect
@@ -1097,94 +1110,8 @@ def get_dashboard_data(
                 "source": "lastfm"
             }
 
-        if is_own_profile:
-            # 1. AUTO-REFRESH LOGIC ...
-            pass # Logic continues below
-            
-        # (Robust Auth logic was moved above to enforce strict privacy)
 
-        if is_own_profile:
-            # 1. AUTO-REFRESH LOGIC (Server-Side) - ONLY FOR OWN PROFILE
-            # If no access_token cookie, try to refresh using DB refresh_token
-            if not access_token:
-                print(f"WEB DASHBOARD: No access_token cookie. Attempting server-side refresh for {profile_id}...")
-                refresh_token = get_refresh_token(profile_id)
-                
-                if refresh_token:
-                    try:
-                         # Request new access token from Spotify
-                        client_id = os.getenv("SPOTIFY_CLIENT_ID")
-                        client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-                        
-                        payload = {
-                            "grant_type": "refresh_token",
-                            "refresh_token": refresh_token,
-                            "client_id": client_id,
-                            "client_secret": client_secret
-                        }
-                        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-                        
-                        res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
-                        if res.status_code == 200:
-                            tokens = res.json()
-                            access_token = tokens.get("access_token")
-                            new_refresh_token = tokens.get("refresh_token")
-                            expires_in = tokens.get("expires_in", 3600)
-                            
-                            # Save new refresh token if rotated
-                            token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
-                            token_to_save = new_refresh_token if new_refresh_token else refresh_token
-                            save_refresh_token(profile_id, token_to_save, token_expires_at)
-                            
-                            # Set cookie for future requests
-                            # Determine if running locally (copied from other endpoints logic)
-                            # In FastAPI dependency injection, request.url.hostname could also work, 
-                            # but sticking to existing pattern for consistency
-                            original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-                            is_local = "127.0.0.1" in original_host or "localhost" in original_host
-                            is_secure = not is_local
-
-                            response.set_cookie(
-                                key="access_token",
-                                value=access_token,
-                                httponly=True,
-                                path="/",
-                                samesite="lax",
-                                max_age=expires_in,
-                                secure=is_secure
-                            )
-                            print("WEB DASHBOARD: Server-side refresh success! Cookie set.")
-                        else:
-                            print(f"WEB DASHBOARD: Server-side refresh failed ({res.text})")
-                    except Exception as e:
-                        print(f"WEB DASHBOARD: Server-side refresh error: {e}")
-
-            # 2. CACHE-FIRST LOGIC - ONLY FOR OWN PROFILE
-            if access_token:
-                # 2.1 Check cache first
-                data = get_cached_top_data("top", profile_id, time_range)
-                
-                # 2.2 Freshness Check (Optional: Only sync if no cache or cache is old)
-                # For now, if cache exists, we return it. 
-                # frontend-side will handle manual refresh if needed.
-                if data:
-                    # Check if analysis is indeed done, or if it's still "getting ready"
-                    sentiment_report = data.get("sentiment_report", "")
-                    if "getting ready" in sentiment_report or "being analyzed" in sentiment_report:
-                        print(f"WEB DASHBOARD: Vibe still loading for {profile_id}. Triggering background refresh.")
-                        # Import here to avoid circular dependencies
-                        from app.spotify_handler import process_sentiment_background
-                        background_tasks.add_task(process_sentiment_background, profile_id, time_range, data, False)
-                    
-                    print(f"WEB DASHBOARD: Returning cached data for {profile_id}.")
-                else:
-                    # 2.3 No cache -> Sync fresh data
-                    print(f"WEB DASHBOARD: No cache found. Syncing fresh data for {profile_id}...")
-                    try:
-                        data = sync_user_data(access_token, time_range, background_tasks=background_tasks)
-                        print("WEB DASHBOARD: Sync success!")
-                    except Exception as e:
-                        print(f"WEB DASHBOARD: Sync failed ({e}). Falling back to empty.")
+        # Spotify/Other Provider Logic (after Last.fm check above)
         # If we reach here, it's a Spotify profile and is_own_profile must be True due to the 401 check above.
         # 1. AUTO-REFRESH LOGIC (Server-Side) - ONLY FOR OWN PROFILE
         # If no access_token cookie, try to refresh using DB refresh_token
@@ -1517,13 +1444,7 @@ def download_user_export():
         }
     )
 
-@router.post("/analyze-lyrics", tags=["NLP"])
-def analyze_lyrics_emotion_endpoint(
-    lyrics: str = Body(..., embed=True, description="Song lyrics to analyze")
-):
-    snippet = lyrics[:30] + "..." if len(lyrics) > 30 else lyrics
-    log_system("NLP", f"Analyzing Text: '{snippet}'", "HUGGINGFACE")
-    return analyze_lyrics_emotion(lyrics)
+# Endpoint removed (Duplicate)
 
 @router.get("/lyrics", response_class=HTMLResponse, tags=["Pages"])
 def lyrics_page(request: Request):
