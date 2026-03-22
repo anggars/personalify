@@ -338,7 +338,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         def sentiment_progress(msg):
              print(f"LASTFM BG SENTIMENT: {msg}")
              # Incremental save during sentiment to keep UI updated
-             if "Analyzing" in msg:
+             if "Syncing" in msg or "Analyzing" in msg:
                  result["sentiment_report"] = msg
                  cache_top_data("top", user_id, time_range, result, ttl=300)
         
