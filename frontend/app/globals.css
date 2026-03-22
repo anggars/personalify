@@ -258,11 +258,7 @@
     padding: 0.5rem 0;
   }
 
-  .list-item img {
-    width: 48px;
-    height: 48px;
-    border-radius: 0.5rem !important;
-  }
+  /* Removed global img size overrides that conflict with Tailwind */
 
   /* Mobile section card compact */
   .section-card {
@@ -403,13 +399,7 @@
   opacity: 0.5;
 }
 
-.list-item img {
-  width: 64px;
-  height: 64px;
-  border-radius: 0.5rem !important;
-  object-fit: cover;
-  flex-shrink: 0;
-}
+/* Removed global img size overrides that conflict with Tailwind */
 
 .list-item .info {
   flex: 1;
