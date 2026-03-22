@@ -1493,12 +1493,6 @@ export default function DashboardPage() {
             </span>
           ) : (
             <span dangerouslySetInnerHTML={{ __html: typedHtml }} />
-          )}
-          {sentimentProgress && isAnalyzing && (
-            <span className="text-[0.65rem] tracking-[0.25em] uppercase text-muted-foreground/70 block mt-1">
-              {`Track ${sentimentProgress.current} of ${sentimentProgress.total}`}
-            </span>
-          )}
         </p>
       </motion.header>
 
