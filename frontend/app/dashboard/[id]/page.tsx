@@ -1647,16 +1647,16 @@ export default function DashboardPage() {
                     <img
                       src={artist.image}
                       alt={artist.name}
-                      className="cursor-pointer rounded-lg object-cover w-[60px] h-[60px] shrink-0"
+                      className="cursor-pointer rounded-lg object-cover w-12 h-12 md:w-16 md:h-16 shrink-0"
                       onClick={() => openArtistProfile(artist.id)}
                     />
                     ) : (
                       <div
-                        className={`cursor-pointer rounded-lg flex items-center justify-center w-[60px] h-[60px] shrink-0 ${PLACEHOLDER_VISUAL}`}
+                        className={`cursor-pointer rounded-lg flex items-center justify-center w-12 h-12 md:w-16 md:h-16 shrink-0 ${PLACEHOLDER_VISUAL}`}
                         onClick={() => openArtistProfile(artist.id)}
                       >
                         <Users
-                          className={`w-9 h-9 ${PLACEHOLDER_ICON_COLOR}`}
+                          className={`w-8 h-8 md:w-9 md:h-9 ${PLACEHOLDER_ICON_COLOR}`}
                         />
                       </div>
                     )}
