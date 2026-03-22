@@ -84,127 +84,127 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
     """
     try:
         def _scrape_lastfm_artist_image(artist_name):
-        """Robust Last.fm scraper using LD+JSON and flexible meta tags."""
-        import re, json, html
-        from urllib.parse import unquote
-        try:
-            url = f"https://www.last.fm/music/{quote_plus(artist_name)}"
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.5"
-            }
-            res = requests.get(url, headers=headers, timeout=5)
-            if res.status_code != 200:
-                return ""
-            
-            res_html = res.text
-            
-            # 1. Try LD+JSON (Most reliable)
+            """Robust Last.fm scraper using LD+JSON and flexible meta tags."""
+            import re, json, html
+            from urllib.parse import unquote
             try:
-                ld_json_matches = re.findall(r'<script type="application/ld\+json">(.*?)</script>', res_html, re.DOTALL)
-                for ld_text in ld_json_matches:
-                    data = json.loads(ld_text)
-                    if isinstance(data, dict):
-                        items = data if isinstance(data, list) else [data]
-                        for item in items:
-                            if item.get("@type") == "MusicGroup" and item.get("image"):
-                                return html.unescape(item["image"])
-            except: pass
-
-            # 2. Flexible Meta Tag Search
-            meta_patterns = [
-                r'<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\'][^>]+content=["\']([^"\']+)["\']',
-                r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\']'
-            ]
-            
-            for pattern in meta_patterns:
-                matches = re.findall(pattern, res_html, re.IGNORECASE)
-                for img_url in matches:
-                    clean_url = html.unescape(img_url)
-                    # Filter out placeholders & generics
-                    poisoned = ["2a96cbd8b46e442fc41c2b86b821562f", "avatar", "default_artist", "lastfm_logo", "placeholder"]
-                    if not any(p in clean_url for p in poisoned):
-                        return clean_url
-                        
-        except Exception as e:
-            print(f"SCRAPE ERROR for {artist_name}: {e}")
-        return ""
-
-    def _scrape_lastfm_track_image(track_name, artist_name):
-        """Fallback scraper to get track image from last.fm website without API limits."""
-        from app.cache_handler import get_image_cache, set_image_cache
-        cache_key = f"{artist_name}__{track_name}"
-        cached_img = get_image_cache(cache_key)
-        if cached_img:
-            return "" if cached_img == "__NOT_FOUND__" else cached_img
-
-        import re
-        try:
-            url = f"https://www.last.fm/music/{quote_plus(artist_name)}/_/{quote_plus(track_name)}"
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.5"
-            }
-            res = requests.get(url, headers=headers, timeout=5)
-            if res.status_code == 200:
-                matches = re.findall(r'<meta\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]\s+content=[\'"]([^\'"]+)[\'"]', res.text)
-                if not matches:
-                     matches = re.findall(r'<meta\s+content=[\'"]([^\'"]+)[\'"]\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]', res.text)
+                url = f"https://www.last.fm/music/{quote_plus(artist_name)}"
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.5"
+                }
+                res = requests.get(url, headers=headers, timeout=5)
+                if res.status_code != 200:
+                    return ""
                 
-                for img_url in matches:
-                    if "2a96cbd8b46e442fc41c2b86b821562f" not in img_url and "avatar" not in img_url and "default" not in img_url:
-                        set_image_cache(cache_key, img_url)
-                        return img_url
-        except Exception:
-            pass
+                res_html = res.text
+                
+                # 1. Try LD+JSON (Most reliable)
+                try:
+                    ld_json_matches = re.findall(r'<script type="application/ld\+json">(.*?)</script>', res_html, re.DOTALL)
+                    for ld_text in ld_json_matches:
+                        data = json.loads(ld_text)
+                        if isinstance(data, dict):
+                            items = data if isinstance(data, list) else [data]
+                            for item in items:
+                                if item.get("@type") == "MusicGroup" and item.get("image"):
+                                    return html.unescape(item["image"])
+                except: pass
+
+                # 2. Flexible Meta Tag Search
+                meta_patterns = [
+                    r'<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\'][^>]+content=["\']([^"\']+)["\']',
+                    r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\']'
+                ]
+                
+                for pattern in meta_patterns:
+                    matches = re.findall(pattern, res_html, re.IGNORECASE)
+                    for img_url in matches:
+                        clean_url = html.unescape(img_url)
+                        # Filter out placeholders & generics
+                        poisoned = ["2a96cbd8b46e442fc41c2b86b821562f", "avatar", "default_artist", "lastfm_logo", "placeholder"]
+                        if not any(p in clean_url for p in poisoned):
+                            return clean_url
+                            
+            except Exception as e:
+                print(f"SCRAPE ERROR for {artist_name}: {e}")
+            return ""
+
+        def _scrape_lastfm_track_image(track_name, artist_name):
+            """Fallback scraper to get track image from last.fm website without API limits."""
+            from app.cache_handler import get_image_cache, set_image_cache
+            cache_key = f"{artist_name}__{track_name}"
+            cached_img = get_image_cache(cache_key)
+            if cached_img:
+                return "" if cached_img == "__NOT_FOUND__" else cached_img
+
+            import re
+            try:
+                url = f"https://www.last.fm/music/{quote_plus(artist_name)}/_/{quote_plus(track_name)}"
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.5"
+                }
+                res = requests.get(url, headers=headers, timeout=5)
+                if res.status_code == 200:
+                    matches = re.findall(r'<meta\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]\s+content=[\'"]([^\'"]+)[\'"]', res.text)
+                    if not matches:
+                         matches = re.findall(r'<meta\s+content=[\'"]([^\'"]+)[\'"]\s+(?:property|name)=[\'"](?:og:image|twitter:image)[\'"]', res.text)
+                    
+                    for img_url in matches:
+                        if "2a96cbd8b46e442fc41c2b86b821562f" not in img_url and "avatar" not in img_url and "default" not in img_url:
+                            set_image_cache(cache_key, img_url)
+                            return img_url
+            except Exception:
+                pass
+                
+            return ""
+
+        def _get_best_artist_image(idx, name, token, force_refresh=False):
+            """Resolve artist image: Spotify → Last.fm → Deezer. Successful result cached in img."""
             
-        return ""
+            # Check unified cache 
+            if not force_refresh:
+                cached = get_image_cache(name)
+                if cached:
+                    if not _is_valid_image(cached):
+                        delete_image_cache(name)
+                    else:
+                        return idx, cached
 
-    def _get_best_artist_image(idx, name, token, force_refresh=False):
-        """Resolve artist image: Spotify → Last.fm → Deezer. Successful result cached in img."""
-        
-        # Check unified cache 
-        if not force_refresh:
-            cached = get_image_cache(name)
-            if cached:
-                if not _is_valid_image(cached):
-                    delete_image_cache(name)
-                else:
-                    return idx, cached
+            # 1. First priority: Try Last.fm official artist.getInfo for high quality image
+            lfm_api_img = _get_artist_image(name)
+            if _is_valid_image(lfm_api_img):
+                set_image_cache(name, lfm_api_img)
+                print(f"IMG: Last.fm API hit for '{name}'")
+                return idx, lfm_api_img
 
-        # 1. First priority: Try Last.fm official artist.getInfo for high quality image
-        lfm_api_img = _get_artist_image(name)
-        if _is_valid_image(lfm_api_img):
-            set_image_cache(name, lfm_api_img)
-            print(f"IMG: Last.fm API hit for '{name}'")
-            return idx, lfm_api_img
+            # 2. Try Spotify API (Official/Vetted photos)
+            if token:
+                img = _search_spotify_artist_image(name, token)
+                if img:
+                    set_image_cache(name, img)
+                    print(f"IMG: Spotify (PRIORITY) hit for '{name}'")
+                    return idx, img
 
-        # 2. Try Spotify API (Official/Vetted photos)
-        if token:
-            img = _search_spotify_artist_image(name, token)
-            if img:
+            # 3. Fallback to Last.fm scraper
+            img = _scrape_lastfm_artist_image(name)
+            if _is_valid_image(img):
                 set_image_cache(name, img)
-                print(f"IMG: Spotify (PRIORITY) hit for '{name}'")
+                print(f"IMG: Last.fm Scrape (FALLBACK) hit for '{name}'")
                 return idx, img
 
-        # 3. Fallback to Last.fm scraper
-        img = _scrape_lastfm_artist_image(name)
-        if _is_valid_image(img):
-            set_image_cache(name, img)
-            print(f"IMG: Last.fm Scrape (FALLBACK) hit for '{name}'")
-            return idx, img
+            # 4. Try Deezer
+            img = _search_deezer_artist(name)
+            if img:
+                set_image_cache(name, img)
+                print(f"IMG: Deezer hit for '{name}'")
+                return idx, img
 
-        # 4. Try Deezer
-        img = _search_deezer_artist(name)
-        if img:
-            set_image_cache(name, img)
-            print(f"IMG: Deezer hit for '{name}'")
-            return idx, img
-
-        print(f"IMG: No image found for '{name}' (all 3 sources failed)")
-        return idx, ""
+            print(f"IMG: No image found for '{name}' (all 3 sources failed)")
+            return idx, ""
 
     try:
         user_id = f"lastfm:{username}"
