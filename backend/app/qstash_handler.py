@@ -16,9 +16,6 @@ def get_qstash_receiver():
     )
 
 def publish_to_qstash(target_path: str, data: dict):
-    """
-    Helper to publish a job to QStash with signature verification in target endpoint.
-    """
     import requests
     import json
     
