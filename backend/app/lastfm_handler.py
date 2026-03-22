@@ -407,9 +407,11 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
         if extended:
             result['extended_sentiment_report'] = sentiment_report
             result['extended_sentiment_scores'] = sentiment_scores
+            result['extended_sentiment_count'] = 20
         else:
             result['sentiment_report'] = sentiment_report
             result['sentiment_scores'] = sentiment_scores
+            result['sentiment_count'] = 10
         
         # Save to persistent extended cache for Easter Egg instant-reload
         if extended:
