@@ -39,7 +39,10 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
                     print(f"SPOTIFY WORKER: Stopping standard sync because an extended sync is in progress for {spotify_id}")
                     raise Exception("Interrupted by extended sync")
             
-            cached_result['sentiment_report'] = msg
+            if extended:
+                cached_result['extended_sentiment_report'] = msg
+            else:
+                cached_result['sentiment_report'] = msg
             cache_top_data("top", spotify_id, time_range, cached_result, ttl=300)
             
         sentiment_report, sentiment_scores = generate_sentiment_analysis(
@@ -48,8 +51,12 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
             extended=extended
         )
         
-        cached_result['sentiment_report'] = sentiment_report
-        cached_result['sentiment_scores'] = sentiment_scores
+        if extended:
+            cached_result['extended_sentiment_report'] = sentiment_report
+            cached_result['extended_sentiment_scores'] = sentiment_scores
+        else:
+            cached_result['sentiment_report'] = sentiment_report
+            cached_result['sentiment_scores'] = sentiment_scores
         
         # Save to persistent extended cache for Easter Egg instant-reload
         if extended:
