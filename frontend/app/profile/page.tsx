@@ -245,6 +245,8 @@ export default function ProfilePage() {
     const handleLogout = () => {
         localStorage.removeItem("spotify_id");
         localStorage.removeItem("spotify_user_image");
+        localStorage.removeItem("profile_id");
+        localStorage.removeItem("spotify_user_name");
         window.location.href = "/logout";
     };
 

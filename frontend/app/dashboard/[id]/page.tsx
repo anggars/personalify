@@ -87,6 +87,10 @@ const TIME_RANGE_LABELS: Record<string, string> = {
   long_term: "Long Term",
 };
 
+const PLACEHOLDER_VISUAL =
+  "bg-gradient-to-br from-[#111213] via-[#1c1e22] to-[#08080a] border border-[#1DB954]/20 shadow-[0_16px_30px_rgba(13,204,121,0.25)]";
+const PLACEHOLDER_ICON_COLOR = "text-[#C4FFF4]";
+
 const TIME_RANGE_SUBTITLES: Record<string, string> = {
   short_term: "Here's your monthly recap",
   medium_term: "A look at your last 6 months",
@@ -262,6 +266,10 @@ export default function DashboardPage() {
   const [showTop20, setShowTop20] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [animatedDots, setAnimatedDots] = useState(".");
+  const [sentimentProgress, setSentimentProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
 
   const chartRef = useRef<any>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -335,6 +343,22 @@ export default function DashboardPage() {
     }, 2000);
     return () => clearInterval(dotsInterval);
   }, [isAnalyzing]);
+
+  useEffect(() => {
+    if (!emotionText) {
+      setSentimentProgress(null);
+      return;
+    }
+    const match = emotionText.match(/Syncing \((\d+)\/(\d+)\)/i);
+    if (match) {
+      setSentimentProgress({
+        current: Number(match[1]),
+        total: Number(match[2]),
+      });
+    } else {
+      setSentimentProgress(null);
+    }
+  }, [emotionText]);
 
   // Check screen size
   useEffect(() => {
@@ -1470,6 +1494,11 @@ export default function DashboardPage() {
           ) : (
             <span dangerouslySetInnerHTML={{ __html: typedHtml }} />
           )}
+          {sentimentProgress && isAnalyzing && (
+            <span className="text-[0.65rem] tracking-[0.25em] uppercase text-muted-foreground/70 block mt-1">
+              {`Track ${sentimentProgress.current} of ${sentimentProgress.total}`}
+            </span>
+          )}
         </p>
       </motion.header>
 
@@ -1626,14 +1655,16 @@ export default function DashboardPage() {
                       className="cursor-pointer rounded-lg object-cover w-[60px] h-[60px]"
                       onClick={() => openArtistProfile(artist.id)}
                     />
-                  ) : (
-                    <div 
-                      className="cursor-pointer rounded-lg flex items-center justify-center bg-zinc-900/40 border border-border/60 w-[60px] h-[60px] shrink-0 shadow-inner"
-                      onClick={() => openArtistProfile(artist.id)}
-                    >
-                      <Users className="w-7 h-7 text-zinc-400" />
-                    </div>
-                  )}
+                    ) : (
+                      <div
+                        className={`cursor-pointer rounded-lg flex items-center justify-center w-[60px] h-[60px] shrink-0 shadow-inner ${PLACEHOLDER_VISUAL}`}
+                        onClick={() => openArtistProfile(artist.id)}
+                      >
+                        <Users
+                          className={`w-9 h-9 ${PLACEHOLDER_ICON_COLOR}`}
+                        />
+                      </div>
+                    )}
                   <div className="info">
                     <p
                       className="name cursor-pointer"
@@ -1745,8 +1776,12 @@ export default function DashboardPage() {
                       className="w-12 h-12 md:w-16 md:h-16 rounded-lg object-cover shrink-0"
                     />
                   ) : (
-                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg flex items-center justify-center bg-zinc-900/40 border border-border/60 shrink-0 shadow-inner">
-                      <Disc3 className="w-7 h-7 md:w-8 md:h-8 text-zinc-400 animate-spin-slow" />
+                    <div
+                      className={`w-12 h-12 md:w-16 md:h-16 rounded-lg flex items-center justify-center shrink-0 ${PLACEHOLDER_VISUAL}`}
+                    >
+                      <Disc3
+                        className={`w-8 h-8 md:w-9 md:h-9 animate-spin-slow ${PLACEHOLDER_ICON_COLOR}`}
+                      />
                     </div>
                   )}
 

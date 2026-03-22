@@ -124,6 +124,8 @@ export const Navbar = () => {
     if (errorParam === "logged_out" || errorParam === "session_expired") {
       localStorage.removeItem("spotify_id");
       localStorage.removeItem("spotify_user_image");
+      localStorage.removeItem("profile_id");
+      localStorage.removeItem("spotify_user_name");
       setSpotifyId(null);
       setUserImage(null);
       if (errorParam === "session_expired") {
