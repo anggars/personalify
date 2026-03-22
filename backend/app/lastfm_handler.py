@@ -392,7 +392,10 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
             
             # Fetch latest result again in case something else touched it
             # (Though in QStash worker, we are the only one writing this field)
-            result['sentiment_report'] = msg
+            if extended:
+                result['extended_sentiment_report'] = msg
+            else:
+                result['sentiment_report'] = msg
             cache_top_data("top", user_id, time_range, result, ttl=300)
             
         sentiment_report, sentiment_scores = generate_sentiment_analysis(
@@ -401,8 +404,12 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
             extended=extended
         )
         
-        result['sentiment_report'] = sentiment_report
-        result['sentiment_scores'] = sentiment_scores
+        if extended:
+            result['extended_sentiment_report'] = sentiment_report
+            result['extended_sentiment_scores'] = sentiment_scores
+        else:
+            result['sentiment_report'] = sentiment_report
+            result['sentiment_scores'] = sentiment_scores
         
         # Save to persistent extended cache for Easter Egg instant-reload
         if extended:
