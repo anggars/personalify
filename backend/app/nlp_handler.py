@@ -532,6 +532,18 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
 
         d_name = f"{t_name} by {a_name}" if a_name else t_name
 
+        # --- PROGRESS UPDATE (Ordered) ---
+        # Call it here at the START of processing each track
+        if progress_callback:
+            try:
+                progress_callback({
+                    "current": idx + 1,
+                    "total": num_tracks,
+                    "trackName": t_name
+                })
+            except:
+                pass
+
         # --- CACHE CHECK (always first, regardless of position) ---
         with _cache_lock:
             cached = _analysis_cache.get(d_name)
@@ -544,16 +556,6 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
                 print(f"NLP: Cache Hit for '{d_name}'.")
 
         if cached:
-            # Show progress for cached tracks so user sees progress for all 1-20
-            if progress_callback:
-                try:
-                    progress_callback({
-                        "current": idx + 1,
-                        "total": num_tracks,
-                        "trackName": t_name
-                    })
-                except:
-                    pass
             emo, mbti_r = cached[0], cached[1]
             
             log_output += f"--- CACHE HIT FOR: {d_name} ---\n"
@@ -594,16 +596,6 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
             log_output += f"--- SKIPPED: {d_name} (No lyrics found) ---\n\n"
             continue
 
-        # MOVED PROGRESS: Only show "Analyzing" once lyrics are found
-        if progress_callback:
-            try:
-                progress_callback({
-                    "current": idx + 1,
-                    "total": num_tracks,
-                    "trackName": t_name
-                })
-            except:
-                pass
 
         txt = prepare_text_for_analysis(lyrics)
         if not txt:
