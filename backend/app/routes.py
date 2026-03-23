@@ -432,10 +432,11 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
             # FIX: Include image in result
             result = {"user": display_name, "image": user_image, "artists": [], "tracks": []}
             for artist in artists:
-                 result["artists"].append({
+                result["artists"].append({
                     "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
                     "popularity": artist["popularity"], "image": safe_get_image(artist.get("images"), "")
                 })
+            for track in tracks:
                 try:
                     album_image_url = safe_get_image(track.get("album", {}).get("images"), "")
                     result["tracks"].append({
