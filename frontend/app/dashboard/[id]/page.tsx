@@ -1428,7 +1428,7 @@ export default function DashboardPage() {
             onClick={() => router.push("/?error=session_expired")}
             onMouseMove={handleMouseMoveOrTouch}
             onTouchMove={handleMouseMoveOrTouch}
-            className="btn-glass rounded-lg"
+            className="btn-glass rounded-2xl"
             whileHover={{ scale: 1.03, y: -2 }}
             whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -1602,7 +1602,7 @@ export default function DashboardPage() {
                   onClick={() => setShowTimeModal(false)}
                   onMouseMove={handleMouseMoveOrTouch}
                   onTouchMove={handleMouseMoveOrTouch}
-                  className="btn-glass-red rounded-md py-2.5 flex items-center justify-center gap-2 text-red-500 font-bold text-sm cursor-pointer mt-2"
+                  className="btn-glass-red rounded-xl py-2.5 flex items-center justify-center gap-2 text-red-500 font-bold text-sm cursor-pointer mt-2"
                 >
                   Cancel
                 </button>
@@ -1648,7 +1648,7 @@ export default function DashboardPage() {
                   onClick={() => setShowCategoryModal(false)}
                   onMouseMove={handleMouseMoveOrTouch}
                   onTouchMove={handleMouseMoveOrTouch}
-                  className="btn-glass-red rounded-md py-2.5 flex items-center justify-center gap-2 text-red-500 font-bold text-sm cursor-pointer mt-2"
+                  className="btn-glass-red rounded-xl py-2.5 flex items-center justify-center gap-2 text-red-500 font-bold text-sm cursor-pointer mt-2"
                 >
                   Cancel
                 </button>
@@ -1688,16 +1688,16 @@ export default function DashboardPage() {
                     <img
                       src={artist.image}
                       alt={artist.name}
-                      className="cursor-pointer rounded object-cover w-12 h-12 md:w-14 md:h-14 shrink-0"
+                      className="cursor-pointer rounded-md object-cover w-14 h-14 md:w-16 md:h-16 shrink-0"
                       onClick={() => openArtistProfile(artist.id)}
                     />
                     ) : (
                       <div
-                        className={`cursor-pointer rounded flex items-center justify-center w-12 h-12 md:w-14 md:h-14 shrink-0 ${PLACEHOLDER_VISUAL}`}
+                        className={`cursor-pointer rounded-md flex items-center justify-center w-14 h-14 md:w-16 md:h-16 shrink-0 ${PLACEHOLDER_VISUAL}`}
                         onClick={() => openArtistProfile(artist.id)}
                       >
                         <Users
-                          className={`w-7 h-7 md:w-8 md:h-8 ${PLACEHOLDER_ICON_COLOR}`}
+                          className={`w-9 h-9 md:w-9 md:h-9 ${PLACEHOLDER_ICON_COLOR}`}
                         />
                       </div>
                     )}
@@ -1809,14 +1809,14 @@ export default function DashboardPage() {
                     <img
                       src={track.image}
                       alt={track.name}
-                      className="w-12 h-12 md:w-14 md:h-14 rounded object-cover shrink-0"
+                      className="w-14 h-14 md:w-16 md:h-16 rounded-md object-cover shrink-0"
                     />
                   ) : (
                     <div
-                      className={`w-12 h-12 md:w-14 md:h-14 rounded flex items-center justify-center shrink-0 ${PLACEHOLDER_VISUAL}`}
+                      className={`w-14 h-14 md:w-16 md:h-16 rounded-md flex items-center justify-center shrink-0 ${PLACEHOLDER_VISUAL}`}
                     >
                       <Disc3
-                        className={`w-7 h-7 md:w-8 md:h-8 animate-spin-slow ${PLACEHOLDER_ICON_COLOR}`}
+                        className={`w-9 h-9 md:w-9 md:h-9 animate-spin-slow ${PLACEHOLDER_ICON_COLOR}`}
                       />
                     </div>
                   )}
@@ -2056,7 +2056,7 @@ export default function DashboardPage() {
         }
         onMouseMove={handleMouseMoveOrTouch}
         onTouchMove={handleMouseMoveOrTouch}
-        className={`download-btn glow-card fixed bottom-6 right-8 z-40 px-6 py-3 rounded-lg font-bold
+        className={`download-btn glow-card fixed bottom-6 right-8 z-40 px-6 py-3 rounded-2xl font-bold
                     bg-white/5 dark:bg-[#ffffff05] backdrop-blur-md border border-white/10 shadow-lg text-sm
                     ${hideSaveBtn ? "hide-on-scroll" : "show-floating-btn"}
                 `}
@@ -2099,7 +2099,7 @@ export default function DashboardPage() {
                   onClick={() => setShowSaveModal(false)}
                   onMouseMove={handleMouseMoveOrTouch}
                   onTouchMove={handleMouseMoveOrTouch}
-                  className="btn-glass-red rounded-md py-2.5 flex items-center justify-center gap-2 text-red-500 font-bold text-sm cursor-pointer mt-2"
+                  className="btn-glass-red rounded-xl py-2.5 flex items-center justify-center gap-2 text-red-500 font-bold text-sm cursor-pointer mt-2"
                 >
                   Cancel
                 </button>
