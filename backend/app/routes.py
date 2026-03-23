@@ -4,7 +4,6 @@ import json
 import datetime
 from datetime import timezone
 import asyncio
-
 from urllib.parse import urlencode
 from fastapi import APIRouter, Request, Query, HTTPException, Body, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, Response, PlainTextResponse
@@ -31,7 +30,6 @@ from app.mongo_handler import save_user_sync, get_user_history, get_active_provi
 from app.qstash_handler import get_qstash_client, get_qstash_receiver
 from app.genius_lyrics import get_suggestions, search_artist_id, get_songs_by_artist, get_lyrics_by_id
 from app.lastfm_handler import sync_lastfm_user_data
-
 
 # Request Access Model
 class RequestAccessModel(BaseModel):
