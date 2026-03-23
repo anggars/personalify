@@ -168,3 +168,25 @@ def get_valid_image_cache(artist_name: str) -> str | None:
     if cached and not is_bad_image(cached):
         return cached
     return None
+
+def acquire_analysis_lock(spotify_id, term, ttl=300):
+    """
+    Attempt to acquire a non-blocking lock for a specific user analysis task.
+    Returns True if lock acquired, False otherwise.
+    """
+    lock_key = f"lock:analysis:{spotify_id}:{term}"
+    # setnx (set if not exists)
+    try:
+        return r.set(lock_key, "locked", ex=ttl, nx=True)
+    except Exception as e:
+        print(f"CACHE_HANDLER LOCK ERROR: {e}")
+        return False
+
+def release_analysis_lock(spotify_id, term):
+    """Release the analysis lock for a specific user."""
+    lock_key = f"lock:analysis:{spotify_id}:{term}"
+    try:
+        return r.delete(lock_key)
+    except Exception as e:
+        print(f"CACHE_HANDLER UNLOCK ERROR: {e}")
+        return False
