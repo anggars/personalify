@@ -261,7 +261,6 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
             "provider": "spotify"
         })
     else:
-        # Legacy/Mobile synchronous mode or Local test
         process_sentiment_background(spotify_id, time_range, result, extended)
 
     return result
