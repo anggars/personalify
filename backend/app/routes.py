@@ -14,6 +14,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pydantic import BaseModel
+import base64
 from app.nlp_handler import generate_sentiment_analysis, analyze_lyrics_emotion
 from app.admin import get_system_wide_stats, get_user_report, export_users_to_csv
 from app.db_handler import (
@@ -566,29 +567,41 @@ def refresh_access_token(
     if not refresh_token:
         raise HTTPException(status_code=401, detail="No refresh token available")
     
-    # Request new access token from Spotify
-    client_id = os.getenv("SPOTIFY_CLIENT_ID")
-    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-    
-    payload = {
-        "grant_type": "refresh_token",
-        "refresh_token": refresh_token,
-        "client_id": client_id,
-        "client_secret": client_secret
-    }
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    
+    # Request new access token from Spotify with Locking to prevent rotation race conditions
+    lock_key = f"lock:refresh:{spotify_id}"
+    if not redis_client.set(lock_key, "locked", nx=True, ex=10):
+        print(f"REFRESH WORKER: Lock active for {spotify_id}. Returning current valid session if available.")
+        # Try to wait or just return empty - frontend will retry or use cookie
+        raise HTTPException(status_code=429, detail="Refresh in progress. Please retry.")
+
     try:
-        res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
+        client_id = os.getenv("SPOTIFY_CLIENT_ID")
+        client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+        
+        payload = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token
+        }
+        
+        auth_str = f"{client_id}:{client_secret}"
+        b64_auth = base64.b64encode(auth_str.encode()).decode()
+        headers = {
+            "Authorization": f"Basic {b64_auth}",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+        
+        res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers, timeout=5)
         
         if res.status_code != 200:
             error_data = res.json() if res.text else {}
             error_msg = error_data.get("error", "unknown_error")
-            print(f"REFRESH ERROR ({res.status_code}): {res.text}")
+            print(f"REFRESH ERROR for {spotify_id} ({res.status_code}): {res.text}")
             
-            if error_msg == "invalid_grant":
+            # Use success flag to prevent clearing token during race condition
+            is_recent_success = redis_client.get(f"success:refresh:{spotify_id}")
+            
+            if error_msg == "invalid_grant" and not is_recent_success:
                 log_system("WARNING", f"Refresh Token Revoked/Expired for {spotify_id}. User must re-login.", "AUTH")
-                # Optionally clear the invalid token from DB to stop trying
                 save_refresh_token(spotify_id, None, None)
             
             raise HTTPException(status_code=401, detail=f"Token refresh failed: {error_msg}")
@@ -597,6 +610,9 @@ def refresh_access_token(
         new_access_token = tokens.get("access_token")
         new_refresh_token = tokens.get("refresh_token") # Spotify might rotate it
         expires_in = tokens.get("expires_in", 3600)
+        
+        # Cache success to protect against immediate rotation failures in concurrent calls
+        redis_client.set(f"success:refresh:{spotify_id}", "1", ex=30)
         
         if not new_access_token:
             raise HTTPException(status_code=401, detail="No access token in refresh response")
@@ -617,36 +633,22 @@ def refresh_access_token(
         }
         
         # Determine if running locally for cookie domain
-        # CRITICAL: DO NOT set domain for localhost (breaks 127.0.0.1 vs localhost)
         original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
         is_local = "127.0.0.1" in original_host or "localhost" in original_host
-        
-        # Web also sets cookie for redundancy
-        response = JSONResponse(content=response_data)
-        
-        # Secure=True for production (HTTPS), False for local (HTTP)
         is_secure = not is_local
         
-        response.set_cookie(
-            key="access_token",
-            value=new_access_token,
-            httponly=True,
-            path="/",
-            samesite="lax",
-            max_age=expires_in,
-            secure=is_secure  # Auto-detect HTTPS
-        )
+        response = JSONResponse(content=response_data)
         
-        # FIX: Restore spotify_id cookie if missing to prevent "Logged in as: None" loop
         response.set_cookie(
-            key="spotify_id", 
-            value=spotify_id, 
-            httponly=True, 
-            path="/", 
-            samesite="lax", 
-            max_age=2592000,  # 30 days
-            secure=is_secure
+            key="access_token", value=new_access_token, httponly=True, 
+            path="/", samesite="lax", max_age=expires_in, secure=is_secure
         )
+        response.set_cookie(
+            key="spotify_id", value=spotify_id, httponly=True, 
+            path="/", samesite="lax", max_age=2592000, secure=is_secure
+        )
+    finally:
+        redis_client.delete(lock_key)
 
         return response
             
@@ -1050,12 +1052,8 @@ def get_dashboard_data(
                 except Exception as e:
                     print(f"WEB DASHBOARD: Token verification failed: {e}")
 
-        # STRICT PRIVACY ENFORCEMENT
-        # The user requested that public viewing is entirely disabled.
-        # If they are logged out or viewing someone else's dashboard, immediately reject.
-        if not is_own_profile:
-            print(f"WEB DASHBOARD: Access denied for {profile_id}. User is not authenticated.")
-            raise HTTPException(status_code=401, detail="Unauthorized. Please login again.")
+        # 0. PRIVACY CHECK (Will be enforced later after refresh attempt)
+        # Note: Last.fm users are public by default, so we exempt them from strict own-profile checks
 
         # LAST.FM HANDLING: If it's a Last.fm ID, use the Last.fm handler directly
         if profile_id.startswith("lastfm:"):
@@ -1146,60 +1144,78 @@ def get_dashboard_data(
 
         # Spotify/Other Provider Logic (after Last.fm check above)
         # If we reach here, it's a Spotify profile and is_own_profile must be True due to the 401 check above.
-        # 1. AUTO-REFRESH LOGIC (Server-Side) - ONLY FOR OWN PROFILE
+        # 1. AUTO-REFRESH LOGIC (Server-Side) - ONLY FOR OWN PROFILE OR TARGET PROFILE
         # If no access_token cookie, try to refresh using DB refresh_token
-        if not access_token:
+        if not access_token and not profile_id.startswith("lastfm:"):
             print(f"WEB DASHBOARD: No access_token cookie. Attempting server-side refresh for {profile_id}...")
-            refresh_token = get_refresh_token(profile_id)
             
-            if refresh_token:
+            # Use Redis Lock to prevent race condition on token rotation
+            lock_key = f"lock:refresh:{profile_id}"
+            if redis_client.set(lock_key, "locked", nx=True, ex=10):
                 try:
+                    refresh_token = get_refresh_token(profile_id)
+                    if refresh_token:
                         # Request new access token from Spotify
-                    client_id = os.getenv("SPOTIFY_CLIENT_ID")
-                    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-                    
-                    payload = {
-                        "grant_type": "refresh_token",
-                        "refresh_token": refresh_token,
-                        "client_id": client_id,
-                        "client_secret": client_secret
-                    }
-                    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-                    
-                    res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
-                    if res.status_code == 200:
-                        tokens = res.json()
-                        access_token = tokens.get("access_token")
-                        new_refresh_token = tokens.get("refresh_token")
-                        expires_in = tokens.get("expires_in", 3600)
+                        client_id = os.getenv("SPOTIFY_CLIENT_ID")
+                        client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
                         
-                        # Save new refresh token if rotated
-                        token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
-                        token_to_save = new_refresh_token if new_refresh_token else refresh_token
-                        save_refresh_token(profile_id, token_to_save, token_expires_at)
+                        payload = {
+                            "grant_type": "refresh_token",
+                            "refresh_token": refresh_token
+                        }
                         
-                        # Set cookie for future requests
-                        # Determine if running locally (copied from other endpoints logic)
-                        # In FastAPI dependency injection, request.url.hostname could also work, 
-                        # but sticking to existing pattern for consistency
-                        original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-                        is_local = "127.0.0.1" in original_host or "localhost" in original_host
-                        is_secure = not is_local
+                        auth_str = f"{client_id}:{client_secret}"
+                        b64_auth = base64.b64encode(auth_str.encode()).decode()
+                        headers = {
+                            "Authorization": f"Basic {b64_auth}",
+                            "Content-Type": "application/x-www-form-urlencoded"
+                        }
+                        
+                        res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers, timeout=5)
+                        if res.status_code == 200:
+                            tokens = res.json()
+                            access_token = tokens.get("access_token")
+                            new_refresh_token = tokens.get("refresh_token")
+                            expires_in = tokens.get("expires_in", 3600)
+                            
+                            token_expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(seconds=expires_in)
+                            token_to_save = new_refresh_token if new_refresh_token else refresh_token
+                            save_refresh_token(profile_id, token_to_save, token_expires_at)
+                            
+                            # Cache success to prevent immediate re-refresh
+                            redis_client.set(f"success:refresh:{profile_id}", "1", ex=30)
+                            
+                            # Set cookie
+                            original_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+                            is_local = "127.0.0.1" in original_host or "localhost" in original_host
+                            response.set_cookie(
+                                key="access_token", value=access_token, httponly=True, 
+                                path="/", samesite="lax", max_age=expires_in, secure=not is_local
+                            )
+                            is_own_profile = True # Now we are "authenticated" for this profile sync
+                            print("WEB DASHBOARD: Server-side refresh success! Cookie set.")
+                        else:
+                            err_body = res.json() if res.text else {}
+                            err_msg = err_body.get("error", "unknown")
+                            print(f"WEB DASHBOARD: Server-side refresh failed for {profile_id} ({res.status_code}): {res.text}")
+                            
+                            # Clear token ONLY if it's a definitive invalid_grant AND no recent success
+                            if err_msg == "invalid_grant":
+                                if not redis_client.get(f"success:refresh:{profile_id}"):
+                                    print(f"WEB DASHBOARD: Refresh Token is DEAD for {profile_id}. Clearing.")
+                                    save_refresh_token(profile_id, None, None)
+                finally:
+                    redis_client.delete(lock_key)
+            else:
+                # If locked, wait briefly and try to get the freshly set access_token (not implementation in this sync call, 
+                # but following requests will have the cookie)
+                print(f"WEB DASHBOARD: Refresh lock active for {profile_id}. Skipping rotation.")
 
-                        response.set_cookie(
-                            key="access_token",
-                            value=access_token,
-                            httponly=True,
-                            path="/",
-                            samesite="lax",
-                            max_age=expires_in,
-                            secure=is_secure
-                        )
-                        print("WEB DASHBOARD: Server-side refresh success! Cookie set.")
-                    else:
-                        print(f"WEB DASHBOARD: Server-side refresh failed ({res.text})")
-                except Exception as e:
-                    print(f"WEB DASHBOARD: Server-side refresh error: {e}")
+        # 1.5 FINAL PRIVACY ENFORCEMENT
+        # Now that we tried refreshing, if it's still not our own profile and it's not Last.fm, REJECT.
+        if not is_own_profile and not profile_id.startswith("lastfm:"):
+             print(f"WEB DASHBOARD: Access denied for {profile_id}. Authentication failed.")
+             raise HTTPException(status_code=401, detail="Unauthorized. Please login again.")
 
         # 2. CACHING & SYNC LOGIC
         if access_token:

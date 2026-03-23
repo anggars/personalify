@@ -149,11 +149,24 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
     track_ids = []
     for track in tracks:
         track_ids.append(track["id"])
+        
+        # Resolve image URL (album image or artist image fallback)
+        artist_image = ""
+        track_artist_id = track["artists"][0]["id"] if track.get("artists") else None
+        for a in artists:
+            if a["id"] == track_artist_id:
+                artist_image = a["images"][0]["url"] if a.get("images") else ""
+                break
+        
+        images = track.get("album", {}).get("images", [])
+        album_image_url = images[0]["url"] if images and len(images) > 0 else artist_image
+
         tracks_to_save.append((
             track["id"],
             track["name"],
             track["popularity"],
-            track.get("preview_url")
+            track.get("preview_url"),
+            album_image_url
         ))
 
     save_artists_batch(artists_to_save)

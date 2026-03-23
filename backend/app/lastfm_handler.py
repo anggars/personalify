@@ -376,6 +376,11 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
     Dedicated worker function to run the heavy AI sentiment analysis via QStash.
     """
     try:
+        # 0. Acquire Lock to prevent multiple background workers
+        if not acquire_analysis_lock(user_id, time_range):
+            print(f"LASTFM SENTIMENT WORKER: Another task is already running for {user_id}:{time_range}. Exiting.")
+            return
+
         # 1. Get current cached state
         result = get_cached_top_data("top", user_id, time_range)
         if not result:
@@ -432,6 +437,9 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
         print(f"LASTFM SENTIMENT WORKER ERROR: {e}")
         import traceback
         traceback.print_exc()
+    finally:
+        # Ensure lock is released
+        release_analysis_lock(user_id, time_range)
 
 # --- SPOTIFY ENHANCEMENT HELPERS ---
 
