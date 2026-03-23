@@ -11,7 +11,17 @@ from app.db_handler import (
     save_tracks_batch,
     save_user_associations_batch
 )
-from app.cache_handler import cache_top_data, get_cached_top_data, get_valid_image_cache, is_bad_image, set_image_cache, delete_image_cache, get_image_cache
+from app.cache_handler import (
+    cache_top_data, 
+    get_cached_top_data, 
+    get_valid_image_cache, 
+    is_bad_image, 
+    set_image_cache, 
+    delete_image_cache, 
+    get_image_cache,
+    acquire_analysis_lock,
+    release_analysis_lock
+)
 from app.mongo_handler import save_user_sync
 from app.nlp_handler import generate_sentiment_analysis
 from fastapi import BackgroundTasks
@@ -194,6 +204,12 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             return idx, ""
 
         user_id = f"lastfm:{username}"
+        
+        # 0. Acquire Lock to prevent multiple background workers
+        if not acquire_analysis_lock(user_id, time_range):
+            print(f"LASTFM WORKER: Another task is already running for {user_id}:{time_range}. Exiting.")
+            return
+
         print(f"LASTFM BG: Starting enhancement for '{username}'...")
         
         raw_artists = result.get("_raw_artists", [])
@@ -348,6 +364,10 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             result["error_code"] = "enhancement_failed"
             result["error_detail"] = err_msg
             result["sentiment_report"] = f"Sync Failed: {err_msg[:50]}..."
+    finally:
+        # 5. Ensure lock is released 
+        release_analysis_lock(user_id, time_range)
+        if 'result' in locals() and result:
             cache_top_data("top", user_id, time_range, result, ttl=300)
 
 
