@@ -8,7 +8,11 @@ from app.db_handler import (
     save_tracks_batch,
     save_user_associations_batch
 )
-from app.cache_handler import cache_top_data
+from app.cache_handler import (
+    cache_top_data, 
+    acquire_analysis_lock, 
+    release_analysis_lock
+)
 from app.mongo_handler import save_user_sync
 from app.nlp_handler import generate_sentiment_analysis
 
@@ -20,6 +24,11 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
     try:
         from app.cache_handler import get_cached_top_data
         
+        # 0. Acquire Lock to prevent multiple background workers
+        if not acquire_analysis_lock(spotify_id, time_range):
+            print(f"SPOTIFY WORKER: Another task is already running for {spotify_id}:{time_range}. Exiting.")
+            return
+
         # 1. Refresh result from cache to ensure we have latest tracks
         cached_result = get_cached_top_data("top", spotify_id, time_range)
         if not cached_result:
@@ -74,6 +83,9 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
         print(f"BACKGROUND PROCESSING ERROR: {e}")
         import traceback
         traceback.print_exc()
+    finally:
+        # 8. Ensure lock is released even on failure
+        release_analysis_lock(spotify_id, time_range)
 
 def sync_user_data(access_token: str, time_range: str = "medium_term", background_tasks: BackgroundTasks = None, extended: bool = False):
     """
