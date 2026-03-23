@@ -647,16 +647,16 @@ def refresh_access_token(
             key="spotify_id", value=spotify_id, httponly=True, 
             path="/", samesite="lax", max_age=2592000, secure=is_secure
         )
-    finally:
-        redis_client.delete(lock_key)
-
-        return response
-            
     except HTTPException:
         raise
     except Exception as e:
         print(f"REFRESH EXCEPTION: {e}")
         raise HTTPException(status_code=500, detail="Token refresh failed")
+    finally:
+        # Ensure lock is released even on error
+        redis_client.delete(lock_key)
+
+    return response
 
 @router.get("/api/currently-playing/{spotify_id}", tags=["Player"])
 def get_currently_playing(spotify_id: str, request: Request):
