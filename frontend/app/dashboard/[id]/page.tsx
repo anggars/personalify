@@ -1688,16 +1688,16 @@ export default function DashboardPage() {
                     <img
                       src={artist.image}
                       alt={artist.name}
-                      className="cursor-pointer rounded-md object-cover w-20 h-20 md:w-16 md:h-16 shrink-0"
+                      className="cursor-pointer rounded-md object-cover w-14 h-14 md:w-16 md:h-16 shrink-0"
                       onClick={() => openArtistProfile(artist.id)}
                     />
                     ) : (
                       <div
-                        className={`cursor-pointer rounded-md flex items-center justify-center w-20 h-20 md:w-16 md:h-16 shrink-0 ${PLACEHOLDER_VISUAL}`}
+                        className={`cursor-pointer rounded-md flex items-center justify-center w-14 h-14 md:w-16 md:h-16 shrink-0 ${PLACEHOLDER_VISUAL}`}
                         onClick={() => openArtistProfile(artist.id)}
                       >
                         <Users
-                          className={`w-10 h-10 md:w-9 md:h-9 ${PLACEHOLDER_ICON_COLOR}`}
+                          className={`w-9 h-9 md:w-9 md:h-9 ${PLACEHOLDER_ICON_COLOR}`}
                         />
                       </div>
                     )}
@@ -1809,14 +1809,14 @@ export default function DashboardPage() {
                     <img
                       src={track.image}
                       alt={track.name}
-                      className="w-20 h-20 md:w-16 md:h-16 rounded-md object-cover shrink-0"
+                      className="w-14 h-14 md:w-16 md:h-16 rounded-md object-cover shrink-0"
                     />
                   ) : (
                     <div
-                      className={`w-20 h-20 md:w-16 md:h-16 rounded-md flex items-center justify-center shrink-0 ${PLACEHOLDER_VISUAL}`}
+                      className={`w-14 h-14 md:w-16 md:h-16 rounded-md flex items-center justify-center shrink-0 ${PLACEHOLDER_VISUAL}`}
                     >
                       <Disc3
-                        className={`w-10 h-10 md:w-9 md:h-9 animate-spin-slow ${PLACEHOLDER_ICON_COLOR}`}
+                        className={`w-9 h-9 md:w-9 md:h-9 animate-spin-slow ${PLACEHOLDER_ICON_COLOR}`}
                       />
                     </div>
                   )}
