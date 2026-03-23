@@ -436,22 +436,25 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                     "id": artist["id"], "name": artist["name"], "genres": artist.get("genres", []),
                     "popularity": artist["popularity"], "image": safe_get_image(artist.get("images"), "")
                 })
-            for track in tracks:
-                album_image_url = safe_get_image(track.get("album", {}).get("images"), "")
-                result["tracks"].append({
-                    "id": track["id"], 
-                    "name": track["name"],
-                    "artists": [a["name"] for a in track.get("artists", [])],
-                    "album": {
-                        "name": track["album"]["name"],
-                        "type": track["album"]["album_type"],
-                        "total_tracks": track["album"]["total_tracks"]
-                    },
-                    "popularity": track["popularity"],
-                    "preview_url": track.get("preview_url"), 
-                    "image": album_image_url,
-                    "duration_ms": track["duration_ms"]
-                })
+                try:
+                    album_image_url = safe_get_image(track.get("album", {}).get("images"), "")
+                    result["tracks"].append({
+                        "id": track["id"], 
+                        "name": track["name"],
+                        "artists": [a["name"] for a in track.get("artists", [])],
+                        "album": {
+                            "name": track["album"]["name"],
+                            "type": track["album"]["album_type"],
+                            "total_tracks": track["album"]["total_tracks"]
+                        },
+                        "popularity": track["popularity"],
+                        "preview_url": track.get("preview_url"), 
+                        "image": album_image_url,
+                        "duration_ms": track.get("duration_ms", 0)
+                    })
+                except Exception as track_err:
+                    print(f"CALLBACK: Skipping malformed track {track.get('id', 'unknown')}: {track_err}")
+                    continue
 
             result['sentiment_report'] = "Your music vibe is being analyzed..."
             cache_top_data("top", spotify_id, time_range, result)
@@ -578,8 +581,16 @@ def refresh_access_token(
         res = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers)
         
         if res.status_code != 200:
-            print(f"REFRESH ERROR: {res.text}")
-            raise HTTPException(status_code=401, detail="Token refresh failed")
+            error_data = res.json() if res.text else {}
+            error_msg = error_data.get("error", "unknown_error")
+            print(f"REFRESH ERROR ({res.status_code}): {res.text}")
+            
+            if error_msg == "invalid_grant":
+                log_system("WARNING", f"Refresh Token Revoked/Expired for {spotify_id}. User must re-login.", "AUTH")
+                # Optionally clear the invalid token from DB to stop trying
+                save_refresh_token(spotify_id, None, None)
+            
+            raise HTTPException(status_code=401, detail=f"Token refresh failed: {error_msg}")
         
         tokens = res.json()
         new_access_token = tokens.get("access_token")
