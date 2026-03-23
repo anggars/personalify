@@ -46,7 +46,6 @@ export default function DashboardRedirect() {
                         return;
                     }
                 } else if (storedId) {
-                    // If API fails but we have a stored ID, try it anyway (public view support)
                     router.replace(`/dashboard/${storedId}?time_range=short_term`);
                     return;
                 }
