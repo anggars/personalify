@@ -1,26 +1,17 @@
+import json
+
 import os
 import re
-import asyncio
 import time
-import requests  # Kept for synchronous fallback if needed, or we use httpx primarily
-import httpx     # For Async IO (Smarter!)
+import requests
 from dotenv import load_dotenv
-
-# Optional Imports
-try:
-    from deep_translator import GoogleTranslator
-    HAS_TRANSLATOR = True
-except ImportError:
-    HAS_TRANSLATOR = False
-    print("NLP HANDLER: deep-translator not found. Translation disabled.")
-
 from huggingface_hub import InferenceClient
 
 load_dotenv()
 
 # --- CONFIGURATION ---
 HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
-SPACE_URL = "https://anggars-mbti-emotion.hf.space/api/predict"
+SPACE_URL = "https://anggars-mbti-emotion.hf.space/gradio_api"
 MODEL_ROBERTA = "SamLowe/roberta-base-go_emotions"
 MODEL_DISTILBERT = "joeddav/distilbert-base-uncased-go-emotions-student"
 
@@ -35,55 +26,7 @@ if HF_API_KEY:
 else:
     hf_client = None
 
-# Simple in-memory cache to save API calls
-import threading
-
-_analysis_cache = {}
-_cache_lock = threading.Lock()
-
-
-# --- SLANG DICTIONARY (Shared with Streamlit) ---
-SLANG_MAP = {
-    # SUNDANESE
-    "aing": "saya", "abdi": "saya", "urang": "saya",
-    "maneh": "kamu", "anjeun": "kamu", "sia": "kamu",
-    "teuing": "tidak tahu", "duka": "tidak tahu",
-    "rieut": "pusing", "mumet": "pusing",
-    "hayam": "ayam", "naon": "apa",
-    "atuh": "dong", "sok": "silakan",
-    "mangga": "silakan", "punten": "permisi",
-    "nuhun": "terima kasih", "hatur nuhun": "terima kasih",
-    "geulis": "cantik", "kasep": "ganteng",
-    "nyaah": "sayang", "cinta": "cinta", "bogoh": "cinta",
-    "wae": "saja", "hungkul": "saja",
-    "lieur": "bingung", "sare": "tidur",
-    "dahar": "makan", "nyatu": "makan",
-    "kumaha": "bagaimana", "damang": "sehat",
-    "bageur": "baik", "bager": "baik",
-    "gelo": "gila", "edan": "gila",
-    
-    # INDO SLANG
-    "ngab": "bang", "gan": "bang", "brow": "bang",
-    "goks": "keren", "gokil": "keren", "mantul": "mantap",
-    "anjay": "wow", "anjir": "wow", "anjay mabar": "wow main bareng",
-    "kuy": "ayo", "skuy": "ayo", "gas": "ayo",
-    "ygy": "ya guys ya", "tbh": "jujur",
-    "idk": "tidak tahu", "cmiiw": "koreksi jika salah",
-    "mager": "malas", "baper": "terbawa perasaan",
-    "gabut": "bosan", "halu": "khayal",
-    "fomo": "ikut-ikutan", "kepo": "penasaran",
-    "santuy": "santai", "sans": "santai",
-    "gercep": "cepat", "sat set": "cepat",
-    "bestie": "sahabat", "besti": "sahabat",
-    "kzl": "kesal", "sebel": "kesal", "bt": "kesal",
-    "wkwk": "haha", "wkwkwk": "haha",
-    "hiks": "sedih", "huft": "lelah",
-    "cape": "lelah", "capek": "lelah",
-    "tolol": "bodoh", "bego": "bodoh", "goblok": "bodoh"
-}
-
-# --- GOEMOTIONS ID MAP (Safety Net for "LABEL_XX") ---
-# Standard GoEmotions taxonomy
+# --- DATA MAPS ---
 GO_EMOTIONS_ID_MAP = {
     "0": "admiration", "1": "amusement", "2": "anger", "3": "annoyance",
     "4": "approval", "5": "caring", "6": "confusion", "7": "curiosity",
@@ -125,7 +68,6 @@ emotion_texts = {
     "def": "neutral <b>vibe</b>"
 }
 
-# --- MBTI CONNECTORS ("Soul" Words) ---
 MBTI_CONNECTORS = {
     "INTJ": "calculated by", "INTP": "deconstructed by",
     "ENTJ": "driven by", "ENTP": "chaos of",
@@ -138,28 +80,24 @@ MBTI_CONNECTORS = {
     "default": "reflected in",
 }
 
-# --- HELPERS ---
+_analysis_cache = {}
+_cache_lock = threading.Lock()
 
-def normalize_slang(text):
-    if not text: return ""
-    lines = text.split('\n')
-    normalized_lines = []
+def prepare_text_for_analysis(text: str) -> str:
+    """
+    Cukup bersihin teks dan potong biar gak kepanjangan.
+    Gak perlu normalize slang atau translasi di sini biar gak redundan.
+    """
+    if not text or not text.strip():
+        return ""
+
+    # 1. Truncate (Safeguard 2500 karakter biar aman di API)
+    MAX_CHARS = 2500
+    if len(text) > MAX_CHARS:
+        text = text[:MAX_CHARS]
     
-    for line in lines:
-        words = line.split()
-        normalized_words = []
-        for word in words:
-            # Simple punctuation removal for slang check
-            clean_word = re.sub(r'[^\w\s]', '', word).lower()
-            if clean_word in SLANG_MAP:
-                 replacement = SLANG_MAP[clean_word]
-                 if word and word[0].isupper(): replacement = replacement.capitalize()
-                 normalized_words.append(replacement)
-            else:
-                 normalized_words.append(word)
-        normalized_lines.append(" ".join(normalized_words))
-        
-    return "\n".join(normalized_lines)
+    # 2. Return mentah, biarin app.py di Space yang urus mapping & translation
+    return text.strip()
 
 def _map_label(label: str) -> str:
     """
@@ -169,49 +107,6 @@ def _map_label(label: str) -> str:
         idx = label.replace("LABEL_", "")
         return GO_EMOTIONS_ID_MAP.get(idx, label)
     return label
-
-
-
-def prepare_text_for_analysis(text: str) -> str:
-    """
-    Cleans, normalizes slangs and translates to English.
-    Blocking function (runs synchronously).
-    """
-    if not text or not text.strip():
-        return ""
-
-    # 1. Truncate (Safeguard)
-    MAX_CHARS = 2500
-    if len(text) > MAX_CHARS:
-        text = text[:MAX_CHARS]
-    
-    # 2. Normalize Slang
-    normalized = normalize_slang(text)
-    
-    # 3. Translate to English (with Retries)
-    if HAS_TRANSLATOR:
-        max_retries = 2
-        for attempt in range(max_retries + 1):
-            try:
-                # Use deep-translator
-                translator = GoogleTranslator(source='auto', target='en')
-                translated = translator.translate(normalized)
-                
-                # Basic check: if translation failed silently (returned empty)
-                if not translated:
-                    return normalized
-                    
-                print(f"NLP HANDLER: TR '{normalized[:20]}...' -> '{translated[:20]}...'")
-                return translated
-            except Exception as e:
-                if attempt < max_retries:
-                    time.sleep(1)
-                    continue
-                else:
-                    print(f"NLP HANDLER: Translation Failed ({e}). Using Original.")
-                    return normalized
-    else:
-        return normalized
 
 
 def _run_fallback_hybrid_analysis(text: str):
@@ -318,24 +213,19 @@ def _log_emotions(text: str, emotions: list):
 
 def get_emotion_from_text(text: str):
     """
-    Calls the new MBTI-Emotion Gradio Space via gradio_client.
-    Returns a tuple: (emotions_list, mbti_list)
-    Failover to Hybrid Fallback (emotion-only) if Space is sleeping or errors.
+    Panggil Space baru. Logika SSE parsing udah bener buat Gradio 6.x.
     """
     if not text or not text.strip():
         return None, None
 
-    # Check cache
     if text in _analysis_cache:
         return _analysis_cache[text]
 
     try:
         import json as _json
         
-        # --- Step 1: Submit job ---
-        # Gradio 6.x uses /gradio_api prefix (from space config)
-        base = "https://anggars-mbti-emotion.hf.space/gradio_api"
-        submit_url = f"{base}/call/predict"
+        # Submit job
+        submit_url = f"{SPACE_URL}/call/predict"
         headers = {"Content-Type": "application/json"}
         if HF_API_KEY:
             headers["Authorization"] = f"Bearer {HF_API_KEY}"
@@ -348,19 +238,12 @@ def get_emotion_from_text(text: str):
         )
         
         if submit_resp.status_code != 200:
-            raise Exception(f"Submit failed: {submit_resp.status_code} {submit_resp.text[:200]}")
+            raise Exception(f"Submit failed: {submit_resp.status_code}")
         
         event_id = submit_resp.json().get("event_id")
-        if not event_id:
-            raise Exception(f"No event_id in response: {submit_resp.text[:200]}")
-        
-        # --- Step 2: Poll result (SSE stream) ---
-        result_url = f"{base}/call/predict/{event_id}"
+        result_url = f"{SPACE_URL}/call/predict/{event_id}"
         result_resp = requests.get(result_url, headers=headers, timeout=120, stream=True)
         
-        # Parse SSE: Gradio 6.x LabelData format
-        # Response output is: [LabelData_emo, LabelData_mbti]
-        # LabelData = {"label": "top_label", "confidences": [{"label": "...", "confidence": 0.9}, ...]}
         emo_data = None
         mbti_data = None
         
@@ -377,44 +260,37 @@ def get_emotion_from_text(text: str):
                     continue
         
         if not emo_data or not mbti_data:
-            raise Exception("Could not parse Gradio SSE response")
+            raise Exception("Gagal parse response Space")
         
-        # --- PARSE EMOTIONS (LabelData format) ---
+        # Parse Emotions
         emotions = []
-        confidences = emo_data.get("confidences", [])
-        for item in confidences:
-            clean_label = str(item.get("label", "")).lower()
-            score = float(item.get("confidence", 0))
-            if clean_label == "neutral":
-                continue
-            emotions.append({"label": clean_label, "score": score})
+        for item in emo_data.get("confidences", []):
+            label = str(item.get("label", "")).lower()
+            if label == "neutral": continue
+            emotions.append({"label": label, "score": float(item.get("confidence", 0))})
         
-        # Re-normalize after removing neutral
-        total_score = sum(e["score"] for e in emotions)
-        if total_score > 0:
+        # Re-normalize emotions after removing neutral
+        total_emo_score = sum(e["score"] for e in emotions)
+        if total_emo_score > 0:
             for e in emotions:
-                e["score"] = e["score"] / total_score
-        
+                e["score"] /= total_emo_score
         emotions.sort(key=lambda x: x["score"], reverse=True)
         
-        # --- PARSE MBTI (LabelData format) ---
+        # Parse MBTI
         mbti = []
-        mbti_confidences = mbti_data.get("confidences", [])
-        for item in mbti_confidences:
+        for item in mbti_data.get("confidences", []):
             mbti.append({"label": str(item.get("label", "")).upper(), "score": float(item.get("confidence", 0))})
         mbti.sort(key=lambda x: x["score"], reverse=True)
         
-        # Cache as tuple
         _analysis_cache[text] = (emotions, mbti)
         print(f"NLP HANDLER: SPACE OK -> Top Emo: {emotions[0]['label'] if emotions else '?'}, Top MBTI: {mbti[0]['label'] if mbti else '?'}")
         return emotions, mbti
 
     except Exception as e:
-        print(f"NLP HANDLER: SPACE FAILED ({e}). FALLBACK TO HYBRID...")
-        fallback_result = _run_fallback_hybrid_analysis(text)
-        if fallback_result:
-            _analysis_cache[text] = (fallback_result, None)
-            return fallback_result, None
+        print(f"NLP HANDLER: SPACE ERROR ({e}). Pake Fallback.")
+        fallback = _run_fallback_hybrid_analysis(text)
+        if fallback:
+            return fallback, None
         return None, None
 
 def analyze_lyrics_emotion(lyrics: str):
