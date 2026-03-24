@@ -87,7 +87,7 @@ def _is_valid_image(url: str) -> bool:
 
 # --- BACKGROUND PROCESSING ---
 
-def process_lastfm_enhancement_background(username, time_range, result, extended=False, force_sync=False):
+def process_lastfm_enhancement_background(username, time_range, result, extended=False, force_sync=False, sync_id=None):
     """
     Background task to enhance Last.fm data with Spotify metadata,
     artist tags (genres), and sentiment analysis.
@@ -328,31 +328,48 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
         # 4. Sentiment Analysis
         from app.nlp_handler import generate_sentiment_analysis
         def sentiment_progress(msg):
+             # 1. RE-FETCH latest cache for atomicity and zombie detection
+             live_cache = get_cached_top_data("top", user_id, time_range)
+             if not live_cache: return
+
+             # 2. ZOMBIE PROTECTION
+             if sync_id:
+                 current_sync_id = live_cache.get("extended_sentiment_sync_id" if extended else "sentiment_sync_id")
+                 if current_sync_id and current_sync_id != sync_id:
+                     print(f"LASTFM BG: Stopping because a newer sync ({current_sync_id}) is in progress for {user_id}")
+                     raise Exception("Interrupted by newer sync")
+
              if isinstance(msg, dict):
                  cache_top_data("progress", user_id, time_range, msg, ttl=60)
                  report_str = f"Syncing ({msg['current']}/{msg['total']}): {msg['trackName'][:30]}..."
              else:
                  report_str = msg
+             
              if "Syncing" in report_str or "Analyzing" in report_str:
-                 if extended: result["extended_sentiment_report"] = report_str
-                 else: result["sentiment_report"] = report_str
-                 cache_top_data("top", user_id, time_range, result, ttl=300)
+                 if extended: 
+                     live_cache["extended_sentiment_report"] = report_str
+                 else: 
+                     live_cache["sentiment_report"] = report_str
+                 cache_top_data("top", user_id, time_range, live_cache, ttl=300)
         
-        sentiment_report, sentiment_scores = generate_sentiment_analysis(result["tracks"], progress_callback=sentiment_progress, extended=extended)
-        if extended:
-            result["extended_sentiment_report"] = sentiment_report
-            result["extended_sentiment_scores"] = sentiment_scores
-            result["extended_sentiment_count"] = 20
-        else:
-            result["sentiment_report"] = sentiment_report
-            result["sentiment_scores"] = sentiment_scores
-            result["sentiment_count"] = 10
-        
-        # Cleanup
-        if "_raw_artists" in result: del result["_raw_artists"]
-        if "_raw_tracks" in result: del result["_raw_tracks"]
-        
-        cache_top_data("top", user_id, time_range, result, ttl=3600)
+        # 4. FINAL ATOMIC SAVE
+        final_cache = get_cached_top_data("top", user_id, time_range)
+        if final_cache:
+            if extended:
+                final_cache["extended_sentiment_report"] = sentiment_report
+                final_cache["extended_sentiment_scores"] = sentiment_scores
+                final_cache["extended_sentiment_count"] = 20
+            else:
+                final_cache["sentiment_report"] = sentiment_report
+                final_cache["sentiment_scores"] = sentiment_scores
+                final_cache["sentiment_count"] = 10
+            
+            # Cleanup raw data to save space
+            if "_raw_artists" in final_cache: del final_cache["_raw_artists"]
+            if "_raw_tracks" in final_cache: del final_cache["_raw_tracks"]
+            
+            cache_top_data("top", user_id, time_range, final_cache, ttl=3600)
+            save_user_sync(user_id, time_range, final_cache)
         print(f"LASTFM BG: All enhancements complete for {user_id}")
         
     except Exception as e:
@@ -371,7 +388,7 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
             cache_top_data("top", user_id, time_range, result, ttl=300)
 
 
-def process_lastfm_sentiment_background(user_id, time_range, extended=False):
+def process_lastfm_sentiment_background(user_id, time_range, extended=False, sync_id=None):
     """
     Dedicated worker function to run the heavy AI sentiment analysis via QStash.
     """
@@ -394,6 +411,17 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
         print(f"LASTFM SENTIMENT WORKER: Processing {len(tracks_to_analyze)} tracks for {user_id}...")
         
         def _update_progress(msg):
+            # 1. RE-FETCH latest cache for atomicity and zombie detection
+            live_cache = get_cached_top_data("top", user_id, time_range)
+            if not live_cache: return
+
+            # 2. ZOMBIE PROTECTION
+            if sync_id:
+                current_sync_id = live_cache.get("extended_sentiment_sync_id" if extended else "sentiment_sync_id")
+                if current_sync_id and current_sync_id != sync_id:
+                    print(f"LASTFM SENTIMENT WORKER: Stopping because a newer sync ({current_sync_id}) is in progress for {user_id}")
+                    raise Exception("Interrupted by newer sync")
+
             if isinstance(msg, dict):
                 cache_top_data("progress", user_id, time_range, msg, ttl=60)
                 report_str = f"Syncing ({msg['current']}/{msg['total']}): {msg['trackName'][:30]}..."
@@ -402,16 +430,17 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
 
             # RACE CONDITION PROTECTION
             if not extended:
-                current = get_cached_top_data("top", user_id, time_range)
-                if current and "/20)" in current.get("sentiment_report", ""):
+                if "/20)" in live_cache.get("sentiment_report", ""):
                     print(f"LASTFM WORKER: Stopping standard sync because an extended sync is in progress for {user_id}")
+                    # Special check: only stop if the extended sync has a DIFFERENT sync_id than what we might have?
+                    # No, if it's extended, it's definitely a newer request or a different mode.
                     raise Exception("Interrupted by extended sync")
             
             if extended:
-                result['extended_sentiment_report'] = report_str
+                live_cache['extended_sentiment_report'] = report_str
             else:
-                result['sentiment_report'] = report_str
-            cache_top_data("top", user_id, time_range, result, ttl=300)
+                live_cache['sentiment_report'] = report_str
+            cache_top_data("top", user_id, time_range, live_cache, ttl=300)
             
         sentiment_report, sentiment_scores = generate_sentiment_analysis(
             tracks_to_analyze, 
@@ -419,18 +448,20 @@ def process_lastfm_sentiment_background(user_id, time_range, extended=False):
             extended=extended
         )
         
-        if extended:
-            result['extended_sentiment_report'] = sentiment_report
-            result['extended_sentiment_scores'] = sentiment_scores
-            result['extended_sentiment_count'] = 20
-        else:
-            result['sentiment_report'] = sentiment_report
-            result['sentiment_scores'] = sentiment_scores
-            result['sentiment_count'] = 10
-        
-        # Final Save
-        cache_top_data("top", user_id, time_range, result)
-        save_user_sync(user_id, time_range, result)
+        # 4. FINAL ATOMIC SAVE
+        final_cache = get_cached_top_data("top", user_id, time_range)
+        if final_cache:
+            if extended:
+                final_cache['extended_sentiment_report'] = sentiment_report
+                final_cache['extended_sentiment_scores'] = sentiment_scores
+                final_cache['extended_sentiment_count'] = 20
+            else:
+                final_cache['sentiment_report'] = sentiment_report
+                final_cache['sentiment_scores'] = sentiment_scores
+                final_cache['sentiment_count'] = 10
+            
+            cache_top_data("top", user_id, time_range, final_cache)
+            save_user_sync(user_id, time_range, final_cache)
         print(f"LASTFM SENTIMENT WORKER SUCCESS: Completed for {user_id}")
 
     except Exception as e:

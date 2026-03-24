@@ -16,15 +16,15 @@ from app.cache_handler import (
 from app.mongo_handler import save_user_sync
 from app.nlp_handler import generate_sentiment_analysis
 
-def process_sentiment_background(spotify_id, time_range, result, extended=False):
+def process_sentiment_background(spotify_id, time_range, result, extended=False, sync_id=None):
     """
     Helper function to run emotion analysis and caching.
     Now supports live polling progress updates.
     """
     try:
-        from app.cache_handler import get_cached_top_data
+        from app.cache_handler import get_cached_top_data, cache_top_data
         
-        # 0. Acquire Lock to prevent multiple background workers
+        # 0. Acquire Lock to prevent multiple background workers (DEPRECATED by sync_id but kept for safety)
         if not acquire_analysis_lock(spotify_id, time_range):
             print(f"SPOTIFY WORKER: Another task is already running for {spotify_id}:{time_range}. Exiting.")
             return
@@ -40,25 +40,37 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
         tracks_to_analyze = tracks[:num_to_analyze]
         
         def _update_progress(msg):
+            # 1. RE-FETCH latest cache to ensure we don't overwrite other people's data
+            # and to check for newer sync_ids (ZOMBIE PROTECTION)
+            live_cache = get_cached_top_data("top", spotify_id, time_range)
+            if not live_cache: return
+
+            # 2. ZOMBIE PROTECTION: If a newer sync has started, kill this worker.
+            if sync_id:
+                current_sync_id = live_cache.get("extended_sentiment_sync_id" if extended else "sentiment_sync_id")
+                if current_sync_id and current_sync_id != sync_id:
+                    print(f"SPOTIFY WORKER: Stopping because a newer sync ({current_sync_id}) is in progress for {spotify_id}")
+                    # We raise a special exception that generate_sentiment_analysis might catch or just let it bubble
+                    raise Exception("Interrupted by newer sync")
+
             if isinstance(msg, dict):
                 cache_top_data("progress", spotify_id, time_range, msg, ttl=60)
                 report_str = f"Syncing ({msg['current']}/{msg['total']}): {msg['trackName'][:30]}..."
             else:
                 report_str = msg
 
-            # RACE CONDITION PROTECTION: 
-            # If we are a standard worker but the cache already shows an extended sync (x/20), we stop.
-            if not extended:
-                current = get_cached_top_data("top", spotify_id, time_range)
-                if current and "/20)" in current.get("sentiment_report", ""):
-                    print(f"SPOTIFY WORKER: Stopping standard sync because an extended sync is in progress for {spotify_id}")
-                    raise Exception("Interrupted by extended sync")
+            # RACE CONDITION PROTECTION (Legacy but kept)
+            if not extended and "/20)" in live_cache.get("sentiment_report", ""):
+                 print(f"SPOTIFY WORKER: Stopping standard sync because an extended sync is in progress for {spotify_id}")
+                 raise Exception("Interrupted by extended sync")
             
+            # 3. ATOMIC UPDATE: Only update our specific report field
             if extended:
-                cached_result['extended_sentiment_report'] = report_str
+                live_cache['extended_sentiment_report'] = report_str
             else:
-                cached_result['sentiment_report'] = report_str
-            cache_top_data("top", spotify_id, time_range, cached_result, ttl=300)
+                live_cache['sentiment_report'] = report_str
+            
+            cache_top_data("top", spotify_id, time_range, live_cache, ttl=300)
             
         sentiment_report, sentiment_scores = generate_sentiment_analysis(
             tracks_to_analyze, 
@@ -66,18 +78,20 @@ def process_sentiment_background(spotify_id, time_range, result, extended=False)
             extended=extended
         )
         
-        if extended:
-            cached_result['extended_sentiment_report'] = sentiment_report
-            cached_result['extended_sentiment_scores'] = sentiment_scores
-            cached_result['extended_sentiment_count'] = 20
-        else:
-            cached_result['sentiment_report'] = sentiment_report
-            cached_result['sentiment_scores'] = sentiment_scores
-            cached_result['sentiment_count'] = 10
-        
-        # 7. Final Cache & Archive
-        cache_top_data("top", spotify_id, time_range, cached_result)
-        save_user_sync(spotify_id, time_range, cached_result)
+        # 4. FINAL ATOMIC SAVE
+        final_cache = get_cached_top_data("top", spotify_id, time_range)
+        if final_cache:
+            if extended:
+                final_cache['extended_sentiment_report'] = sentiment_report
+                final_cache['extended_sentiment_scores'] = sentiment_scores
+                final_cache['extended_sentiment_count'] = 20
+            else:
+                final_cache['sentiment_report'] = sentiment_report
+                final_cache['sentiment_scores'] = sentiment_scores
+                final_cache['sentiment_count'] = 10
+            
+            cache_top_data("top", spotify_id, time_range, final_cache)
+            save_user_sync(spotify_id, time_range, final_cache)
         print(f"BACKGROUND PROCESSING SUCCESS: {'EXTENDED' if extended else 'STANDARD'} Sentiment analysis completed for {spotify_id}")
     except Exception as e:
         print(f"BACKGROUND PROCESSING ERROR: {e}")
