@@ -852,7 +852,11 @@ async def analyze_sentiment_background(
 
             # Force "Syncing" state to prevent "Unavailable" UI
             # We write to extended_sentiment_report so sentiment_report (Top 10) stays intact.
+            # We also generate a unique sync_id to kill zombie workers.
+            import uuid
+            sync_id = str(uuid.uuid4())
             cached_data['extended_sentiment_report'] = "Syncing (11/20): Initializing..."
+            cached_data['extended_sentiment_sync_id'] = sync_id
             cache_top_data("top", spotify_id, time_range, cached_data)
 
         if provider == "lastfm":
@@ -865,10 +869,11 @@ async def analyze_sentiment_background(
                 "spotify_id": spotify_id,
                 "time_range": time_range,
                 "extended": extended,
-                "provider": "lastfm"
+                "provider": "lastfm",
+                "sync_id": sync_id if 'sync_id' in locals() else None
             })
             if not did_push:
-                background_tasks.add_task(process_lastfm_sentiment_background, spotify_id, time_range, extended)
+                background_tasks.add_task(process_lastfm_sentiment_background, spotify_id, time_range, extended, (sync_id if 'sync_id' in locals() else None))
         else:
             from app.spotify_handler import process_sentiment_background
             # Use QStash in production, BackgroundTasks in local
@@ -877,10 +882,11 @@ async def analyze_sentiment_background(
                 "spotify_id": spotify_id,
                 "time_range": time_range,
                 "extended": extended,
-                "provider": "spotify"
+                "provider": "spotify",
+                "sync_id": sync_id if 'sync_id' in locals() else None
             })
             if not did_push:
-                background_tasks.add_task(process_sentiment_background, spotify_id, time_range, cached_data, extended)
+                background_tasks.add_task(process_sentiment_background, spotify_id, time_range, (cached_data if 'cached_data' in locals() else None), extended, (sync_id if 'sync_id' in locals() else None))
 
         return {"status": "Analysis triggered", "extended": extended, "method": "QStash" if "localhost" not in os.getenv("APP_URL", "") else "Local"}
         
@@ -1242,16 +1248,30 @@ def get_dashboard_data(
                 # This prevents spawning a new worker on every dashboard poll (every 2s).
                 if is_loading and not is_status_loading:
                     print(f"WEB DASHBOARD: Vibe still loading for {profile_id}. Triggering background refresh.")
+                    import uuid
+                    sync_id = str(uuid.uuid4())
+                    
+                    # Update cache with new sync_id immediately to kill any old zombies
+                    if extended:
+                         data['extended_sentiment_sync_id'] = sync_id
+                         # Set initial progress string to trigger UI
+                         data['extended_sentiment_report'] = "Syncing (11/20): Digging deeper..."
+                    else:
+                         data['sentiment_sync_id'] = sync_id
+                         data['sentiment_report'] = "Syncing (1/10): Getting ready..."
+                    
+                    cache_top_data("top", profile_id, time_range, data)
+                    
                     provider = data.get("source", "spotify") 
                     
                     if provider == "lastfm":
                         from app.lastfm_handler import process_lastfm_sentiment_background
                         # Legacy function name fallback replaced by combined worker
                         from app.lastfm_handler import process_lastfm_enhancement_background
-                        background_tasks.add_task(process_lastfm_enhancement_background, profile_id.replace("lastfm:", ""), time_range, data, extended)
+                        background_tasks.add_task(process_lastfm_enhancement_background, profile_id.replace("lastfm:", ""), time_range, data, extended, sync_id)
                     else:
                         from app.spotify_handler import process_sentiment_background
-                        background_tasks.add_task(process_sentiment_background, profile_id, time_range, data, extended)
+                        background_tasks.add_task(process_sentiment_background, profile_id, time_range, data, extended, sync_id)
                 
                 print(f"WEB DASHBOARD: Returning cached data for {profile_id}.")
             else:
@@ -1641,17 +1661,17 @@ async def process_sentiment_task(request: Request):
     spotify_id = data.get("spotify_id")
     time_range = data.get("time_range", "medium_term")
     extended = data.get("extended", False)
-    provider = data.get("provider", "spotify")
+    sync_id = data.get("sync_id")
     
-    print(f"QSTASH WORKER: Starting sentiment for {spotify_id} ({provider})")
+    print(f"QSTASH WORKER: Starting sentiment for {spotify_id} ({provider}) with sync_id {sync_id}")
     
     if provider == "lastfm":
         from app.lastfm_handler import process_lastfm_sentiment_background
-        process_lastfm_sentiment_background(spotify_id, time_range, extended=extended)
+        process_lastfm_sentiment_background(spotify_id, time_range, extended=extended, sync_id=sync_id)
     else:
         from app.spotify_handler import process_sentiment_background
         # Spotify handler expects a 'result' dict but we refactored it to refresh from cache
-        process_sentiment_background(spotify_id, time_range, {}, extended=extended)
+        process_sentiment_background(spotify_id, time_range, {}, extended=extended, sync_id=sync_id)
         
     return {"status": "Sentiment processed"}
 
