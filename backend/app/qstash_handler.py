@@ -39,7 +39,6 @@ def publish_to_qstash(target_path: str, data: dict):
     }
     
     try:
-        # Use json= instead of manually dumping to ensure requests handles headers/body encoding
         res = requests.post(qstash_url, headers=headers, json=data, timeout=10)
         if res.status_code < 300:
             print(f"QSTASH: Task queued successfully for {target_path}")
