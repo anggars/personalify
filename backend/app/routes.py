@@ -1238,7 +1238,9 @@ def get_dashboard_data(
                 # It's loading if the status says so, OR if the report is missing, OR if the count is wrong
                 is_loading = is_status_loading or not target_report or target_count != expected_count
                 
-                if is_loading:
+                # CRITICAL: Only trigger a NEW worker if we are NOT already in a loading status.
+                # This prevents spawning a new worker on every dashboard poll (every 2s).
+                if is_loading and not is_status_loading:
                     print(f"WEB DASHBOARD: Vibe still loading for {profile_id}. Triggering background refresh.")
                     provider = data.get("source", "spotify") 
                     
