@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
@@ -333,13 +333,14 @@ export default function DashboardPage() {
   }, [emotionText]);
 
   // Animated dots for loading text
-  const isAnalyzing =
-    emotionText?.includes("being analyzed") ||
-    emotionText?.includes("getting ready") ||
+  const isAnalyzing = useMemo(() => {
+    return emotionText?.toLowerCase().includes("analyzed") ||
+    emotionText?.toLowerCase().includes("getting ready") ||
     emotionText?.includes("Digging deeper") ||
     emotionText?.includes("enhancement in progress") ||
     emotionText?.includes("Analyzing") ||
     emotionText?.includes("Syncing");
+  }, [emotionText]);
   useEffect(() => {
     if (!isAnalyzing) return;
     const dotsInterval = setInterval(() => {
@@ -416,11 +417,12 @@ export default function DashboardPage() {
         setSentimentProgress(json.sentiment_progress || null);
 
         const isStillLoading = 
-          report.includes("being analyzed") || 
-          report.includes("getting ready") ||
+          report.toLowerCase().includes("analyzed") || 
+          report.toLowerCase().includes("getting ready") ||
           report.includes("Syncing") ||
           report.includes("enhancement in progress") ||
-          report.includes("Analyzing");
+          report.includes("Analyzing") ||
+          report.includes("Digging deeper");
 
         // Start/Stop polling based on state
         if (isStillLoading && !pollInterval) {
