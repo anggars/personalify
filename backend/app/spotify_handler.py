@@ -260,7 +260,8 @@ def sync_user_data(access_token: str, time_range: str = "medium_term", backgroun
             result['sentiment_scores'] = existing_cached.get('sentiment_scores', [])
             print(f"SYNC: Preserving existing sentiment for {spotify_id}")
         else:
-            result['sentiment_report'] = "Sentiment analysis is getting ready..."
+            # Sentiment report will be assigned by a background worker later
+            result['sentiment_report'] = ""
             result['sentiment_scores'] = []
         
         # 6.2 Cache partial result with short TTL
