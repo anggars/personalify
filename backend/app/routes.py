@@ -456,7 +456,8 @@ def callback(request: Request, code: str = Query(..., description="Spotify Autho
                     print(f"CALLBACK: Skipping malformed track {track.get('id', 'unknown')}: {track_err}")
                     continue
 
-            result['sentiment_report'] = "Your music vibe is being analyzed..."
+            # Sentiment report will be assigned by a background worker later
+            result['sentiment_report'] = ""
             cache_top_data("top", spotify_id, time_range, result)
             save_user_sync(spotify_id, time_range, result)
             
@@ -1309,7 +1310,7 @@ def get_dashboard_data(
         if not data:
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
 
-        sentiment_report = data.get("sentiment_report", "Sentiment analysis is getting ready...")
+        sentiment_report = data.get("sentiment_report", "")
         sentiment_scores = data.get("sentiment_scores")
         
         if sentiment_scores is None:
