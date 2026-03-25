@@ -1310,7 +1310,7 @@ def get_dashboard_data(
         if not data:
             raise HTTPException(status_code=404, detail="No data found. Please login again.")
 
-        sentiment_report = data.get("sentiment_report", "")
+        sentiment_report = data.get("sentiment_report", "Sentiment analysis is getting ready...")
         sentiment_scores = data.get("sentiment_scores")
         
         if sentiment_scores is None:
