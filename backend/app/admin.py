@@ -15,7 +15,6 @@ def get_system_wide_stats():
         sync_meta = sync_neon_supabase()
         
         db_stats = get_aggregate_stats()
-        # Ensure sync_meta is a dict and has default values
         if not isinstance(sync_meta, dict): sync_meta = {}
         
         pushed = sync_meta.get('pushed_to_backup', sync_meta.get('pushed_to_s', 0))
