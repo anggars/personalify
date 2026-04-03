@@ -384,11 +384,15 @@ export default function DashboardPage() {
   }, [showTop20]);
 
   // Fetch data with polling for analysis
+  // NOTE: showTop20 is intentionally NOT in the dep array here — it only affects
+  // client-side rendering (slice 10 vs 20). Including it caused a race condition
+  // where switching time ranges while the easter egg was open triggered an
+  // double-fetch with extended=true before the reset effect could fire.
   useEffect(() => {
     let pollInterval: NodeJS.Timeout | null = null;
     
     async function fetchData(isPolling = false) {
-      if (!isPolling && !showTop20) setLoading(true);
+      if (!isPolling) setLoading(true);
       try {
         const isFreshLogin = searchParams.get("sync") === "true" && !hasForceSynced.current;
         if (isFreshLogin && !isPolling) {
@@ -396,7 +400,7 @@ export default function DashboardPage() {
         }
         const timestamp = new Date().getTime();
         const res = await fetchWithAuth(
-          `/api/dashboard/${profileId}?time_range=${timeRange}&force_sync=${isFreshLogin}&extended=${showTop20}&_t=${timestamp}`
+          `/api/dashboard/${profileId}?time_range=${timeRange}&force_sync=${isFreshLogin}&_t=${timestamp}`
         );
 
         if (!res.ok) {
@@ -413,6 +417,9 @@ export default function DashboardPage() {
         setData(json);
         
         const report = json.sentiment_report || "";
+        // BUG FIX: Always reset typedHtml before setting new emotionText so the
+        // typewriter replays cleanly (prevents stale text from previous time range).
+        setTypedHtml("");
         setEmotionText(report);
         setSentimentProgress(json.sentiment_progress || null);
 
@@ -452,15 +459,33 @@ export default function DashboardPage() {
     }
     
     fetchData();
+
+    // BUG FIX: Re-fetch when the browser tab becomes visible again.
+    // Without this, a tab that was dormant (e.g. throttled by browser) shows
+    // an empty sentiment header until the user manually navigates away and back.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        console.log("DASHBOARD: Tab became visible, re-fetching data...");
+        fetchData(true); // treat as polling so we don't flash the full-page spinner
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     
     return () => {
       if (pollInterval) clearInterval(pollInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [profileId, timeRange, router, showTop20, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId, timeRange, router, searchParams]);
   
-  // Reset dashboard states when time range changes to prevent state leakage
+  // Reset dashboard states when time range changes to prevent state leakage.
+  // BUG FIX: Also clear emotionText and typedHtml so the old vibe sentence
+  // from the previous time range doesn't flash while the new fetch is in-flight.
   useEffect(() => {
     setShowTop20(false);
+    setEmotionText("");
+    setTypedHtml("");
+    setSentimentProgress(null);
     setDisabledGenres(new Set());
     setActiveEmbed(null);
     setPlayingTrack(null);
