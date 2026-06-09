@@ -1960,8 +1960,6 @@ def get_user_profile_detail(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Backend Error: {str(e)}")
 
-# ========== SYSTEM SETTINGS ==========
-
 @router.get("/api/active-provider", tags=["Settings"])
 def api_get_active_provider():
     """Get system-wide active provider (spotify or lastfm)"""
