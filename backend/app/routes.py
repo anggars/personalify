@@ -1984,3 +1984,55 @@ def api_set_active_provider(data: dict = Body(...)):
     except Exception as e:
         print(f"ERROR Setting Provider: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+from fastapi import UploadFile, File, Form
+import tempfile
+from app.nlp_handler import analyze_multimodal_track
+
+@router.post("/api/analyze-multimodal", tags=["Analyzer"])
+async def api_analyze_multimodal(
+    audio: Optional[UploadFile] = File(None),
+    lyrics: Optional[str] = Form(None)
+):
+    """
+    Proxies multimodal analysis request to Hugging Face Spaces via gradio_client.
+    """
+    if not audio and not lyrics:
+        raise HTTPException(status_code=400, detail="Must provide at least audio or lyrics")
+
+    audio_path = None
+    try:
+        if audio:
+            audio_size = audio.size or 0
+            # Check size limit (50MB)
+            if audio_size > 50 * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="Audio file too large")
+            
+            # Create a temporary file
+            suffix = os.path.splitext(audio.filename)[1] if audio.filename else ".wav"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                tmp.write(await audio.read())
+                audio_path = tmp.name
+
+        result = analyze_multimodal_track(audio_path, lyrics)
+        
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+            
+        return {"success": True, "data": result}
+        
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"ANALYZE MULTIMODAL API ERROR: {e}")
+        with open("error_log_multimodal.txt", "w") as f:
+            f.write(error_trace)
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Cleanup temp file
+        if audio_path and os.path.exists(audio_path):
+            try:
+                os.unlink(audio_path)
+            except:
+                pass
+

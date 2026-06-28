@@ -626,3 +626,45 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
     print("\n".join(report_lines))
     
     return f"Shades of {formatted_str}.", clean_top
+
+def analyze_multimodal_track(audio_path: str = None, lyrics: str = None):
+    """
+    Analyzes track using neural-mathrock Gradio Space.
+    Returns: {"mbti": {...}, "emotions": {...}}
+    """
+    try:
+        from gradio_client import Client, handle_file
+        
+        # Connect to HF Space
+        client = Client("anggars/neural-mathrock")
+        
+        # Call the endpoint
+        result = client.predict(
+            audio_path=handle_file(audio_path) if audio_path else None,
+            lyrics_input=lyrics or "",
+            api_name="/analyze_track"
+        )
+        
+        # Result is a tuple: (mbti_dict, emotion_dict)
+        # Format from Gradio is usually dict with 'confidences' list:
+        # {'label': '...', 'confidences': [{'label': 'ENTP', 'confidence': 0.8}, ...]}
+        mbti_raw, emotions_raw = result
+        
+        mbti_dict = {}
+        if isinstance(mbti_raw, dict) and "confidences" in mbti_raw:
+            for item in mbti_raw["confidences"]:
+                mbti_dict[item["label"]] = item["confidence"]
+        elif isinstance(mbti_raw, dict): # Fallback
+            mbti_dict = mbti_raw
+            
+        emotions_dict = {}
+        if isinstance(emotions_raw, dict) and "confidences" in emotions_raw:
+            for item in emotions_raw["confidences"]:
+                emotions_dict[item["label"]] = item["confidence"]
+        elif isinstance(emotions_raw, dict):
+            emotions_dict = emotions_raw
+
+        return {"mbti": mbti_dict, "emotions": emotions_dict}
+    except Exception as e:
+        print(f"MULTIMODAL ANALYSIS ERROR: {e}")
+        return {"error": str(e)}

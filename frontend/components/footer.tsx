@@ -24,6 +24,10 @@ const GENIUS_STACKS = [
     { phrase: "Powered by", name: "Hugging Face", url: "https://huggingface.co/", color: "hover:text-[#FFD21E] active:text-[#FFD21E]" },
 ];
 
+const ANALYZER_STACKS = [
+    { phrase: "Powered by", name: "Hugging Face", url: "https://huggingface.co/anggars/neural-mathrock", color: "hover:text-[#FFD21E] active:text-[#FFD21E]" },
+];
+
 export function Footer() {
     const pathname = usePathname();
     const [displayText, setDisplayText] = useState({ phrase: "", name: "" });
@@ -59,6 +63,7 @@ export function Footer() {
             ];
         }
         if (pathname === "/lyrics/genius") return GENIUS_STACKS;
+        if (pathname === "/analyzer" || pathname?.startsWith("/analyzer/")) return ANALYZER_STACKS;
         if (pathname === "/lyrics" || pathname?.startsWith("/lyrics/")) return [
             { phrase: "Powered by", name: "Hugging Face", url: "https://huggingface.co/", color: "hover:text-[#FFD21E] active:text-[#FFD21E]" }
         ];
