@@ -1,2 +1,3 @@
 -r backend/requirements.txt
-# Force Vercel cache bust for python-multipart
+python-multipart
+gradio_client
