@@ -13,3 +13,4 @@ qstash
 scalar-fastapi
 httpx
 gradio_client
+python-multipart
