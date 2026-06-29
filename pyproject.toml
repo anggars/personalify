@@ -18,5 +18,6 @@ dependencies = [
     "qstash",
     "scalar-fastapi",
     "httpx",
-    "gradio_client"
+    "gradio_client",
+    "python-multipart"
 ]
