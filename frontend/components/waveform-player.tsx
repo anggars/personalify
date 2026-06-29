@@ -6,9 +6,11 @@ import { Play, Pause } from "lucide-react";
 
 interface WaveformPlayerProps {
   audioUrl: string;
+  filename: string;
+  fileSize: number;
 }
 
-export function WaveformPlayer({ audioUrl }: WaveformPlayerProps) {
+export function WaveformPlayer({ audioUrl, filename, fileSize }: WaveformPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurfer = useRef<WaveSurfer | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -22,11 +24,7 @@ export function WaveformPlayer({ audioUrl }: WaveformPlayerProps) {
       waveColor: "rgba(29, 185, 84, 0.3)", // Dimmer green
       progressColor: "#1DB954", // Spotify green
       cursorColor: "#ffffff",
-      barWidth: 2,
-      barGap: 3,
-      barRadius: 2,
-      height: 40,
-      normalize: true,
+      height: 36,
       url: audioUrl,
     });
 
@@ -54,23 +52,32 @@ export function WaveformPlayer({ audioUrl }: WaveformPlayerProps) {
 
   return (
     <div 
-      className="flex items-center gap-4 w-full bg-black/40 p-3 rounded-2xl border border-neutral-800"
+      className="flex flex-col gap-2 w-full py-2"
       onClick={(e) => e.stopPropagation()} // Prevent triggering dropzone click
     >
-      <button
-        type="button"
-        onClick={togglePlay}
-        disabled={!isReady}
-        className="w-10 h-10 shrink-0 flex items-center justify-center bg-[#1DB954] hover:bg-[#1ed760] text-black rounded-full transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isPlaying ? (
-          <Pause className="w-5 h-5 fill-current" />
-        ) : (
-          <Play className="w-5 h-5 fill-current ml-0.5" />
-        )}
-      </button>
+      {/* Title & Info */}
+      <div className="flex flex-col items-center mb-1">
+        <span className="font-bold text-[15px] truncate w-full text-center text-white drop-shadow-md">{filename}</span>
+        <span className="text-xs text-neutral-400 mt-0.5">{(fileSize / 1024 / 1024).toFixed(2)} MB</span>
+      </div>
 
-      <div className="flex-1 w-full" ref={containerRef} />
+      {/* Player Controls & Waveform */}
+      <div className="flex items-center gap-4 w-full">
+        <button
+          type="button"
+          onClick={togglePlay}
+          disabled={!isReady}
+          className="w-10 h-10 shrink-0 flex items-center justify-center bg-[#1DB954] hover:bg-[#1ed760] text-black rounded-full transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_12px_rgba(29,185,84,0.3)]"
+        >
+          {isPlaying ? (
+            <Pause className="w-4 h-4 fill-current" />
+          ) : (
+            <Play className="w-4 h-4 fill-current ml-1" />
+          )}
+        </button>
+
+        <div className="flex-1 w-full" ref={containerRef} />
+      </div>
     </div>
   );
 }

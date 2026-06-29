@@ -14,7 +14,8 @@ def get_headers():
     }
 
 def clean_lyrics(text):
-    text = re.sub(r"\[.*?\]", "", text)
+    # Remove multiline bracketed text like [Chorus \n Singer]
+    text = re.sub(r"\[[\s\S]*?\]", "", text)
     lines = text.split("\n")
     cleaned = []
     for line in lines:

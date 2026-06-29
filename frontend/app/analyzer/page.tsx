@@ -31,6 +31,7 @@ export default function AnalyzerPage() {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<AnalyzerResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isFetchingLyrics, setIsFetchingLyrics] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export default function AnalyzerPage() {
     if (hasTyped.current || !subtitleRef.current) return;
     hasTyped.current = true;
 
-    const text = 'Discover the twinkly riffs and odd time signatures of your music';
+    const text = 'Discover the intricate riffs and odd time signatures of your music';
     let index = 0;
     let currentHtml = "";
 
@@ -116,6 +117,26 @@ export default function AnalyzerPage() {
          return;
        }
        setAudioFile(file);
+       
+       // Auto-fetch lyrics
+       const fetchLyrics = async () => {
+         setIsFetchingLyrics(true);
+         try {
+           const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+           const response = await fetch(`${API_URL}/api/genius/fetch-by-filename?filename=${encodeURIComponent(file.name)}`);
+           if (response.ok) {
+             const data = await response.json();
+             if (data.lyrics) {
+               setLyrics(data.lyrics);
+             }
+           }
+         } catch (e) {
+           console.error("Failed to auto-fetch lyrics:", e);
+         } finally {
+           setIsFetchingLyrics(false);
+         }
+       };
+       fetchLyrics();
     }
   };
 
@@ -162,7 +183,8 @@ export default function AnalyzerPage() {
       if (lyrics.trim()) formData.append("lyrics", lyrics.trim());
 
       try {
-        const response = await fetch("/api/analyze-multimodal", {
+        const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+        const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/analyze-multimodal`, {
           method: "POST",
           body: formData,
         });
@@ -173,7 +195,13 @@ export default function AnalyzerPage() {
         } else {
           const res = await response.json();
           if (res.success && res.data) {
-            setResult(res.data);
+            if (res.data.error) {
+                dispatchError(res.data.error);
+            } else {
+                setResult(res.data);
+            }
+          } else if (res.error) {
+            dispatchError(res.error);
           } else {
             dispatchError("Failed to parse analysis results.");
           }
@@ -226,7 +254,7 @@ export default function AnalyzerPage() {
                   className={`
                       relative border-2 border-dashed rounded-xl p-4 md:p-6 transition-all cursor-pointer flex flex-col items-center justify-center min-h-[120px] md:min-h-[140px] text-center
                       ${audioFile 
-                          ? 'border-[#1DB954] bg-[#1DB954]/5' 
+                          ? 'border-neutral-600 bg-white/[0.03]' 
                           : 'border-neutral-700 hover:border-neutral-500 hover:bg-white/5'}
                   `}
               >
@@ -247,16 +275,18 @@ export default function AnalyzerPage() {
                               exit={{ opacity: 0, scale: 0.9 }}
                               className="flex flex-col items-center gap-3 w-full"
                           >
-                              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
-                                  <Music className="w-5 h-5 md:w-6 md:h-6 text-[#1DB954]" />
-                              </div>
-                              <div className="flex flex-col items-center max-w-[90%] mb-3">
-                                  <span className="font-semibold text-sm truncate w-full text-center text-white">{audioFile.name}</span>
-                                  <span className="text-xs text-neutral-400">{(audioFile.size / 1024 / 1024).toFixed(2)} MB</span>
-                              </div>
+                              {!audioUrl && (
+                                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#1DB954]/20 flex items-center justify-center mb-2">
+                                      <Music className="w-5 h-5 md:w-6 md:h-6 text-[#1DB954]" />
+                                  </div>
+                              )}
                               {audioUrl && (
-                                  <div className="w-full max-w-md mt-1 px-2">
-                                      <WaveformPlayer audioUrl={audioUrl} />
+                                  <div className="w-full max-w-2xl px-2 md:px-4">
+                                      <WaveformPlayer 
+                                        audioUrl={audioUrl} 
+                                        filename={audioFile.name.replace(/\.[^/.]+$/, "").replace(/^(SpotiDownloader\.com\s*-\s*|\[.*?\]\s*-\s*|y2mate\.com\s*-\s*)/i, "")}
+                                        fileSize={audioFile.size}
+                                      />
                                   </div>
                               )}
                               <button 
@@ -278,7 +308,7 @@ export default function AnalyzerPage() {
                               <UploadCloud className="w-8 h-8 md:w-10 md:h-10 mb-1 opacity-70" />
                               <p className="text-sm font-medium">Click or drag an audio file here</p>
                               <p className="text-[11px] opacity-70">
-                                  WAV or MP3 (Max 50MB) &bull; <span className="text-[#1DB954] font-semibold opacity-100">For Emotional State (Multimodal)</span>
+                                  WAV or MP3 (Max 50MB) &bull; <span className="text-neutral-400 font-medium opacity-100">For Emotional State (Multimodal)</span>
                               </p>
                           </motion.div>
                       )}
@@ -290,12 +320,20 @@ export default function AnalyzerPage() {
                 <textarea
                   value={lyrics}
                   onChange={(e) => setLyrics(e.target.value)}
-                  placeholder={audioFile ? `Paste the lyrics for ${audioFile.name.replace(/\.[^/.]+$/, "")} here...` : "Paste the song lyrics here..."}
+                  placeholder={
+                    isFetchingLyrics 
+                      ? `Fetching lyrics for ${audioFile?.name.replace(/\.[^/.]+$/, "")}...`
+                      : audioFile 
+                        ? `Paste the lyrics for ${audioFile.name.replace(/\.[^/.]+$/, "")} here...` 
+                        : "Paste the song lyrics here..."
+                  }
                   className="w-full min-h-[120px] md:min-h-[140px] py-2 px-4 pb-7 rounded-xl border border-neutral-200 dark:border-[#282828] bg-white dark:bg-[#181818] text-neutral-900 dark:text-[#cccccc] placeholder:text-neutral-500 focus:outline-none focus:border-[#1DB954] focus:ring-1 focus:ring-[#1DB954]/20 transition-all custom-scrollbar resize-none leading-relaxed text-[0.95rem] font-light tracking-wide"
                 />
-                <span className="absolute bottom-3 right-4 text-[10px] text-[#1DB954] font-semibold pointer-events-none">
-                    For MBTI Personality (Text Only)
-                </span>
+                {!lyrics.trim() && (
+                  <span className="absolute bottom-3 right-4 text-[10px] text-neutral-400 dark:text-neutral-500 font-medium pointer-events-none">
+                      For MBTI Personality (Text Only)
+                  </span>
+                )}
               </div>
 
 

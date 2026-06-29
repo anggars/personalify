@@ -635,8 +635,8 @@ def analyze_multimodal_track(audio_path: str = None, lyrics: str = None):
     try:
         from gradio_client import Client, handle_file
         
-        # Connect to HF Space
-        client = Client("anggars/neural-mathrock")
+        # Connect to HF Space with extended timeout (120s)
+        client = Client("anggars/neural-mathrock", httpx_kwargs={"timeout": 120.0})
         
         # Call the endpoint
         result = client.predict(
@@ -664,6 +664,11 @@ def analyze_multimodal_track(audio_path: str = None, lyrics: str = None):
         elif isinstance(emotions_raw, dict):
             emotions_dict = emotions_raw
 
+        # Check for error returned in the dict
+        for key in emotions_dict.keys():
+            if "Audio Error:" in key:
+                return {"error": key}
+                
         return {"mbti": mbti_dict, "emotions": emotions_dict}
     except Exception as e:
         print(f"MULTIMODAL ANALYSIS ERROR: {e}")

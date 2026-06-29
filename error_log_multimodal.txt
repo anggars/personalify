@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\DELL\personalify\backend\app\routes.py", line 2056, in api_analyze_multimodal
+    raise HTTPException(status_code=500, detail=result["error"])
+fastapi.exceptions.HTTPException: 500: Audio Error: Error opening '/tmp/gradio/4494e3b255f2aa2488ed2cf6a17d6d530bfca90f7c5e5e3ad3e08c75fb5b20e1/tmp16q7offm.mp3': File does not exist or is not a regular file (possibly a pipe?).

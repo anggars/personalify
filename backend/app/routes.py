@@ -28,7 +28,7 @@ from app.db_handler import (
 from app.cache_handler import cache_top_data, get_cached_top_data, clear_top_data_cache, r as redis_client
 from app.mongo_handler import save_user_sync, get_user_history, get_active_provider, set_active_provider
 from app.qstash_handler import get_qstash_client, get_qstash_receiver
-from app.genius_lyrics import get_suggestions, search_artist_id, get_songs_by_artist, get_lyrics_by_id
+from app.genius_lyrics import get_suggestions, search_artist_id, get_songs_by_artist, get_lyrics_by_id, search_track_lyrics
 from app.lastfm_handler import sync_lastfm_user_data
 
 # Request Access Model
@@ -1574,6 +1574,52 @@ def api_get_lyrics_emotion(song_id: int):
         "emotion_analysis": emotion
     }
 
+@router.get("/api/genius/fetch-by-filename")
+def api_fetch_lyrics_by_filename(filename: str):
+    import re
+    import requests
+    from app.genius_lyrics import GENIUS_API_URL, get_headers, get_lyrics_by_id
+    
+    # Remove extension
+    clean_name = re.sub(r'\.[^/.]+$', '', filename).strip()
+    
+    # Remove common downloader prefixes
+    clean_name = re.sub(r'^(SpotiDownloader\.com\s*-\s*|\[.*?\]\s*-\s*|y2mate\.com\s*-\s*)', '', clean_name, flags=re.IGNORECASE).strip()
+    
+    # Clean up hyphen spacing for better Genius search
+    query_name = clean_name.replace(" - ", " ")
+
+    # Direct Genius Search (Flexible, handles any order)
+    try:
+        res = requests.get(
+            f"{GENIUS_API_URL}/search",
+            params={"q": query_name},
+            headers=get_headers(),
+            timeout=5
+        )
+        if res.status_code == 200:
+            hits = res.json().get("response", {}).get("hits", [])
+            for hit in hits:
+                if hit["type"] == "song":
+                    result = hit["result"]
+                    title = result.get("title", "").lower()
+                    artist = result.get("primary_artist", {}).get("name", "").lower()
+                    
+                    # Skip garbage playlist/tracklist hits
+                    if any(x in artist for x in ["spotify", "genius", "apple music", "various"]):
+                        continue
+                    if any(x in title for x in ["tracklist", "setlist", "playlist", "singles"]):
+                        continue
+                        
+                    song_id = result["id"]
+                    lyrics_data = get_lyrics_by_id(song_id)
+                    if lyrics_data and lyrics_data.get("lyrics"):
+                        return {"lyrics": lyrics_data["lyrics"]}
+    except Exception as e:
+        print(f"Direct Genius Search Error: {e}")
+
+    return {"lyrics": None}
+
 async def run_analysis_logic(profile_id: str):
     print(f"[START] Processing analysis for: {profile_id}")
     await asyncio.sleep(2)
@@ -2017,7 +2063,7 @@ async def api_analyze_multimodal(
         result = analyze_multimodal_track(audio_path, lyrics)
         
         if "error" in result:
-            raise HTTPException(status_code=500, detail=result["error"])
+            return {"success": False, "error": result["error"]}
             
         return {"success": True, "data": result}
         
@@ -2027,7 +2073,7 @@ async def api_analyze_multimodal(
         print(f"ANALYZE MULTIMODAL API ERROR: {e}")
         with open("error_log_multimodal.txt", "w") as f:
             f.write(error_trace)
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"success": False, "error": str(e)}
     finally:
         # Cleanup temp file
         if audio_path and os.path.exists(audio_path):
