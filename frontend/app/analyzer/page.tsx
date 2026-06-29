@@ -30,6 +30,17 @@ export default function AnalyzerPage() {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<AnalyzerResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (audioFile) {
+      const url = URL.createObjectURL(audioFile);
+      setAudioUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setAudioUrl(null);
+    }
+  }, [audioFile]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
@@ -238,10 +249,15 @@ export default function AnalyzerPage() {
                               <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
                                   <Music className="w-5 h-5 md:w-6 md:h-6 text-[#1DB954]" />
                               </div>
-                              <div className="flex flex-col items-center max-w-[90%]">
+                              <div className="flex flex-col items-center max-w-[90%] mb-1">
                                   <span className="font-semibold text-sm truncate w-full text-center text-white">{audioFile.name}</span>
                                   <span className="text-xs text-neutral-400">{(audioFile.size / 1024 / 1024).toFixed(2)} MB</span>
                               </div>
+                              {audioUrl && (
+                                  <div className="w-full max-w-[240px]" onClick={(e) => e.stopPropagation()}>
+                                      <audio controls src={audioUrl} className="w-full h-8 outline-none" style={{ borderRadius: '20px' }} />
+                                  </div>
+                              )}
                               <button 
                                   type="button" 
                                   onClick={clearFile}
@@ -319,7 +335,7 @@ export default function AnalyzerPage() {
                     
                     {/* Emotion Breakdown */}
                     <div className="mb-6">
-                        <h4 className="text-sm font-semibold text-neutral-400 mb-3 text-center tracking-wider uppercase">Emotional State (Multimodal)</h4>
+                        <h4 className="text-sm font-semibold text-neutral-400 mb-3 text-center">Emotional State (Multimodal)</h4>
                         <motion.div 
                             className="flex flex-col gap-2"
                             variants={staggerContainerFast}
@@ -361,7 +377,7 @@ export default function AnalyzerPage() {
                     {/* MBTI Personality Sentence */}
                     {mbtiList.length > 0 && (
                         <div className="mt-8">
-                            <h4 className="text-sm font-semibold text-neutral-400 mb-3 text-center tracking-wider uppercase">Predicted MBTI (Text Only)</h4>
+                            <h4 className="text-sm font-semibold text-neutral-400 mb-3 text-center">Predicted MBTI (Text Only)</h4>
                             <motion.p
                                 initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
