@@ -150,8 +150,7 @@ export default function AnalyzerPage() {
       if (lyrics.trim()) formData.append("lyrics", lyrics.trim());
 
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-        const response = await fetch(`${API_URL}/api/analyze-multimodal`, {
+        const response = await fetch("/api/analyze-multimodal", {
           method: "POST",
           body: formData,
         });
@@ -282,12 +281,7 @@ export default function AnalyzerPage() {
                 </span>
               </div>
 
-              {error && (
-                  <div className="text-red-400 text-sm flex items-start gap-2 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <span>{error}</span>
-                  </div>
-              )}
+
 
               <button
                 type="submit"
