@@ -1,0 +1,22 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      wavesurfer.js:
+        specifier: ^7.12.8
+        version: 7.12.8
+
+packages:
+
+  wavesurfer.js@7.12.8:
+    resolution: {integrity: sha512-G3nxzcC4X+ZWrLtcIV17kCWHVq3ysJCS4dS0YkGKILrQ2esAb8cScw965zKNKYxUvpiZsPK93KLWgWTYdIBQiw==}
+
+snapshots:
+
+  wavesurfer.js@7.12.8: {}

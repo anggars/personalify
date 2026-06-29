@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UploadCloud, X, Music, AlertCircle } from "lucide-react";
+import { WaveformPlayer } from "../../components/waveform-player";
 import {
   staggerContainer,
   fadeUp,
@@ -249,13 +250,13 @@ export default function AnalyzerPage() {
                               <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
                                   <Music className="w-5 h-5 md:w-6 md:h-6 text-[#1DB954]" />
                               </div>
-                              <div className="flex flex-col items-center max-w-[90%] mb-1">
+                              <div className="flex flex-col items-center max-w-[90%] mb-3">
                                   <span className="font-semibold text-sm truncate w-full text-center text-white">{audioFile.name}</span>
                                   <span className="text-xs text-neutral-400">{(audioFile.size / 1024 / 1024).toFixed(2)} MB</span>
                               </div>
                               {audioUrl && (
-                                  <div className="w-full max-w-[240px]" onClick={(e) => e.stopPropagation()}>
-                                      <audio controls src={audioUrl} className="w-full h-8 outline-none" style={{ borderRadius: '20px' }} />
+                                  <div className="w-full max-w-md mt-1 px-2">
+                                      <WaveformPlayer audioUrl={audioUrl} />
                                   </div>
                               )}
                               <button 
@@ -289,7 +290,7 @@ export default function AnalyzerPage() {
                 <textarea
                   value={lyrics}
                   onChange={(e) => setLyrics(e.target.value)}
-                  placeholder="Paste some angsty midwest emo lyrics here..."
+                  placeholder={audioFile ? `Paste the lyrics for ${audioFile.name.replace(/\.[^/.]+$/, "")} here...` : "Paste the song lyrics here..."}
                   className="w-full min-h-[120px] md:min-h-[140px] py-2 px-4 pb-7 rounded-xl border border-neutral-200 dark:border-[#282828] bg-white dark:bg-[#181818] text-neutral-900 dark:text-[#cccccc] placeholder:text-neutral-500 focus:outline-none focus:border-[#1DB954] focus:ring-1 focus:ring-[#1DB954]/20 transition-all custom-scrollbar resize-none leading-relaxed text-[0.95rem] font-light tracking-wide"
                 />
                 <span className="absolute bottom-3 right-4 text-[10px] text-[#1DB954] font-semibold pointer-events-none">
