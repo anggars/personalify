@@ -40,7 +40,7 @@ def get_page_html(url):
     # Shorter timeout (1.5s) to prevent dashboard hanging
     try:
         print(f"ATTEMPTING GOOGLE TRANSLATE PROXY: {url}")
-        r = requests.get(translate_url, headers=headers, timeout=1.5)
+        r = requests.get(translate_url, headers=headers, timeout=5.0)
         
         if r.status_code == 200:
             return r.text

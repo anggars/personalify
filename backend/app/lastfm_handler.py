@@ -351,6 +351,8 @@ def process_lastfm_enhancement_background(username, time_range, result, extended
                  else: 
                      live_cache["sentiment_report"] = report_str
                  cache_top_data("top", user_id, time_range, live_cache, ttl=300)
+                 
+        sentiment_report, sentiment_scores = generate_sentiment_analysis(result, progress_callback=sentiment_progress)
         
         # 4. FINAL ATOMIC SAVE
         final_cache = get_cached_top_data("top", user_id, time_range)
@@ -694,7 +696,7 @@ def _lastfm_signed_request(method, params=None):
         if key == "format":
             continue
         sig_string += key + str(params[key])
-    sig_string += LASTFM_API_SECRET
+    sig_string += (LASTFM_API_SECRET or "")
     api_sig = hashlib.md5(sig_string.encode("utf-8")).hexdigest()
 
     params["api_sig"] = api_sig

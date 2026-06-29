@@ -627,7 +627,7 @@ def generate_sentiment_analysis(tracks, progress_callback=None, extended=False):
     
     return f"Shades of {formatted_str}.", clean_top
 
-def analyze_multimodal_track(audio_path: str = None, lyrics: str = None):
+def analyze_multimodal_track(audio_path: str | None = None, lyrics: str | None = None):
     """
     Analyzes track using neural-mathrock Gradio Space.
     Returns: {"mbti": {...}, "emotions": {...}}

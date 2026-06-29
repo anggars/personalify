@@ -254,7 +254,7 @@ export default function AnalyzerPage() {
                   className={`
                       relative border-2 border-dashed rounded-xl p-4 md:p-6 transition-all cursor-pointer flex flex-col items-center justify-center min-h-[120px] md:min-h-[140px] text-center
                       ${audioFile 
-                          ? 'border-neutral-600 bg-white/[0.03]' 
+                          ? 'border-neutral-600 bg-white/3' 
                           : 'border-neutral-700 hover:border-neutral-500 hover:bg-white/5'}
                   `}
               >

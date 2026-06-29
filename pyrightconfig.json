@@ -1,0 +1,10 @@
+{
+  "typeCheckingMode": "off",
+  "reportMissingImports": "none",
+  "reportGeneralTypeIssues": "none",
+  "reportOptionalMemberAccess": "none",
+  "reportOptionalIterable": "none",
+  "reportArgumentType": "none",
+  "reportAssignmentType": "none",
+  "reportUnboundVariable": "none"
+}

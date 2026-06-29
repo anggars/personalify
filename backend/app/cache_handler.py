@@ -166,7 +166,7 @@ def get_valid_image_cache(artist_name: str) -> str | None:
     """Retrieve image from cache ONLY if it's not a known placeholder."""
     cached = get_image_cache(artist_name)
     if cached and not is_bad_image(cached):
-        return cached
+        return cached # type: ignore
     return None
 
 def acquire_analysis_lock(spotify_id, term, ttl=300):

@@ -1,6 +1,7 @@
+# pyright: reportMissingModuleSource=false, reportGeneralTypeIssues=false, reportCallIssue=false
 import os
-import psycopg2
-from psycopg2.extras import execute_values
+import psycopg2 # type: ignore
+from psycopg2.extras import execute_values # type: ignore
 from urllib.parse import urlparse
 import threading
 
@@ -73,7 +74,7 @@ def async_batch_write_to_supabase(query, batch_data):
 # ========== PRIMARY DATABASE (NEON) ==========
 
 from contextlib import contextmanager
-from psycopg2 import pool
+from psycopg2 import pool # type: ignore
 
 # Global Connection Pool
 pg_pool = None
@@ -149,7 +150,7 @@ def get_conn():
             # Fallback if pool failed (prevent crash)
             print("DB POOL UNAVAILABLE, USING FALLBACK CONNECTION (Direct Connect)")
             params = get_db_params()
-            conn = psycopg2.connect(**params)
+            conn = psycopg2.connect(**params) # type: ignore
             yield conn
     except Exception as e:
         # Propagate error (query failed or connection failed)

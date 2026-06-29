@@ -1359,6 +1359,8 @@ def get_dashboard_data(
 @router.get("/about", response_class=HTMLResponse, tags=["Pages"])
 def about_page(request: Request): 
     spotify_id = request.cookies.get("spotify_id")
+    if templates is None:
+        return HTMLResponse("Templates missing")
     return templates.TemplateResponse("about.html", {
         "request": request,
         "spotify_id": spotify_id
@@ -1529,6 +1531,8 @@ def download_user_export():
 @router.get("/lyrics", response_class=HTMLResponse, tags=["Pages"])
 def lyrics_page(request: Request):
     spotify_id = request.cookies.get("spotify_id")
+    if templates is None:
+        return HTMLResponse("Templates missing")
     return templates.TemplateResponse("lyrics.html", {
         "request": request,
         "spotify_id": spotify_id
@@ -1537,6 +1541,8 @@ def lyrics_page(request: Request):
 @router.get("/lyrics/genius", response_class=HTMLResponse, tags=["Pages"])
 async def read_genius_page(request: Request):
     spotify_id = request.cookies.get("spotify_id")
+    if templates is None:
+        return HTMLResponse("Templates missing")
     return templates.TemplateResponse("genius.html", {
         "request": request,
         "spotify_id": spotify_id
@@ -1612,9 +1618,23 @@ def api_fetch_lyrics_by_filename(filename: str):
                         continue
                         
                     song_id = result["id"]
+                    
+                    # 1. Try Genius Web Scraping
                     lyrics_data = get_lyrics_by_id(song_id)
                     if lyrics_data and lyrics_data.get("lyrics"):
                         return {"lyrics": lyrics_data["lyrics"]}
+                        
+                    # 2. If Genius scraping is blocked (e.g. on Vercel), Fallback to LRCLib
+                    from app.genius_lyrics import fetch_lrclib_lyrics, search_google_lyrics
+                    lrc = fetch_lrclib_lyrics(title, artist)
+                    if lrc:
+                        return {"lyrics": lrc}
+                        
+                    # 3. Last Resort Fallback: Google Search
+                    ggl = search_google_lyrics(title, artist)
+                    if ggl:
+                        return {"lyrics": ggl}
+                        
     except Exception as e:
         print(f"Direct Genius Search Error: {e}")
 
@@ -1638,7 +1658,7 @@ async def start_background_analysis(
         print("[CRITICAL ERROR] QSTASH_TOKEN EMPTY IN VERCEL!")
     if "127.0.0.1" in app_url or "localhost" in app_url:
         print("Local Mode: Bypass QStash.")
-        background_tasks.add_task(run_analysis_logic, spotify_id)
+        background_tasks.add_task(run_analysis_logic, profile_id)
         return {"status": "Processing locally"}
     else:
         print(f"Production: Sending to QStash via MANUAL HTTP REQUEST...")
@@ -1706,6 +1726,7 @@ async def process_sentiment_task(request: Request):
         
     data = await request.json()
     spotify_id = data.get("spotify_id")
+    provider = data.get("provider", "spotify")
     time_range = data.get("time_range", "medium_term")
     extended = data.get("extended", False)
     sync_id = data.get("sync_id")

@@ -21,3 +21,8 @@ dependencies = [
     "gradio_client",
     "python-multipart"
 ]
+
+[tool.pyright]
+extraPaths = ["./backend"]
+venvPath = "C:\\Users\\DELL\\miniconda3\\envs"
+venv = "personalify"

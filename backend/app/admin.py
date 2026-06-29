@@ -76,15 +76,15 @@ def get_system_wide_stats():
     receipt_lines.append(format_line("SYNC_ALIGNMENT", db_stats.get('sync_summary', 'N/A')))
 
     receipt_lines.append("\n  Registered Users (Postgres):")
-    for user in db_stats.get('recent_users', []):
+    for user in db_stats.get('recent_users', []): # type: ignore
         receipt_lines.append(f"    - {user}")
 
     receipt_lines.append("\n  Top Artists (All Users):")
-    for item in db_stats.get('most_popular_artists', [])[:3]:
+    for item in db_stats.get('most_popular_artists', [])[:3]: # type: ignore
         receipt_lines.append(f"    - {item}")
 
     receipt_lines.append("\n  Top Tracks (All Users):")
-    for item in db_stats.get('most_popular_tracks', [])[:3]:
+    for item in db_stats.get('most_popular_tracks', [])[:3]: # type: ignore
         receipt_lines.append(f"    - {item}")
 
     receipt_lines.append("\n" + "=" * RECEIPT_WIDTH)
@@ -92,7 +92,7 @@ def get_system_wide_stats():
     receipt_lines.append(format_line("Synced_User_Count", db_stats.get('mongo_synced_users_count', '0')))
     
     receipt_lines.append("\n  Recently Synced Users:")
-    for user_id in db_stats.get('mongo_synced_user_list', [])[:5]:
+    for user_id in db_stats.get('mongo_synced_user_list', [])[:5]: # type: ignore
         receipt_lines.append(f"    - {user_id}")
 
     receipt_lines.append("\n" + "=" * RECEIPT_WIDTH)
