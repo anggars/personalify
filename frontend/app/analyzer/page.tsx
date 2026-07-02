@@ -183,90 +183,107 @@ export default function AnalyzerPage() {
       if (lyrics.trim()) formData.append("lyrics", lyrics.trim());
 
       try {
-        // STRATEGI 1: Coba upload langsung ke Hugging Face dari browser (Bypass Vercel)
-        // Ini persis seperti ide user: Vercel sama sekali nggak nerima file gede.
-        let directHfSuccess = false;
-        try {
-            const { Client, handle_file } = await import("@gradio/client");
-            const client = await Client.connect("anggars/neural-mathrock");
-            const result = await client.predict("/analyze_track", [
-                audioFile ? handle_file(audioFile) : null,
+        const HF_SPACE_URL = "https://anggars-neural-mathrock.hf.space";
+
+        if (audioFile) {
+          // ===== DIRECT TO HF SPACE (Bypass Vercel completely) =====
+          // Step 1: Upload the audio file directly to HF Space
+          const uploadFormData = new FormData();
+          uploadFormData.append("files", audioFile);
+          
+          const uploadRes = await fetch(`${HF_SPACE_URL}/upload`, {
+            method: "POST",
+            body: uploadFormData,
+          });
+          
+          if (!uploadRes.ok) {
+            throw new Error(`HF upload failed: ${uploadRes.status} ${uploadRes.statusText}`);
+          }
+          
+          const uploadedPaths: string[] = await uploadRes.json();
+          if (!uploadedPaths || uploadedPaths.length === 0) {
+            throw new Error("HF upload returned no file paths.");
+          }
+          
+          // Step 2: Call the analyze_track endpoint with the uploaded file path
+          const predictRes = await fetch(`${HF_SPACE_URL}/api/analyze_track`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              data: [
+                { path: uploadedPaths[0], orig_name: audioFile.name, size: audioFile.size, mime_type: audioFile.type },
                 lyrics.trim() || ""
-            ]);
-            
-            const data = result?.data as any[];
-            if (data && data.length >= 2) {
-                const mbtiRaw = data[0];
-                const emotionsRaw = data[1];
-                
-                const formatDict = (raw: any) => {
-                    const dict: Record<string, number> = {};
-                    if (raw && raw.confidences) {
-                        raw.confidences.forEach((item: any) => dict[item.label] = item.confidence);
-                    } else if (raw && typeof raw === 'object') {
-                        Object.assign(dict, raw);
-                    }
-                    return dict;
-                };
-
-                const mbtiDict = formatDict(mbtiRaw);
-                const emotionsDict = formatDict(emotionsRaw);
-                
-                let hasError = false;
-                for (const key of Object.keys(emotionsDict)) {
-                    if (key.includes("Audio Error:")) {
-                        dispatchError(key);
-                        hasError = true;
-                        break;
-                    }
-                }
-
-                if (!hasError) {
-                    setResult({ mbti: mbtiDict, emotions: emotionsDict });
-                }
-                directHfSuccess = true;
+              ]
+            }),
+          });
+          
+          if (!predictRes.ok) {
+            throw new Error(`HF predict failed: ${predictRes.status} ${predictRes.statusText}`);
+          }
+          
+          const predictData = await predictRes.json();
+          const data = predictData?.data;
+          
+          if (!data || data.length < 2) {
+            throw new Error("Invalid response from HF Space.");
+          }
+          
+          const mbtiRaw = data[0];
+          const emotionsRaw = data[1];
+          
+          const formatDict = (raw: any) => {
+            const dict: Record<string, number> = {};
+            if (raw && raw.confidences) {
+              raw.confidences.forEach((item: any) => dict[item.label] = item.confidence);
+            } else if (raw && typeof raw === 'object') {
+              Object.assign(dict, raw);
             }
-        } catch (hfError: any) {
-            console.warn("Direct HF upload failed (maybe AdBlock/CORS or space sleeping), falling back to Vercel API:", hfError);
-        }
+            return dict;
+          };
 
-        // STRATEGI 2: Jika direct upload gagal (karena browser nge-block atau space tidur), 
-        // kita kompres audionya dan lewat jalur Vercel API
-        if (!directHfSuccess) {
-            let finalAudio = audioFile;
-            if (audioFile) {
-                setIsFetchingLyrics(true); 
-                const { compressAudio } = await import('@/lib/minify-audio');
-                finalAudio = await compressAudio(audioFile);
+          const mbtiDict = formatDict(mbtiRaw);
+          const emotionsDict = formatDict(emotionsRaw);
+          
+          let hasError = false;
+          for (const key of Object.keys(emotionsDict)) {
+            if (key.includes("Audio Error:")) {
+              dispatchError(key);
+              hasError = true;
+              break;
             }
+          }
 
-            const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "";
-            const formDataToSubmit = new FormData();
-            if (finalAudio) formDataToSubmit.append("audio", finalAudio);
-            if (lyrics.trim()) formDataToSubmit.append("lyrics", lyrics.trim());
+          if (!hasError) {
+            setResult({ mbti: mbtiDict, emotions: emotionsDict });
+          }
+        } else {
+          // ===== LYRICS ONLY → Go through Vercel API (no large file) =====
+          const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "";
+          const formDataToSubmit = new FormData();
+          if (lyrics.trim()) formDataToSubmit.append("lyrics", lyrics.trim());
 
-            const response = await fetch(`${BACKEND_URL}/api/analyze-multimodal`, {
-                method: "POST",
-                body: formDataToSubmit,
-            });
+          const response = await fetch(`${BACKEND_URL}/api/analyze-multimodal`, {
+            method: "POST",
+            body: formDataToSubmit,
+          });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                dispatchError(errorData.detail || "Analysis failed.");
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            dispatchError(errorData.detail || "Analysis failed.");
+          } else {
+            const res = await response.json();
+            if (res.success && res.data) {
+              if (res.data.error) {
+                dispatchError(res.data.error);
+              } else {
+                setResult(res.data);
+              }
+            } else if (res.error) {
+              dispatchError(res.error);
             } else {
-                const res = await response.json();
-                if (res.success && res.data) {
-                    if (res.data.error) {
-                        dispatchError(res.data.error);
-                    } else {
-                        setResult(res.data);
-                    }
-                } else if (res.error) {
-                    dispatchError(res.error);
-                } else {
-                    dispatchError("Failed to parse analysis results.");
-                }
+              dispatchError("Failed to parse analysis results.");
             }
+          }
         }
       } catch (err: any) {
         console.error(err);
