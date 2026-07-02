@@ -122,7 +122,8 @@ export default function AnalyzerPage() {
        const fetchLyrics = async () => {
          setIsFetchingLyrics(true);
          try {
-           const response = await fetch(`/api/genius/fetch-by-filename?filename=${encodeURIComponent(file.name)}`);
+           const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "";
+           const response = await fetch(`${BACKEND_URL}/api/genius/fetch-by-filename?filename=${encodeURIComponent(file.name)}`);
            if (response.ok) {
              const data = await response.json();
              if (data.lyrics) {
@@ -182,31 +183,59 @@ export default function AnalyzerPage() {
       if (lyrics.trim()) formData.append("lyrics", lyrics.trim());
 
       try {
-        const response = await fetch(`/api/analyze-multimodal`, {
-          method: "POST",
-          body: formData,
-        });
+        const { Client } = await import("@gradio/client");
+        const client = await Client.connect("anggars/neural-mathrock");
+        
+        // Pass the audio File object directly to Gradio client
+        const result = await client.predict("/analyze_track", [
+          audioFile || null,
+          lyrics.trim() || ""
+        ]);
+        
+        // Result is [mbti_raw, emotions_raw]
+        const data = result?.data as any[];
+        const mbtiRaw = data?.[0];
+        const emotionsRaw = data?.[1];
+        
+        if (!mbtiRaw && !emotionsRaw) {
+          throw new Error("Invalid response from analyzer model.");
+        }
+        
+        const formatDict = (raw: any) => {
+          const dict: Record<string, number> = {};
+          if (raw && raw.confidences) {
+            raw.confidences.forEach((item: any) => {
+              dict[item.label] = item.confidence;
+            });
+          } else if (raw && typeof raw === 'object') {
+            Object.assign(dict, raw);
+          }
+          return dict;
+        };
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          dispatchError(errorData.detail || "Analysis failed.");
-        } else {
-          const res = await response.json();
-          if (res.success && res.data) {
-            if (res.data.error) {
-                dispatchError(res.data.error);
-            } else {
-                setResult(res.data);
-            }
-          } else if (res.error) {
-            dispatchError(res.error);
-          } else {
-            dispatchError("Failed to parse analysis results.");
+        const mbtiDict = formatDict(mbtiRaw);
+        const emotionsDict = formatDict(emotionsRaw);
+
+        // Check for Audio Error
+        let hasError = false;
+        for (const key of Object.keys(emotionsDict)) {
+          if (key.includes("Audio Error:")) {
+            dispatchError(key);
+            hasError = true;
+            break;
           }
         }
-      } catch (err) {
+
+        if (!hasError) {
+          setResult({
+            mbti: mbtiDict,
+            emotions: emotionsDict
+          });
+        }
+        
+      } catch (err: any) {
         console.error(err);
-        dispatchError("Network error occurred during analysis.");
+        dispatchError(err.message || "Network error occurred during analysis.");
       }
     });
   };
