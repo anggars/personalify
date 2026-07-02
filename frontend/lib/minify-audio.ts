@@ -1,5 +1,5 @@
 // @ts-ignore
-import lamejs from 'lamejs';
+import { Mp3Encoder } from 'lamejs';
 
 export async function compressAudio(file: File): Promise<File> {
   // If it's already very small (under 2MB), just return it
@@ -39,7 +39,7 @@ export async function compressAudio(file: File): Promise<File> {
     }
     
     // Encode to MP3 at 96kbps
-    const mp3Encoder = new lamejs.Mp3Encoder(1, renderedBuffer.sampleRate, 96);
+    const mp3Encoder = new Mp3Encoder(1, renderedBuffer.sampleRate, 96);
     const mp3Data: any[] = [];
     
     const sampleBlockSize = 1152; // multiple of 576
@@ -63,7 +63,7 @@ export async function compressAudio(file: File): Promise<File> {
     
     return compressedFile;
   } catch (err) {
-      console.error("Compression failed, returning original file", err);
-      return file;
+      console.error("Compression failed", err);
+      throw new Error(`Kompilasi Audio Gagal: ${err}`);
   }
 }

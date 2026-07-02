@@ -236,7 +236,7 @@ export default function AnalyzerPage() {
             let finalAudio = audioFile;
             if (audioFile) {
                 setIsFetchingLyrics(true); 
-                const { compressAudio } = await import('@/lib/audiocompressor');
+                const { compressAudio } = await import('@/lib/minify-audio');
                 finalAudio = await compressAudio(audioFile);
             }
 
