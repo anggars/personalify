@@ -1,12 +1,8 @@
-// @ts-ignore
-import { Mp3Encoder } from 'lamejs';
-
 export async function compressAudio(file: File): Promise<File> {
   // If it's already very small (under 2MB), just return it
   if (file.size < 2 * 1024 * 1024) return file;
   
   const MAX_DURATION = 60; // 60 seconds is enough for analysis
-  const TARGET_SAMPLE_RATE = 22050; // ML models work fine with 22kHz
 
   try {
     const arrayBuffer = await file.arrayBuffer();
@@ -28,42 +24,45 @@ export async function compressAudio(file: File): Promise<File> {
     
     const renderedBuffer = await offlineContext.startRendering();
     
-    // Resample if necessary to save more space, but lamejs can handle raw PCM.
-    // Lamejs expects Int16 PCM data
-    const channelData = renderedBuffer.getChannelData(0); // Float32Array from -1.0 to 1.0
-    const int16Data = new Int16Array(channelData.length);
-    for (let i = 0; i < channelData.length; i++) {
-        // convert Float32 to Int16
-        let s = Math.max(-1, Math.min(1, channelData[i]));
-        int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-    }
+    // Convert to 16-bit PCM WAV
+    const channelData = renderedBuffer.getChannelData(0);
+    const wavBuffer = new ArrayBuffer(44 + channelData.length * 2);
+    const view = new DataView(wavBuffer);
     
-    // Encode to MP3 at 96kbps
-    const mp3Encoder = new Mp3Encoder(1, renderedBuffer.sampleRate, 96);
-    const mp3Data: any[] = [];
-    
-    const sampleBlockSize = 1152; // multiple of 576
-    for (let i = 0; i < int16Data.length; i += sampleBlockSize) {
-        const sampleChunk = int16Data.subarray(i, i + sampleBlockSize);
-        const mp3buf = mp3Encoder.encodeBuffer(sampleChunk);
-        if (mp3buf.length > 0) {
-            mp3Data.push(mp3buf);
+    const writeString = (view: DataView, offset: number, string: string) => {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
         }
+    };
+    
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + channelData.length * 2, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM
+    view.setUint16(22, 1, true); // 1 channel
+    view.setUint32(24, renderedBuffer.sampleRate, true);
+    view.setUint32(28, renderedBuffer.sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, channelData.length * 2, true);
+    
+    let offset = 44;
+    for (let i = 0; i < channelData.length; i++, offset += 2) {
+        let s = Math.max(-1, Math.min(1, channelData[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
     }
     
-    const mp3buf = mp3Encoder.flush(); // finish encoding
-    if (mp3buf.length > 0) {
-        mp3Data.push(mp3buf);
-    }
-    
-    const blob = new Blob(mp3Data, { type: 'audio/mp3' });
-    const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.mp3", {
-        type: 'audio/mp3'
+    const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+    const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.wav", {
+        type: 'audio/wav'
     });
     
     return compressedFile;
   } catch (err) {
       console.error("Compression failed", err);
-      throw new Error(`Kompilasi Audio Gagal: ${err}`);
+      throw new Error(`Audio Compression Failed: ${err}`);
   }
 }
