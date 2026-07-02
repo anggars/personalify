@@ -187,11 +187,11 @@ export default function AnalyzerPage() {
 
         if (audioFile) {
           // ===== DIRECT TO HF SPACE (Bypass Vercel completely) =====
-          // Step 1: Upload the audio file directly to HF Space
+          // Step 1: Upload the audio file to HF Space
           const uploadFormData = new FormData();
           uploadFormData.append("files", audioFile);
           
-          const uploadRes = await fetch(`${HF_SPACE_URL}/upload`, {
+          const uploadRes = await fetch(`${HF_SPACE_URL}/gradio_api/upload`, {
             method: "POST",
             body: uploadFormData,
           });
@@ -205,31 +205,57 @@ export default function AnalyzerPage() {
             throw new Error("HF upload returned no file paths.");
           }
           
-          // Step 2: Call the analyze_track endpoint with the uploaded file path
-          const predictRes = await fetch(`${HF_SPACE_URL}/api/analyze_track`, {
+          // Step 2: Call the analyze_track endpoint (event-based)
+          const callRes = await fetch(`${HF_SPACE_URL}/gradio_api/call/analyze_track`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               data: [
-                { path: uploadedPaths[0], orig_name: audioFile.name, size: audioFile.size, mime_type: audioFile.type },
+                { path: uploadedPaths[0], orig_name: audioFile.name, size: audioFile.size, mime_type: audioFile.type, meta: { _type: "gradio.FileData" } },
                 lyrics.trim() || ""
               ]
             }),
           });
           
-          if (!predictRes.ok) {
-            throw new Error(`HF predict failed: ${predictRes.status} ${predictRes.statusText}`);
+          if (!callRes.ok) {
+            throw new Error(`HF call failed: ${callRes.status} ${callRes.statusText}`);
           }
           
-          const predictData = await predictRes.json();
-          const data = predictData?.data;
+          const callData = await callRes.json();
+          const eventId = callData.event_id;
           
-          if (!data || data.length < 2) {
+          if (!eventId) {
+            throw new Error("HF call returned no event_id.");
+          }
+          
+          // Step 3: Poll for the result using the event_id
+          const resultRes = await fetch(`${HF_SPACE_URL}/gradio_api/call/analyze_track/${eventId}`);
+          
+          if (!resultRes.ok) {
+            throw new Error(`HF result failed: ${resultRes.status} ${resultRes.statusText}`);
+          }
+          
+          // Gradio SSE returns lines like: "event: ...\ndata: ...\n"
+          const resultText = await resultRes.text();
+          const lines = resultText.split("\n");
+          let resultData: any = null;
+          
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                resultData = JSON.parse(line.substring(6));
+              } catch {
+                // skip non-JSON data lines
+              }
+            }
+          }
+          
+          if (!resultData || !resultData.length || resultData.length < 2) {
             throw new Error("Invalid response from HF Space.");
           }
           
-          const mbtiRaw = data[0];
-          const emotionsRaw = data[1];
+          const mbtiRaw = resultData[0];
+          const emotionsRaw = resultData[1];
           
           const formatDict = (raw: any) => {
             const dict: Record<string, number> = {};
