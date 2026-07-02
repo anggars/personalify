@@ -122,8 +122,7 @@ export default function AnalyzerPage() {
        const fetchLyrics = async () => {
          setIsFetchingLyrics(true);
          try {
-           const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-           const response = await fetch(`${API_URL}/api/genius/fetch-by-filename?filename=${encodeURIComponent(file.name)}`);
+           const response = await fetch(`/api/genius/fetch-by-filename?filename=${encodeURIComponent(file.name)}`);
            if (response.ok) {
              const data = await response.json();
              if (data.lyrics) {
@@ -183,8 +182,7 @@ export default function AnalyzerPage() {
       if (lyrics.trim()) formData.append("lyrics", lyrics.trim());
 
       try {
-        const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-        const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/analyze-multimodal`, {
+        const response = await fetch(`/api/analyze-multimodal`, {
           method: "POST",
           body: formData,
         });
