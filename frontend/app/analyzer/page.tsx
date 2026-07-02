@@ -183,12 +183,12 @@ export default function AnalyzerPage() {
       if (lyrics.trim()) formData.append("lyrics", lyrics.trim());
 
       try {
-        const { Client } = await import("@gradio/client");
+        const { Client, handle_file } = await import("@gradio/client");
         const client = await Client.connect("anggars/neural-mathrock");
         
-        // Pass the audio File object directly to Gradio client
+        // Pass the audio File object directly to Gradio client using handle_file
         const result = await client.predict("/analyze_track", [
-          audioFile || null,
+          audioFile ? handle_file(audioFile) : null,
           lyrics.trim() || ""
         ]);
         
